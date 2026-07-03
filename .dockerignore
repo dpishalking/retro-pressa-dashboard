@@ -1,0 +1,7 @@
+node_modules
+.next
+.env.local
+.env
+npm-debug.log
+README.md
+DEPLOY_TIMEWEB.md
