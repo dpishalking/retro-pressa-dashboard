@@ -42,7 +42,8 @@ jobs:
             --exclude='node_modules' \
             --exclude='.env' \
             --exclude='.env.local' \
-            -czf retro-pressa-deploy.tar.gz .
+            -czf /tmp/retro-pressa-deploy.tar.gz .
+          mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
       - name: Configure SSH
         run: |
