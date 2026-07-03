@@ -42,6 +42,33 @@ jobs:
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
+      - name: Create runtime env
+        env:
+          BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
+          GOOGLE_TRAFFIC_CSV_URL: ${{ secrets.GOOGLE_TRAFFIC_CSV_URL }}
+          GOOGLE_TRAFFIC_SHEET_ID: ${{ secrets.GOOGLE_TRAFFIC_SHEET_ID }}
+          GOOGLE_TRAFFIC_SHEET_NAME: ${{ secrets.GOOGLE_TRAFFIC_SHEET_NAME }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+        run: |
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const keys = [
+            "BITRIX_WEBHOOK_URL",
+            "GOOGLE_TRAFFIC_CSV_URL",
+            "GOOGLE_TRAFFIC_SHEET_ID",
+            "GOOGLE_TRAFFIC_SHEET_NAME",
+            "GOOGLE_SHEET_ID",
+            "GOOGLE_SERVICE_ACCOUNT_JSON",
+            "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+            "GOOGLE_PRIVATE_KEY"
+          ];
+          const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
+          fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
+          NODE
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -53,6 +80,8 @@ jobs:
         run: |
           scp -i ~/.ssh/deploy_key retro-pressa-deploy.tar.gz \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-deploy.tar.gz"
+          scp -i ~/.ssh/deploy_key runtime-env.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
 
       - name: Deploy on server
         run: |
@@ -65,9 +94,29 @@ jobs:
           rm -rf /opt/retro-pressa/*
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /opt/retro-pressa
           cd /opt/retro-pressa
+          cp /tmp/retro-pressa-runtime-env.json runtime-env.json
+          chmod 600 runtime-env.json
+          cat > ecosystem.config.cjs <<'PM2EOF'
+          const runtimeEnv = require("./runtime-env.json");
+
+          module.exports = {
+            apps: [
+              {
+                name: "retro-pressa",
+                script: "server.js",
+                env: {
+                  ...runtimeEnv,
+                  NODE_ENV: "production",
+                  PORT: "4174",
+                  HOSTNAME: "0.0.0.0"
+                }
+              }
+            ]
+          };
+          PM2EOF
           if pm2 describe retro-pressa > /dev/null; then
             pm2 delete retro-pressa
           fi
-          PORT=4174 HOSTNAME=0.0.0.0 pm2 start server.js --name retro-pressa
+          pm2 start ecosystem.config.cjs
           pm2 save
           EOF

@@ -9,3 +9,5 @@ yarn-error.log*
 *.pem
 *.key
 retro-pressa-deploy.tar.gz
+runtime-env.json
+ecosystem.config.cjs
