@@ -66,9 +66,8 @@ jobs:
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /opt/retro-pressa
           cd /opt/retro-pressa
           if pm2 describe retro-pressa > /dev/null; then
-            pm2 restart retro-pressa --update-env
-          else
-            PORT=4174 HOSTNAME=0.0.0.0 pm2 start server.js --name retro-pressa
+            pm2 delete retro-pressa
           fi
+          PORT=4174 HOSTNAME=0.0.0.0 pm2 start server.js --name retro-pressa
           pm2 save
           EOF
