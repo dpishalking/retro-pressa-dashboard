@@ -30,19 +30,16 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build check
+      - name: Build
         run: npm run build
 
       - name: Create deploy archive
         run: |
-          tar \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.next' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='.env.local' \
-            -czf /tmp/retro-pressa-deploy.tar.gz .
+          mkdir -p /tmp/retro-pressa-deploy/.next
+          cp -R .next/standalone/. /tmp/retro-pressa-deploy/
+          cp -R .next/static /tmp/retro-pressa-deploy/.next/static
+          cp -R public /tmp/retro-pressa-deploy/public
+          tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
       - name: Configure SSH
@@ -61,15 +58,17 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << 'EOF'
           set -e
+          if ! command -v pm2 > /dev/null; then
+            npm install -g pm2
+          fi
           mkdir -p /opt/retro-pressa
+          rm -rf /opt/retro-pressa/*
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /opt/retro-pressa
           cd /opt/retro-pressa
-          npm ci
-          npm run build
           if pm2 describe retro-pressa > /dev/null; then
             pm2 restart retro-pressa --update-env
           else
-            PORT=4174 pm2 start npm --name retro-pressa -- run start
+            PORT=4174 HOSTNAME=0.0.0.0 pm2 start server.js --name retro-pressa
           fi
           pm2 save
           EOF
