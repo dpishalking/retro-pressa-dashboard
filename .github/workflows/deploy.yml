@@ -44,6 +44,9 @@ jobs:
           cp -R .next/standalone/. /tmp/retro-pressa-deploy/
           cp -R .next/static /tmp/retro-pressa-deploy/.next/static
           cp -R public /tmp/retro-pressa-deploy/public
+          if [ -d data/conversation-exports ]; then
+            cp -R data/conversation-exports /tmp/retro-pressa-deploy/conversation-exports
+          fi
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
@@ -115,6 +118,9 @@ jobs:
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"
           ln -sfn "$APP_DATA_DIR" data
+          if [ -d "$APP_DIR/conversation-exports" ]; then
+            cp -R "$APP_DIR/conversation-exports/." "$APP_DATA_DIR/conversation-exports/"
+          fi
           cp /tmp/retro-pressa-runtime-env.json runtime-env.json
           chmod 600 runtime-env.json
           cat > ecosystem.config.cjs <<'PM2EOF'
@@ -140,4 +146,6 @@ jobs:
           fi
           pm2 start ecosystem.config.cjs
           pm2 save
+          sleep 3
+          curl -f -sS -X POST http://127.0.0.1:4174/api/conversations/seed-archives || true
           EOF
