@@ -58,7 +58,6 @@ function ModuleDetailContent({ stageId, moduleId }: { stageId: TrackStageId; mod
       {videos.length > 0 ? (
         <section className="card p-6">
           <h2 className="text-lg font-black text-slate-950">Видеоуроки</h2>
-          <p className="mt-2 text-sm text-slate-600">Четыре урока — у каждого своя цель. Названия можно будет обновить позже.</p>
           <ul className="mt-4 space-y-2">
             {videos.map((video) => (
               <li key={video.id}>
@@ -70,10 +69,7 @@ function ModuleDetailContent({ stageId, moduleId }: { stageId: TrackStageId; mod
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-600">
                       {video.sortOrder}
                     </span>
-                    <div>
-                      <p className="text-sm font-bold text-slate-950">{video.title}</p>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{video.goal}</p>
-                    </div>
+                    <p className="text-sm font-bold text-slate-950">{video.title}</p>
                   </div>
                   <ArrowRight size={16} className="shrink-0 text-slate-400" />
                 </Link>

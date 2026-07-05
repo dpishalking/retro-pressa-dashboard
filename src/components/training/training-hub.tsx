@@ -240,7 +240,6 @@ export function TrainingHub() {
   return (
     <TrainingLayout
       title="Этап 1. Продукт"
-      description="Линейка подарков: смысл каждого продукта, кому предлагать, как объяснять ценность и сдавать тест."
       backHref="/training"
       backLabel="К этапам обучения"
     >

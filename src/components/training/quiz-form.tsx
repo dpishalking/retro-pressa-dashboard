@@ -170,7 +170,6 @@ export function QuizForm({ productId }: { productId: string }) {
   return (
     <TrainingLayout
       title="Тест по продукту"
-      description="Проверьте понимание материала перед работой с клиентами."
       backHref={`/training/products/${productId}`}
       backLabel="К материалам продукта"
     >

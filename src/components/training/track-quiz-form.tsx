@@ -175,7 +175,6 @@ export function TrackQuizForm({ stageId, moduleId }: { stageId: TrackStageId; mo
   return (
     <TrainingLayout
       title="Тест модуля"
-      description="Проверьте понимание материала перед переходом к следующему блоку."
       backHref={`/training/${stageId}/${moduleId}`}
       backLabel="К материалам модуля"
     >

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookOpen, ClipboardCheck, Database, GraduationCap } from "lucide-react";
+import { ClipboardCheck, Database } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStageConfig } from "@/lib/training/stages";
@@ -63,7 +63,6 @@ function ModuleCard({
 }
 
 function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
-  const stage = getStageConfig(stageId)!;
   const { user, loading: userLoading } = useTrainingUser();
   const [modules, setModules] = useState<TrainingTrackModule[]>([]);
   const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
@@ -88,27 +87,12 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
     });
   };
 
-  const StageIcon = stageId === "crm" ? Database : GraduationCap;
-
   if (userLoading || !user) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка модулей...</div>;
   }
 
   return (
     <>
-      <section className="card mb-6 flex items-center gap-4 p-6">
-        <div className={`rounded-xl p-3 ${stage.accent}`}>
-          <StageIcon size={28} />
-        </div>
-        <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-slate-500">{stage.title.split(".")[0]}</p>
-          <p className="mt-1 text-sm text-slate-600">
-            {stageId === "crm"
-              ? "Битрикс24: заявки, переписки, этапы сделок — без лишней технической перегрузки."
-              : "Сценарии: подбор продукта, возражения, действия в CRM после разговора."}
-          </p>
-        </div>
-      </section>
       <section className="grid gap-4 md:grid-cols-2">
         {modules.map((module) => (
           <ModuleCard
@@ -120,12 +104,6 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
           />
         ))}
       </section>
-      {stageId === "crm" ? (
-        <p className="mt-6 text-sm text-slate-500">
-          <BookOpen size={14} className="mr-1 inline" />
-          Сначала пройдите этап «Продукт», если ещё не сдавали тесты по линейке подарков.
-        </p>
-      ) : null}
     </>
   );
 }
@@ -136,7 +114,6 @@ export function TrainingTrackHub({ stageId }: { stageId: TrackStageId }) {
   return (
     <TrainingLayout
       title={stage.title.replace(/^Этап \d+\.\s/, "")}
-      description={stage.description}
       backHref="/training"
       backLabel="К этапам обучения"
     >
