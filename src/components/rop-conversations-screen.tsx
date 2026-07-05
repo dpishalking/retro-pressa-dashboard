@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, RefreshCcw, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { eur, number, pct } from "@/lib/format";
+import { readJsonResponse } from "@/lib/api-response";
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
 import type { ConversationDashboardMetrics, GeminiConversationSummary, PeriodKey } from "@/types/metrics";
 
@@ -116,7 +117,7 @@ export function RopConversationsScreen() {
     async function loadHistory() {
       try {
         const response = await fetch("/api/conversations/history?limit=30");
-        const data = await response.json() as ConversationHistoryPayload;
+        const data = await readJsonResponse<ConversationHistoryPayload>(response);
         if (!response.ok || cancelled) return;
         const items = data.history ?? [];
         setHistory(items);
@@ -168,7 +169,7 @@ export function RopConversationsScreen() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ period: "july-2026", dialogLimit: 500 })
       });
-      const data = await response.json() as BitrixSyncPayload;
+      const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
       setStatus({
         state: "ok",
@@ -176,7 +177,7 @@ export function RopConversationsScreen() {
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
-      const historyData = await historyResponse.json() as ConversationHistoryPayload;
+      const historyData = await readJsonResponse<ConversationHistoryPayload>(historyResponse);
       if (historyResponse.ok) {
         const items = historyData.history ?? [];
         setHistory(items);
@@ -209,7 +210,7 @@ export function RopConversationsScreen() {
         method: "POST",
         body: formData
       });
-      const data = await response.json() as LocalImportPayload;
+      const data = await readJsonResponse<LocalImportPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить локальный экспорт");
       const summary = data.summary;
       setStatus({
@@ -219,7 +220,7 @@ export function RopConversationsScreen() {
       setSelectedPeriod(periodKey);
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
-      const historyData = await historyResponse.json() as ConversationHistoryPayload;
+      const historyData = await readJsonResponse<ConversationHistoryPayload>(historyResponse);
       if (historyResponse.ok) {
         const items = historyData.history ?? [];
         setHistory(items);
@@ -248,7 +249,7 @@ export function RopConversationsScreen() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ key: geminiKey, limit: 200, batchSize: 20 })
       });
-      const data = await response.json() as { summary?: GeminiConversationSummary; error?: string };
+      const data = await readJsonResponse<{ summary?: GeminiConversationSummary; error?: string }>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось выполнить AI-анализ");
       setGeminiSummary(data.summary ?? null);
       setStatus({

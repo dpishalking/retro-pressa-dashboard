@@ -208,21 +208,28 @@ async function fetchRecentDialogs(since: string, dialogLimit: number) {
   const limit = Math.min(200, Math.max(20, dialogLimit));
 
   while (dialogs.length < dialogLimit) {
-    const result = await callBitrix<BitrixRecentListResult>("im.recent.list", {
-      LAST_MESSAGE_DATE: since,
-      SKIP_OPENLINES: "N",
-      SKIP_DIALOG: "N",
-      SKIP_CHAT: "N",
-      UNREAD_ONLY: "N",
-      PARSE_TEXT: "N",
-      GET_ORIGINAL_TEXT: "Y",
-      SKIP_UNDISTRIBUTED_OPENLINES: "Y",
-      ONLY_COPILOT: "N",
-      ONLY_CHANNEL: "N",
-      CAN_MANAGE_MESSAGES: "N",
-      OFFSET: offset,
-      LIMIT: limit
-    });
+    let result: BitrixRecentListResult;
+    try {
+      result = await callBitrix<BitrixRecentListResult>("im.recent.list", {
+        LAST_MESSAGE_DATE: since,
+        SKIP_OPENLINES: "N",
+        SKIP_DIALOG: "N",
+        SKIP_CHAT: "N",
+        UNREAD_ONLY: "N",
+        PARSE_TEXT: "N",
+        GET_ORIGINAL_TEXT: "Y",
+        SKIP_UNDISTRIBUTED_OPENLINES: "Y",
+        ONLY_COPILOT: "N",
+        ONLY_CHANNEL: "N",
+        CAN_MANAGE_MESSAGES: "N",
+        OFFSET: offset,
+        LIMIT: limit
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/method not found/i.test(message)) return [];
+      throw error;
+    }
 
     const items = result.items ?? [];
     if (!items.length) break;
@@ -272,13 +279,14 @@ async function fetchOpenLineSessions(period: PeriodKey, dialogLimit: number) {
     }
   ];
 
-  for (const query of queries) {
-    for (let page = 0; page < maxPages; page += 1) {
-      const result = await callBitrix<BitrixOpenLineSessionsResult>("imopenlines.session.list", {
-        ...query,
-        LIMIT: pageSize,
-        OFFSET: page * pageSize
-      });
+  try {
+    for (const query of queries) {
+      for (let page = 0; page < maxPages; page += 1) {
+        const result = await callBitrix<BitrixOpenLineSessionsResult>("imopenlines.session.list", {
+          ...query,
+          LIMIT: pageSize,
+          OFFSET: page * pageSize
+        });
 
       const items = result.items ?? [];
       if (!items.length) break;
@@ -296,7 +304,11 @@ async function fetchOpenLineSessions(period: PeriodKey, dialogLimit: number) {
       });
 
       if (!result.hasMorePages && !result.hasMore) break;
+      }
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/method not found/i.test(message)) throw error;
   }
 
   const ordered = [
@@ -504,6 +516,12 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   }
 
   const dialogs = summarizeDialogs(collectedMessages);
+  if (!dialogs.length) {
+    throw new Error(
+      "Webhook Bitrix не имеет доступа к чатам. В настройках входящего вебхука добавьте права «Чат и уведомления (im)» и «Открытые линии (imopenlines)», затем повторите."
+    );
+  }
+
   const dashboard = buildConversationDashboard(dialogs);
 
   await writeConversationSnapshot({
