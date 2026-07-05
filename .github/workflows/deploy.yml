@@ -267,10 +267,23 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth"
+          AUTH_FILE="$APP_DATA_DIR/auth/users.json"
+          AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
+          if [ -f "$AUTH_FILE" ]; then
+            cp "$AUTH_FILE" "$AUTH_BACKUP"
+          fi
           find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"
           ln -sfn "$APP_DATA_DIR" data
+          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_BACKUP" ]; then
+            cp "$AUTH_BACKUP" "$AUTH_FILE"
+          fi
+          if [ -f "$AUTH_FILE" ]; then
+            echo "Auth users file present"
+          else
+            echo "Auth users file will be created on first login"
+          fi
           if [ -d "$APP_DIR/conversation-exports" ]; then
             cp -R "$APP_DIR/conversation-exports/." "$APP_DATA_DIR/conversation-exports/"
           fi

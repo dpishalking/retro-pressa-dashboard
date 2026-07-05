@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AppUser, AppUserPublic, UsersCatalog } from "@/types/auth";
 import { hashPassword } from "@/lib/auth/password";
@@ -6,6 +6,7 @@ import { generateId } from "@/lib/training/id";
 import { registerTrainerManager } from "@/lib/training/trainer-api";
 
 const usersPath = path.join(process.cwd(), "data", "auth", "users.json");
+const usersBackupPath = `${usersPath}.bak`;
 
 function toPublicUser(user: AppUser): AppUserPublic {
   const { passwordHash: _passwordHash, ...publicUser } = user;
@@ -32,36 +33,84 @@ function defaultAdminUser(): AppUser {
   };
 }
 
-export async function readUsersCatalog(): Promise<UsersCatalog> {
-  try {
-    const raw = await readFile(usersPath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<UsersCatalog>;
-    if (parsed?.version === 1 && Array.isArray(parsed.users) && parsed.users.length > 0) {
-      return parsed as UsersCatalog;
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (!message.includes("ENOENT")) {
-      console.warn("Failed to read auth users catalog, using seed:", message);
-    }
-  }
-
-  const seed: UsersCatalog = {
+function buildSeedCatalog(): UsersCatalog {
+  return {
     version: 1,
     users: [defaultAdminUser()],
     updatedAt: new Date().toISOString()
   };
-  await writeUsersCatalog(seed);
+}
+
+function isValidCatalog(value: unknown): value is UsersCatalog {
+  if (!value || typeof value !== "object") return false;
+  const catalog = value as Partial<UsersCatalog>;
+  return catalog.version === 1 && Array.isArray(catalog.users) && catalog.users.length > 0;
+}
+
+async function readCatalogFile(filePath: string): Promise<UsersCatalog | null> {
+  try {
+    const raw = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    return isValidCatalog(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function restoreFromBackup(): Promise<UsersCatalog | null> {
+  const backup = await readCatalogFile(usersBackupPath);
+  if (!backup) return null;
+  await writeUsersCatalog(backup, { skipBackup: true });
+  console.warn("Restored auth users catalog from backup");
+  return backup;
+}
+
+async function writeUsersCatalogAtomic(catalog: UsersCatalog, skipBackup = false) {
+  await ensureAuthDir();
+  const payload: UsersCatalog = { ...catalog, updatedAt: new Date().toISOString() };
+  const content = JSON.stringify(payload, null, 2);
+  const tmpPath = `${usersPath}.tmp`;
+
+  if (!skipBackup) {
+    try {
+      await copyFile(usersPath, usersBackupPath);
+    } catch {
+      // no previous file yet
+    }
+  }
+
+  await writeFile(tmpPath, content, "utf8");
+  await rename(tmpPath, usersPath);
+}
+
+export async function readUsersCatalog(): Promise<UsersCatalog> {
+  await ensureAuthDir();
+
+  const existing = await readCatalogFile(usersPath);
+  if (existing) return existing;
+
+  const restored = await restoreFromBackup();
+  if (restored) return restored;
+
+  try {
+    await readFile(usersPath, "utf8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("ENOENT")) {
+      const seed = buildSeedCatalog();
+      await writeUsersCatalogAtomic(seed, true);
+      return seed;
+    }
+  }
+
+  console.error("Auth users catalog is missing or invalid and backup restore failed");
+  const seed = buildSeedCatalog();
+  await writeUsersCatalogAtomic(seed, true);
   return seed;
 }
 
-export async function writeUsersCatalog(catalog: UsersCatalog) {
-  await ensureAuthDir();
-  await writeFile(
-    usersPath,
-    JSON.stringify({ ...catalog, updatedAt: new Date().toISOString() }, null, 2),
-    "utf8"
-  );
+export async function writeUsersCatalog(catalog: UsersCatalog, options?: { skipBackup?: boolean }) {
+  await writeUsersCatalogAtomic(catalog, options?.skipBackup);
 }
 
 export async function listPublicUsers(): Promise<AppUserPublic[]> {
