@@ -50,7 +50,7 @@ const offices: OfficeCard[] = [
     title: "Обучение менеджеров",
     description: "Онбординг и тренировочный кабинет: материалы, практика, симуляции и контроль прогресса.",
     icon: BookOpen,
-    status: "soon",
+    status: "active",
     accent: "text-rose-600 bg-rose-50"
   }
 ];
