@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
+import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
+import { buildTrainingOverview } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { ProductTrainingModule, TrainingOverview, TrainingStatus, UserTrainingProgress } from "@/types/training";
 
@@ -98,8 +100,21 @@ function ProductCard({
 
 function TrainingHubContent() {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
-  const [data, setData] = useState<HubData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fallbackData = useMemo<HubData>(() => {
+    const fallbackProducts = createTrainingCatalogSeed().products;
+    const fallbackProgress: UserTrainingProgress = {
+      userId: user?.id ?? "anna",
+      userName: user?.name ?? "Анна",
+      products: [],
+      attempts: []
+    };
+    return {
+      products: fallbackProducts,
+      progress: fallbackProgress,
+      overview: buildTrainingOverview(fallbackProducts, fallbackProgress)
+    };
+  }, [user?.id, user?.name]);
+  const [data, setData] = useState<HubData>(fallbackData);
 
   useEffect(() => {
     if (!user) return;
@@ -109,14 +124,18 @@ function TrainingHubContent() {
       fetch(`/api/training/progress?userId=${user.id}`).then((response) => response.json())
     ])
       .then(([productsData, progressData]) => {
-        setData({
-          products: productsData.products,
-          progress: progressData.progress,
-          overview: progressData.overview
-        });
+        if (Array.isArray(productsData.products) && progressData?.progress && progressData?.overview) {
+          setData({
+            products: productsData.products,
+            progress: progressData.progress,
+            overview: progressData.overview
+          });
+        }
       })
-      .finally(() => setLoading(false));
-  }, [user]);
+      .catch(() => {
+        setData(fallbackData);
+      });
+  }, [fallbackData, user]);
 
   const markStarted = async (productId: string) => {
     if (!user) return;
@@ -127,7 +146,7 @@ function TrainingHubContent() {
     });
   };
 
-  if (userLoading || loading || !data || !user) {
+  if (userLoading || !user) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка модулей обучения...</div>;
   }
 

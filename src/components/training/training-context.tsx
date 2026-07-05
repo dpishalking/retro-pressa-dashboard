@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { trainingUsers } from "@/data/training-seed";
 import type { TrainingUser } from "@/types/training";
 
 type TrainingContextValue = {
@@ -16,9 +17,9 @@ const TrainingContext = createContext<TrainingContextValue | null>(null);
 const STORAGE_KEY = "retro-pressa-training-user";
 
 export function TrainingProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<TrainingUser[]>([]);
-  const [userId, setUserIdState] = useState<string>("anna");
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<TrainingUser[]>(trainingUsers);
+  const [userId, setUserIdState] = useState<string>(trainingUsers[0]?.id ?? "anna");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -26,7 +27,14 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
 
     fetch("/api/training/users")
       .then((response) => response.json())
-      .then((data: { users: TrainingUser[] }) => setUsers(data.users))
+      .then((data: { users: TrainingUser[] }) => {
+        if (Array.isArray(data.users) && data.users.length > 0) {
+          setUsers(data.users);
+        }
+      })
+      .catch(() => {
+        setUsers(trainingUsers);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -35,7 +43,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, nextUserId);
   };
 
-  const user = useMemo(() => users.find((item) => item.id === userId) ?? null, [users, userId]);
+  const user = useMemo(() => users.find((item) => item.id === userId) ?? users[0] ?? null, [users, userId]);
   const isAdmin = user?.role === "admin";
 
   return (

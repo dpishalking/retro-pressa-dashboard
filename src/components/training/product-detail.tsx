@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, FileText, Link2, PlayCircle } from "lucide-react";
+import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import type { ProductTrainingModule } from "@/types/training";
@@ -112,17 +113,29 @@ function MaterialsSection({ product }: { product: ProductTrainingModule }) {
 
 function ProductDetailContent({ productId }: { productId: string }) {
   const { user } = useTrainingUser();
-  const [product, setProduct] = useState<ProductTrainingModule | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fallbackProduct = useMemo(
+    () => createTrainingCatalogSeed().products.find((item) => item.id === productId) ?? null,
+    [productId]
+  );
+  const [product, setProduct] = useState<ProductTrainingModule | null>(fallbackProduct);
+
+  useEffect(() => {
+    fetch(`/api/training/products/${productId}`)
+      .then((response) => response.json())
+      .then((data: { product: ProductTrainingModule }) => {
+        if (data?.product) {
+          setProduct(data.product);
+        }
+      })
+      .catch(() => {
+        if (fallbackProduct) {
+          setProduct(fallbackProduct);
+        }
+      });
+  }, [fallbackProduct, productId]);
 
   useEffect(() => {
     if (!user) return;
-
-    fetch(`/api/training/products/${productId}`)
-      .then((response) => response.json())
-      .then((data: { product: ProductTrainingModule }) => setProduct(data.product))
-      .finally(() => setLoading(false));
-
     void fetch("/api/training/progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -130,7 +143,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
     });
   }, [productId, user]);
 
-  if (loading || !product) {
+  if (!product) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка материала...</div>;
   }
 
