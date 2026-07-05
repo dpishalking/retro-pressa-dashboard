@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { TrainingProvider, UserSwitcher } from "@/components/training/training-context";
+import { TrainingProvider } from "@/components/training/training-context";
 
 type TrainingLayoutProps = {
   children: React.ReactNode;
@@ -42,7 +42,6 @@ export function TrainingLayout({
             ) : null}
           </div>
           <div className="flex flex-col items-start gap-3 lg:items-end">
-            <UserSwitcher />
             {actions}
           </div>
         </div>
