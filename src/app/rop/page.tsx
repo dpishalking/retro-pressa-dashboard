@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardApp } from "@/components/dashboard-ui";
+import { RopHub } from "@/components/rop-hub";
 
 export const metadata: Metadata = {
   title: "Инструменты РОП — Retro Pressa",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function RopPage() {
-  return <DashboardApp mode="rop" initialTab="Данные и настройки" />;
+  return <RopHub />;
 }

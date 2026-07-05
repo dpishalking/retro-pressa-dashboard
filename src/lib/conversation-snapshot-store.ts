@@ -28,6 +28,7 @@ export type ConversationSnapshotHistoryItem = {
   importedAt: string;
   source: ConversationSnapshotSource;
   label: string;
+  dashboard: ConversationDashboardMetrics;
   dialogs: number;
   conversion: number;
   qualityScore: number;
@@ -94,6 +95,7 @@ export async function listConversationSnapshotHistory(limit = 14): Promise<Conve
     importedAt: snapshot.importedAt,
     source: snapshot.source,
     label: snapshot.label,
+    dashboard: snapshot.dashboard,
     dialogs: snapshot.dashboard.totalDialogs,
     conversion: snapshot.dashboard.orderConversion,
     qualityScore: snapshot.dashboard.qualityScore,
