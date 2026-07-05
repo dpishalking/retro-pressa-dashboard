@@ -7,6 +7,7 @@ import type { TrainingUser } from "@/types/training";
 type TrainingContextValue = {
   user: TrainingUser | null;
   isAdmin: boolean;
+  isSupervisor: boolean;
   loading: boolean;
 };
 
@@ -25,9 +26,10 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
 
   const user = useMemo(() => (appUser ? appUserToTrainingUser(appUser) : null), [appUser]);
   const isAdmin = appUser?.accessLevel === "admin";
+  const isSupervisor = isAdmin || appUser?.accessLevel === "rop";
 
   return (
-    <TrainingContext.Provider value={{ user, isAdmin, loading }}>
+    <TrainingContext.Provider value={{ user, isAdmin, isSupervisor, loading }}>
       {children}
     </TrainingContext.Provider>
   );

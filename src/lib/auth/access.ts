@@ -22,6 +22,10 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
     return accessLevel === "admin";
   }
 
+  if (normalized.startsWith("/training/supervisors")) {
+    return accessLevel === "admin" || accessLevel === "rop";
+  }
+
   const allowed = ACCESS_ROUTE_PREFIXES[accessLevel];
   if (allowed === "*") return true;
 

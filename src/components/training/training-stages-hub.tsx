@@ -6,9 +6,12 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { TrainingLayout } from "@/components/training/training-layout";
+import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
+
+type HubTab = "my" | "trainees";
 
 function StageCard({ stage, index }: { stage: TrainingStageOverview; index: number }) {
   const config = TRAINING_STAGES.find((item) => item.id === stage.id);
@@ -45,7 +48,7 @@ function StageCard({ stage, index }: { stage: TrainingStageOverview; index: numb
   );
 }
 
-function StagesContent() {
+function MyTrainingContent() {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
   const [overview, setOverview] = useState<TrainingOverview | null>(null);
 
@@ -79,7 +82,10 @@ function StagesContent() {
     <>
       <section className="card mb-6 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-black text-slate-950">Путь нового менеджера</h2>
+          <div>
+            <h2 className="text-2xl font-black text-slate-950">Путь нового менеджера</h2>
+            <p className="mt-2 text-sm text-slate-600">{user.name}, ваш прогресс по всем этапам обучения.</p>
+          </div>
           <div className="rounded-2xl bg-rose-50 px-6 py-4 text-center">
             <p className="text-xs font-bold uppercase tracking-wide text-rose-600">Общий прогресс</p>
             <p className="mt-1 text-3xl font-black text-slate-950">{overview?.totalStagesPercent ?? 0}%</p>
@@ -112,6 +118,38 @@ function StagesContent() {
           </Link>
         </section>
       ) : null}
+    </>
+  );
+}
+
+function StagesContent() {
+  const { isSupervisor } = useTrainingUser();
+  const [tab, setTab] = useState<HubTab>("my");
+
+  if (!isSupervisor) {
+    return <MyTrainingContent />;
+  }
+
+  return (
+    <>
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("my")}
+          className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "my" ? "bg-rose-600 text-white" : "bg-white text-slate-700"}`}
+        >
+          Моё обучение
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("trainees")}
+          className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "trainees" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
+        >
+          Стажёры
+        </button>
+      </div>
+
+      {tab === "my" ? <MyTrainingContent /> : <TrainingSupervisorsPanel />}
     </>
   );
 }

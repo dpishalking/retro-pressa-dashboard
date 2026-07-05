@@ -69,6 +69,11 @@ export async function listPublicUsers(): Promise<AppUserPublic[]> {
   return catalog.users.map(toPublicUser);
 }
 
+export async function listTraineeUsers(): Promise<AppUserPublic[]> {
+  const catalog = await readUsersCatalog();
+  return catalog.users.filter((user) => user.accessLevel === "mop").map(toPublicUser);
+}
+
 export async function findUserByLogin(login: string): Promise<AppUser | null> {
   const catalog = await readUsersCatalog();
   const normalized = login.trim().toLowerCase();

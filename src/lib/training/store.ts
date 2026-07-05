@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { findUserById } from "@/lib/auth/store";
 import { createTrainingCatalogSeed, trainingUsers, type TrainingCatalog } from "@/data/training-seed";
 import { applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
 import { applySheetContentToCatalog } from "@/data/training-sheet-content";
@@ -105,12 +106,13 @@ export async function deleteProduct(id: string) {
   return true;
 }
 
-function createEmptyProgress(user: TrainingUser): UserTrainingProgress {
+function createEmptyProgress(userId: string, userName: string): UserTrainingProgress {
   return {
-    userId: user.id,
-    userName: user.name,
+    userId,
+    userName,
     products: [],
     modules: [],
+    botScenarios: [],
     attempts: []
   };
 }
@@ -124,6 +126,7 @@ function normalizeProgress(parsed: Partial<UserTrainingProgress>, userId: string
     userName: parsed.userName ?? userId,
     products: parsed.products,
     modules: Array.isArray(parsed.modules) ? parsed.modules : [],
+    botScenarios: Array.isArray(parsed.botScenarios) ? parsed.botScenarios : [],
     attempts: parsed.attempts
   };
 }
@@ -146,14 +149,26 @@ export async function writeUserProgress(progress: UserTrainingProgress) {
   await writeFile(progressFilePath(progress.userId), JSON.stringify(progress, null, 2), "utf8");
 }
 
-export async function getOrCreateUserProgress(userId: string): Promise<UserTrainingProgress> {
-  const user = trainingUsers.find((item) => item.id === userId);
-  if (!user) throw new Error("User not found");
+async function resolveProgressUser(userId: string, userName?: string) {
+  const authUser = await findUserById(userId);
+  const seedUser = trainingUsers.find((item) => item.id === userId);
+  const name = userName ?? authUser?.name ?? seedUser?.name ?? userId;
+  return { userId, userName: name };
+}
 
+export async function getOrCreateUserProgress(userId: string, userName?: string): Promise<UserTrainingProgress> {
   const existing = await readUserProgress(userId);
-  if (existing) return existing;
+  const resolved = await resolveProgressUser(userId, userName);
 
-  const created = createEmptyProgress(user);
+  if (existing) {
+    if (existing.userName !== resolved.userName) {
+      existing.userName = resolved.userName;
+      await writeUserProgress(existing);
+    }
+    return existing;
+  }
+
+  const created = createEmptyProgress(resolved.userId, resolved.userName);
   await writeUserProgress(created);
   return created;
 }
@@ -357,23 +372,76 @@ export async function getTrainingOverview(userId: string): Promise<TrainingOverv
   return buildTrainingOverview(products, crmModules, practiceModules, progress);
 }
 
+export async function markBotScenarioStarted(userId: string, scenarioId: string) {
+  const progress = await getOrCreateUserProgress(userId);
+  const now = new Date().toISOString();
+  const scenarios = progress.botScenarios ?? [];
+  const existing = scenarios.find((item) => item.scenarioId === scenarioId);
+
+  if (!existing) {
+    scenarios.push({
+      scenarioId,
+      status: "in_progress",
+      startedAt: now
+    });
+  } else if (existing.status === "not_started") {
+    existing.status = "in_progress";
+    existing.startedAt = existing.startedAt ?? now;
+  }
+
+  progress.botScenarios = scenarios;
+  await writeUserProgress(progress);
+  return progress;
+}
+
+export async function markBotScenarioCompleted(userId: string, scenarioId: string) {
+  const progress = await getOrCreateUserProgress(userId);
+  const now = new Date().toISOString();
+  const scenarios = progress.botScenarios ?? [];
+  const existing = scenarios.find((item) => item.scenarioId === scenarioId);
+
+  if (!existing) {
+    scenarios.push({
+      scenarioId,
+      status: "completed",
+      startedAt: now,
+      completedAt: now
+    });
+  } else {
+    existing.status = "completed";
+    existing.startedAt = existing.startedAt ?? now;
+    existing.completedAt = now;
+  }
+
+  progress.botScenarios = scenarios;
+  await writeUserProgress(progress);
+  return progress;
+}
+
 export async function listAllManagerProgress() {
-  const [products, crmModules, practiceModules] = await Promise.all([
+  const { listTraineeUsers } = await import("@/lib/auth/store");
+  const [products, crmModules, practiceModules, trainees] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
-    listTrackModules("practice")
+    listTrackModules("practice"),
+    listTraineeUsers()
   ]);
-  const managers = trainingUsers.filter((user) => user.role === "manager");
+
   const rows = await Promise.all(
-    managers.map(async (manager) => {
-      const progress = await getOrCreateUserProgress(manager.id);
+    trainees.map(async (trainee) => {
+      const progress = await getOrCreateUserProgress(trainee.id, trainee.name);
       return {
-        manager,
+        manager: {
+          id: trainee.id,
+          name: trainee.name,
+          role: "manager" as const
+        },
         progress,
         overview: buildTrainingOverview(products, crmModules, practiceModules, progress)
       };
     })
   );
+
   return rows;
 }
 

@@ -133,11 +133,19 @@ export type TrackModuleProgress = {
   attemptCount: number;
 };
 
+export type BotScenarioProgress = {
+  scenarioId: string;
+  status: TrainingStatus;
+  startedAt?: string;
+  completedAt?: string;
+};
+
 export type UserTrainingProgress = {
   userId: string;
   userName: string;
   products: ProductProgress[];
   modules: TrackModuleProgress[];
+  botScenarios?: BotScenarioProgress[];
   attempts: UserQuizAttempt[];
 };
 
@@ -189,4 +197,46 @@ export type TrainingOverview = {
   remainingProductIds: string[];
   stages: TrainingStageOverview[];
   totalStagesPercent: number;
+};
+
+export type ManagerTrainingReport = {
+  user: {
+    id: string;
+    login: string;
+    name: string;
+    active: boolean;
+  };
+  overview: TrainingOverview;
+  products: {
+    id: string;
+    title: string;
+    status: TrainingStatus;
+    bestScorePercent?: number;
+    attemptCount: number;
+    lastAttemptAt?: string;
+  }[];
+  crmModules: {
+    id: string;
+    title: string;
+    status: TrainingStatus;
+    bestScorePercent?: number;
+    attemptCount: number;
+    lastAttemptAt?: string;
+  }[];
+  practiceModules: {
+    id: string;
+    title: string;
+    status: TrainingStatus;
+    bestScorePercent?: number;
+    attemptCount: number;
+    lastAttemptAt?: string;
+  }[];
+  botScenarios: {
+    id: string;
+    title: string;
+    status: TrainingStatus;
+    startedAt?: string;
+    completedAt?: string;
+  }[];
+  lastActivityAt?: string;
 };
