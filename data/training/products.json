@@ -542,6 +542,282 @@
               "isCorrect": false
             }
           ]
+        },
+        {
+          "id": "personal-magazine-q4",
+          "text": "С чего начинается книга жизни?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "personal-magazine-q4-a1",
+              "text": "С пустого альбома без дат",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q4-a2",
+              "text": "С газеты за день, месяц и год рождения",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q4-a3",
+              "text": "С одной фотографии без текста",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q5",
+          "text": "Что мы продаём по смыслу?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "personal-magazine-q5-a1",
+              "text": "Только полиграфию без истории",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q5-a2",
+              "text": "Ощущение прожитой жизни и уважение к пути человека",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q5-a3",
+              "text": "Обычный фотоальбом",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q6",
+          "text": "Какая ключевая идея продукта?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "personal-magazine-q6-a1",
+              "text": "Собрать только семейные фотографии",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q6-a2",
+              "text": "Показать жизнь человека через атмосферу каждого года",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q6-a3",
+              "text": "Заменить поздравление открыткой",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q7",
+          "text": "Когда продукт особенно силён?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "personal-magazine-q7-a1",
+              "text": "Только на детских праздниках",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q7-a2",
+              "text": "На юбилеях и больших личных датах",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q7-a3",
+              "text": "Только для корпоративных клиентов без семьи",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q8",
+          "text": "Сколько газетных блоков может быть у человека 80 лет?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "personal-magazine-q8-a1",
+              "text": "Только один блок на всю книгу",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q8-a2",
+              "text": "До 80 — по одному на каждый год жизни",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q8-a3",
+              "text": "Не больше трёх блоков",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q9",
+          "text": "Откуда желательно взять первую газету?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "personal-magazine-q9-a1",
+              "text": "Из любого случайного города",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q9-a2",
+              "text": "Из места рождения человека",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q9-a3",
+              "text": "Только из текущего адреса",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q10",
+          "text": "Как отработать возражение «слишком объёмно»?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "personal-magazine-q10-a1",
+              "text": "Сказать, что объём не имеет значения",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q10-a2",
+              "text": "Объяснить, что чем длиннее жизнь, тем глубже и сильнее эффект",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q10-a3",
+              "text": "Предложить убрать большую часть лет",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q11",
+          "text": "Какой главный эмоциональный результат у получателя?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "personal-magazine-q11-a1",
+              "text": "Что подарок был выбран наугад",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q11-a2",
+              "text": "Что его жизнь — целая история, а не набор случайных лет",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q11-a3",
+              "text": "Что это просто печатный артефакт",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q12",
+          "text": "Какая полезная фраза в продаже?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "personal-magazine-q12-a1",
+              "text": "«Это самый дешёвый вариант поздравления»",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q12-a2",
+              "text": "«Это подарок, который показывает целую эпоху жизни человека»",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q12-a3",
+              "text": "«Это обычная газета без дат»",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q13",
+          "text": "Кому ещё подходит продукт кроме юбиляра?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "personal-magazine-q13-a1",
+              "text": "Только подросткам",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q13-a2",
+              "text": "Родителям, бабушке, дедушке, руководителю, учителю",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q13-a3",
+              "text": "Только коллегам одного отдела",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q14",
+          "text": "Что происходит за праздничным столом?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "personal-magazine-q14-a1",
+              "text": "Подарок сразу убирают в шкаф",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q14-a2",
+              "text": "Семья листает годы, вспоминает и обсуждает истории",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q14-a3",
+              "text": "Никто не открывает книгу",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "personal-magazine-q15",
+          "text": "Что важно не говорить клиенту?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "personal-magazine-q15-a1",
+              "text": "«Мы продаём опыт проживания жизни заново через время»",
+              "isCorrect": false
+            },
+            {
+              "id": "personal-magazine-q15-a2",
+              "text": "«Мы продаём просто книгу из газет»",
+              "isCorrect": true
+            },
+            {
+              "id": "personal-magazine-q15-a3",
+              "text": "«Книга собирается по годам жизни»",
+              "isCorrect": false
+            }
+          ]
         }
       ],
       "createdAt": "2026-07-05T10:23:39.092Z",
@@ -674,6 +950,282 @@
             {
               "id": "retro-newspaper-q3-a3",
               "text": "Только открытка",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q4",
+          "text": "Чем персонализированная газета отличается от архивной?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "retro-newspaper-q4-a1",
+              "text": "Мы только ищем газету в архиве",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q4-a2",
+              "text": "Мы создаём новое издание с нуля, а не ищем старую газету в архиве",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q4-a3",
+              "text": "Мы продаём PDF без персонализации",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q5",
+          "text": "Какая ключевая идея продукта?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "retro-newspaper-q5-a1",
+              "text": "Сделать главным героем случайного политика",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q5-a2",
+              "text": "Сделать человека героем собственной газеты",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q5-a3",
+              "text": "Сделать выпуск только про компанию без людей",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q6",
+          "text": "Что обязательно есть на первой полосе?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "retro-newspaper-q6-a1",
+              "text": "Только прайс-лист услуг",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q6-a2",
+              "text": "Фотография поздравляемого и главная статья о нём",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q6-a3",
+              "text": "Пустая страница для подписей",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q7",
+          "text": "Для каких поводов подходит продукт?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "retro-newspaper-q7-a1",
+              "text": "Только для новогодних открыток",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q7-a2",
+              "text": "День рождения, свадьба, корпоратив, выпускной, выход на пенсию",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q7-a3",
+              "text": "Только для B2B без повода",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q8",
+          "text": "Какой срок подготовки макета указан на сайте?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "retro-newspaper-q8-a1",
+              "text": "Только через 3 месяца",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q8-a2",
+              "text": "Макет может быть готов за 24 часа",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q8-a3",
+              "text": "Только в день праздника без подготовки",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q9",
+          "text": "Как выглядит процесс для клиента?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "retro-newspaper-q9-a1",
+              "text": "Клиент сам верстает газету без помощи",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q9-a2",
+              "text": "Анкета и фото → дизайнер → превью → правки → PDF или печать",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q9-a3",
+              "text": "Только устное поздравление без макета",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q10",
+          "text": "Какой главный эмоциональный триггер?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "retro-newspaper-q10-a1",
+              "text": "Сравнение цены с конкурентами",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q10-a2",
+              "text": "Эффект «это про меня?» когда человек видит себя на первой полосе",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q10-a3",
+              "text": "Количество страниц без содержания",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q11",
+          "text": "Что мы продаём по смыслу?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "retro-newspaper-q11-a1",
+              "text": "Только листы бумаги",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q11-a2",
+              "text": "Момент, когда человек видит себя главным героем издания",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q11-a3",
+              "text": "Стандартный шаблон без личных деталей",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q12",
+          "text": "Как ответить на «у нас мало материала»?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "retro-newspaper-q12-a1",
+              "text": "Отказать клиенту сразу",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q12-a2",
+              "text": "Объяснить, что выпуск можно собрать без лишнего стресса, мы помогаем",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q12-a3",
+              "text": "Сказать, что без 50 фото нельзя начать",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q13",
+          "text": "Какие форматы выпуска возможны?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "retro-newspaper-q13-a1",
+              "text": "Только устный рассказ",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q13-a2",
+              "text": "PDF для печати или готовая напечатанная газета",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q13-a3",
+              "text": "Только открытка формата А6",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q14",
+          "text": "Что делают гости на празднике?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "retro-newspaper-q14-a1",
+              "text": "Игнорируют подарок",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q14-a2",
+              "text": "Читают заголовки, смеются, обсуждают человека",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q14-a3",
+              "text": "Сразу выбрасывают выпуск",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "retro-newspaper-q15",
+          "text": "Короткая формулировка для менеджера?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "retro-newspaper-q15-a1",
+              "text": "Обычная газета из архива",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-newspaper-q15-a2",
+              "text": "Личный газетный выпуск о человеке, созданный по фото и историям",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-newspaper-q15-a3",
+              "text": "Корпоративный буклет без героя",
               "isCorrect": false
             }
           ]
@@ -819,6 +1371,282 @@
               "isCorrect": false
             }
           ]
+        },
+        {
+          "id": "gift-edition-q4",
+          "text": "Чем журнал отличается от персонализированной газеты?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "gift-edition-q4-a1",
+              "text": "Это один и тот же продукт",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q4-a2",
+              "text": "Журнал — целый номер о человеке, газета — яркий выпуск с первой полосой",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q4-a3",
+              "text": "Журнал всегда без фотографий",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q5",
+          "text": "Как указана стоимость в материалах?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "gift-edition-q5-a1",
+              "text": "Фиксированно 5€ за весь журнал",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q5-a2",
+              "text": "От 16 страниц, 15€ за страницу",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q5-a3",
+              "text": "Только бесплатный PDF",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q6",
+          "text": "Что можно включить в журнал?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "gift-edition-q6-a1",
+              "text": "Только один абзац текста",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q6-a2",
+              "text": "Семью, детство, достижения, интервью, поздравления, фото",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q6-a3",
+              "text": "Только логотип компании",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q7",
+          "text": "Сколько времени занимает производство?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "gift-edition-q7-a1",
+              "text": "Один час",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q7-a2",
+              "text": "От 10 рабочих дней после получения материалов",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q7-a3",
+              "text": "Не меньше полугода без исключений",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q8",
+          "text": "Кому особенно подходит именной журнал?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "gift-edition-q8-a1",
+              "text": "Только детям до 5 лет",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q8-a2",
+              "text": "Юбиляру, руководителю, родителю на большой личный или семейный повод",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q8-a3",
+              "text": "Только для массовых раздач без имени",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q9",
+          "text": "Что входит в стоимость по материалам?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "gift-edition-q9-a1",
+              "text": "Только печать без редактуры",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q9-a2",
+              "text": "Тексты, редактура, верстка, правки, типография и доставка",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q9-a3",
+              "text": "Только консультация без издания",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q10",
+          "text": "Какая ключевая идея продукта?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "gift-edition-q10-a1",
+              "text": "Сделать стандартный каталог товаров",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q10-a2",
+              "text": "Сделать человека героем собственного глянцевого журнала",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q10-a3",
+              "text": "Заменить поздравление SMS-сообщением",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q11",
+          "text": "Как отработать «не будет ли слишком пафосно»?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "gift-edition-q11-a1",
+              "text": "Сказать, что журнал всегда выглядит холодно",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q11-a2",
+              "text": "Показать признание и значимость человека, а не хвастовство",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q11-a3",
+              "text": "Убрать все личные истории",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q12",
+          "text": "Главная формулировка для продажи?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "gift-edition-q12-a1",
+              "text": "«Это обычная брошюра»",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q12-a2",
+              "text": "«О тебе можно написать целый журнал»",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q12-a3",
+              "text": "«Это просто печать на бумаге»",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q13",
+          "text": "Когда особенно уместен сбор материалов от нескольких людей?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "gift-edition-q13-a1",
+              "text": "Только когда один человек без фото",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q13-a2",
+              "text": "Когда подарок готовит семья, коллектив или друзья",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q13-a3",
+              "text": "Только для анонимных заказов",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q14",
+          "text": "Что клиенту не нужно делать самому?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "gift-edition-q14-a1",
+              "text": "Прислать хотя бы одну фотографию",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q14-a2",
+              "text": "Писать статьи, верстать и полностью обрабатывать все фото",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q14-a3",
+              "text": "Выбрать героя журнала",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "gift-edition-q15",
+          "text": "Когда продукт хорошо поднимает чек?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "gift-edition-q15-a1",
+              "text": "Когда нужен самый простой сувенир",
+              "isCorrect": false
+            },
+            {
+              "id": "gift-edition-q15-a2",
+              "text": "Когда нужен премиальный акцент на большом поводе",
+              "isCorrect": true
+            },
+            {
+              "id": "gift-edition-q15-a3",
+              "text": "Когда клиенту нужен только PDF за 5 минут",
+              "isCorrect": false
+            }
+          ]
         }
       ],
       "createdAt": "2026-07-05T10:23:39.092Z",
@@ -951,6 +1779,282 @@
             {
               "id": "family-history-q3-a3",
               "text": "Только для быстрых подарков",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q4",
+          "text": "Какие два формата сбора материала есть?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "family-history-q4-a1",
+              "text": "Только переписка в мессенджере",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q4-a2",
+              "text": "Большая анкета и живое интервью с редактором",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q4-a3",
+              "text": "Только один короткий вопрос",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q5",
+          "text": "Главный смысл продукта?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "family-history-q5-a1",
+              "text": "Заменить живое общение в семье",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q5-a2",
+              "text": "Сохранить историю, пока её ещё можно услышать из первых уст",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q5-a3",
+              "text": "Сделать книгу только из фото без текста",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q6",
+          "text": "Ключевая идея книги воспоминаний?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "family-history-q6-a1",
+              "text": "Сделать временный буклет на один вечер",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q6-a2",
+              "text": "Превратить личную или семейную память в настоящее наследие",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q6-a3",
+              "text": "Собрать только список дат без историй",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q7",
+          "text": "Почему нельзя откладывать заказ?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "family-history-q7-a1",
+              "text": "Книги всегда дешевле в последний момент",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q7-a2",
+              "text": "Истории и детали могут исчезнуть вместе с человеком",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q7-a3",
+              "text": "Анкета не имеет значения",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q8",
+          "text": "Что мы продаём по смыслу?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "family-history-q8-a1",
+              "text": "Только переплёт без содержания",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q8-a2",
+              "text": "Сохранённую жизнь и семейную память, а не просто полиграфию",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q8-a3",
+              "text": "Обычный блокнот",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q9",
+          "text": "В каком формате выпускается книга?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "family-history-q9-a1",
+              "text": "Только электронный файл",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q9-a2",
+              "text": "Настоящая книга в твёрдом переплёте",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q9-a3",
+              "text": "Только газетный лист",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q10",
+          "text": "Сколько экземпляров можно напечатать?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "family-history-q10-a1",
+              "text": "Только один, без исключений",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q10-a2",
+              "text": "Один или несколько — для разных членов семьи",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q10-a3",
+              "text": "Не меньше 100 обязательно",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q11",
+          "text": "Как ответить на «у нас мало материала»?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "family-history-q11-a1",
+              "text": "Сразу отказать в проекте",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q11-a2",
+              "text": "Редактор помогает собрать, структурировать и оформить историю",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q11-a3",
+              "text": "Сказать, что без архива на 200 страниц нельзя",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q12",
+          "text": "Какую эмоцию должен почувствовать герой книги?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "family-history-q12-a1",
+              "text": "«Меня быстро поздравили формально»",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q12-a2",
+              "text": "«Меня услышали. Мою историю сохранили»",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q12-a3",
+              "text": "«Это случайный подарок»",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q13",
+          "text": "Когда чаще всего покупают этот продукт?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "family-history-q13-a1",
+              "text": "Только на 18-летие",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q13-a2",
+              "text": "Перед юбилеем бабушки/дедушки или когда говорят «надо бы записать»",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q13-a3",
+              "text": "Только без повода",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q14",
+          "text": "Почему книга ценнее разовой газеты для семьи?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "family-history-q14-a1",
+              "text": "Потому что она всегда тоньше",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q14-a2",
+              "text": "Стоит на полке годами как часть семейной библиотеки",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q14-a3",
+              "text": "Потому что в ней нет фотографий",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "family-history-q15",
+          "text": "С чего начинается работа над книгой?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "family-history-q15-a1",
+              "text": "С выбора доставки без темы",
+              "isCorrect": false
+            },
+            {
+              "id": "family-history-q15-a2",
+              "text": "С выбора героя или темы: бабушка, семья, любовь, период жизни",
+              "isCorrect": true
+            },
+            {
+              "id": "family-history-q15-a3",
+              "text": "С печати пустой обложки",
               "isCorrect": false
             }
           ]
@@ -1089,6 +2193,282 @@
               "isCorrect": false
             }
           ]
+        },
+        {
+          "id": "company-history-q4",
+          "text": "Какая ключевая идея семейной подписки?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "company-history-q4-a1",
+              "text": "Отправлять случайные фото без структуры",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q4-a2",
+              "text": "Превратить разрозненные события семьи в живую бумажную хронику",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q4-a3",
+              "text": "Заменить семейные звонки полностью",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q5",
+          "text": "Какую периодичность может выбрать семья?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "company-history-q5-a1",
+              "text": "Только раз в 10 лет",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q5-a2",
+              "text": "Раз в месяц, квартал, полгода или год",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q5-a3",
+              "text": "Только по будням",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q6",
+          "text": "Почему бумажная газета сильнее мессенджера для старших родственников?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "company-history-q6-a1",
+              "text": "Потому что в чатах больше текста",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q6-a2",
+              "text": "Им важнее держать в руках, читать и хранить настоящий выпуск",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q6-a3",
+              "text": "Потому что бумага всегда дешевле",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q7",
+          "text": "Что продаём по смыслу?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "company-history-q7-a1",
+              "text": "Только конверт без содержания",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q7-a2",
+              "text": "Регулярное ощущение семейной связи и памяти",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q7-a3",
+              "text": "Обычный новостной бюллетень",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q8",
+          "text": "Какую эмоцию должен получить бабушка или дедушка?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "company-history-q8-a1",
+              "text": "«Меня забыли»",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q8-a2",
+              "text": "«Меня помнят. Я всё ещё внутри этой семьи»",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q8-a3",
+              "text": "«Это рекламная листовка»",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q9",
+          "text": "Когда логично предложить подписку?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "company-history-q9-a1",
+              "text": "До первого знакомства с продуктом",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q9-a2",
+              "text": "После успешной разовой семейной газеты и сильной эмоции",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q9-a3",
+              "text": "Только если семья не хочет подарков",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q10",
+          "text": "Что можно включить в каждый выпуск?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "company-history-q10-a1",
+              "text": "Только рекламные объявления",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q10-a2",
+              "text": "Фото, новости, достижения детей, поездки, поздравления, смешные истории",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q10-a3",
+              "text": "Только пустые страницы",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q11",
+          "text": "Можно ли придумать своё название газете?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "company-history-q11-a1",
+              "text": "Нет, только одно фиксированное имя",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q11-a2",
+              "text": "Да, семья выбирает или придумывает название",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q11-a3",
+              "text": "Только на английском языке",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q12",
+          "text": "Кто превращает материалы в готовый выпуск?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "company-history-q12-a1",
+              "text": "Только получатель сам всё верстает",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q12-a2",
+              "text": "Редактор структурирует, пишет тексты и оформляет полосы",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q12-a3",
+              "text": "Никто, материалы печатаются как есть",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q13",
+          "text": "Какую эмоцию получает заказчик?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "company-history-q13-a1",
+              "text": "«Я сэкономил на поздравлении»",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q13-a2",
+              "text": "«Я сохранил кусочек нашей семейной жизни, а не просто отправил сообщение»",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q13-a3",
+              "text": "«Это было безлично»",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q14",
+          "text": "Кому особенно подходит подписка?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "company-history-q14-a1",
+              "text": "Только соседям в одном подъезде",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q14-a2",
+              "text": "Семьям, которые живут в разных городах и странах",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q14-a3",
+              "text": "Только коллегам одного офиса",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "company-history-q15",
+          "text": "Что происходит с семейными новостями в чатах без газеты?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "company-history-q15-a1",
+              "text": "Они автоматически становятся семейным архивом",
+              "isCorrect": false
+            },
+            {
+              "id": "company-history-q15-a2",
+              "text": "Они теряются и через время почти не вспоминаются",
+              "isCorrect": true
+            },
+            {
+              "id": "company-history-q15-a3",
+              "text": "Их всегда легко найти через год",
+              "isCorrect": false
+            }
+          ]
         }
       ],
       "createdAt": "2026-07-05T10:23:39.092Z",
@@ -1217,6 +2597,282 @@
               "isCorrect": false
             }
           ]
+        },
+        {
+          "id": "passport-discovery-q4",
+          "text": "Какая ключевая идея Паспорта Открытий?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "passport-discovery-q4-a1",
+              "text": "Выдать обычный travel-документ",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q4-a2",
+              "text": "Создать персональное эмоциональное приключение",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q4-a3",
+              "text": "Заменить реальную поездку полностью",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q5",
+          "text": "Для каких сценариев подходит продукт?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "passport-discovery-q5-a1",
+              "text": "Только офисная канцелярия",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q5-a2",
+              "text": "Путешествие, исследование города или семейное приключение",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q5-a3",
+              "text": "Только оплата счетов",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q6",
+          "text": "Какую задачу клиента закрывает продукт?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "passport-discovery-q6-a1",
+              "text": "Купить стандартный магазинный сувенир",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q6-a2",
+              "text": "Сделать оригинальный персональный подарок с эффектом «вау»",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q6-a3",
+              "text": "Заменить поздравление открыткой",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q7",
+          "text": "Сколько вариантов можно собрать из архива заданий?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "passport-discovery-q7-a1",
+              "text": "Только один фиксированный вариант",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q7-a2",
+              "text": "Несколько тысяч комбинаций",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q7-a3",
+              "text": "Не больше двух",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q8",
+          "text": "Что такое вариант 1 оформления?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "passport-discovery-q8-a1",
+              "text": "Полностью индивидуальный сценарий без архива",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q8-a2",
+              "text": "Готовые задания из архива",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q8-a3",
+              "text": "Только пустая обложка",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q9",
+          "text": "Что такое вариант 3 оформления?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "passport-discovery-q9-a1",
+              "text": "Только скачивание PDF без содержания",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q9-a2",
+              "text": "Работа с персональным эвент-менеджером и индивидуальными заданиями",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q9-a3",
+              "text": "Только выбор цвета обложки",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q10",
+          "text": "Кто может организовать приключение?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "passport-discovery-q10-a1",
+              "text": "Только профессиональное агентство",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q10-a2",
+              "text": "Один человек или компания",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q10-a3",
+              "text": "Только сам получатель",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q11",
+          "text": "Что даёт вариант 2?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "passport-discovery-q11-a1",
+              "text": "Только стандартный набор без персонализации",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q11-a2",
+              "text": "Подбор заданий по интересам с фото клиента",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q11-a3",
+              "text": "Только текст без заданий",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q12",
+          "text": "Что продаём вместо «ещё одного сувенира»?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "passport-discovery-q12-a1",
+              "text": "Только пластиковую обложку",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q12-a2",
+              "text": "Эмоции, впечатления и приключение",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q12-a3",
+              "text": "Обычный подарочный сертификат",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q13",
+          "text": "Кому подходит при начале нового этапа жизни?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "passport-discovery-q13-a1",
+              "text": "Только пенсионерам старше 90",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q13-a2",
+              "text": "Тем, кто открывает новый жизненный этап или путешествие",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q13-a3",
+              "text": "Только детям до 3 лет",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q14",
+          "text": "Что можно персонализировать в индивидуальном варианте?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "passport-discovery-q14-a1",
+              "text": "Только серийный номер",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q14-a2",
+              "text": "Задания и истории про человека, семью, близких",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q14-a3",
+              "text": "Только шрифт без содержания",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-discovery-q15",
+          "text": "Как ответить на «человек не любит квесты»?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "passport-discovery-q15-a1",
+              "text": "Отказать сразу",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-discovery-q15-a2",
+              "text": "Подобрать мягкий сценарий приключения под интересы человека",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-discovery-q15-a3",
+              "text": "Предложить только сложные спортивные задачи",
+              "isCorrect": false
+            }
+          ]
         }
       ],
       "createdAt": "2026-07-05T10:23:39.092Z",
@@ -1342,6 +2998,282 @@
             {
               "id": "passport-alcoholic-q3-a3",
               "text": "Заменить обычный паспорт",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q4",
+          "text": "Что такое Алкогольный паспорт по смыслу продукта?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q4-a1",
+              "text": "Официальный документ для пересечения границы",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q4-a2",
+              "text": "Персональный подарок-приключение с заданиями и дегустациями",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q4-a3",
+              "text": "Обычная бутылка без сценария",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q5",
+          "text": "Какую эмоцию должен получить человек?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q5-a1",
+              "text": "Равнодушие и формальность",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q5-a2",
+              "text": "Вау-эффект, игру и персональное приключение",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q5-a3",
+              "text": "Только чувство экономии",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q6",
+          "text": "Для каких поводов подходит продукт?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q6-a1",
+              "text": "Только детский праздник",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q6-a2",
+              "text": "День рождения, мальчишник, корпоратив, подарок другу",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q6-a3",
+              "text": "Только похоронная церемония",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q7",
+          "text": "Чем продукт отличается от бутылки алкоголя?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q7-a1",
+              "text": "Это то же самое, только в другой упаковке",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q7-a2",
+              "text": "Это сценарий, задания и эмоции, а не просто напиток",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q7-a3",
+              "text": "Это только этикетка без содержания",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q8",
+          "text": "Какие уровни персонализации возможны?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q8-a1",
+              "text": "Только один шаблон",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q8-a2",
+              "text": "От готовых заданий из архива до полностью индивидуального сценария",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q8-a3",
+              "text": "Только выбор цвета обложки",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q9",
+          "text": "Кому особенно подходит продукт?",
+          "type": "single",
+          "sortOrder": 9,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q9-a1",
+              "text": "Только детям",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q9-a2",
+              "text": "Друзьям, коллегам, брату, мужу, отцу на весёлый повод",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q9-a3",
+              "text": "Только незнакомым людям без повода",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q10",
+          "text": "Что продаём по смыслу?",
+          "type": "single",
+          "sortOrder": 10,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q10-a1",
+              "text": "Только алкоголь без истории",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q10-a2",
+              "text": "Впечатления и общий опыт, а не предмет на полке",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q10-a3",
+              "text": "Обычный сувенир",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q11",
+          "text": "Как отработать «слишком сложно организовать»?",
+          "type": "single",
+          "sortOrder": 11,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q11-a1",
+              "text": "Сказать, что клиент всё делает сам",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q11-a2",
+              "text": "Показать готовые варианты из архива и помощь в подборе",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q11-a3",
+              "text": "Отказать без объяснения",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q12",
+          "text": "Что можно включить в персональный сценарий?",
+          "type": "single",
+          "sortOrder": 12,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q12-a1",
+              "text": "Только список цен",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q12-a2",
+              "text": "Истории, шутки, задания и факты про человека",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q12-a3",
+              "text": "Только юридический текст",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q13",
+          "text": "Когда продукт особенно уместен?",
+          "type": "single",
+          "sortOrder": 13,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q13-a1",
+              "text": "Когда нужен формальный документ",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q13-a2",
+              "text": "Когда нужен оригинальный подарок с эмоцией, а не банальная бутылка",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q13-a3",
+              "text": "Когда нужен самый дешёвый сувенир",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q14",
+          "text": "Кто может быть организатором?",
+          "type": "single",
+          "sortOrder": 14,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q14-a1",
+              "text": "Только государственная организация",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q14-a2",
+              "text": "Один человек или компания друзей/коллег",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q14-a3",
+              "text": "Только сам получатель",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "passport-alcoholic-q15",
+          "text": "Как объяснить ценность клиенту в одной фразе?",
+          "type": "single",
+          "sortOrder": 15,
+          "answers": [
+            {
+              "id": "passport-alcoholic-q15-a1",
+              "text": "«Это обычная бутылка с наклейкой»",
+              "isCorrect": false
+            },
+            {
+              "id": "passport-alcoholic-q15-a2",
+              "text": "«Это не просто алкоголь, а персональное приключение в подарок»",
+              "isCorrect": true
+            },
+            {
+              "id": "passport-alcoholic-q15-a3",
+              "text": "«Это документ для таможни»",
               "isCorrect": false
             }
           ]
