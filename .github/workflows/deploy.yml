@@ -47,6 +47,10 @@ jobs:
           if [ -d data/conversation-exports ]; then
             cp -R data/conversation-exports /tmp/retro-pressa-deploy/conversation-exports
           fi
+          if [ -f data/training/products.json ]; then
+            mkdir -p /tmp/retro-pressa-deploy/training-seed
+            cp data/training/products.json /tmp/retro-pressa-deploy/training-seed/products.json
+          fi
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
@@ -113,13 +117,16 @@ jobs:
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training"
           find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"
           ln -sfn "$APP_DATA_DIR" data
           if [ -d "$APP_DIR/conversation-exports" ]; then
             cp -R "$APP_DIR/conversation-exports/." "$APP_DATA_DIR/conversation-exports/"
+          fi
+          if [ -f "$APP_DIR/training-seed/products.json" ]; then
+            cp "$APP_DIR/training-seed/products.json" "$APP_DATA_DIR/training/products.json"
           fi
           cp /tmp/retro-pressa-runtime-env.json runtime-env.json
           chmod 600 runtime-env.json

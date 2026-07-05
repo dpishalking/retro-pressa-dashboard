@@ -114,6 +114,138 @@ export const birthDateNewspaperProduct = createProductSeed({
         { id: "personal-newspaper-q3-a2", text: "Разговоры, воспоминания и ощущение заботы", isCorrect: true },
         { id: "personal-newspaper-q3-a3", text: "Равнодушие", isCorrect: false }
       ]
+    },
+    {
+      id: "personal-newspaper-q4",
+      text: "Кому этот продукт подходит особенно хорошо?",
+      type: "single",
+      sortOrder: 4,
+      answers: [
+        { id: "personal-newspaper-q4-a1", text: "Только детям до 10 лет", isCorrect: false },
+        { id: "personal-newspaper-q4-a2", text: "Папе, дедушке, руководителю и человеку, у которого «всё есть»", isCorrect: true },
+        { id: "personal-newspaper-q4-a3", text: "Только подросткам", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q5",
+      text: "Что важнее всего подчеркнуть в продаже?",
+      type: "single",
+      sortOrder: 5,
+      answers: [
+        { id: "personal-newspaper-q5-a1", text: "Что это самая дешёвая бумага на рынке", isCorrect: false },
+        { id: "personal-newspaper-q5-a2", text: "Что мы продаём не «старую газету», а эмоциональный момент за праздничным столом", isCorrect: true },
+        { id: "personal-newspaper-q5-a3", text: "Что это обязательно стилизация под ретро", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q6",
+      text: "Какую задачу клиента закрывает этот подарок?",
+      type: "single",
+      sortOrder: 6,
+      answers: [
+        { id: "personal-newspaper-q6-a1", text: "Нужен подарок, который не уберут на полку и вызовет настоящую эмоцию", isCorrect: true },
+        { id: "personal-newspaper-q6-a2", text: "Нужен универсальный канцтовар", isCorrect: false },
+        { id: "personal-newspaper-q6-a3", text: "Нужен подарок без повода и без даты", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q7",
+      text: "Как описано ключевое обещание продукта?",
+      type: "single",
+      sortOrder: 7,
+      answers: [
+        { id: "personal-newspaper-q7-a1", text: "Подарить машину времени в день рождения", isCorrect: true },
+        { id: "personal-newspaper-q7-a2", text: "Подарить цифровую подписку на новости", isCorrect: false },
+        { id: "personal-newspaper-q7-a3", text: "Подарить пустую обложку без содержания", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q8",
+      text: "Что делать, если точной газеты за нужную дату нет?",
+      type: "single",
+      sortOrder: 8,
+      answers: [
+        { id: "personal-newspaper-q8-a1", text: "Сразу отказать клиенту", isCorrect: false },
+        { id: "personal-newspaper-q8-a2", text: "Предложить следующий день или журнал за месяц и год рождения", isCorrect: true },
+        { id: "personal-newspaper-q8-a3", text: "Продать любую случайную газету без объяснения", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q9",
+      text: "Чем этот продукт принципиально отличается от сувенира?",
+      type: "single",
+      sortOrder: 9,
+      answers: [
+        { id: "personal-newspaper-q9-a1", text: "Это реальное издание из конкретной даты, а не стилизация", isCorrect: true },
+        { id: "personal-newspaper-q9-a2", text: "Это копия без привязки к дате", isCorrect: false },
+        { id: "personal-newspaper-q9-a3", text: "Это только PDF-версия для печати дома", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q10",
+      text: "Что можно дополнительно подобрать к подарку?",
+      type: "single",
+      sortOrder: 10,
+      answers: [
+        { id: "personal-newspaper-q10-a1", text: "Только прозрачный пакет", isCorrect: false },
+        { id: "personal-newspaper-q10-a2", text: "Красивую упаковку: конверт, папку или тубус", isCorrect: true },
+        { id: "personal-newspaper-q10-a3", text: "Только электронную открытку", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q11",
+      text: "Какие региональные издания упоминаются в материалах Retro Pressa?",
+      type: "single",
+      sortOrder: 11,
+      answers: [
+        { id: "personal-newspaper-q11-a1", text: "Только США и Канада", isCorrect: false },
+        { id: "personal-newspaper-q11-a2", text: "Латвия, Литва и Эстония", isCorrect: true },
+        { id: "personal-newspaper-q11-a3", text: "Только Москва", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q12",
+      text: "Куда возможна доставка по материалам Retro Pressa?",
+      type: "single",
+      sortOrder: 12,
+      answers: [
+        { id: "personal-newspaper-q12-a1", text: "Только по одному городу", isCorrect: false },
+        { id: "personal-newspaper-q12-a2", text: "По всему миру", isCorrect: true },
+        { id: "personal-newspaper-q12-a3", text: "Только самовывоз из офиса", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q13",
+      text: "Как правильно отработать возражение «не будет ли это обычным сувениром»?",
+      type: "single",
+      sortOrder: 13,
+      answers: [
+        { id: "personal-newspaper-q13-a1", text: "Сравнить цену с конкурентами", isCorrect: false },
+        { id: "personal-newspaper-q13-a2", text: "Перевести разговор на реакцию получателя: удивление, воспоминания, семейные разговоры", isCorrect: true },
+        { id: "personal-newspaper-q13-a3", text: "Сказать, что это массовый товар без истории", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q14",
+      text: "Какой вопрос полезно задать клиенту на старте?",
+      type: "single",
+      sortOrder: 14,
+      answers: [
+        { id: "personal-newspaper-q14-a1", text: "«Какой у вас бюджет на канцтовары?»", isCorrect: false },
+        { id: "personal-newspaper-q14-a2", text: "«Есть ли у вас важная дата, которую хочется вернуть?»", isCorrect: true },
+        { id: "personal-newspaper-q14-a3", text: "«Нужен ли подарок без повода?»", isCorrect: false }
+      ]
+    },
+    {
+      id: "personal-newspaper-q15",
+      text: "С чего менеджер должен начать подбор продукта?",
+      type: "single",
+      sortOrder: 15,
+      answers: [
+        { id: "personal-newspaper-q15-a1", text: "Сразу с упаковки", isCorrect: false },
+        { id: "personal-newspaper-q15-a2", text: "С повода и даты, потом уже формата", isCorrect: true },
+        { id: "personal-newspaper-q15-a3", text: "С выбора доставки без уточнения даты", isCorrect: false }
+      ]
     }
   ]
 });
