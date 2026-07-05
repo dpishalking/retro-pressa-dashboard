@@ -8,7 +8,7 @@ import { conversationIntelligenceDemo, dailyMetrics, managerMetrics, marketMetri
 import { averageInvoice, averagePaidCheck, cashRoas, dailyPlan, delta, deltaPp, invoiceConversion, invoiceRoas, paidCpl, revenuePerLead, revenuePlanCompletion, salesConversion, scenarioForecast, totalLeads } from "@/lib/metrics-engine";
 import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
-import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerInvoiceMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
@@ -229,7 +229,21 @@ type CountryInvoiceSlice = CountryInvoiceMetrics & {
   share: number;
 };
 
-function buildCountryInvoiceSlices(items: CountryInvoiceMetrics[], limit = 7): CountryInvoiceSlice[] {
+type InvoiceBreakdownItem = {
+  id: string;
+  label: string;
+  invoicesCount: number;
+  invoicesAmount: number;
+  salesCount: number;
+  revenue: number;
+};
+
+type InvoiceBreakdownSlice = InvoiceBreakdownItem & {
+  color: string;
+  share: number;
+};
+
+function buildInvoiceBreakdownSlices(items: InvoiceBreakdownItem[], limit = 7): InvoiceBreakdownSlice[] {
   const normalized = items
     .filter((item) => item.invoicesCount > 0)
     .sort((a, b) => b.invoicesCount - a.invoicesCount || b.invoicesAmount - a.invoicesAmount);
@@ -240,7 +254,8 @@ function buildCountryInvoiceSlices(items: CountryInvoiceMetrics[], limit = 7): C
   const rest = normalized.slice(limit);
   const slices = rest.length
     ? [...top, {
-      country: "Другие",
+      id: "other",
+      label: "Другие",
       invoicesCount: rest.reduce((sum, item) => sum + item.invoicesCount, 0),
       invoicesAmount: rest.reduce((sum, item) => sum + item.invoicesAmount, 0),
       salesCount: rest.reduce((sum, item) => sum + item.salesCount, 0),
@@ -255,32 +270,48 @@ function buildCountryInvoiceSlices(items: CountryInvoiceMetrics[], limit = 7): C
   }));
 }
 
-function CountryInvoicesSection({ items }: { items: CountryInvoiceMetrics[] }) {
-  const slices = buildCountryInvoiceSlices(items);
+function InvoiceBreakdownSection({
+  title,
+  subtitle,
+  items,
+  entityLabel,
+  leaderLabel,
+  emptyTitle,
+  emptySubtitle
+}: {
+  title: string;
+  subtitle: string;
+  items: InvoiceBreakdownItem[];
+  entityLabel: string;
+  leaderLabel: string;
+  emptyTitle: string;
+  emptySubtitle: string;
+}) {
+  const slices = buildInvoiceBreakdownSlices(items);
   const totalInvoices = items.reduce((sum, item) => sum + item.invoicesCount, 0);
   const totalAmount = items.reduce((sum, item) => sum + item.invoicesAmount, 0);
-  const totalCountries = items.filter((item) => item.invoicesCount > 0).length;
-  const topCountry = slices[0];
+  const totalEntities = items.filter((item) => item.invoicesCount > 0).length;
+  const topEntity = slices[0];
 
   return (
     <section className="card p-4">
-      <SectionHead title="Выставленные счета по странам" subtitle="Структура счетов по странам внутри выбранного среза" />
+      <SectionHead title={title} subtitle={subtitle} />
       {slices.length ? (
         <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)] xl:items-center">
           <div className="grid gap-4 justify-items-center">
             <div className="relative h-[280px] w-full max-w-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={slices} dataKey="invoicesCount" nameKey="country" innerRadius={76} outerRadius={108} paddingAngle={2} stroke="none">
-                    {slices.map((slice) => <Cell key={slice.country} fill={slice.color} />)}
+                  <Pie data={slices} dataKey="invoicesCount" nameKey="label" innerRadius={76} outerRadius={108} paddingAngle={2} stroke="none">
+                    {slices.map((slice) => <Cell key={slice.id} fill={slice.color} />)}
                   </Pie>
                   <Tooltip
                     content={({ active, payload }) => {
-                      const entry = payload?.[0]?.payload as CountryInvoiceSlice | undefined;
+                      const entry = payload?.[0]?.payload as InvoiceBreakdownSlice | undefined;
                       if (!active || !entry) return null;
                       return (
                         <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-lg">
-                          <div className="font-bold text-slate-950">{entry.country}</div>
+                          <div className="font-bold text-slate-950">{entry.label}</div>
                           <div className="mt-1 text-slate-600">Счета: <b className="text-slate-950">{number(entry.invoicesCount)}</b></div>
                           <div className="text-slate-600">Сумма: <b className="text-slate-950">{eur(entry.invoicesAmount)}</b></div>
                           <div className="text-slate-600">Оплачено: <b className="text-slate-950">{number(entry.salesCount)} / {eur(entry.revenue)}</b></div>
@@ -300,18 +331,18 @@ function CountryInvoicesSection({ items }: { items: CountryInvoiceMetrics[] }) {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
-              <span className="rounded-full bg-slate-100 px-3 py-1">{number(totalCountries)} стран</span>
-              {topCountry ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Лидер: {topCountry.country}</span> : null}
+              <span className="rounded-full bg-slate-100 px-3 py-1">{number(totalEntities)} {entityLabel}</span>
+              {topEntity ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">{leaderLabel}: {topEntity.label}</span> : null}
             </div>
           </div>
           <div className="grid gap-3">
             {slices.map((slice) => (
-              <div key={slice.country} className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div key={slice.id} className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} />
-                      <strong className="truncate text-sm text-slate-950">{slice.country}</strong>
+                      <strong className="truncate text-sm text-slate-950">{slice.label}</strong>
                     </div>
                     <div className="mt-1 text-sm text-slate-500">{eur(slice.invoicesAmount)} выставлено</div>
                   </div>
@@ -330,12 +361,54 @@ function CountryInvoicesSection({ items }: { items: CountryInvoiceMetrics[] }) {
       ) : (
         <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
           <div>
-            <h3 className="text-lg font-bold">Здесь появится структура по странам</h3>
-            <p className="mt-2 max-w-xl text-sm text-slate-500">После синхронизации Битрикса покажем, из каких стран пришли выставленные счета.</p>
+            <h3 className="text-lg font-bold">{emptyTitle}</h3>
+            <p className="mt-2 max-w-xl text-sm text-slate-500">{emptySubtitle}</p>
           </div>
         </div>
       )}
     </section>
+  );
+}
+
+function CountryInvoicesSection({ items }: { items: CountryInvoiceMetrics[] }) {
+  return (
+    <InvoiceBreakdownSection
+      title="Выставленные счета по странам"
+      subtitle="Структура счетов по странам внутри выбранного среза"
+      items={items.map((item) => ({
+        id: item.country,
+        label: item.country,
+        invoicesCount: item.invoicesCount,
+        invoicesAmount: item.invoicesAmount,
+        salesCount: item.salesCount,
+        revenue: item.revenue
+      }))}
+      entityLabel="стран"
+      leaderLabel="Лидер"
+      emptyTitle="Здесь появится структура по странам"
+      emptySubtitle="После синхронизации Битрикса покажем, из каких стран пришли выставленные счета."
+    />
+  );
+}
+
+function ManagerInvoicesSection({ items }: { items: ManagerInvoiceMetrics[] }) {
+  return (
+    <InvoiceBreakdownSection
+      title="Выставленные счета по менеджерам"
+      subtitle="Кто именно держит объём счетов внутри выбранного среза"
+      items={items.map((item) => ({
+        id: item.managerId,
+        label: item.manager,
+        invoicesCount: item.invoicesCount,
+        invoicesAmount: item.invoicesAmount,
+        salesCount: item.salesCount,
+        revenue: item.revenue
+      }))}
+      entityLabel="менеджеров"
+      leaderLabel="Лидер"
+      emptyTitle="Здесь появится структура по менеджерам"
+      emptySubtitle="После синхронизации Битрикса покажем, какие менеджеры формируют выставленные счета."
+    />
   );
 }
 
@@ -574,7 +647,8 @@ function Overview({
   monthlyPlan,
   daily,
   showPlan,
-  invoiceCountries
+  invoiceCountries,
+  invoiceManagers
 }: {
   current: MonthlyMetrics;
   previous: MonthlyMetrics;
@@ -582,6 +656,7 @@ function Overview({
   daily: DailyMetrics[];
   showPlan: boolean;
   invoiceCountries: CountryInvoiceMetrics[];
+  invoiceManagers: ManagerInvoiceMetrics[];
 }) {
   const elapsedDays = elapsedDaysForPeriod(current.month);
   const monthPlan = deriveMonthlyPlan(monthlyPlan);
@@ -659,7 +734,10 @@ function Overview({
           </div>
         </section>
 
-        <CountryInvoicesSection items={invoiceCountries} />
+        <div className="grid gap-4 2xl:grid-cols-2">
+          <CountryInvoicesSection items={invoiceCountries} />
+          <ManagerInvoicesSection items={invoiceManagers} />
+        </div>
 
         {showPlan ? <section className="card p-4">
           <SectionHead title="План на сегодня" subtitle="Минимальный дневной ориентир без лишней аналитики" />
@@ -1870,6 +1948,7 @@ type BitrixSyncPayload = {
   daily: DailyMetrics[];
   managers: ManagerMetrics[];
   invoiceCountries: CountryInvoiceMetrics[];
+  invoiceManagers: ManagerInvoiceMetrics[];
   countryOptions?: string[];
   productOptions?: string[];
   summary: {
@@ -2180,6 +2259,7 @@ export function DashboardApp() {
   const [liveDaily, setLiveDaily] = useState<DailyMetrics[]>(dailyMetrics);
   const [liveManagers, setLiveManagers] = useState<ManagerMetrics[]>(managerMetrics);
   const [liveInvoiceCountries, setLiveInvoiceCountries] = useState<CountryInvoiceMetrics[]>([]);
+  const [liveInvoiceManagers, setLiveInvoiceManagers] = useState<ManagerInvoiceMetrics[]>([]);
   const [conversationDashboard, setConversationDashboard] = useState<ConversationDashboardMetrics>(conversationIntelligenceDemo.dashboard);
   const [syncStatus, setSyncStatus] = useState("Факты ещё не загружены");
   const [googleStatus, setGoogleStatus] = useState<SyncStatus>({
@@ -2336,6 +2416,7 @@ export function DashboardApp() {
     })));
     setLiveManagers(payload.managers);
     setLiveInvoiceCountries(payload.invoiceCountries);
+    setLiveInvoiceManagers(payload.invoiceManagers);
     if (payload.countryOptions?.length) {
       setCountryOptions(payload.countryOptions);
     }
@@ -2388,6 +2469,7 @@ export function DashboardApp() {
     const requestHasCohortFilter = requestCountry !== "all" || requestManager !== "all" || requestProduct !== "all";
     setBitrixStatus({ state: "loading", message: "Загружаю факт из Bitrix..." });
     setLiveInvoiceCountries([]);
+    setLiveInvoiceManagers([]);
     if (requestHasCohortFilter) {
       setLiveMonthly((items) => items.map((item) => item.month === requestPeriod ? clearMonthlyFacts(item) : item));
       setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(requestPeriod)) ? clearDailyFacts(item) : item));
@@ -2479,7 +2561,7 @@ export function DashboardApp() {
         productOptions={productOptions}
       />
       {activeTab !== "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} compact /> : null}
-      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} /> : null}
+      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} invoiceManagers={liveInvoiceManagers} /> : null}
       {activeTab === "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} /> : null}
       {activeTab === "Growth Intelligence" ? <GrowthIntelligenceTab current={current} previous={previous} quality={quality} daily={currentDaily} monthlyPlan={monthlyPlan} conversationDashboard={conversationDashboard} /> : null}
       {activeTab === "План месяца" ? <MonthPlanningTab current={current} monthlyPlan={monthlyPlan} setMonthlyPlan={setMonthlyPlan} daily={currentDaily} /> : null}

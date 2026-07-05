@@ -27,6 +27,15 @@ export type CountryInvoiceMetrics = {
   revenue: number;
 };
 
+export type ManagerInvoiceMetrics = {
+  managerId: string;
+  manager: string;
+  invoicesCount: number;
+  invoicesAmount: number;
+  salesCount: number;
+  revenue: number;
+};
+
 export type DialogueQualityMetrics = {
   month: PeriodKey;
   targetDialogs: number;
