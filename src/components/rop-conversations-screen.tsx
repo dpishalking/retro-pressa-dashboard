@@ -111,10 +111,7 @@ export function RopConversationsScreen() {
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
-  const [status, setStatus] = useState<SyncStatus>({
-    state: "idle",
-    message: "Готово к загрузке архива или живого Bitrix-среза."
-  });
+  const [status, setStatus] = useState<SyncStatus>({ state: "idle", message: "" });
 
   useEffect(() => {
     let cancelled = false;
@@ -314,7 +311,7 @@ export function RopConversationsScreen() {
               onChange={(event) => {
                 const next = event.target.value as PeriodKey;
                 setSelectedPeriod(next);
-                setStatus({ state: "idle", message: "Готово к загрузке архива или живого Bitrix-среза." });
+                setStatus({ state: "idle", message: "" });
                 const nextHistory = history.filter((item) => itemPeriodKey(item) === next);
                 const nextSelection = pickForPeriod(nextHistory.length ? nextHistory : history, next);
                 setSelectedImportedAt(nextSelection);
@@ -391,27 +388,11 @@ export function RopConversationsScreen() {
         }}
       />
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-col gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
-            <p className="mt-1 text-sm font-semibold text-slate-700">
-              Май и июнь уже лежат на сервере — просто выберите период в списке. Если нужно обновить архив, нажмите «Загрузить май» или «Загрузить июнь» и выберите уже скачанный JSON/CSV.
-            </p>
-            <p className="text-sm text-slate-600">
-              Июль подтягивается автоматически каждый день в 06:15 UTC небольшими порциями из Bitrix и копится в накопительном архиве.
-              Ручная загрузка JSON — только если нужен полный архив разом.
-            </p>
-          </div>
-          <p className="text-sm text-slate-500">
-            Bitrix-синк — запасной вариант для живого июля; он может падать по таймауту, поэтому архив надёжнее.
-          </p>
+      {status.state !== "idle" ? (
+        <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
+          {status.message}
         </div>
-      </section>
-
-      <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
-        {status.message}
-      </div>
+      ) : null}
 
       <section className="mb-6 grid gap-4 md:grid-cols-4">
         <Metric
