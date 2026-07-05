@@ -522,7 +522,8 @@ function Overview({ current, monthlyPlan, daily, showPlan }: { current: MonthlyM
             <FocusMetric title="Qualified лиды" fact={number(current.qualifiedLeads)} plan={showPlan ? number(monthlyPlan.qualifiedLeads) : undefined} gap={showPlan ? number(qlGap) : undefined} runRate={showPlan ? number(qlRunRate) : undefined} status={showPlan ? planStatus(safeCompletion(current.qualifiedLeads, monthlyPlan.qualifiedLeads)) : undefined} />
             <FocusMetric title="Бюджет трафика" fact={eur(current.adSpend)} plan={showPlan ? eur(monthlyPlan.adSpend) : undefined} gap={showPlan ? eur(current.adSpend - monthlyPlan.adSpend) : undefined} runRate={showPlan ? eur(adSpendRunRate) : undefined} status={showPlan ? current.adSpend <= monthlyPlan.adSpend ? "green" : "orange" : undefined} />
           </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <FocusMetric title="CR в счет" fact={pct(invoiceConversion(current))} plan={showPlan ? pct(monthlyPlan.invoiceConversion) : undefined} gap={showPlan ? pp(deltaPp(invoiceConversion(current), monthlyPlan.invoiceConversion)) : undefined} status={showPlan ? planStatus(safeCompletion(invoiceConversion(current), monthlyPlan.invoiceConversion)) : undefined} />
             <FocusMetric title="CR в продажу" fact={pct(salesConversion(current))} plan={showPlan ? pct(monthlyPlan.salesConversion) : undefined} gap={showPlan ? pp(deltaPp(salesConversion(current), monthlyPlan.salesConversion)) : undefined} status={showPlan ? planStatus(safeCompletion(salesConversion(current), monthlyPlan.salesConversion)) : undefined} />
             <FocusMetric title="Средний выставленный чек" fact={eur(averageInvoice(current))} plan={showPlan ? eur(monthlyPlan.averagePaidCheck) : undefined} gap={showPlan ? eur(averageInvoice(current) - monthlyPlan.averagePaidCheck) : undefined} status={showPlan ? planStatus(safeCompletion(averageInvoice(current), monthlyPlan.averagePaidCheck)) : undefined} />
             <FocusMetric title="Средний оплаченный чек" fact={eur(averagePaidCheck(current))} plan={showPlan ? eur(monthlyPlan.averagePaidCheck) : undefined} gap={showPlan ? eur(averagePaidCheck(current) - monthlyPlan.averagePaidCheck) : undefined} status={showPlan ? planStatus(safeCompletion(averagePaidCheck(current), monthlyPlan.averagePaidCheck)) : undefined} />
@@ -2171,7 +2172,12 @@ export function DashboardApp() {
 
   useEffect(() => {
     if (!hasCohortFilter) return;
+    lastGooglePeriod.current = null;
     setSyncStatus("Обновляю факты по выбранному срезу...");
+    setGoogleStatus({
+      state: "idle",
+      message: "Google Sheets не применяются к срезу по стране, менеджеру или продукту."
+    });
     setLiveMonthly((items) => items.map((item) => item.month === period ? clearMonthlyFacts(item) : item));
     setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(period)) ? clearDailyFacts(item) : item));
   }, [countryFilter, hasCohortFilter, managerFilter, period, productFilter]);
