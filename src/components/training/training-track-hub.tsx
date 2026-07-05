@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ClipboardCheck, Database } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -67,16 +67,34 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
   const [modules, setModules] = useState<TrainingTrackModule[]>([]);
   const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!user) return;
-    Promise.all([
-      fetch(`/api/training/modules?stage=${stageId}`).then((r) => r.json()),
-      fetch(`/api/training/progress?userId=${user.id}`).then((r) => r.json())
-    ]).then(([modulesData, progressData]) => {
-      if (Array.isArray(modulesData.modules)) setModules(modulesData.modules);
-      if (progressData?.progress) setProgress(progressData.progress);
-    });
+
+    const [modulesResponse, progressResponse] = await Promise.all([
+      fetch(`/api/training/modules?stage=${stageId}`, { cache: "no-store" }),
+      fetch(`/api/training/progress?userId=${encodeURIComponent(user.id)}`, { cache: "no-store" })
+    ]);
+
+    const modulesData = (await modulesResponse.json()) as { modules?: TrainingTrackModule[] };
+    const progressData = (await progressResponse.json()) as { progress?: UserTrainingProgress };
+
+    if (Array.isArray(modulesData.modules)) setModules(modulesData.modules);
+    if (progressData.progress) setProgress(progressData.progress);
   }, [stageId, user]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const refresh = () => void loadData();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadData]);
 
   const markStarted = async (moduleId: string) => {
     if (!user) return;

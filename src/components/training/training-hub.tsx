@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
@@ -50,10 +52,14 @@ function ProgressRing({ percent }: { percent: number }) {
 function ProductCard({
   product,
   status,
+  bestScorePercent,
+  attemptCount,
   onStart
 }: {
   product: ProductTrainingModule;
   status: TrainingStatus;
+  bestScorePercent?: number;
+  attemptCount: number;
   onStart: () => void;
 }) {
   const hasQuiz = product.questions.length > 0;
@@ -73,6 +79,11 @@ function ProductCard({
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${getStatusClass(status)}`}>
               {getStatusLabel(status)}
             </span>
+            {attemptCount > 0 ? (
+              <span className="text-xs font-semibold text-slate-500">
+                Лучший результат: {bestScorePercent ?? 0}% · попыток {attemptCount}
+              </span>
+            ) : null}
             <Link
               href={`/training/products/${product.id}`}
               onClick={onStart}
@@ -122,35 +133,78 @@ function TrainingHubContent() {
     };
   }, [user?.id, user?.name]);
   const [data, setData] = useState<HubData>(fallbackData);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!user) return;
 
-    Promise.all([
-      fetch("/api/training/products").then((response) => response.json()),
-      fetch(`/api/training/progress?userId=${user.id}`).then((response) => response.json())
-    ])
-      .then(([productsData, progressData]) => {
-        if (Array.isArray(productsData.products) && progressData?.progress && progressData?.overview) {
-          setData({
-            products: productsData.products,
-            progress: progressData.progress,
-            overview: progressData.overview
-          });
-        }
-      })
-      .catch(() => {
-        setData(fallbackData);
-      });
-  }, [fallbackData, user]);
+    setLoadError(null);
+
+    try {
+      const [productsResponse, progressResponse] = await Promise.all([
+        fetch("/api/training/products", { cache: "no-store" }),
+        fetch(`/api/training/progress?userId=${encodeURIComponent(user.id)}`, { cache: "no-store" })
+      ]);
+
+      const productsData = (await productsResponse.json()) as { products?: ProductTrainingModule[] };
+      const progressData = (await progressResponse.json()) as {
+        progress?: UserTrainingProgress;
+        overview?: TrainingOverview;
+        error?: string;
+      };
+
+      if (!productsResponse.ok || !progressResponse.ok) {
+        throw new Error(progressData.error ?? "Не удалось загрузить прогресс");
+      }
+
+      if (Array.isArray(productsData.products) && progressData.progress && progressData.overview) {
+        setData({
+          products: productsData.products,
+          progress: progressData.progress,
+          overview: progressData.overview
+        });
+        return;
+      }
+
+      throw new Error("Некорректный ответ сервера");
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Не удалось загрузить прогресс");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const refresh = () => void loadData();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadData]);
 
   const markStarted = async (productId: string) => {
     if (!user) return;
-    await fetch("/api/training/progress", {
+
+    const response = await fetch("/api/training/progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: user.id, productId, action: "start" })
     });
+
+    if (!response.ok) return;
+
+    const payload = (await response.json()) as { progress?: UserTrainingProgress; overview?: TrainingOverview };
+    if (payload.progress && payload.overview) {
+      setData((current) => ({
+        ...current,
+        progress: payload.progress!,
+        overview: payload.overview!
+      }));
+    }
   };
 
   if (userLoading || !user) {
@@ -158,9 +212,22 @@ function TrainingHubContent() {
   }
 
   const remainingProducts = data.products.filter((product) => data.overview.remainingProductIds.includes(product.id));
+  const recentAttempts = data.progress.attempts
+    .filter((attempt) => attempt.productId)
+    .slice(0, 5)
+    .map((attempt) => {
+      const product = data.products.find((item) => item.id === attempt.productId);
+      return { attempt, title: product?.title ?? attempt.productId ?? "Тест" };
+    });
 
   return (
     <>
+      {loadError ? (
+        <section className="card mb-6 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {loadError}. Обновите страницу или пройдите тест ещё раз.
+        </section>
+      ) : null}
+
       <section className="card mb-6 grid gap-6 p-6 lg:grid-cols-[auto_1fr] lg:items-center">
         <ProgressRing percent={data.overview.overallPercent} />
         <div>
@@ -185,6 +252,23 @@ function TrainingHubContent() {
           </div>
         </div>
       </section>
+
+      {recentAttempts.length > 0 ? (
+        <section className="card mb-6 p-6">
+          <h3 className="text-lg font-black text-slate-950">История тестов</h3>
+          <ul className="mt-4 space-y-2">
+            {recentAttempts.map(({ attempt, title }) => (
+              <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
+                <span>{title}</span>
+                <span className="font-semibold">
+                  {attempt.scorePercent}% · {attempt.passed ? "пройден" : "не пройден"} ·{" "}
+                  {format(new Date(attempt.attemptedAt), "d MMM yyyy, HH:mm", { locale: ru })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {remainingProducts.length > 0 ? (
         <section className="card mb-6 p-6">
@@ -216,6 +300,8 @@ function TrainingHubContent() {
               key={product.id}
               product={product}
               status={status}
+              bestScorePercent={productProgress?.bestScorePercent}
+              attemptCount={productProgress?.attemptCount ?? 0}
               onStart={() => void markStarted(product.id)}
             />
           );

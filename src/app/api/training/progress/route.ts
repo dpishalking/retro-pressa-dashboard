@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readSessionCookie } from "@/lib/auth/session";
 import {
   getOrCreateUserProgress,
   getTrainingOverview,
@@ -8,14 +9,13 @@ import {
   markModuleStarted,
   markProductStarted
 } from "@/lib/training/store";
+import { resolveProgressTargetUserId } from "@/lib/training/progress-auth";
 import { isTrainingSupervisor } from "@/lib/training/supervisor-auth";
-import { readSessionCookie } from "@/lib/auth/session";
 import type { TrackStageId } from "@/types/training";
 
 export async function GET(request: Request) {
   const session = readSessionCookie(request.headers.get("cookie"));
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
   const all = searchParams.get("all");
 
   if (all === "true") {
@@ -26,20 +26,26 @@ export async function GET(request: Request) {
     return NextResponse.json({ rows });
   }
 
-  if (!userId) {
-    return NextResponse.json({ error: "userId is required" }, { status: 400 });
-  }
-
-  if (session?.id !== userId && !isTrainingSupervisor(session)) {
+  const access = resolveProgressTargetUserId(session, searchParams.get("userId"));
+  if ("error" in access) {
+    if (access.error === "unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (access.error === "missing") {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const [progress, overview] = await Promise.all([
-    getOrCreateUserProgress(userId),
-    getTrainingOverview(userId)
+    getOrCreateUserProgress(access.userId),
+    getTrainingOverview(access.userId)
   ]);
 
-  return NextResponse.json({ progress, overview });
+  return NextResponse.json(
+    { progress, overview },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function POST(request: Request) {
@@ -53,23 +59,29 @@ export async function POST(request: Request) {
     action?: string;
   };
 
-  if (!body.userId || !body.action) {
+  if (!body.action) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  if (session?.id !== body.userId && !isTrainingSupervisor(session)) {
+  const access = resolveProgressTargetUserId(session, body.userId ?? session?.id);
+  if ("error" in access) {
+    if (access.error === "unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const userId = access.userId;
+
   if (body.action === "start_bot_scenario" && body.scenarioId) {
-    const progress = await markBotScenarioStarted(body.userId, body.scenarioId);
-    const overview = await getTrainingOverview(body.userId);
+    const progress = await markBotScenarioStarted(userId, body.scenarioId);
+    const overview = await getTrainingOverview(userId);
     return NextResponse.json({ progress, overview });
   }
 
   if (body.action === "complete_bot_scenario" && body.scenarioId) {
-    const progress = await markBotScenarioCompleted(body.userId, body.scenarioId);
-    const overview = await getTrainingOverview(body.userId);
+    const progress = await markBotScenarioCompleted(userId, body.scenarioId);
+    const overview = await getTrainingOverview(userId);
     return NextResponse.json({ progress, overview });
   }
 
@@ -78,8 +90,8 @@ export async function POST(request: Request) {
   }
 
   if (body.moduleId && body.stageId && (body.stageId === "crm" || body.stageId === "practice")) {
-    const progress = await markModuleStarted(body.userId, body.stageId, body.moduleId);
-    const overview = await getTrainingOverview(body.userId);
+    const progress = await markModuleStarted(userId, body.stageId, body.moduleId);
+    const overview = await getTrainingOverview(userId);
     return NextResponse.json({ progress, overview });
   }
 
@@ -87,7 +99,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "productId or moduleId required" }, { status: 400 });
   }
 
-  const progress = await markProductStarted(body.userId, body.productId);
-  const overview = await getTrainingOverview(body.userId);
+  const progress = await markProductStarted(userId, body.productId);
+  const overview = await getTrainingOverview(userId);
   return NextResponse.json({ progress, overview });
 }

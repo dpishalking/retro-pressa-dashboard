@@ -124,6 +124,7 @@ jobs:
           env.TRAINER_ADMIN_API_KEY = adminKey;
           env.TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG || "retro-pressa";
           env.TRAINER_BOT_USERNAME = trainerBotUsername;
+          env.TRAINING_DATA_DIR = "/opt/retro-pressa-shared/data/training";
           fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
 
           const backendEnv = {

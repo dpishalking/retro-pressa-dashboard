@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findUserById } from "@/lib/auth/store";
 import { createTrainingCatalogSeed, trainingUsers, type TrainingCatalog } from "@/data/training-seed";
@@ -21,7 +21,9 @@ import { findTrackModule, listTrackModules } from "@/lib/training/track-modules"
 
 export { generateId };
 
-const trainingDir = path.join(process.cwd(), "data", "training");
+const trainingDir = process.env.TRAINING_DATA_DIR?.trim()
+  ? path.resolve(process.env.TRAINING_DATA_DIR.trim())
+  : path.join(process.cwd(), "data", "training");
 const catalogPath = path.join(trainingDir, "products.json");
 const progressDir = path.join(trainingDir, "progress");
 
@@ -118,11 +120,12 @@ function createEmptyProgress(userId: string, userName: string): UserTrainingProg
 }
 
 function normalizeProgress(parsed: Partial<UserTrainingProgress>, userId: string): UserTrainingProgress | null {
-  if (parsed?.userId !== userId || !Array.isArray(parsed.products) || !Array.isArray(parsed.attempts)) {
+  if (!Array.isArray(parsed.products) || !Array.isArray(parsed.attempts)) {
     return null;
   }
+
   return {
-    userId: parsed.userId,
+    userId,
     userName: parsed.userName ?? userId,
     products: parsed.products,
     modules: Array.isArray(parsed.modules) ? parsed.modules : [],
@@ -137,9 +140,11 @@ export async function readUserProgress(userId: string): Promise<UserTrainingProg
     const parsed = JSON.parse(raw) as Partial<UserTrainingProgress>;
     const normalized = normalizeProgress(parsed, userId);
     if (normalized) return normalized;
+    console.warn("Progress file has invalid shape", { userId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("ENOENT")) return null;
+    console.warn("Failed to read progress file", { userId, error: message });
   }
   return null;
 }
@@ -166,6 +171,14 @@ export async function getOrCreateUserProgress(userId: string, userName?: string)
       await writeUserProgress(existing);
     }
     return existing;
+  }
+
+  try {
+    await access(progressFilePath(userId));
+    console.error("Progress file exists but could not be parsed; refusing to overwrite", { userId });
+    return createEmptyProgress(resolved.userId, resolved.userName);
+  } catch {
+    // File does not exist yet.
   }
 
   const created = createEmptyProgress(resolved.userId, resolved.userName);
