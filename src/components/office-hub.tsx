@@ -32,9 +32,9 @@ const offices: OfficeCard[] = [
   {
     href: "/rop",
     title: "Инструменты РОП",
-    description: "Панель руководителя отдела продаж: план-факт, команда, приоритеты и управленческие решения.",
+    description: "Кабинет РОП: ежедневный импорт Bitrix, качество переписок, план-факт, команда и управленческие решения.",
     icon: Target,
-    status: "soon",
+    status: "active",
     accent: "text-amber-600 bg-amber-50"
   },
   {

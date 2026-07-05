@@ -1,10 +1,11 @@
-import { ComingSoonOffice } from "@/components/coming-soon-office";
+import type { Metadata } from "next";
+import { DashboardApp } from "@/components/dashboard-ui";
+
+export const metadata: Metadata = {
+  title: "Инструменты РОП — Retro Pressa",
+  description: "Кабинет РОП: ежедневный импорт переписок из Bitrix, план-факт, команда и Growth Intelligence."
+};
 
 export default function RopPage() {
-  return (
-    <ComingSoonOffice
-      title="Инструменты РОП"
-      description="Панель руководителя отдела продаж: план-факт, команда, приоритеты и управленческие решения."
-    />
-  );
+  return <DashboardApp mode="rop" initialTab="Данные и настройки" />;
 }

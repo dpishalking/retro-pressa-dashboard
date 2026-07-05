@@ -14,6 +14,7 @@ import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, Co
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
 type ManagerOption = { value: string; label: string };
+type DashboardMode = "analytics" | "rop";
 
 const defaultCountryOptions = [
   "Латвия",
@@ -2004,6 +2005,46 @@ type ConversationImportPayload = {
   error?: string;
 };
 
+type ConversationHistoryItem = {
+  importedDay: string;
+  importedAt: string;
+  source: "manual" | "gift-ai" | "bitrix";
+  label: string;
+  dialogs: number;
+  conversion: number;
+  qualityScore: number;
+  potentialLostRevenue: number;
+};
+
+type ConversationHistoryPayload = {
+  latest?: {
+    importedAt: string;
+    importedDay: string;
+    label: string;
+    source: "manual" | "gift-ai" | "bitrix";
+    dashboard: ConversationDashboardMetrics;
+  } | null;
+  history?: ConversationHistoryItem[];
+  error?: string;
+};
+
+type BitrixConversationSyncPayload = {
+  source: "bitrix";
+  importedAt: string;
+  dashboard: ConversationDashboardMetrics;
+  diagnostics?: ConversationImportFileDiagnostic[];
+  summary: {
+    dialogsScanned: number;
+    dialogsImported: number;
+    messagesLoaded: number;
+    daysBack: number;
+    lookbackSince: string;
+    filesLoaded: number;
+    dialogsLoaded: number;
+  };
+  error?: string;
+};
+
 type GeminiConversationPayload = {
   summary: GeminiConversationSummary;
   sourcePaths?: string[];
@@ -2033,6 +2074,39 @@ function DataTab({
   const [conversationText, setConversationText] = useState("");
   const [lastConversationImport, setLastConversationImport] = useState<ConversationDashboardMetrics | null>(null);
   const [conversationDiagnostics, setConversationDiagnostics] = useState<ConversationImportFileDiagnostic[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<ConversationHistoryItem[]>([]);
+  const [bitrixConversationStatus, setBitrixConversationStatus] = useState<SyncStatus>({
+    state: "idle",
+    message: "Автоматический импорт Bitrix ещё не запускался."
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConversationHistory() {
+      try {
+        const response = await fetch("/api/conversations/history?limit=7");
+        const data = await response.json() as ConversationHistoryPayload;
+        if (!response.ok || cancelled) return;
+        setConversationHistory(data.history ?? []);
+        if (data.latest?.dashboard) {
+          setLastConversationImport(data.latest.dashboard);
+          setConversationStatus({
+            state: "ok",
+            message: `Последний сохранённый анализ: ${data.latest.label.toLowerCase()} от ${new Date(data.latest.importedAt).toLocaleString("ru-RU")}.`
+          });
+        }
+      } catch {
+        // Нет истории — просто оставляем ручной импорт доступным.
+      }
+    }
+
+    void loadConversationHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const importConversations = useCallback(async () => {
     if (!conversationFiles.length && !conversationText.trim()) {
@@ -2060,6 +2134,20 @@ function DataTab({
         state: "ok",
         message: `Загружено файлов: ${number(data.summary.filesLoaded)}, сообщений: ${number(data.summary.messagesLoaded)}, диалогов: ${number(data.summary.dialogsLoaded)}.${groupingWarning}`
       });
+      setConversationHistory((items) => {
+        const importedAt = new Date().toISOString();
+        const nextItem: ConversationHistoryItem = {
+          importedDay: importedAt.slice(0, 10),
+          importedAt,
+          source: "manual",
+          label: "Ручной импорт переписок",
+          dialogs: data.dashboard.totalDialogs,
+          conversion: data.dashboard.orderConversion,
+          qualityScore: data.dashboard.qualityScore,
+          potentialLostRevenue: data.dashboard.potentialLostRevenue
+        };
+        return [nextItem, ...items].slice(0, 7);
+      });
     } catch (error) {
       setConversationStatus({
         state: "error",
@@ -2067,6 +2155,44 @@ function DataTab({
       });
     }
   }, [conversationFiles, conversationText, onConversationImport]);
+
+  const importBitrixConversations = useCallback(async () => {
+    setBitrixConversationStatus({ state: "loading", message: "Забираю свежие переписки из Bitrix..." });
+    try {
+      const response = await fetch("/api/conversations/sync-bitrix", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ daysBack: 1, dialogLimit: 80 })
+      });
+      const data = await response.json() as BitrixConversationSyncPayload;
+      setConversationDiagnostics(data.diagnostics ?? []);
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить переписки из Bitrix");
+      onConversationImport(data.dashboard);
+      setLastConversationImport(data.dashboard);
+      setConversationHistory((items) => {
+        const nextItem: ConversationHistoryItem = {
+          importedDay: data.importedAt.slice(0, 10),
+          importedAt: data.importedAt,
+          source: "bitrix",
+          label: "Bitrix daily sync",
+          dialogs: data.dashboard.totalDialogs,
+          conversion: data.dashboard.orderConversion,
+          qualityScore: data.dashboard.qualityScore,
+          potentialLostRevenue: data.dashboard.potentialLostRevenue
+        };
+        return [nextItem, ...items].slice(0, 7);
+      });
+      setBitrixConversationStatus({
+        state: "ok",
+        message: `Bitrix: просмотрено ${number(data.summary.dialogsScanned)} чатов, загружено ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+      });
+    } catch (error) {
+      setBitrixConversationStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось загрузить переписки из Bitrix"
+      });
+    }
+  }, [onConversationImport]);
 
   return (
     <section className="card p-4">
@@ -2103,11 +2229,16 @@ function DataTab({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold">Анализ клиентских переписок</h3>
-            <p className="text-sm text-slate-500">Рабочие форматы: csv, json, txt. PDF читается базовым fallback-методом. XLSX/DOCX пока требуют отдельного парсера или экспорта в CSV/JSON/TXT.</p>
+            <p className="text-sm text-slate-500">Bitrix можно забирать ежедневно автоматически. Для ручного добора остаются csv, json, txt и базовый PDF fallback.</p>
           </div>
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={importConversations} disabled={conversationStatus.state === "loading"}>
-            {conversationStatus.state === "loading" ? "Импортирую..." : "Импортировать переписки"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 disabled:opacity-60" onClick={importBitrixConversations} disabled={bitrixConversationStatus.state === "loading"}>
+              {bitrixConversationStatus.state === "loading" ? "Загружаю Bitrix..." : "Забрать из Bitrix"}
+            </button>
+            <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={importConversations} disabled={conversationStatus.state === "loading"}>
+              {conversationStatus.state === "loading" ? "Импортирую..." : "Импортировать файлы"}
+            </button>
+          </div>
         </div>
         <input
           multiple
@@ -2127,6 +2258,31 @@ function DataTab({
         <p className={`mt-3 text-sm font-semibold ${conversationStatus.state === "error" ? "text-red-700" : conversationStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}`}>
           {conversationStatus.message}
         </p>
+        <p className={`mt-1 text-sm font-semibold ${bitrixConversationStatus.state === "error" ? "text-red-700" : bitrixConversationStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}`}>
+          {bitrixConversationStatus.message}
+        </p>
+        {conversationHistory.length ? (
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-700">Последние сохранённые срезы переписок</div>
+            <div className="table-scroll">
+              <table>
+                <thead><tr><th>Когда</th><th>Источник</th><th>Диалоги</th><th>CR</th><th>Quality</th><th>Потери</th></tr></thead>
+                <tbody>
+                  {conversationHistory.map((item) => (
+                    <tr key={`${item.importedAt}-${item.source}`}>
+                      <td>{new Date(item.importedAt).toLocaleString("ru-RU")}</td>
+                      <td>{item.label}</td>
+                      <td>{number(item.dialogs)}</td>
+                      <td>{pct(item.conversion)}</td>
+                      <td>{number(item.qualityScore)}/100</td>
+                      <td>{eur(item.potentialLostRevenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
         {conversationDiagnostics.length ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-700">Что реально прочиталось из файлов</div>
@@ -2271,8 +2427,14 @@ function clearDailyFacts(item: DailyMetrics): DailyMetrics {
   };
 }
 
-export function DashboardApp() {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+export function DashboardApp({
+  mode = "analytics",
+  initialTab
+}: {
+  mode?: DashboardMode;
+  initialTab?: string;
+} = {}) {
+  const [activeTab, setActiveTab] = useState(initialTab && tabs.includes(initialTab) ? initialTab : tabs[0]);
   const [period, setPeriod] = useState("july-2026");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [countryFilter, setCountryFilter] = useState("all");
@@ -2336,8 +2498,16 @@ export function DashboardApp() {
     conversationImportLoaded.current = true;
     let cancelled = false;
 
-    async function loadGiftAiConversations() {
+    async function loadConversationBaseline() {
       try {
+        const historyResponse = await fetch("/api/conversations/history?limit=1");
+        const historyData = await historyResponse.json() as ConversationHistoryPayload;
+        if (!cancelled && historyResponse.ok && historyData.latest?.dashboard) {
+          setConversationDashboard(historyData.latest.dashboard);
+          setSyncStatus(`Переписки загружены из сохранённой истории: ${number(historyData.latest.dashboard.totalDialogs)} диалогов`);
+          return;
+        }
+
         const response = await fetch("/api/conversations/import-local", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -2352,7 +2522,7 @@ export function DashboardApp() {
       }
     }
 
-    void loadGiftAiConversations();
+    void loadConversationBaseline();
 
     return () => {
       cancelled = true;
@@ -2567,9 +2737,13 @@ export function DashboardApp() {
       </Link>
       <header className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">ОПЕРАЦИОННЫЙ ПУЛЬТ</p>
-          <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Аналитика Retro Pressa</h1>
-          <p className="mt-2 text-base text-slate-600">North Star €100 000 • рабочий план месяца • маркетинг • продажи • качество переписок</p>
+          <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">{mode === "rop" ? "ИНСТРУМЕНТЫ РОП" : "ОПЕРАЦИОННЫЙ ПУЛЬТ"}</p>
+          <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">{mode === "rop" ? "Инструменты РОП" : "Аналитика Retro Pressa"}</h1>
+          <p className="mt-2 text-base text-slate-600">
+            {mode === "rop"
+              ? "План-факт, команда, качество переписок, ежедневный импорт Bitrix и управленческие решения."
+              : "North Star €100 000 • рабочий план месяца • маркетинг • продажи • качество переписок"}
+          </p>
         </div>
         <div className="card flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-600">
           <span className="h-3 w-3 rounded-full bg-emerald-600" />

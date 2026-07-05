@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { NextResponse } from "next/server";
 import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
+import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
 
 export const dynamic = "force-dynamic";
 
@@ -44,17 +45,31 @@ export async function POST(request: Request) {
       }, { status: 422 });
     }
 
+    const importedAt = new Date().toISOString();
+    const summary = {
+      filesLoaded: exportPaths.length,
+      messagesLoaded: result.messages.length,
+      dialogsLoaded: result.dialogs.length,
+      filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
+      filesFailed: result.diagnostics.filter((item) => item.status === "error").length
+    };
+
+    await writeConversationSnapshot({
+      version: 1,
+      source: "gift-ai",
+      importedAt,
+      importedDay: importedAt.slice(0, 10),
+      label: `gift-ai: ${exportPaths.map((file) => basename(file)).join(", ")}`,
+      dashboard: result.dashboard,
+      diagnostics: result.diagnostics,
+      summary
+    });
+
     return NextResponse.json({
       dashboard: result.dashboard,
       diagnostics: result.diagnostics,
       sourcePaths: exportPaths,
-      summary: {
-        filesLoaded: exportPaths.length,
-        messagesLoaded: result.messages.length,
-        dialogsLoaded: result.dialogs.length,
-        filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
-        filesFailed: result.diagnostics.filter((item) => item.status === "error").length
-      }
+      summary
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось импортировать локальный экспорт";
