@@ -8,9 +8,6 @@ export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   mop: [HUB_PATH, "/training"]
 };
 
-/** Sections marked «Скоро» — visible and open only to admin. */
-export const FUTURE_ROUTE_PREFIXES = ["/correspondence", "/sales"];
-
 /** Admin-only configuration area. */
 export const ADMIN_ROUTE_PREFIXES = ["/admin"];
 
@@ -18,10 +15,6 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
   const normalized = normalizePath(pathname);
 
   if (ADMIN_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
-    return accessLevel === "admin";
-  }
-
-  if (FUTURE_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
     return accessLevel === "admin";
   }
 
@@ -36,10 +29,6 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
 }
 
 export function canSeeOfficeSection(accessLevel: AccessLevel, href: string): boolean {
-  if (accessLevel === "admin") return true;
-
-  if (FUTURE_ROUTE_PREFIXES.includes(href)) return false;
-
   return canAccessRoute(accessLevel, href);
 }
 
@@ -57,7 +46,7 @@ export function accessLevelLabel(level: AccessLevel): string {
 export function accessLevelScope(level: AccessLevel): string {
   switch (level) {
     case "admin":
-      return "все разделы кабинета, включая будущие";
+      return "все разделы кабинета";
     case "rop":
       return "аналитика, инструменты РОП, обучение менеджеров";
     case "mop":

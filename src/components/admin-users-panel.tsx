@@ -277,7 +277,7 @@ export function AdminUsersPanel() {
                 value={form.accessLevel}
                 onChange={(event) => setForm((prev) => ({ ...prev, accessLevel: event.target.value as AccessLevel }))}
               >
-                <option value="admin">Администратор — всё, включая будущие разделы</option>
+                <option value="admin">Администратор — все разделы</option>
                 <option value="rop">РОП — аналитика, инструменты РОП, обучение</option>
                 <option value="mop">Менеджер — только обучение</option>
               </select>

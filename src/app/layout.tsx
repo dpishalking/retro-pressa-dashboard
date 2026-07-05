@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Retro Pressa — Рабочий кабинет",
-  description: "Рабочий кабинет Retro Pressa: аналитика, переписки, инструменты РОП, офис продаж и обучение менеджеров"
+  description: "Рабочий кабинет Retro Pressa: аналитика, инструменты РОП и обучение менеджеров"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

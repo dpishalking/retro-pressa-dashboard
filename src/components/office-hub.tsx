@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Briefcase, LogOut, MessageSquare, Settings, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection, accessLevelLabel } from "@/lib/auth/access";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
@@ -27,28 +27,12 @@ const offices: OfficeCard[] = [
     accent: "text-blue-600 bg-blue-50"
   },
   {
-    href: "/correspondence",
-    title: "Переписки",
-    description: "Рабочее место для переписки с клиентами: очередь, шаблоны, контроль качества диалогов.",
-    icon: MessageSquare,
-    status: "soon",
-    accent: "text-violet-600 bg-violet-50"
-  },
-  {
     href: "/rop",
     title: "Инструменты РОП",
     description: "Кабинет РОП: ежедневный импорт Bitrix, качество переписок, план-факт, команда и управленческие решения.",
     icon: Target,
     status: "active",
     accent: "text-amber-600 bg-amber-50"
-  },
-  {
-    href: "/sales",
-    title: "Офис продаж",
-    description: "Рабочее место менеджера: сделки, клиенты, задачи и инструменты для ежедневной работы с продажами.",
-    icon: Briefcase,
-    status: "soon",
-    accent: "text-emerald-600 bg-emerald-50"
   },
   {
     href: "/training",
@@ -135,7 +119,7 @@ export function OfficeHub() {
         </div>
         <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Рабочий кабинет</h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
-          Единая точка входа для команды продаж: аналитика, переписки, инструменты РОП, офис продаж и обучение менеджеров.
+          Единая точка входа для команды продаж: аналитика, инструменты РОП и обучение менеджеров.
         </p>
         {denied ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
