@@ -2,6 +2,11 @@ name: Restart Trainer Bot
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: "restart or stop-vps-trainer"
+        required: false
+        default: "restart"
 
 jobs:
   restart:
@@ -14,10 +19,18 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Restart trainer stack on VPS
+      - name: Manage trainer on VPS
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << 'EOF'
+          ACTION="${{ github.event.inputs.action || 'restart' }}"
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << EOF
           set -e
+          if [ "$ACTION" = "stop-vps-trainer" ]; then
+            echo "Stopping VPS trainer bot (Railway handles Telegram now)"
+            pm2 stop pressa-trainer-bot 2>/dev/null || true
+            pm2 save
+            pm2 list
+            exit 0
+          fi
           echo "=== pm2 status ==="
           pm2 list || true
           echo "=== trainer env (keys only) ==="
