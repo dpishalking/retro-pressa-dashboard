@@ -235,8 +235,11 @@ export type ManagerTrainingReport = {
     id: string;
     title: string;
     status: TrainingStatus;
+    bestScorePercent?: number;
+    attemptCount: number;
     startedAt?: string;
     completedAt?: string;
+    lastAttemptAt?: string;
   }[];
   lastActivityAt?: string;
 };

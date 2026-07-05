@@ -173,6 +173,8 @@ jobs:
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-env.json"
           scp -i ~/.ssh/deploy_key trainer-bot-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-bot-env.json"
+          scp -i ~/.ssh/deploy_key -r scripts/trainer-backend-overlay \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-overlay"
 
       - name: Deploy on server
         run: |
@@ -199,6 +201,7 @@ jobs:
             git reset --hard origin/main
           fi
 
+          node /tmp/trainer-backend-overlay/apply-patch.mjs "$PRESSA_SRC/gift-ai/backend"
           cd "$PRESSA_SRC/gift-ai"
           npm ci
           npm run build -w backend

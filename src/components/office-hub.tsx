@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, BookOpen, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
-import { canSeeOfficeSection, accessLevelLabel } from "@/lib/auth/access";
+import { canSeeOfficeSection } from "@/lib/auth/access";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel } from "@/types/auth";
@@ -94,9 +94,6 @@ export function OfficeHub() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Retro Pressa</p>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-700">
-              {accessLevelLabel(user.accessLevel)}
-            </span>
             <span className="text-sm font-semibold text-slate-600">{user.name}</span>
             {user.accessLevel === "admin" ? (
               <Link
@@ -118,9 +115,6 @@ export function OfficeHub() {
           </div>
         </div>
         <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Рабочий кабинет</h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
-          Единая точка входа для команды продаж: аналитика, инструменты РОП и обучение менеджеров.
-        </p>
         {denied ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             У вашего аккаунта нет доступа к этому разделу.

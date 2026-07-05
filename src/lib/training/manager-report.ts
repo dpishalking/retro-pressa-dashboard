@@ -1,4 +1,3 @@
-import { PRACTICE_BOT_SCENARIOS } from "@/lib/training/practice-bot";
 import { buildTrainingOverview, getTrackModuleProgress } from "@/lib/training/progress";
 import {
   getOrCreateUserProgress,
@@ -6,12 +5,9 @@ import {
   resolveProductStatus
 } from "@/lib/training/store";
 import { listTrackModules } from "@/lib/training/track-modules";
+import { loadManagerBotScenarioRows } from "@/lib/training/trainer-sessions";
 import type { AppUserPublic } from "@/types/auth";
-import type { ManagerTrainingReport, TrainingStatus, UserTrainingProgress } from "@/types/training";
-
-function resolveBotScenarioStatus(progress: UserTrainingProgress, scenarioId: string): TrainingStatus {
-  return progress.botScenarios?.find((item) => item.scenarioId === scenarioId)?.status ?? "not_started";
-}
+import type { ManagerTrainingReport } from "@/types/training";
 
 function pickLatestTimestamp(values: Array<string | undefined>): string | undefined {
   const filtered = values.filter(Boolean) as string[];
@@ -20,11 +16,12 @@ function pickLatestTimestamp(values: Array<string | undefined>): string | undefi
 }
 
 export async function buildManagerTrainingReport(user: AppUserPublic): Promise<ManagerTrainingReport> {
-  const [products, crmModules, practiceModules, progress] = await Promise.all([
+  const [products, crmModules, practiceModules, progress, botScenarios] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
     listTrackModules("practice"),
-    getOrCreateUserProgress(user.id, user.name)
+    getOrCreateUserProgress(user.id, user.name),
+    loadManagerBotScenarioRows(user.id)
   ]);
 
   const overview = buildTrainingOverview(products, crmModules, practiceModules, progress);
@@ -65,21 +62,10 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     };
   });
 
-  const botRows = PRACTICE_BOT_SCENARIOS.map((scenario) => {
-    const item = progress.botScenarios?.find((entry) => entry.scenarioId === scenario.id);
-    return {
-      id: scenario.id,
-      title: scenario.title,
-      status: resolveBotScenarioStatus(progress, scenario.id),
-      startedAt: item?.startedAt,
-      completedAt: item?.completedAt
-    };
-  });
-
   const lastActivityAt = pickLatestTimestamp([
     ...progress.products.map((item) => item.lastAttemptAt ?? item.completedAt ?? item.startedAt),
     ...progress.modules.map((item) => item.lastAttemptAt ?? item.completedAt ?? item.startedAt),
-    ...(progress.botScenarios ?? []).map((item) => item.completedAt ?? item.startedAt),
+    ...botScenarios.map((item) => item.completedAt ?? item.lastAttemptAt ?? item.startedAt),
     ...progress.attempts.map((item) => item.attemptedAt)
   ]);
 
@@ -94,7 +80,7 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     products: productRows,
     crmModules: crmRows,
     practiceModules: practiceRows,
-    botScenarios: botRows,
+    botScenarios,
     lastActivityAt
   };
 }

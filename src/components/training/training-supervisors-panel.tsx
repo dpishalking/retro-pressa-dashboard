@@ -180,9 +180,9 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
         rows={report.botScenarios.map((item) => ({
           title: item.title,
           status: item.status,
-          attemptCount: item.status === "completed" ? 1 : item.status === "in_progress" ? 1 : 0,
-          startedAt: item.startedAt,
-          completedAt: item.completedAt
+          bestScorePercent: item.bestScorePercent,
+          attemptCount: item.attemptCount,
+          lastAttemptAt: item.lastAttemptAt ?? item.completedAt ?? item.startedAt
         }))}
       />
     </div>

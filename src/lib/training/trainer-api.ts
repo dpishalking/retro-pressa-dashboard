@@ -12,6 +12,21 @@ export type TrainerBotLink = {
   managerName: string;
 };
 
+export type TrainerBotSession = {
+  id: string;
+  scenarioId: string;
+  scenarioName: string;
+  difficulty: string | null;
+  mode: string;
+  status: string;
+  score: number | null;
+  result: string | null;
+  hintsUsed: number;
+  startedAt: string;
+  completedAt: string | null;
+  mistakes: string[];
+};
+
 type TrainerLinksResponse = {
   botLink: string;
   inviteToken: string;
@@ -82,6 +97,34 @@ export async function ensureTrainerBotLink(user: {
 
 export function buildFallbackBotLink(): string {
   return `https://t.me/${TRAINER_BOT_USERNAME}`;
+}
+
+export async function fetchManagerBotSessions(externalId: string): Promise<TrainerBotSession[]> {
+  if (!TRAINER_ADMIN_API_KEY) {
+    console.warn("TRAINER_ADMIN_API_KEY not set — skip trainer sessions fetch");
+    return [];
+  }
+
+  try {
+    const res = await fetch(
+      `${TRAINER_API_URL}/trainer/managers/${encodeURIComponent(externalId)}/sessions`,
+      {
+        headers: { "X-Admin-Key": TRAINER_ADMIN_API_KEY },
+        signal: AbortSignal.timeout(15_000),
+      }
+    );
+
+    if (!res.ok) {
+      console.warn("Trainer sessions fetch failed", { status: res.status, externalId });
+      return [];
+    }
+
+    const data = (await res.json()) as { sessions?: TrainerBotSession[] };
+    return Array.isArray(data.sessions) ? data.sessions : [];
+  } catch (error) {
+    console.warn("Trainer sessions fetch error", { externalId, error: String(error) });
+    return [];
+  }
 }
 
 export async function registerTrainerManager(user: {
