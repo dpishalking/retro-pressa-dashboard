@@ -186,7 +186,7 @@ jobs:
             git reset --hard origin/main
           fi
 
-          node /tmp/trainer-backend-overlay/apply-patch.mjs "$PRESSA_SRC/gift-ai/backend"
+          node /tmp/trainer-backend-overlay/apply-patch.mjs "$PRESSA_SRC/gift-ai"
           cd "$PRESSA_SRC/gift-ai"
           npm ci
           npm run build -w backend
@@ -218,6 +218,9 @@ jobs:
           sleep 5
           curl -f -sS http://127.0.0.1:3100/health > /dev/null
           curl -f -sS http://127.0.0.1:3100/trainer/scenarios > /dev/null
+          if ! node -e "const env=require('$BACKEND_ENV'); if(!env.GEMINI_API_KEY){process.exit(1)}"; then
+            echo "WARNING: GEMINI_API_KEY is empty — trainer bot replies will fail until the secret is set" >&2
+          fi
 
           # Trainer Telegram bot runs on Railway only (retro-pressa-bot / trainer-bot).
           # Never start it on VPS — duplicate token causes silent failures in Telegram.
