@@ -13,7 +13,7 @@ export type ProductContentSection = {
   sectionKey: ProductSectionKey;
   title: string;
   content: string;
-  imageUrl?: string;
+  emoji: string;
 };
 
 const sectionDefinitions: Array<{
@@ -30,17 +30,17 @@ const sectionDefinitions: Array<{
   { key: "presentationGuide", title: "Как правильно презентовать продукт", field: "presentationGuide" }
 ];
 
-function sectionImageMap(materials: ProductMaterial[]) {
-  const map = new Map<ProductSectionKey, string>();
-  for (const material of materials) {
-    if (material.type !== "image" || !material.url || !material.sectionKey) continue;
-    map.set(material.sectionKey as ProductSectionKey, material.url);
-  }
-  return map;
-}
+export const sectionEmojis: Record<ProductSectionKey, string> = {
+  description: "🗞️",
+  targetAudience: "👥",
+  clientProblems: "🎯",
+  emotions: "💛",
+  purchaseReasons: "🎁",
+  objections: "💬",
+  presentationGuide: "🎤"
+};
 
 export function buildProductSections(product: ProductTrainingModule): ProductContentSection[] {
-  const images = sectionImageMap(product.materials);
   const sections: ProductContentSection[] = [];
 
   for (const { key, title, field } of sectionDefinitions) {
@@ -50,7 +50,7 @@ export function buildProductSections(product: ProductTrainingModule): ProductCon
       sectionKey: key,
       title,
       content,
-      ...(images.has(key) ? { imageUrl: images.get(key) } : {})
+      emoji: sectionEmojis[key]
     });
   }
 

@@ -15,15 +15,13 @@ import {
 } from "@/lib/training/product-sections";
 import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
 
-function ContentSection({ title, content, imageUrl }: ProductContentSection) {
+function ContentSection({ title, content, emoji }: ProductContentSection) {
   return (
     <section className="card overflow-hidden">
-      <div className={imageUrl ? "grid gap-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]" : ""}>
-        {imageUrl ? (
-          <div className="relative min-h-56 bg-slate-100 md:min-h-full">
-            <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
-          </div>
-        ) : null}
+      <div className="grid gap-0 md:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="flex items-center justify-center border-b border-[var(--line)] bg-slate-50 px-6 py-6 md:border-b-0 md:border-r md:px-8 md:py-8">
+          <span className="text-5xl leading-none" aria-hidden="true">{emoji}</span>
+        </div>
         <div className="p-6">
           <h2 className="text-lg font-black text-slate-950">{title}</h2>
           <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{content}</div>
