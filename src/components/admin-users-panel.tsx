@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, UserCog } from "lucide-react";
-import { accessLevelLabel } from "@/lib/auth/access";
+import { ArrowLeft, Copy, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import { accessLevelLabel, accessLevelScope } from "@/lib/auth/access";
 import { HUB_PATH } from "@/lib/auth/routes";
 import type { AccessLevel, AppUserPublic } from "@/types/auth";
 
@@ -23,6 +23,45 @@ const emptyForm: UserFormState = {
   active: true
 };
 
+function generatePassword(length = 14): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+function buildAccessMessage(input: {
+  origin: string;
+  login: string;
+  password: string;
+  name: string;
+  accessLevel: AccessLevel;
+  active: boolean;
+  isEdit: boolean;
+}): string {
+  const loginUrl = input.origin || "https://rp-bi.site";
+  const displayName = input.name.trim() || input.login.trim() || "—";
+  const passwordLine = input.password.trim()
+    ? input.password.trim()
+    : input.isEdit
+      ? "без изменений (если не задавали новый пароль)"
+      : "— укажите пароль выше —";
+
+  return [
+    "Retro Pressa — доступ к кабинету",
+    "",
+    `Ссылка для входа: ${loginUrl}/`,
+    `Логин: ${input.login.trim() || "—"}`,
+    `Пароль: ${passwordLine}`,
+    `Имя: ${displayName}`,
+    `Уровень доступа: ${accessLevelLabel(input.accessLevel)}`,
+    `Доступные разделы: ${accessLevelScope(input.accessLevel)}`,
+    `Статус: ${input.active ? "активен" : "отключён"}`,
+    "",
+    "После входа откроется рабочий кабинет. Регистрация недоступна — используйте только эти данные."
+  ].join("\n");
+}
+
 export function AdminUsersPanel() {
   const [users, setUsers] = useState<AppUserPublic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +69,26 @@ export function AdminUsersPanel() {
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const accessMessage = useMemo(
+    () =>
+      buildAccessMessage({
+        origin,
+        login: form.login,
+        password: form.password,
+        name: form.name,
+        accessLevel: form.accessLevel,
+        active: form.active,
+        isEdit: Boolean(editingId)
+      }),
+    [origin, form, editingId]
+  );
 
   const loadUsers = async () => {
     setLoading(true);
@@ -59,11 +118,28 @@ export function AdminUsersPanel() {
       accessLevel: user.accessLevel,
       active: user.active
     });
+    setCopied(false);
   };
 
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setCopied(false);
+  };
+
+  const handleGeneratePassword = () => {
+    setForm((prev) => ({ ...prev, password: generatePassword() }));
+    setCopied(false);
+  };
+
+  const handleCopyAccess = async () => {
+    try {
+      await navigator.clipboard.writeText(accessMessage);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Не удалось скопировать текст. Скопируйте вручную из поля ниже.");
+    }
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -165,13 +241,24 @@ export function AdminUsersPanel() {
 
             <label className="block text-sm font-semibold text-slate-700">
               {editingId ? "Новый пароль (необязательно)" : "Пароль"}
-              <input
-                type="password"
-                className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
-                value={form.password}
-                onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                required={!editingId}
-              />
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                  value={form.password}
+                  onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                  required={!editingId}
+                />
+                <button
+                  type="button"
+                  onClick={handleGeneratePassword}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  title="Сгенерировать пароль"
+                >
+                  <RefreshCw size={14} />
+                  Сгенерировать
+                </button>
+              </div>
             </label>
 
             <label className="block text-sm font-semibold text-slate-700">
@@ -204,6 +291,26 @@ export function AdminUsersPanel() {
               />
               Аккаунт активен
             </label>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-black text-violet-950">Сообщение для пересылки</h3>
+              <button
+                type="button"
+                onClick={() => void handleCopyAccess()}
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700"
+              >
+                <Copy size={14} />
+                {copied ? "Скопировано" : "Скопировать"}
+              </button>
+            </div>
+            <textarea
+              readOnly
+              rows={11}
+              value={accessMessage}
+              className="w-full resize-none rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs leading-5 text-slate-700"
+            />
           </div>
 
           {error ? <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}

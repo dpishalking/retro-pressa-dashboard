@@ -54,6 +54,17 @@ export function accessLevelLabel(level: AccessLevel): string {
   }
 }
 
+export function accessLevelScope(level: AccessLevel): string {
+  switch (level) {
+    case "admin":
+      return "все разделы кабинета, включая будущие";
+    case "rop":
+      return "аналитика, инструменты РОП, обучение менеджеров";
+    case "mop":
+      return "обучение менеджеров";
+  }
+}
+
 function normalizePath(pathname: string): string {
   if (!pathname || pathname === "") return "/";
   const withoutQuery = pathname.split("?")[0] ?? pathname;
