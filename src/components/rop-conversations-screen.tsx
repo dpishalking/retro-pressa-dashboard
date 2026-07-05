@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
 import { eur, number, pct } from "@/lib/format";
 import type { ConversationDashboardMetrics, PeriodKey } from "@/types/metrics";
 
@@ -164,21 +165,41 @@ export function RopConversationsScreen() {
     const selectedFiles = Array.from(files);
     if (!selectedFiles.length) return;
 
-    setStatus({ state: "loading", message: "Загружаю май и июнь через браузер..." });
+    setStatus({ state: "loading", message: "Разбираю архивы локально в браузере..." });
     try {
-      const formData = new FormData();
-      selectedFiles.forEach((file) => formData.append("files", file));
-      formData.append("channel", "gift-ai");
+      const inputs = await Promise.all(selectedFiles.map(async (file) => ({
+        filename: file.name,
+        content: await file.text(),
+        defaultChannel: "gift-ai"
+      })));
+      const result = importAndAnalyzeConversationsWithDiagnostics(inputs);
+      if (!result.messages.length) {
+        throw new Error(result.diagnostics.find((item) => item.status === "error")?.note ?? "Не удалось извлечь сообщения из файла.");
+      }
+      const summary = {
+        filesLoaded: selectedFiles.length,
+        messagesLoaded: result.messages.length,
+        dialogsLoaded: result.dialogs.length,
+        filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
+        filesFailed: result.diagnostics.filter((item) => item.status === "error").length
+      };
 
       const response = await fetch("/api/conversations/import", {
         method: "POST",
-        body: formData
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          source: "gift-ai",
+          label: `gift-ai: ${selectedFiles.map((file) => file.name).join(", ")}`,
+          dashboard: result.dashboard,
+          diagnostics: result.diagnostics,
+          summary
+        })
       });
       const data = await response.json() as LocalImportPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить локальный экспорт");
       setStatus({
         state: "ok",
-        message: `Архив загружен: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+        message: `Архив загружен: ${number(summary.dialogsLoaded)} диалогов и ${number(summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");

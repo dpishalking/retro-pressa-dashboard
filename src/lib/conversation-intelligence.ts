@@ -75,8 +75,12 @@ function extensionOf(filename: string) {
 
 function asText(content: string | ArrayBuffer | Buffer) {
   if (typeof content === "string") return content;
-  if (Buffer.isBuffer(content)) return content.toString("utf8");
-  return Buffer.from(content).toString("utf8");
+  if (typeof Buffer !== "undefined" && Buffer.isBuffer(content)) return content.toString("utf8");
+  if (typeof TextDecoder !== "undefined") {
+    if (content instanceof ArrayBuffer) return new TextDecoder("utf-8").decode(content);
+    if (ArrayBuffer.isView(content)) return new TextDecoder("utf-8").decode(content);
+  }
+  return String(content);
 }
 
 function parseCsv(text: string): RawConversationRow[] {
