@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       syncGoogleTraffic({ refresh: body.refresh === true }),
       syncBitrixConversationHistory({
         daysBack: body.daysBack,
-        dialogLimit: body.dialogLimit
+        dialogLimit: body.dialogLimit ?? 500
       })
     ]);
 

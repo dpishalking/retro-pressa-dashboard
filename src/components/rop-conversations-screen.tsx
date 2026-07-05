@@ -41,6 +41,20 @@ type BitrixSyncPayload = {
   error?: string;
 };
 
+type LocalImportPayload = {
+  dashboard: ConversationDashboardMetrics;
+  diagnostics: Array<{ filename: string; messages: number; dialogs: number; status: string; note: string }>;
+  sourcePaths: string[];
+  summary: {
+    filesLoaded: number;
+    messagesLoaded: number;
+    dialogsLoaded: number;
+    filesParsed: number;
+    filesFailed: number;
+  };
+  error?: string;
+};
+
 const periodOptions: Array<{ value: PeriodKey; label: string }> = [
   { value: "july-2026", label: "Июль 2026" },
   { value: "june-2026", label: "Июнь 2026" },
@@ -65,7 +79,7 @@ export function RopConversationsScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
   const [status, setStatus] = useState<SyncStatus>({
     state: "idle",
-    message: "Готово к загрузке последнего дневного среза Bitrix."
+    message: "Готово к загрузке архива или живого Bitrix-среза."
   });
 
   const pickDefaultSelected = (items: ConversationHistoryItem[], period: PeriodKey) => {
@@ -121,7 +135,7 @@ export function RopConversationsScreen() {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: selectedPeriod, dialogLimit: 200 })
+        body: JSON.stringify({ period: selectedPeriod, dialogLimit: 500 })
       });
       const data = await response.json() as BitrixSyncPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
@@ -142,6 +156,37 @@ export function RopConversationsScreen() {
       setStatus({
         state: "error",
         message: error instanceof Error ? error.message : "Не удалось обновить переписки из Bitrix"
+      });
+    }
+  };
+
+  const importLocalExports = async () => {
+    setStatus({ state: "loading", message: "Поднимаю локальный экспорт gift-ai за май и июнь..." });
+    try {
+      const response = await fetch("/api/conversations/import-local", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "may-june" })
+      });
+      const data = await response.json() as LocalImportPayload;
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить локальный экспорт");
+      setStatus({
+        state: "ok",
+        message: `Локальный экспорт загружен: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+      });
+
+      const historyResponse = await fetch("/api/conversations/history?limit=30");
+      const historyData = await historyResponse.json() as ConversationHistoryPayload;
+      if (historyResponse.ok) {
+        const items = historyData.history ?? [];
+        setHistory(items);
+        const nextSelection = pickDefaultSelected(items, selectedPeriod);
+        if (nextSelection) setSelectedImportedAt(nextSelection);
+      }
+    } catch (error) {
+      setStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось загрузить локальный экспорт"
       });
     }
   };
@@ -180,16 +225,36 @@ export function RopConversationsScreen() {
               ))}
             </select>
           </label>
-          <button
-            className="inline-flex items-center gap-2 self-start rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
-            onClick={refreshFromBitrix}
-            disabled={status.state === "loading"}
-          >
-            <RefreshCcw size={16} />
-            {status.state === "loading" ? "Обновляю..." : `Обновить ${selectedPeriodLabel.toLowerCase()}`}
-          </button>
         </div>
       </header>
+
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
+            <p className="mt-1 text-sm font-semibold text-slate-700">
+              Локальный архив — это май + июнь с тысячами диалогов. Живой Bitrix — только свежий срез.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              onClick={importLocalExports}
+              disabled={status.state === "loading"}
+            >
+              Загрузить май + июнь
+            </button>
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              onClick={refreshFromBitrix}
+              disabled={status.state === "loading"}
+            >
+              <RefreshCcw size={16} />
+              {status.state === "loading" ? "Обновляю..." : `Обновить ${selectedPeriodLabel.toLowerCase()}`}
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
         {status.message}

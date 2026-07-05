@@ -23,6 +23,23 @@ type BitrixRecentListResult = {
   hasMore?: boolean;
 };
 
+type BitrixOpenLineSession = {
+  id?: string | number;
+  chat_id?: number;
+  session_id?: string | number;
+  chat?: { id?: number };
+  status?: string;
+  source?: string;
+  date_create?: string;
+  date_closed?: string;
+};
+
+type BitrixOpenLineSessionsResult = {
+  items?: BitrixOpenLineSession[];
+  hasMorePages?: boolean;
+  hasMore?: boolean;
+};
+
 type BitrixDialogMessage = {
   id: number;
   chat_id: number;
@@ -43,6 +60,14 @@ type BitrixDialogMessagesResult = {
   chat_id: number;
   messages: BitrixDialogMessage[];
   users: BitrixDialogUser[];
+};
+
+type BitrixOpenLineHistoryResult = {
+  chat_id?: number;
+  messages?: BitrixDialogMessage[];
+  items?: BitrixDialogMessage[];
+  history?: BitrixDialogMessage[];
+  users?: BitrixDialogUser[];
 };
 
 type BitrixConversationSyncOptions = {
@@ -129,6 +154,18 @@ async function callBitrix<T>(method: string, body: Record<string, unknown>, atte
   return data.result;
 }
 
+async function callBitrixOptional<T>(methods: Array<{ method: string; body: Record<string, unknown> }>) {
+  const errors: string[] = [];
+  for (const candidate of methods) {
+    try {
+      return await callBitrix<T>(candidate.method, candidate.body);
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : `${candidate.method} failed`);
+    }
+  }
+  throw new Error(errors[errors.length - 1] || "Bitrix request failed");
+}
+
 function dateOrFallback(value?: string | null) {
   const parsed = value ? new Date(value) : null;
   return parsed && Number.isFinite(parsed.getTime()) ? parsed : null;
@@ -203,40 +240,135 @@ async function fetchRecentDialogs(since: string, dialogLimit: number) {
   return Array.from(unique.values()).slice(0, dialogLimit);
 }
 
+function sessionKey(session: BitrixOpenLineSession) {
+  return String(session.id ?? session.session_id ?? session.chat_id ?? session.chat?.id ?? "");
+}
+
+function sortSessionsByRecency(sessions: BitrixOpenLineSession[]) {
+  return [...sessions].sort((a, b) => {
+    const aTime = dateOrFallback(a.date_create)?.getTime() ?? 0;
+    const bTime = dateOrFallback(b.date_create)?.getTime() ?? 0;
+    return bTime - aTime;
+  });
+}
+
+async function fetchOpenLineSessions(period: PeriodKey, dialogLimit: number) {
+  const range = periodRange(period);
+  const inPeriod = new Map<string, BitrixOpenLineSession>();
+  const fallback = new Map<string, BitrixOpenLineSession>();
+  const pageSize = 50;
+  const maxPages = Math.max(4, Math.ceil(dialogLimit / pageSize) + 2);
+
+  const queries = [
+    {
+      FILTER: {
+        ">=DATE_CREATE": range.start.toISOString(),
+        "<=DATE_CREATE": range.end.toISOString()
+      },
+      ORDER: { DATE_CREATE: "ASC" }
+    },
+    {
+      ORDER: { DATE_CREATE: "DESC" }
+    }
+  ];
+
+  for (const query of queries) {
+    for (let page = 0; page < maxPages; page += 1) {
+      const result = await callBitrix<BitrixOpenLineSessionsResult>("imopenlines.session.list", {
+        ...query,
+        LIMIT: pageSize,
+        OFFSET: page * pageSize
+      });
+
+      const items = result.items ?? [];
+      if (!items.length) break;
+
+      items.forEach((session) => {
+        const key = sessionKey(session);
+        if (!key) return;
+        const createdAt = dateOrFallback(session.date_create);
+        const isInPeriod = createdAt ? createdAt >= range.start && createdAt <= range.end : false;
+        if (isInPeriod) {
+          if (!inPeriod.has(key)) inPeriod.set(key, session);
+          return;
+        }
+        if (!fallback.has(key) && !inPeriod.has(key)) fallback.set(key, session);
+      });
+
+      if (!result.hasMorePages && !result.hasMore) break;
+    }
+  }
+
+  const ordered = [
+    ...sortSessionsByRecency(Array.from(inPeriod.values())),
+    ...sortSessionsByRecency(Array.from(fallback.values()))
+  ];
+  const unique = new Map<string, BitrixOpenLineSession>();
+  ordered.forEach((session) => {
+    const key = sessionKey(session);
+    if (key && !unique.has(key)) unique.set(key, session);
+  });
+
+  return Array.from(unique.values()).slice(0, dialogLimit);
+}
+
 async function fetchDialogMessages(dialogId: string, sinceDate: Date, untilDate: Date) {
   const messages: BitrixDialogMessage[] = [];
   const users = new Map<number, BitrixDialogUser>();
-  let firstId = 0;
+  const result = await callBitrix<BitrixDialogMessagesResult>("im.dialog.messages.get", {
+    DIALOG_ID: dialogId,
+    LIMIT: 500
+  });
 
-  for (let page = 0; page < 40; page += 1) {
-    const result = await callBitrix<BitrixDialogMessagesResult>("im.dialog.messages.get", {
-      DIALOG_ID: dialogId,
-      FIRST_ID: firstId,
-      LIMIT: 50
-    });
+  (result.users ?? []).forEach((user) => users.set(Number(user.id), user));
 
-    (result.users ?? []).forEach((user) => users.set(Number(user.id), user));
+  const batch = [...(result.messages ?? [])]
+    .filter((item) => {
+      const messageDate = dateOrFallback(item.date);
+      return messageDate ? messageDate >= sinceDate && messageDate <= untilDate : false;
+    })
+    .sort((a, b) => a.id - b.id);
 
-    const batch = [...(result.messages ?? [])]
-      .filter((item) => {
-        const messageDate = dateOrFallback(item.date);
-        return messageDate ? messageDate >= sinceDate && messageDate <= untilDate : false;
-      })
-      .sort((a, b) => a.id - b.id);
-
-    if (!batch.length) break;
-    messages.push(...batch);
-
-    const newestId = Math.max(...batch.map((item) => item.id));
-    if (!Number.isFinite(newestId) || newestId === firstId) break;
-    firstId = newestId;
-
-    if (batch.length < 50) break;
-  }
+  messages.push(...batch);
 
   return {
     messages,
     users
+  };
+}
+
+async function fetchOpenLineHistory(session: BitrixOpenLineSession, sinceDate: Date, untilDate: Date) {
+  const sessionId = String(session.id ?? session.session_id ?? session.chat_id ?? session.chat?.id ?? "");
+  const chatId = Number(session.chat_id ?? session.chat?.id ?? 0);
+  const result = await callBitrixOptional<BitrixOpenLineHistoryResult>([
+    {
+      method: "imopenlines.session.history.get",
+      body: {
+        SESSION_ID: sessionId,
+        START: sinceDate.toISOString(),
+        END: untilDate.toISOString()
+      }
+    },
+    {
+      method: "imopenlines.session.history.get",
+      body: {
+        CHAT_ID: chatId,
+        START: sinceDate.toISOString(),
+        END: untilDate.toISOString()
+      }
+    },
+    {
+      method: "im.dialog.messages.get",
+      body: {
+        DIALOG_ID: chatId ? `chat${chatId}` : sessionId,
+        LIMIT: 500
+      }
+    }
+  ]);
+
+  return {
+    messages: result.messages ?? result.items ?? result.history ?? [],
+    users: new Map((result.users ?? []).map((user) => [Number(user.id), user]))
   };
 }
 
@@ -265,13 +397,34 @@ function normalizeBitrixMessages(dialog: BitrixRecentItem, rows: BitrixDialogMes
   }).filter((message) => message.text);
 }
 
+function normalizeOpenLineMessages(session: BitrixOpenLineSession, rows: BitrixDialogMessage[], users: Map<number, BitrixDialogUser>): ConversationMessage[] {
+  const chatId = String(session.chat_id ?? session.chat?.id ?? session.id ?? session.session_id ?? "session");
+  return rows.map((row) => {
+    const text = String(row.text ?? "").trim();
+    const user = users.get(row.author_id);
+    return {
+      date: row.date ?? null,
+      channel: "bitrix",
+      dialogId: chatId,
+      sender: senderName(user, row.author_id),
+      senderRole: senderRole(row.author_id, users),
+      text,
+      manager: null,
+      stage: inferStage(text),
+      outcome: inferOutcome(text),
+      orderAmount: null,
+      intents: classifyMessage(text)
+    };
+  }).filter((message) => message.text);
+}
+
 export async function syncBitrixConversationHistory(options: BitrixConversationSyncOptions = {}): Promise<BitrixConversationSyncPayload> {
   if (!hasBitrixConfig()) {
     throw new Error("BITRIX_WEBHOOK_URL is not configured");
   }
 
   const daysBack = Math.max(1, Math.min(14, options.daysBack ?? 1));
-  const dialogLimit = Math.max(10, Math.min(200, options.dialogLimit ?? 80));
+  const dialogLimit = Math.max(10, Math.min(500, options.dialogLimit ?? 80));
   const importedAt = new Date().toISOString();
   const periodKey = options.period ?? periodFromDate(new Date(importedAt));
   const range = periodKey ? periodRange(periodKey, new Date()) : null;
@@ -280,8 +433,50 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   const sinceIso = sinceDate.toISOString();
 
   const recentDialogs = await fetchRecentDialogs(sinceIso, dialogLimit);
+  const openLineSessions = periodKey ? await fetchOpenLineSessions(periodKey, dialogLimit) : [];
   const diagnostics: ConversationImportFileDiagnostic[] = [];
   const collectedMessages: ConversationMessage[] = [];
+  const seenMessages = new Set<string>();
+
+  function addMessages(messages: ConversationMessage[]) {
+    for (const message of messages) {
+      const key = [
+        message.dialogId,
+        message.date ?? "",
+        message.sender,
+        message.senderRole,
+        message.text
+      ].join("|");
+      if (seenMessages.has(key)) continue;
+      seenMessages.add(key);
+      collectedMessages.push(message);
+    }
+  }
+
+  for (const session of openLineSessions) {
+    const sessionKey = String(session.id ?? session.session_id ?? session.chat_id ?? session.chat?.id ?? "openline");
+    try {
+      const { messages, users } = await fetchOpenLineHistory(session, sinceDate, untilDate);
+      const normalized = normalizeOpenLineMessages(session, messages, users);
+      if (!normalized.length) continue;
+      addMessages(normalized);
+      diagnostics.push({
+        filename: `${sessionKey}.bitrix-openline`,
+        messages: normalized.length,
+        dialogs: 1,
+        status: "ok",
+        note: `Bitrix open line ${sessionKey}`
+      });
+    } catch (error) {
+      diagnostics.push({
+        filename: `${sessionKey}.bitrix-openline`,
+        messages: 0,
+        dialogs: 0,
+        status: "error",
+        note: error instanceof Error ? error.message : "Bitrix openline import failed"
+      });
+    }
+  }
 
   for (const dialog of recentDialogs) {
     const dialogId = String(dialog.id ?? `chat${dialog.chat_id}`);
@@ -289,7 +484,7 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
       const { messages, users } = await fetchDialogMessages(dialogId, sinceDate, untilDate);
       const normalized = normalizeBitrixMessages(dialog, messages, users);
       if (!normalized.length) continue;
-      collectedMessages.push(...normalized);
+      addMessages(normalized);
       diagnostics.push({
         filename: `${dialog.title || dialogId}.bitrix`,
         messages: normalized.length,
