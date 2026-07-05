@@ -45,6 +45,11 @@ docker run -d --name retro-pressa --restart unless-stopped -p 4174:4174 --env-fi
 BITRIX_WEBHOOK_URL=...
 GOOGLE_SERVICE_ACCOUNT_JSON=...
 PORT=4174
+
+# Тренажёр менеджеров (gift-ai backend)
+TRAINER_API_URL=https://pressa-production.up.railway.app
+TRAINER_ADMIN_API_KEY=...   # = ADMIN_API_KEY из gift-ai/backend
+TRAINER_SERVICE_TAG=retro-pressa
 ```
 
 Если Google JSON неудобно хранить одной строкой, можно использовать:

@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Bot, ClipboardCheck, ExternalLink } from "lucide-react";
+import { ClipboardCheck, ExternalLink } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStageConfig } from "@/lib/training/stages";
 import { resolveTrackModuleStatus } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
-import { TRAINING_TELEGRAM_BOT, trainingTelegramBotUrl } from "@/lib/training/practice-bot";
 import type { TrainingTrackModule, TrainingStatus, UserTrainingProgress } from "@/types/training";
 
 function ModuleCard({
@@ -59,6 +58,9 @@ function PracticeHubContent() {
   const { user, loading: userLoading } = useTrainingUser();
   const [modules, setModules] = useState<TrainingTrackModule[]>([]);
   const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
+  const [botLink, setBotLink] = useState<string | null>(null);
+  const [botLinkError, setBotLinkError] = useState<string | null>(null);
+  const [botLinkLoading, setBotLinkLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -69,6 +71,23 @@ function PracticeHubContent() {
       if (Array.isArray(modulesData.modules)) setModules(modulesData.modules);
       if (progressData?.progress) setProgress(progressData.progress);
     });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    setBotLinkLoading(true);
+    setBotLinkError(null);
+    fetch("/api/training/bot-link")
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = (await r.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? `HTTP ${r.status}`);
+        }
+        return r.json() as Promise<{ botLink: string }>;
+      })
+      .then((data) => setBotLink(data.botLink))
+      .catch((e) => setBotLinkError(e instanceof Error ? e.message : "Не удалось получить ссылку"))
+      .finally(() => setBotLinkLoading(false));
   }, [user]);
 
   const markStarted = async (moduleId: string) => {
@@ -86,37 +105,36 @@ function PracticeHubContent() {
 
   return (
     <>
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Link href="/training/practice/bot" className="block">
-          <article className="card flex h-full items-center gap-4 p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-              <Bot size={28} strokeWidth={1.5} />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-black text-slate-950">Тренировочный бот</h2>
-              <span className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-blue-600">
-                Выбрать сценарий
-                <ArrowRight size={16} />
-              </span>
-            </div>
-          </article>
-        </Link>
+      <article className="card mb-6 p-6 sm:p-8">
+        <p className="text-base leading-7 text-slate-600">
+          В тренажёрном боте вы отрабатываете навыки продаж в безопасной атмосфере: ведёте диалог
+          с AI-клиентом, получаете обратную связь и разбор после каждой ролевки. Никакого давления
+          от реального клиента — только практика и рост.
+        </p>
+        <ul className="mt-4 space-y-1.5 text-sm leading-6 text-slate-600">
+          <li>• Отработка квалификации, рекомендаций и работы с возражениями</li>
+          <li>• Ролевки на реальных сценариях Retro Pressa</li>
+          <li>• Оценка и подсказки от искусственного интеллекта после диалога</li>
+        </ul>
 
-        <a href={trainingTelegramBotUrl()} target="_blank" rel="noopener noreferrer" className="block">
-          <article className="card flex h-full items-center gap-4 p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#229ED9] text-white">
-              <ExternalLink size={28} strokeWidth={1.5} />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-black text-slate-950">{TRAINING_TELEGRAM_BOT.displayName}</h2>
-              <span className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-[#229ED9]">
-                Открыть в Telegram
-                <ExternalLink size={16} />
-              </span>
-            </div>
-          </article>
-        </a>
-      </div>
+        {botLinkLoading ? (
+          <p className="mt-6 text-sm text-slate-500">Подготавливаем вашу персональную ссылку…</p>
+        ) : botLink ? (
+          <a
+            href={botLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#2481cc] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#1a6ead]"
+          >
+            Открыть тренажёр в Telegram
+            <ExternalLink size={18} />
+          </a>
+        ) : (
+          <p className="mt-6 text-sm text-red-600">
+            {botLinkError ?? "Ссылка временно недоступна. Обратитесь к администратору."}
+          </p>
+        )}
+      </article>
 
       <section className="mb-4">
         <h3 className="text-lg font-black text-slate-950">Тесты</h3>

@@ -3,6 +3,7 @@ import path from "node:path";
 import type { AppUser, AppUserPublic, UsersCatalog } from "@/types/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { generateId } from "@/lib/training/id";
+import { registerTrainerManager } from "@/lib/training/trainer-api";
 
 const usersPath = path.join(process.cwd(), "data", "auth", "users.json");
 
@@ -109,6 +110,11 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
 
   catalog.users.push(user);
   await writeUsersCatalog(catalog);
+
+  if (user.accessLevel === "mop" || user.accessLevel === "rop") {
+    void registerTrainerManager({ id: user.id, name: user.name });
+  }
+
   return toPublicUser(user);
 }
 
