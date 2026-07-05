@@ -20,6 +20,12 @@ jobs:
           set -e
           echo "=== pm2 status ==="
           pm2 list || true
+          echo "=== trainer env (keys only) ==="
+          node -e "const e=require('/opt/pressa-trainer-bot/runtime-env.json'); console.log({API_URL:e.API_URL, hasToken:Boolean(e.TRAINER_BOT_TOKEN)})"
+          echo "=== trainer error log ==="
+          pm2 logs pressa-trainer-bot --err --lines 30 --nostream 2>/dev/null || true
+          echo "=== trainer out log ==="
+          pm2 logs pressa-trainer-bot --out --lines 30 --nostream 2>/dev/null || true
           echo "=== restart backend + trainer ==="
           pm2 restart pressa-backend pressa-trainer-bot 2>/dev/null || pm2 restart all
           sleep 3
