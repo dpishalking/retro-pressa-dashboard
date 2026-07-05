@@ -4,8 +4,7 @@ import { findUserById } from "@/lib/auth/store";
 import { buildFallbackBotLink, ensureTrainerBotLink } from "@/lib/training/trainer-api";
 
 const TRAINER_API_URL = (
-  process.env.TRAINER_API_URL ??
-  (process.env.NODE_ENV === "production" ? "http://127.0.0.1:3100" : "http://localhost:3100")
+  process.env.TRAINER_API_URL ?? "https://pressa-production-d394.up.railway.app"
 ).replace(/\/$/, "");
 
 function trainerErrorMessage(): string {

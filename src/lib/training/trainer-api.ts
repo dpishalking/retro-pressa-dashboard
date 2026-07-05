@@ -1,6 +1,5 @@
 const TRAINER_API_URL = (
-  process.env.TRAINER_API_URL ??
-  (process.env.NODE_ENV === "production" ? "http://127.0.0.1:3100" : "http://localhost:3100")
+  process.env.TRAINER_API_URL ?? "https://pressa-production-d394.up.railway.app"
 ).replace(/\/$/, "");
 const TRAINER_ADMIN_API_KEY = process.env.TRAINER_ADMIN_API_KEY ?? process.env.ADMIN_API_KEY ?? "";
 const TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG ?? "retro-pressa";

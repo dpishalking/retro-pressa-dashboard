@@ -1,15 +1,15 @@
-name: Restart Trainer Bot
+name: Trainer VPS cleanup
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: "restart or stop-vps-trainer"
+        description: "stop-vps-trainer or restart-backend"
         required: false
-        default: "restart"
+        default: "stop-vps-trainer"
 
 jobs:
-  restart:
+  manage:
     runs-on: ubuntu-latest
     steps:
       - name: Configure SSH
@@ -21,31 +21,26 @@ jobs:
 
       - name: Manage trainer on VPS
         run: |
-          ACTION="${{ github.event.inputs.action || 'restart' }}"
+          ACTION="${{ github.event.inputs.action || 'stop-vps-trainer' }}"
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << EOF
           set -e
-          if [ "$ACTION" = "stop-vps-trainer" ]; then
-            echo "Stopping VPS trainer bot (Railway handles Telegram now)"
-            pm2 stop pressa-trainer-bot 2>/dev/null || true
-            pm2 save
-            pm2 list
-            exit 0
-          fi
           echo "=== pm2 status ==="
           pm2 list || true
-          echo "=== trainer env (keys only) ==="
-          node -e "const e=require('/opt/pressa-trainer-bot/runtime-env.json'); console.log({API_URL:e.API_URL, hasToken:Boolean(e.TRAINER_BOT_TOKEN)})"
-          echo "=== trainer error log ==="
-          pm2 logs pressa-trainer-bot --err --lines 30 --nostream 2>/dev/null || true
-          echo "=== trainer out log ==="
-          pm2 logs pressa-trainer-bot --out --lines 30 --nostream 2>/dev/null || true
-          echo "=== restart backend + trainer ==="
-          pm2 restart pressa-backend pressa-trainer-bot 2>/dev/null || pm2 restart all
-          sleep 3
-          echo "=== health ==="
-          curl -fsS http://127.0.0.1:3100/health | head -c 200 || echo "backend health FAILED"
-          echo
-          echo "=== trainer logs ==="
-          pm2 logs pressa-trainer-bot --lines 15 --nostream 2>/dev/null || true
+
+          if [ "$ACTION" = "restart-backend" ]; then
+            echo "Restarting pressa-backend only (trainer bot is on Railway)"
+            pm2 restart pressa-backend 2>/dev/null || echo "pressa-backend not running"
+            sleep 2
+            curl -fsS http://127.0.0.1:3100/health | head -c 200 || echo "backend health FAILED"
+            echo
+            pm2 save
+            exit 0
+          fi
+
+          echo "Ensuring VPS trainer bot is stopped (Railway handles @dushnila12_bot)"
+          if pm2 describe pressa-trainer-bot > /dev/null 2>&1; then
+            pm2 delete pressa-trainer-bot || pm2 stop pressa-trainer-bot || true
+          fi
           pm2 save
+          pm2 list
           EOF

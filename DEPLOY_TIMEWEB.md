@@ -46,10 +46,13 @@ BITRIX_WEBHOOK_URL=...
 GOOGLE_SERVICE_ACCOUNT_JSON=...
 PORT=4174
 
-# Тренажёр менеджеров (gift-ai backend)
-TRAINER_API_URL=https://pressa-production.up.railway.app
-TRAINER_ADMIN_API_KEY=...   # = ADMIN_API_KEY из gift-ai/backend
+# Тренажёр менеджеров (gift-ai backend + Telegram bot)
+TRAINER_API_URL=https://pressa-production-d394.up.railway.app
+TRAINER_ADMIN_API_KEY=...   # = ADMIN_API_KEY на Railway (content-imagination / pressa)
 TRAINER_SERVICE_TAG=retro-pressa
+
+# Telegram-бот @dushnila12_bot запускается ТОЛЬКО на Railway (проект retro-pressa-bot).
+# Не запускайте npm run dev:trainer на Mac, пока бот живёт на Railway.
 ```
 
 Если Google JSON неудобно хранить одной строкой, можно использовать:
