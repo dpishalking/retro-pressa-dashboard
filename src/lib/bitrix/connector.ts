@@ -1,4 +1,4 @@
-import type { DailyMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey } from "@/types/metrics";
+import type { CountryInvoiceMetrics, DailyMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey } from "@/types/metrics";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -94,6 +94,7 @@ export type BitrixSyncPayload = {
   monthly: MonthlyMetrics;
   daily: DailyMetrics[];
   managers: ManagerMetrics[];
+  invoiceCountries: CountryInvoiceMetrics[];
   countryOptions: string[];
   productOptions: string[];
   summary: {
@@ -620,6 +621,10 @@ function emptyManager(period: PeriodKey, managerId: string, manager: string): Ma
   };
 }
 
+function sortCountryInvoices(items: CountryInvoiceMetrics[]) {
+  return items.sort((a, b) => b.invoicesCount - a.invoicesCount || b.invoicesAmount - a.invoicesAmount || a.country.localeCompare(b.country, "ru"));
+}
+
 function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOptions, dataSource: "snapshot" | "live"): BitrixSyncPayload {
   const start = new Date(snapshot.periodStart);
   const end = new Date(snapshot.periodEnd);
@@ -716,6 +721,25 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     manager.revenue += deal.opportunity;
   }
 
+  const countryInvoices = new Map<string, CountryInvoiceMetrics>();
+  for (const deal of filteredDeals) {
+    const country = deal.country || "Не указано";
+    const bucket = countryInvoices.get(country) ?? {
+      country,
+      invoicesCount: 0,
+      invoicesAmount: 0,
+      salesCount: 0,
+      revenue: 0
+    };
+    bucket.invoicesCount += 1;
+    bucket.invoicesAmount += deal.opportunity;
+    if (deal.stageSemanticId === "S") {
+      bucket.salesCount += 1;
+      bucket.revenue += deal.opportunity;
+    }
+    countryInvoices.set(country, bucket);
+  }
+
   const usersLoaded = new Set([
     ...snapshot.leads.map((lead) => lead.assignedById),
     ...snapshot.recentLeads.map((lead) => lead.assignedById),
@@ -741,6 +765,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     },
     daily: Array.from(days.values()),
     managers: Array.from(byManager.values()),
+    invoiceCountries: sortCountryInvoices(Array.from(countryInvoices.values())),
     countryOptions: snapshot.countryOptions,
     productOptions: snapshot.productOptions,
     summary: {

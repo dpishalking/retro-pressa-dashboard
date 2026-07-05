@@ -19,6 +19,14 @@ export type MonthlyMetrics = {
   calendarDays: number;
 };
 
+export type CountryInvoiceMetrics = {
+  country: string;
+  invoicesCount: number;
+  invoicesAmount: number;
+  salesCount: number;
+  revenue: number;
+};
+
 export type DialogueQualityMetrics = {
   month: PeriodKey;
   targetDialogs: number;

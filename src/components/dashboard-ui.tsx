@@ -8,7 +8,7 @@ import { conversationIntelligenceDemo, dailyMetrics, managerMetrics, marketMetri
 import { averageInvoice, averagePaidCheck, cashRoas, dailyPlan, delta, deltaPp, invoiceConversion, invoiceRoas, paidCpl, revenuePerLead, revenuePlanCompletion, salesConversion, scenarioForecast, totalLeads } from "@/lib/metrics-engine";
 import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
-import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, DailyMetrics, GeminiConversationSummary, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
@@ -131,6 +131,8 @@ const statusLabel: Record<Status, string> = {
   red: "Критично"
 };
 
+const countryPalette = ["#2563eb", "#0f766e", "#d97706", "#dc2626", "#0891b2", "#7c3aed", "#ea580c", "#475569"];
+
 const sampleReliabilityLabel: Record<ConversationDashboardMetrics["sampleReliability"], string> = {
   demo: "Демо",
   small: "Малая выборка",
@@ -219,6 +221,121 @@ function RunRateCard({
       </div>
       <div className="mt-1 text-xs font-bold text-slate-500">{pct(completion)} от плана по ранрейту</div>
     </article>
+  );
+}
+
+type CountryInvoiceSlice = CountryInvoiceMetrics & {
+  color: string;
+  share: number;
+};
+
+function buildCountryInvoiceSlices(items: CountryInvoiceMetrics[], limit = 7): CountryInvoiceSlice[] {
+  const normalized = items
+    .filter((item) => item.invoicesCount > 0)
+    .sort((a, b) => b.invoicesCount - a.invoicesCount || b.invoicesAmount - a.invoicesAmount);
+  const totalInvoices = normalized.reduce((sum, item) => sum + item.invoicesCount, 0);
+  if (!totalInvoices) return [];
+
+  const top = normalized.slice(0, limit);
+  const rest = normalized.slice(limit);
+  const slices = rest.length
+    ? [...top, {
+      country: "Другие",
+      invoicesCount: rest.reduce((sum, item) => sum + item.invoicesCount, 0),
+      invoicesAmount: rest.reduce((sum, item) => sum + item.invoicesAmount, 0),
+      salesCount: rest.reduce((sum, item) => sum + item.salesCount, 0),
+      revenue: rest.reduce((sum, item) => sum + item.revenue, 0)
+    }]
+    : top;
+
+  return slices.map((item, index) => ({
+    ...item,
+    color: countryPalette[index % countryPalette.length],
+    share: item.invoicesCount / totalInvoices
+  }));
+}
+
+function CountryInvoicesSection({ items }: { items: CountryInvoiceMetrics[] }) {
+  const slices = buildCountryInvoiceSlices(items);
+  const totalInvoices = items.reduce((sum, item) => sum + item.invoicesCount, 0);
+  const totalAmount = items.reduce((sum, item) => sum + item.invoicesAmount, 0);
+  const totalCountries = items.filter((item) => item.invoicesCount > 0).length;
+  const topCountry = slices[0];
+
+  return (
+    <section className="card p-4">
+      <SectionHead title="Выставленные счета по странам" subtitle="Структура счетов по странам внутри выбранного среза" />
+      {slices.length ? (
+        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)] xl:items-center">
+          <div className="grid gap-4 justify-items-center">
+            <div className="relative h-[280px] w-full max-w-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={slices} dataKey="invoicesCount" nameKey="country" innerRadius={76} outerRadius={108} paddingAngle={2} stroke="none">
+                    {slices.map((slice) => <Cell key={slice.country} fill={slice.color} />)}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      const entry = payload?.[0]?.payload as CountryInvoiceSlice | undefined;
+                      if (!active || !entry) return null;
+                      return (
+                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-lg">
+                          <div className="font-bold text-slate-950">{entry.country}</div>
+                          <div className="mt-1 text-slate-600">Счета: <b className="text-slate-950">{number(entry.invoicesCount)}</b></div>
+                          <div className="text-slate-600">Сумма: <b className="text-slate-950">{eur(entry.invoicesAmount)}</b></div>
+                          <div className="text-slate-600">Оплачено: <b className="text-slate-950">{number(entry.salesCount)} / {eur(entry.revenue)}</b></div>
+                          <div className="text-slate-600">Доля: <b className="text-slate-950">{pct(entry.share)}</b></div>
+                        </div>
+                      );
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                <div className="text-center">
+                  <div className="text-4xl font-black leading-none text-slate-950">{number(totalInvoices)}</div>
+                  <div className="mt-1 text-sm text-slate-500">счетов</div>
+                  <div className="mt-2 text-sm font-bold text-slate-950">{eur(totalAmount)}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
+              <span className="rounded-full bg-slate-100 px-3 py-1">{number(totalCountries)} стран</span>
+              {topCountry ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Лидер: {topCountry.country}</span> : null}
+            </div>
+          </div>
+          <div className="grid gap-3">
+            {slices.map((slice) => (
+              <div key={slice.country} className="grid gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} />
+                      <strong className="truncate text-sm text-slate-950">{slice.country}</strong>
+                    </div>
+                    <div className="mt-1 text-sm text-slate-500">{eur(slice.invoicesAmount)} выставлено</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-slate-950">{number(slice.invoicesCount)} · {pct(slice.share)}</div>
+                    <div className="mt-1 text-xs text-slate-500">{number(slice.salesCount)} оплат · {eur(slice.revenue)}</div>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full" style={{ width: `${Math.max(6, slice.share * 100)}%`, backgroundColor: slice.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+          <div>
+            <h3 className="text-lg font-bold">Здесь появится структура по странам</h3>
+            <p className="mt-2 max-w-xl text-sm text-slate-500">После синхронизации Битрикса покажем, из каких стран пришли выставленные счета.</p>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -452,7 +569,20 @@ function dailyFactAt(items: DailyMetrics[], elapsedDays: number) {
   };
 }
 
-function Overview({ current, monthlyPlan, daily, showPlan }: { current: MonthlyMetrics; previous: MonthlyMetrics; monthlyPlan: MonthlyPlan; daily: DailyMetrics[]; showPlan: boolean }) {
+function Overview({
+  current,
+  monthlyPlan,
+  daily,
+  showPlan,
+  invoiceCountries
+}: {
+  current: MonthlyMetrics;
+  previous: MonthlyMetrics;
+  monthlyPlan: MonthlyPlan;
+  daily: DailyMetrics[];
+  showPlan: boolean;
+  invoiceCountries: CountryInvoiceMetrics[];
+}) {
   const elapsedDays = elapsedDaysForPeriod(current.month);
   const monthPlan = deriveMonthlyPlan(monthlyPlan);
   const tempo = revenuePlanCompletion(current.revenue, monthlyPlan.targetRevenue) / (elapsedDays / monthlyPlan.calendarDays);
@@ -487,7 +617,6 @@ function Overview({ current, monthlyPlan, daily, showPlan }: { current: MonthlyM
   const invoicesGap = current.invoicesCount - monthPlan.invoices;
   const invoicesAmountGap = current.invoicesAmount - monthPlan.invoicesAmount;
   const projectMonth = (value: number) => elapsedDays > 0 ? (value / elapsedDays) * monthlyPlan.calendarDays : 0;
-  const dailyAverage = (value: number) => elapsedDays > 0 ? value / elapsedDays : 0;
   const leadsRunRate = projectMonth(currentLeads);
   const qlRunRate = projectMonth(current.qualifiedLeads);
   const adSpendRunRate = projectMonth(current.adSpend);
@@ -530,56 +659,7 @@ function Overview({ current, monthlyPlan, daily, showPlan }: { current: MonthlyM
           </div>
         </section>
 
-        {showPlan ? <section className="card p-4">
-          <SectionHead title="Ранрейт месяца" subtitle="Прогноз на конец месяца при текущем темпе" />
-          <div className="grid gap-3 md:grid-cols-5">
-            <RunRateCard
-              title="Лиды"
-              fact={number(currentLeads)}
-              plan={number(monthPlan.totalLeads)}
-              forecast={number(leadsRunRate)}
-              daily={`${number(dailyAverage(currentLeads))} / ${number(monthPlan.dailyLeads)}`}
-              completion={safeCompletion(leadsRunRate, monthPlan.totalLeads)}
-              status={runRateStatus(safeCompletion(leadsRunRate, monthPlan.totalLeads))}
-            />
-            <RunRateCard
-              title="Qualified лиды"
-              fact={number(current.qualifiedLeads)}
-              plan={number(monthlyPlan.qualifiedLeads)}
-              forecast={number(qlRunRate)}
-              daily={`${number(dailyAverage(current.qualifiedLeads))} / ${number(monthlyPlan.qualifiedLeads / monthlyPlan.calendarDays)}`}
-              completion={safeCompletion(qlRunRate, monthlyPlan.qualifiedLeads)}
-              status={runRateStatus(safeCompletion(qlRunRate, monthlyPlan.qualifiedLeads))}
-            />
-            <RunRateCard
-              title="Бюджет трафика"
-              fact={eur(current.adSpend)}
-              plan={eur(monthlyPlan.adSpend)}
-              forecast={eur(adSpendRunRate)}
-              daily={`${eur(dailyAverage(current.adSpend))} / ${eur(monthlyPlan.adSpend / monthlyPlan.calendarDays)}`}
-              completion={safeCompletion(adSpendRunRate, monthlyPlan.adSpend)}
-              status={runRateStatus(safeCompletion(adSpendRunRate, monthlyPlan.adSpend), true)}
-            />
-            <RunRateCard
-              title="Выставлено счетов"
-              fact={`${number(current.invoicesCount)} / ${eur(current.invoicesAmount)}`}
-              plan={`${number(monthPlan.invoices)} / ${eur(monthPlan.invoicesAmount)}`}
-              forecast={`${number(invoicesRunRate)} / ${eur(invoicesAmountRunRate)}`}
-              daily={`${number(dailyAverage(current.invoicesCount))} / ${eur(dailyAverage(current.invoicesAmount))}`}
-              completion={safeCompletion(invoicesAmountRunRate, monthPlan.invoicesAmount)}
-              status={runRateStatus(safeCompletion(invoicesAmountRunRate, monthPlan.invoicesAmount))}
-            />
-            <RunRateCard
-              title="Оплачено счетов"
-              fact={`${number(current.salesCount)} / ${eur(current.revenue)}`}
-              plan={`${number(monthPlan.sales)} / ${eur(monthlyPlan.targetRevenue)}`}
-              forecast={`${number(salesRunRate)} / ${eur(revenueRunRate)}`}
-              daily={`${number(dailyAverage(current.salesCount))} / ${eur(dailyAverage(current.revenue))}`}
-              completion={safeCompletion(revenueRunRate, monthlyPlan.targetRevenue)}
-              status={runRateStatus(safeCompletion(revenueRunRate, monthlyPlan.targetRevenue))}
-            />
-          </div>
-        </section> : null}
+        <CountryInvoicesSection items={invoiceCountries} />
 
         {showPlan ? <section className="card p-4">
           <SectionHead title="План на сегодня" subtitle="Минимальный дневной ориентир без лишней аналитики" />
@@ -1789,6 +1869,7 @@ type BitrixSyncPayload = {
   monthly: MonthlyMetrics;
   daily: DailyMetrics[];
   managers: ManagerMetrics[];
+  invoiceCountries: CountryInvoiceMetrics[];
   countryOptions?: string[];
   productOptions?: string[];
   summary: {
@@ -2098,6 +2179,7 @@ export function DashboardApp() {
   const [liveMonthly, setLiveMonthly] = useState<MonthlyMetrics[]>(monthlyMetrics);
   const [liveDaily, setLiveDaily] = useState<DailyMetrics[]>(dailyMetrics);
   const [liveManagers, setLiveManagers] = useState<ManagerMetrics[]>(managerMetrics);
+  const [liveInvoiceCountries, setLiveInvoiceCountries] = useState<CountryInvoiceMetrics[]>([]);
   const [conversationDashboard, setConversationDashboard] = useState<ConversationDashboardMetrics>(conversationIntelligenceDemo.dashboard);
   const [syncStatus, setSyncStatus] = useState("Факты ещё не загружены");
   const [googleStatus, setGoogleStatus] = useState<SyncStatus>({
@@ -2253,6 +2335,7 @@ export function DashboardApp() {
       organicQualifiedLeads: useBitrixLeadTotals ? incoming.organicQualifiedLeads : base.organicQualifiedLeads || incoming.organicQualifiedLeads
     })));
     setLiveManagers(payload.managers);
+    setLiveInvoiceCountries(payload.invoiceCountries);
     if (payload.countryOptions?.length) {
       setCountryOptions(payload.countryOptions);
     }
@@ -2304,6 +2387,7 @@ export function DashboardApp() {
     const requestProduct = productFilter;
     const requestHasCohortFilter = requestCountry !== "all" || requestManager !== "all" || requestProduct !== "all";
     setBitrixStatus({ state: "loading", message: "Загружаю факт из Bitrix..." });
+    setLiveInvoiceCountries([]);
     if (requestHasCohortFilter) {
       setLiveMonthly((items) => items.map((item) => item.month === requestPeriod ? clearMonthlyFacts(item) : item));
       setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(requestPeriod)) ? clearDailyFacts(item) : item));
@@ -2395,7 +2479,7 @@ export function DashboardApp() {
         productOptions={productOptions}
       />
       {activeTab !== "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} compact /> : null}
-      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} /> : null}
+      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} /> : null}
       {activeTab === "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} /> : null}
       {activeTab === "Growth Intelligence" ? <GrowthIntelligenceTab current={current} previous={previous} quality={quality} daily={currentDaily} monthlyPlan={monthlyPlan} conversationDashboard={conversationDashboard} /> : null}
       {activeTab === "План месяца" ? <MonthPlanningTab current={current} monthlyPlan={monthlyPlan} setMonthlyPlan={setMonthlyPlan} daily={currentDaily} /> : null}
