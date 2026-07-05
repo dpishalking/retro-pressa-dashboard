@@ -36,6 +36,14 @@ export type ManagerInvoiceMetrics = {
   revenue: number;
 };
 
+export type ProductInvoiceMetrics = {
+  product: string;
+  invoicesCount: number;
+  invoicesAmount: number;
+  salesCount: number;
+  revenue: number;
+};
+
 export type DialogueQualityMetrics = {
   month: PeriodKey;
   targetDialogs: number;

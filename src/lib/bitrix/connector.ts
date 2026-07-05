@@ -1,4 +1,4 @@
-import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey } from "@/types/metrics";
+import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -96,6 +96,7 @@ export type BitrixSyncPayload = {
   managers: ManagerMetrics[];
   invoiceCountries: CountryInvoiceMetrics[];
   invoiceManagers: ManagerInvoiceMetrics[];
+  invoiceProducts: ProductInvoiceMetrics[];
   countryOptions: string[];
   productOptions: string[];
   summary: {
@@ -630,6 +631,15 @@ function sortManagerInvoices(items: ManagerInvoiceMetrics[]) {
   return items.sort((a, b) => b.invoicesCount - a.invoicesCount || b.invoicesAmount - a.invoicesAmount || a.manager.localeCompare(b.manager, "ru"));
 }
 
+function sortProductInvoices(items: ProductInvoiceMetrics[]) {
+  return items.sort((a, b) => b.invoicesCount - a.invoicesCount || b.invoicesAmount - a.invoicesAmount || a.product.localeCompare(b.product, "ru"));
+}
+
+function dominantProductName(deal: BitrixSnapshotDeal) {
+  const [topProduct] = [...deal.products].sort((a, b) => (b.quantity * b.price) - (a.quantity * a.price) || b.price - a.price || a.productName.localeCompare(b.productName, "ru"));
+  return topProduct?.productName || "Без продукта";
+}
+
 function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOptions, dataSource: "snapshot" | "live"): BitrixSyncPayload {
   const start = new Date(snapshot.periodStart);
   const end = new Date(snapshot.periodEnd);
@@ -766,6 +776,25 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     managerInvoices.set(managerId, bucket);
   }
 
+  const productInvoices = new Map<string, ProductInvoiceMetrics>();
+  for (const deal of filteredDeals) {
+    const product = dominantProductName(deal);
+    const bucket = productInvoices.get(product) ?? {
+      product,
+      invoicesCount: 0,
+      invoicesAmount: 0,
+      salesCount: 0,
+      revenue: 0
+    };
+    bucket.invoicesCount += 1;
+    bucket.invoicesAmount += deal.opportunity;
+    if (deal.stageSemanticId === "S") {
+      bucket.salesCount += 1;
+      bucket.revenue += deal.opportunity;
+    }
+    productInvoices.set(product, bucket);
+  }
+
   const usersLoaded = new Set([
     ...snapshot.leads.map((lead) => lead.assignedById),
     ...snapshot.recentLeads.map((lead) => lead.assignedById),
@@ -793,6 +822,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     managers: Array.from(byManager.values()),
     invoiceCountries: sortCountryInvoices(Array.from(countryInvoices.values())),
     invoiceManagers: sortManagerInvoices(Array.from(managerInvoices.values())),
+    invoiceProducts: sortProductInvoices(Array.from(productInvoices.values())),
     countryOptions: snapshot.countryOptions,
     productOptions: snapshot.productOptions,
     summary: {

@@ -8,7 +8,7 @@ import { conversationIntelligenceDemo, dailyMetrics, managerMetrics, marketMetri
 import { averageInvoice, averagePaidCheck, cashRoas, dailyPlan, delta, deltaPp, invoiceConversion, invoiceRoas, paidCpl, revenuePerLead, revenuePlanCompletion, salesConversion, scenarioForecast, totalLeads } from "@/lib/metrics-engine";
 import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
-import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerInvoiceMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerInvoiceMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, ProductInvoiceMetrics, Status } from "@/types/metrics";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
@@ -412,6 +412,27 @@ function ManagerInvoicesSection({ items }: { items: ManagerInvoiceMetrics[] }) {
   );
 }
 
+function ProductInvoicesSection({ items }: { items: ProductInvoiceMetrics[] }) {
+  return (
+    <InvoiceBreakdownSection
+      title="Выставленные счета по продуктам"
+      subtitle="Какой продукт чаще всего формирует выставленные счета внутри выбранного среза"
+      items={items.map((item) => ({
+        id: item.product,
+        label: item.product,
+        invoicesCount: item.invoicesCount,
+        invoicesAmount: item.invoicesAmount,
+        salesCount: item.salesCount,
+        revenue: item.revenue
+      }))}
+      entityLabel="продуктов"
+      leaderLabel="Лидер"
+      emptyTitle="Здесь появится структура по продуктам"
+      emptySubtitle="После синхронизации Битрикса покажем, какие продукты чаще всего стоят в выставленных счетах."
+    />
+  );
+}
+
 function PlanFactRow({ label, fact, plan, completion, unit = "" }: { label: string; fact: string; plan: string; completion: number; unit?: string }) {
   const normalizedCompletion = Number.isFinite(completion) ? completion : 0;
   const width = Math.min(100, Math.max(0, normalizedCompletion * 100));
@@ -648,7 +669,8 @@ function Overview({
   daily,
   showPlan,
   invoiceCountries,
-  invoiceManagers
+  invoiceManagers,
+  invoiceProducts
 }: {
   current: MonthlyMetrics;
   previous: MonthlyMetrics;
@@ -657,6 +679,7 @@ function Overview({
   showPlan: boolean;
   invoiceCountries: CountryInvoiceMetrics[];
   invoiceManagers: ManagerInvoiceMetrics[];
+  invoiceProducts: ProductInvoiceMetrics[];
 }) {
   const elapsedDays = elapsedDaysForPeriod(current.month);
   const monthPlan = deriveMonthlyPlan(monthlyPlan);
@@ -737,6 +760,7 @@ function Overview({
         <div className="grid gap-4 2xl:grid-cols-2">
           <CountryInvoicesSection items={invoiceCountries} />
           <ManagerInvoicesSection items={invoiceManagers} />
+          <ProductInvoicesSection items={invoiceProducts} />
         </div>
 
         {showPlan ? <section className="card p-4">
@@ -1949,6 +1973,7 @@ type BitrixSyncPayload = {
   managers: ManagerMetrics[];
   invoiceCountries: CountryInvoiceMetrics[];
   invoiceManagers: ManagerInvoiceMetrics[];
+  invoiceProducts: ProductInvoiceMetrics[];
   countryOptions?: string[];
   productOptions?: string[];
   summary: {
@@ -2260,6 +2285,7 @@ export function DashboardApp() {
   const [liveManagers, setLiveManagers] = useState<ManagerMetrics[]>(managerMetrics);
   const [liveInvoiceCountries, setLiveInvoiceCountries] = useState<CountryInvoiceMetrics[]>([]);
   const [liveInvoiceManagers, setLiveInvoiceManagers] = useState<ManagerInvoiceMetrics[]>([]);
+  const [liveInvoiceProducts, setLiveInvoiceProducts] = useState<ProductInvoiceMetrics[]>([]);
   const [conversationDashboard, setConversationDashboard] = useState<ConversationDashboardMetrics>(conversationIntelligenceDemo.dashboard);
   const [syncStatus, setSyncStatus] = useState("Факты ещё не загружены");
   const [googleStatus, setGoogleStatus] = useState<SyncStatus>({
@@ -2417,6 +2443,7 @@ export function DashboardApp() {
     setLiveManagers(payload.managers);
     setLiveInvoiceCountries(payload.invoiceCountries);
     setLiveInvoiceManagers(payload.invoiceManagers);
+    setLiveInvoiceProducts(payload.invoiceProducts);
     if (payload.countryOptions?.length) {
       setCountryOptions(payload.countryOptions);
     }
@@ -2470,6 +2497,7 @@ export function DashboardApp() {
     setBitrixStatus({ state: "loading", message: "Загружаю факт из Bitrix..." });
     setLiveInvoiceCountries([]);
     setLiveInvoiceManagers([]);
+    setLiveInvoiceProducts([]);
     if (requestHasCohortFilter) {
       setLiveMonthly((items) => items.map((item) => item.month === requestPeriod ? clearMonthlyFacts(item) : item));
       setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(requestPeriod)) ? clearDailyFacts(item) : item));
@@ -2561,7 +2589,7 @@ export function DashboardApp() {
         productOptions={productOptions}
       />
       {activeTab !== "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} compact /> : null}
-      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} invoiceManagers={liveInvoiceManagers} /> : null}
+      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} invoiceManagers={liveInvoiceManagers} invoiceProducts={liveInvoiceProducts} /> : null}
       {activeTab === "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} /> : null}
       {activeTab === "Growth Intelligence" ? <GrowthIntelligenceTab current={current} previous={previous} quality={quality} daily={currentDaily} monthlyPlan={monthlyPlan} conversationDashboard={conversationDashboard} /> : null}
       {activeTab === "План месяца" ? <MonthPlanningTab current={current} monthlyPlan={monthlyPlan} setMonthlyPlan={setMonthlyPlan} daily={currentDaily} /> : null}
