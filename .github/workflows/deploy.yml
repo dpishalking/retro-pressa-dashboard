@@ -159,6 +159,8 @@ jobs:
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
           scp -i ~/.ssh/deploy_key trainer-backend-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-env.json"
+          scp -i ~/.ssh/deploy_key -r scripts/trainer-backend-overlay \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-overlay"
 
       - name: Deploy on server
         run: |
@@ -175,14 +177,18 @@ jobs:
           BACKEND_DATA="/opt/pressa-backend-shared/data"
           BACKEND_ENV="/opt/pressa-backend/runtime-env.json"
           PRESSA_SRC="/opt/pressa-src"
-          mkdir -p "$BACKEND_DATA" /opt/pressa-backend /tmp/trainer-backend-overlay
+          mkdir -p "$BACKEND_DATA" /opt/pressa-backend
 
-          tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /tmp/trainer-backend-overlay trainer-backend-overlay
-          if [ ! -f /tmp/trainer-backend-overlay/trainer-backend-overlay/manager-sessions.ts ]; then
-            echo "Trainer overlay missing from deploy archive" >&2
+          OVERLAY_DIR="/tmp/trainer-backend-overlay"
+          if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
+            mkdir -p /tmp/overlay-fallback
+            tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /tmp/overlay-fallback ./trainer-backend-overlay
+            OVERLAY_DIR="/tmp/overlay-fallback/trainer-backend-overlay"
+          fi
+          if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
+            echo "Trainer overlay missing on server" >&2
             exit 1
           fi
-          OVERLAY_DIR="/tmp/trainer-backend-overlay/trainer-backend-overlay"
 
           if [ ! -d "$PRESSA_SRC/.git" ]; then
             git clone --depth 1 https://github.com/dpishalking/pressa.git "$PRESSA_SRC"
