@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { buildTrainingOverview } from "@/lib/training/progress";
@@ -107,12 +107,18 @@ function TrainingHubContent() {
       userId: user?.id ?? "anna",
       userName: user?.name ?? "Анна",
       products: [],
+      modules: [],
       attempts: []
     };
     return {
       products: fallbackProducts,
       progress: fallbackProgress,
-      overview: buildTrainingOverview(fallbackProducts, fallbackProgress)
+      overview: buildTrainingOverview(
+        fallbackProducts,
+        createTrackModulesSeed("crm"),
+        createTrackModulesSeed("practice"),
+        fallbackProgress
+      )
     };
   }, [user?.id, user?.name]);
   const [data, setData] = useState<HubData>(fallbackData);
@@ -233,10 +239,10 @@ function TrainingHubContent() {
 export function TrainingHub() {
   return (
     <TrainingLayout
-      title="Обучение менеджеров"
-      description="Онбординг и тренировочный кабинет: материалы, практика, тесты и контроль прогресса."
-      backHref={HUB_PATH}
-      backLabel="К рабочему кабинету"
+      title="Этап 1. Продукт"
+      description="Линейка подарков: смысл каждого продукта, кому предлагать, как объяснять ценность и сдавать тест."
+      backHref="/training"
+      backLabel="К этапам обучения"
     >
       <TrainingHubContent />
     </TrainingLayout>

@@ -2,6 +2,10 @@ export type UserRole = "manager" | "admin";
 
 export type TrainingStatus = "not_started" | "in_progress" | "completed";
 
+export type TrainingStageId = "products" | "crm" | "practice";
+
+export type TrackStageId = Exclude<TrainingStageId, "products">;
+
 export type MaterialType = "image" | "video" | "document" | "link" | "text";
 
 export type ProductSectionKey =
@@ -40,6 +44,34 @@ export type QuizQuestion = {
   sortOrder: number;
 };
 
+export type TrainingTrackSection = {
+  id: string;
+  title: string;
+  content: string;
+  sortOrder: number;
+};
+
+export type TrainingTrackVideo = {
+  id: string;
+  title: string;
+  goal: string;
+  embedUrl?: string;
+  sortOrder: number;
+};
+
+/** CRM или практика — отдельный модуль внутри этапа обучения */
+export type TrainingTrackModule = {
+  id: string;
+  stageId: TrackStageId;
+  title: string;
+  shortDescription: string;
+  passingScore: number;
+  sortOrder: number;
+  sections: TrainingTrackSection[];
+  videos?: TrainingTrackVideo[];
+  questions: QuizQuestion[];
+};
+
 export type ProductTrainingModule = {
   id: string;
   title: string;
@@ -70,8 +102,10 @@ export type QuizAttemptAnswer = {
 
 export type UserQuizAttempt = {
   id: string;
-  productId: string;
   userId: string;
+  productId?: string;
+  moduleId?: string;
+  stageId?: TrackStageId;
   answers: QuizAttemptAnswer[];
   scorePercent: number;
   passed: boolean;
@@ -88,10 +122,22 @@ export type ProductProgress = {
   attemptCount: number;
 };
 
+export type TrackModuleProgress = {
+  moduleId: string;
+  stageId: TrackStageId;
+  status: TrainingStatus;
+  startedAt?: string;
+  completedAt?: string;
+  lastAttemptAt?: string;
+  bestScorePercent?: number;
+  attemptCount: number;
+};
+
 export type UserTrainingProgress = {
   userId: string;
   userName: string;
   products: ProductProgress[];
+  modules: TrackModuleProgress[];
   attempts: UserQuizAttempt[];
 };
 
@@ -102,8 +148,10 @@ export type TrainingUser = {
 };
 
 export type QuizSubmission = {
-  productId: string;
   userId: string;
+  productId?: string;
+  moduleId?: string;
+  stageId?: TrackStageId;
   answers: {
     questionId: string;
     selectedAnswerIds?: string[];
@@ -119,6 +167,18 @@ export type QuizResult = {
   }[];
 };
 
+export type TrainingStageOverview = {
+  id: TrainingStageId;
+  title: string;
+  description: string;
+  href: string;
+  totalModules: number;
+  completedModules: number;
+  inProgressModules: number;
+  percent: number;
+  status: TrainingStatus;
+};
+
 export type TrainingOverview = {
   totalProducts: number;
   completedProducts: number;
@@ -127,4 +187,6 @@ export type TrainingOverview = {
   overallPercent: number;
   passedTests: number;
   remainingProductIds: string[];
+  stages: TrainingStageOverview[];
+  totalStagesPercent: number;
 };

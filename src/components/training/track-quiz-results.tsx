@@ -5,17 +5,16 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import type { ProductTrainingModule, QuizAttemptAnswer, QuizQuestion, UserQuizAttempt } from "@/types/training";
+import type { QuizAttemptAnswer, QuizQuestion, TrackStageId, TrainingTrackModule, UserQuizAttempt } from "@/types/training";
 
 type ResultData = {
   attempt: UserQuizAttempt;
-  product: ProductTrainingModule;
+  module: TrainingTrackModule;
   questions: { question: QuizQuestion; userAnswer: QuizAttemptAnswer }[];
 };
 
 function answerLabel(question: QuizQuestion, userAnswer: QuizAttemptAnswer) {
   if (question.type === "text") return userAnswer.textAnswer || "—";
-
   const selected = question.answers.filter((answer) => userAnswer.selectedAnswerIds?.includes(answer.id));
   return selected.map((answer) => answer.text).join(", ") || "—";
 }
@@ -30,7 +29,15 @@ function correctLabel(question: QuizQuestion) {
     .join(", ");
 }
 
-function QuizResultsContent({ productId, attemptId }: { productId: string; attemptId: string }) {
+function TrackQuizResultsContent({
+  stageId,
+  moduleId,
+  attemptId
+}: {
+  stageId: TrackStageId;
+  moduleId: string;
+  attemptId: string;
+}) {
   const { user } = useTrainingUser();
   const [data, setData] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +50,7 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
       .finally(() => setLoading(false));
   }, [attemptId, user]);
 
-  if (loading || !data) {
+  if (loading || !data?.module) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка результатов...</div>;
   }
 
@@ -55,7 +62,7 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Результат теста</p>
         <h2 className="mt-2 text-3xl font-black text-slate-950">{data.attempt.scorePercent}%</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Правильных ответов: {correctCount} из {data.questions.length}. Проходной балл: {data.product.passingScore}%.
+          Правильных ответов: {correctCount} из {data.questions.length}. Проходной балл: {data.module.passingScore}%.
         </p>
         <span
           className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
@@ -98,30 +105,38 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
 
       <section className="flex flex-wrap gap-3">
         <Link
-          href={`/training/products/${productId}/quiz`}
+          href={`/training/${stageId}/${moduleId}/quiz`}
           className="rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
         >
           Пройти ещё раз
         </Link>
         <Link
-          href="/training/products"
+          href={`/training/${stageId}`}
           className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
         >
-          К списку продуктов
+          К списку модулей
         </Link>
       </section>
     </div>
   );
 }
 
-export function QuizResults({ productId, attemptId }: { productId: string; attemptId: string }) {
+export function TrackQuizResults({
+  stageId,
+  moduleId,
+  attemptId
+}: {
+  stageId: TrackStageId;
+  moduleId: string;
+  attemptId: string;
+}) {
   return (
     <TrainingLayout
       title="Результаты теста"
-      backHref={`/training/products/${productId}`}
-      backLabel="К материалам продукта"
+      backHref={`/training/${stageId}/${moduleId}`}
+      backLabel="К материалам модуля"
     >
-      <QuizResultsContent productId={productId} attemptId={attemptId} />
+      <TrackQuizResultsContent stageId={stageId} moduleId={moduleId} attemptId={attemptId} />
     </TrainingLayout>
   );
 }

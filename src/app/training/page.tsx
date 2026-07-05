@@ -1,5 +1,5 @@
-import { TrainingHub } from "@/components/training/training-hub";
+import { TrainingStagesHub } from "@/components/training/training-stages-hub";
 
 export default function TrainingPage() {
-  return <TrainingHub />;
+  return <TrainingStagesHub />;
 }

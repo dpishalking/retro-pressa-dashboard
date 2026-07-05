@@ -279,7 +279,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
 export function ProductDetail({ productId }: { productId: string }) {
   return (
-    <TrainingLayout backHref="/training" backLabel="К списку продуктов">
+    <TrainingLayout backHref="/training/products" backLabel="К списку продуктов">
       <ProductDetailContent productId={productId} />
     </TrainingLayout>
   );

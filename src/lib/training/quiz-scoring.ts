@@ -1,4 +1,5 @@
-import type { ProductTrainingModule, QuizAttemptAnswer, QuizSubmission, UserQuizAttempt } from "@/types/training";
+import type { QuizAttemptAnswer, QuizQuestion, QuizSubmission, UserQuizAttempt } from "@/types/training";
+import type { QuizScorable } from "@/lib/training/progress";
 import { generateId } from "@/lib/training/id";
 
 function normalizeText(value: string) {
@@ -6,7 +7,7 @@ function normalizeText(value: string) {
 }
 
 function gradeQuestion(
-  question: ProductTrainingModule["questions"][number],
+  question: QuizQuestion,
   submission: QuizSubmission["answers"][number]
 ): QuizAttemptAnswer {
   const correctIds = question.answers.filter((answer) => answer.isCorrect).map((answer) => answer.id);
@@ -47,21 +48,23 @@ function gradeQuestion(
   };
 }
 
-export function scoreQuizSubmission(product: ProductTrainingModule, submission: QuizSubmission) {
-  const gradedAnswers = product.questions.map((question) => {
+export function scoreQuizSubmission(host: QuizScorable, submission: QuizSubmission) {
+  const gradedAnswers = host.questions.map((question) => {
     const answer = submission.answers.find((item) => item.questionId === question.id);
     return gradeQuestion(question, answer ?? { questionId: question.id });
   });
 
   const correctCount = gradedAnswers.filter((answer) => answer.isCorrect).length;
-  const totalCount = product.questions.length || 1;
+  const totalCount = host.questions.length || 1;
   const scorePercent = Math.round((correctCount / totalCount) * 100);
-  const passed = scorePercent >= product.passingScore;
+  const passed = scorePercent >= host.passingScore;
 
   const attempt: UserQuizAttempt = {
     id: generateId("attempt"),
-    productId: product.id,
     userId: submission.userId,
+    productId: submission.productId,
+    moduleId: submission.moduleId,
+    stageId: submission.stageId,
     answers: gradedAnswers,
     scorePercent,
     passed,

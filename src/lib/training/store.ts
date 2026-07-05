@@ -6,6 +6,7 @@ import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 import type {
   ProductTrainingModule,
   QuizSubmission,
+  TrackStageId,
   TrainingOverview,
   TrainingStatus,
   TrainingUser,
@@ -14,7 +15,8 @@ import type {
 } from "@/types/training";
 import { generateId } from "@/lib/training/id";
 import { scoreQuizSubmission } from "@/lib/training/quiz-scoring";
-import { buildTrainingOverview } from "@/lib/training/progress";
+import { buildTrainingOverview, getTrackModuleProgress } from "@/lib/training/progress";
+import { findTrackModule, listTrackModules } from "@/lib/training/track-modules";
 
 export { generateId };
 
@@ -108,7 +110,21 @@ function createEmptyProgress(user: TrainingUser): UserTrainingProgress {
     userId: user.id,
     userName: user.name,
     products: [],
+    modules: [],
     attempts: []
+  };
+}
+
+function normalizeProgress(parsed: Partial<UserTrainingProgress>, userId: string): UserTrainingProgress | null {
+  if (parsed?.userId !== userId || !Array.isArray(parsed.products) || !Array.isArray(parsed.attempts)) {
+    return null;
+  }
+  return {
+    userId: parsed.userId,
+    userName: parsed.userName ?? userId,
+    products: parsed.products,
+    modules: Array.isArray(parsed.modules) ? parsed.modules : [],
+    attempts: parsed.attempts
   };
 }
 
@@ -116,9 +132,8 @@ export async function readUserProgress(userId: string): Promise<UserTrainingProg
   try {
     const raw = await readFile(progressFilePath(userId), "utf8");
     const parsed = JSON.parse(raw) as Partial<UserTrainingProgress>;
-    if (parsed?.userId === userId && Array.isArray(parsed.products) && Array.isArray(parsed.attempts)) {
-      return parsed as UserTrainingProgress;
-    }
+    const normalized = normalizeProgress(parsed, userId);
+    if (normalized) return normalized;
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("ENOENT")) return null;
@@ -154,6 +169,28 @@ export function resolveProductStatus(progress: UserTrainingProgress, productId: 
   return getProductProgress(progress, productId)?.status ?? "not_started";
 }
 
+export async function markModuleStarted(userId: string, stageId: TrackStageId, moduleId: string) {
+  const progress = await getOrCreateUserProgress(userId);
+  const existing = getTrackModuleProgress(progress, stageId, moduleId);
+  const now = new Date().toISOString();
+
+  if (!existing) {
+    progress.modules.push({
+      moduleId,
+      stageId,
+      status: "in_progress",
+      startedAt: now,
+      attemptCount: 0
+    });
+  } else if (existing.status === "not_started") {
+    existing.status = "in_progress";
+    existing.startedAt = existing.startedAt ?? now;
+  }
+
+  await writeUserProgress(progress);
+  return progress;
+}
+
 export async function markProductStarted(userId: string, productId: string) {
   const progress = await getOrCreateUserProgress(userId);
   const existing = getProductProgress(progress, productId);
@@ -176,11 +213,17 @@ export async function markProductStarted(userId: string, productId: string) {
 }
 
 export async function submitQuiz(submission: QuizSubmission) {
+  if (submission.moduleId && submission.stageId) {
+    return submitModuleQuiz(submission);
+  }
+
+  if (!submission.productId) throw new Error("productId or moduleId is required");
+
   const product = await getProduct(submission.productId);
   if (!product) throw new Error("Product not found");
 
   const progress = await getOrCreateUserProgress(submission.userId);
-  const { attempt, gradedAnswers } = scoreQuizSubmission(product, submission);
+  const { attempt, gradedAnswers } = scoreQuizSubmission(product, { ...submission, productId: product.id });
 
   progress.attempts.unshift(attempt);
 
@@ -220,17 +263,83 @@ export async function submitQuiz(submission: QuizSubmission) {
   };
 }
 
+async function submitModuleQuiz(submission: QuizSubmission) {
+  if (!submission.moduleId || !submission.stageId) {
+    throw new Error("moduleId and stageId are required");
+  }
+
+  const module = await findTrackModule(submission.moduleId);
+  if (!module || module.stageId !== submission.stageId) throw new Error("Module not found");
+
+  const progress = await getOrCreateUserProgress(submission.userId);
+  const { attempt, gradedAnswers } = scoreQuizSubmission(module, submission);
+
+  progress.attempts.unshift(attempt);
+
+  const moduleProgress = getTrackModuleProgress(progress, submission.stageId, submission.moduleId);
+  const now = attempt.attemptedAt;
+
+  if (!moduleProgress) {
+    progress.modules.push({
+      moduleId: submission.moduleId,
+      stageId: submission.stageId,
+      status: attempt.passed ? "completed" : "in_progress",
+      startedAt: now,
+      completedAt: attempt.passed ? now : undefined,
+      lastAttemptAt: now,
+      bestScorePercent: attempt.scorePercent,
+      attemptCount: 1
+    });
+  } else {
+    moduleProgress.attemptCount += 1;
+    moduleProgress.lastAttemptAt = now;
+    moduleProgress.bestScorePercent = Math.max(moduleProgress.bestScorePercent ?? 0, attempt.scorePercent);
+    if (attempt.passed) {
+      moduleProgress.status = "completed";
+      moduleProgress.completedAt = moduleProgress.completedAt ?? now;
+    } else if (moduleProgress.status === "not_started") {
+      moduleProgress.status = "in_progress";
+      moduleProgress.startedAt = moduleProgress.startedAt ?? now;
+    }
+  }
+
+  await writeUserProgress(progress);
+
+  return {
+    attempt,
+    gradedAnswers,
+    module,
+    progress
+  };
+}
+
 export async function getQuizAttempt(userId: string, attemptId: string) {
   const progress = await getOrCreateUserProgress(userId);
   const attempt = progress.attempts.find((item) => item.id === attemptId);
   if (!attempt) return null;
 
+  if (attempt.moduleId && attempt.stageId) {
+    const module = await findTrackModule(attempt.moduleId);
+    if (!module) return null;
+    return {
+      attempt,
+      module,
+      product: null,
+      questions: module.questions.map((question) => ({
+        question,
+        userAnswer: attempt.answers.find((answer) => answer.questionId === question.id)!
+      }))
+    };
+  }
+
+  if (!attempt.productId) return null;
   const product = await getProduct(attempt.productId);
   if (!product) return null;
 
   return {
     attempt,
     product,
+    module: null,
     questions: product.questions.map((question) => ({
       question,
       userAnswer: attempt.answers.find((answer) => answer.questionId === question.id)!
@@ -239,12 +348,21 @@ export async function getQuizAttempt(userId: string, attemptId: string) {
 }
 
 export async function getTrainingOverview(userId: string): Promise<TrainingOverview> {
-  const [products, progress] = await Promise.all([listProducts(), getOrCreateUserProgress(userId)]);
-  return buildTrainingOverview(products, progress);
+  const [products, crmModules, practiceModules, progress] = await Promise.all([
+    listProducts(),
+    listTrackModules("crm"),
+    listTrackModules("practice"),
+    getOrCreateUserProgress(userId)
+  ]);
+  return buildTrainingOverview(products, crmModules, practiceModules, progress);
 }
 
 export async function listAllManagerProgress() {
-  const products = await listProducts();
+  const [products, crmModules, practiceModules] = await Promise.all([
+    listProducts(),
+    listTrackModules("crm"),
+    listTrackModules("practice")
+  ]);
   const managers = trainingUsers.filter((user) => user.role === "manager");
   const rows = await Promise.all(
     managers.map(async (manager) => {
@@ -252,7 +370,7 @@ export async function listAllManagerProgress() {
       return {
         manager,
         progress,
-        overview: buildTrainingOverview(products, progress)
+        overview: buildTrainingOverview(products, crmModules, practiceModules, progress)
       };
     })
   );

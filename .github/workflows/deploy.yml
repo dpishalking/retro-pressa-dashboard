@@ -51,6 +51,14 @@ jobs:
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/products.json /tmp/retro-pressa-deploy/training-seed/products.json
           fi
+          if [ -f data/training/crm-modules.json ]; then
+            mkdir -p /tmp/retro-pressa-deploy/training-seed
+            cp data/training/crm-modules.json /tmp/retro-pressa-deploy/training-seed/crm-modules.json
+          fi
+          if [ -f data/training/practice-modules.json ]; then
+            mkdir -p /tmp/retro-pressa-deploy/training-seed
+            cp data/training/practice-modules.json /tmp/retro-pressa-deploy/training-seed/practice-modules.json
+          fi
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
@@ -133,6 +141,12 @@ jobs:
           fi
           if [ -f "$APP_DIR/training-seed/products.json" ]; then
             cp "$APP_DIR/training-seed/products.json" "$APP_DATA_DIR/training/products.json"
+          fi
+          if [ -f "$APP_DIR/training-seed/crm-modules.json" ]; then
+            cp "$APP_DIR/training-seed/crm-modules.json" "$APP_DATA_DIR/training/crm-modules.json"
+          fi
+          if [ -f "$APP_DIR/training-seed/practice-modules.json" ]; then
+            cp "$APP_DIR/training-seed/practice-modules.json" "$APP_DATA_DIR/training/practice-modules.json"
           fi
           cp /tmp/retro-pressa-runtime-env.json runtime-env.json
           chmod 600 runtime-env.json

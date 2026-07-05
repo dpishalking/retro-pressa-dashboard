@@ -1,0 +1,617 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "id": "practice-product-match",
+      "stageId": "practice",
+      "title": "Практика: подбор продукта",
+      "shortDescription": "По запросу клиента выбрать продукт и объяснить, почему он подходит.",
+      "passingScore": 80,
+      "sortOrder": 1,
+      "sections": [
+        {
+          "id": "practice-product-match-s1",
+          "title": "Как подходить",
+          "content": "Сначала повод и человек, потом продукт. Не «у нас есть журнал», а «вы хотите тронуть маму на юбилее — тогда…». Тест проверяет, умеете ли вы слышать запрос, а не заучивать каталог.",
+          "sortOrder": 1
+        },
+        {
+          "id": "practice-product-match-s2",
+          "title": "Подсказка",
+          "content": "• Ностальгия, дата рождения → газета из дня рождения\n• «Хочу что-то про него/неё лично» → персонализированная газета или журнал\n• Сохранить историю бабушки → книга воспоминаний\n• Семья в разных городах → семейная подписка",
+          "sortOrder": 2
+        }
+      ],
+      "questions": [
+        {
+          "id": "practice-product-match-q1",
+          "text": "«Нужен подарок папе на 60, у него всё есть, loves history»",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "practice-product-match-q1-a1",
+              "text": "Сертификат в магазин",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q1-a2",
+              "text": "Газета из дня рождения или книга жизни — ностальгия и уважение к прожитому пути",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q1-a3",
+              "text": "Паспорт алкоголика",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q2",
+          "text": "«Хочу, чтобы на празднике все читали и смеялись про именинника»",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "practice-product-match-q2-a1",
+              "text": "Архивная газета без имени",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q2-a2",
+              "text": "Персонализированная газета — человек герой выпуска, гости вовлечены",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q2-a3",
+              "text": "Семейная подписка",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q3",
+          "text": "«Бабушке 80, боимся, что истории умрут с ней»",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "practice-product-match-q3-a1",
+              "text": "Книга воспоминаний — сохранить голос и путь, пока можно записать",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q3-a2",
+              "text": "Паспорт открытий",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q3-a3",
+              "text": "Обычная открытка",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q4",
+          "text": "«После первой семейной газеты хотим так каждый квартал»",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "practice-product-match-q4-a1",
+              "text": "Снова только разовая газета",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q4-a2",
+              "text": "Семейная подписка — регулярная хроника для родственников",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q4-a3",
+              "text": "Именной журнал каждый месяц",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q5",
+          "text": "«Нужен премиальный подарок руководителю, о нём можно написать много»",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "practice-product-match-q5-a1",
+              "text": "Газета из дня рождения",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q5-a2",
+              "text": "Именной журнал — целый номер о человеке, признание и статус",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q5-a3",
+              "text": "Паспорт алкоголика",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q6",
+          "text": "«Другу на мальчишник, хотим прикол и сценарий вечера»",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "practice-product-match-q6-a1",
+              "text": "Книга жизни",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q6-a2",
+              "text": "Паспорт алкоголика — задания и повод собраться, не просто бутылка",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q6-a3",
+              "text": "Семейная подписка",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q7",
+          "text": "Первый вопрос менеджера должен быть про:",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "practice-product-match-q7-a1",
+              "text": "Сразу цену и срок печати",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q7-a2",
+              "text": "Повод, для кого подарок и какую эмоцию хотят получить",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q7-a3",
+              "text": "Только способ оплаты",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-product-match-q8",
+          "text": "Ошибка в подборе:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "practice-product-match-q8-a1",
+              "text": "Уточнить, для кого и зачем",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-product-match-q8-a2",
+              "text": "Начать с самого дорогого продукта без слушания запроса",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-product-match-q8-a3",
+              "text": "Связать продукт с историей клиента",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "practice-objections",
+      "stageId": "practice",
+      "title": "Практика: возражения",
+      "shortDescription": "Ответы через смысл подарка, не через технические детали.",
+      "passingScore": 80,
+      "sortOrder": 2,
+      "sections": [
+        {
+          "id": "practice-objections-s1",
+          "title": "Принцип",
+          "content": "Возражение — часто страх: формальность, опоздание, «не тот» подарок, пафос. Отвечаем через ценность для получателя и историю клиента, а не через «у нас так в типографии».",
+          "sortOrder": 1
+        }
+      ],
+      "questions": [
+        {
+          "id": "practice-objections-q1",
+          "text": "«Дорого для кусочка бумаги» (газета из даты)",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "practice-objections-q1-a1",
+              "text": "Согласиться и сразу снизить цену",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q1-a2",
+              "text": "Объяснить: это не бумага, а возвращение в день рождения и разговор за столом",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q1-a3",
+              "text": "Сказать, что конкуренты дешевле",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q2",
+          "text": "«Не успеем к дате» (журнал)",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "practice-objections-q2-a1",
+              "text": "Обещать любой срок",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q2-a2",
+              "text": "Честно про сроки + предложить альтернативу по смыслу (газета быстрее) если критично",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q2-a3",
+              "text": "Отказать без вариантов",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q3",
+          "text": "«Слишком пафosно» (именной журнал)",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "practice-objections-q3-a1",
+              "text": "Отказать — скромным не подходит",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q3-a2",
+              "text": "Тёплое признание от близких, не PR — подача решает",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q3-a3",
+              "text": "Убрать все личные истории",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q4",
+          "text": "«Зачем бумага, есть WhatsApp» (семейная подписка)",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "practice-objections-q4-a1",
+              "text": "Согласиться — чаты лучше",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q4-a2",
+              "text": "Для старших родственников важнее держать выпуск о семье — память, не лента сообщений",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q4-a3",
+              "text": "Предложить только PDF",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q5",
+          "text": "«У нас мало фото» (перс. газета)",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "practice-objections-q5-a1",
+              "text": "Отказать",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q5-a2",
+              "text": "Можно собрать из немного материала — команда помогает, главное желание показать человека",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q5-a3",
+              "text": "Требовать 50 фото",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q6",
+          "text": "«Поздно записывать истории» (книга воспоминаний)",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "practice-objections-q6-a1",
+              "text": "Согласиться",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q6-a2",
+              "text": "Лучше сейчас, пока можно задать вопросы — откладывать опасно",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q6-a3",
+              "text": "Предложить только анкету без разговора",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q7",
+          "text": "«Человек не любит квесты» (паспорт открытий)",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "practice-objections-q7-a1",
+              "text": "Не предлагать продукт никому",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q7-a2",
+              "text": "Подобрать мягкий сценарий под интересы",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q7-a3",
+              "text": "Только сложные задания",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-objections-q8",
+          "text": "Главное в отработке возражения:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "practice-objections-q8-a1",
+              "text": "Спорить и доказывать",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-objections-q8-a2",
+              "text": "Услышать страх и ответить через смысл подарка для их ситуации",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-objections-q8-a3",
+              "text": "Молчать",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "practice-crm-action",
+      "stageId": "practice",
+      "title": "Практика: что сделать в CRM после разговора",
+      "shortDescription": "Закрепляем этап 2 — действия после звонка или переписки.",
+      "passingScore": 80,
+      "sortOrder": 3,
+      "sections": [
+        {
+          "id": "practice-crm-action-s1",
+          "title": "После каждого содержательного контакта",
+          "content": "1. Краткая заметка: кто, повод, продукт, возражения\n2. Следующий шаг с датой\n3. Актуальный этап сделки\n4. Если обещали расчёт или ссылку — задача «отправить»",
+          "sortOrder": 1
+        }
+      ],
+      "questions": [
+        {
+          "id": "practice-crm-action-q1",
+          "text": "Отправили клиенту расчёт на журнал. В CRM:",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "practice-crm-action-q1-a1",
+              "text": "Закрыть сделку как успех",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q1-a2",
+              "text": "Задача «напомнить через 2 дня», в заметке — что отправили и сумму",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q1-a3",
+              "text": "Ничего",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q2",
+          "text": "Клиент сказал «перезвоню сам». Менеджер:",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "practice-crm-action-q2-a1",
+              "text": "Ждёт без задачи",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q2-a2",
+              "text": "Ставит задачу на мягкий контакт + фиксирует, что обсуждали",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q2-a3",
+              "text": "Удаляет карточку",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q3",
+          "text": "Обсудили газету из дня рождения, нужна дата 1952 года. Заметка:",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "practice-crm-action-q3-a1",
+              "text": "«газета»",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q3-a2",
+              "text": "Повод, для кого, дата/год, проверка наличия, что обещали клиенту",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q3-a3",
+              "text": "Только имя",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q4",
+          "text": "Коллега подхватывает клиента. Он должен увидеть:",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "practice-crm-action-q4-a1",
+              "text": "Пустую карточку",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q4-a2",
+              "text": "Контекст разговора без чтения всей переписки",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q4-a3",
+              "text": "Только телефон",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q5",
+          "text": "Клиент оплатил. Минимум в CRM:",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "practice-crm-action-q5-a1",
+              "text": "Удалить переписку",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q5-a2",
+              "text": "Статус оплаты, что заказали, повод — для производства и поддержки",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q5-a3",
+              "text": "Скрыть сделку",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q6",
+          "text": "Ошибка новичка:",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "practice-crm-action-q6-a1",
+              "text": "Ответил клиенту, но не обновил CRM",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q6-a2",
+              "text": "Зафиксировал следующий шаг",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q6-a3",
+              "text": "Уточнил повод",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q7",
+          "text": "Задача в CRM нужна, когда:",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "practice-crm-action-q7-a1",
+              "text": "Никогда",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q7-a2",
+              "text": "Есть обещание клиенту или нужно вернуться к нему в конкретный день",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q7-a3",
+              "text": "Только по пятницам",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "practice-crm-action-q8",
+          "text": "Практика и CRM связаны так:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "practice-crm-action-q8-a1",
+              "text": "CRM не нужна после обучения продуктам",
+              "isCorrect": false
+            },
+            {
+              "id": "practice-crm-action-q8-a2",
+              "text": "Хороший менеджер соединяет смысл подарка в разговоре и порядок в системе",
+              "isCorrect": true
+            },
+            {
+              "id": "practice-crm-action-q8-a3",
+              "text": "Достаточно только тестов",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

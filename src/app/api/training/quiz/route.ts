@@ -5,8 +5,14 @@ import type { QuizSubmission } from "@/types/training";
 export async function POST(request: Request) {
   const body = (await request.json()) as QuizSubmission;
 
-  if (!body.productId || !body.userId || !Array.isArray(body.answers)) {
+  if (!body.userId || !Array.isArray(body.answers)) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const hasProduct = Boolean(body.productId);
+  const hasModule = Boolean(body.moduleId && body.stageId);
+  if (!hasProduct && !hasModule) {
+    return NextResponse.json({ error: "productId or moduleId+stageId required" }, { status: 400 });
   }
 
   try {

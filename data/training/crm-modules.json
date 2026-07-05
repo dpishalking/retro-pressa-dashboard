@@ -1,0 +1,965 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "id": "bitrix-daily",
+      "stageId": "crm",
+      "title": "Битрикс24: день менеджера",
+      "shortDescription": "Где смотреть новые заявки, как не потерять клиента между чатом и сделкой.",
+      "passingScore": 80,
+      "sortOrder": 1,
+      "sections": [
+        {
+          "id": "bitrix-daily-s1",
+          "title": "Зачем менеджеру CRM",
+          "content": "CRM — это не «отчёт для руководства», а рабочая память: кто писал, о чём договорились, на каком этапе клиент.\n\nМенеджер заходит в Битрикс, чтобы увидеть новые обращения, открыть переписку, понять контекст и зафиксировать следующий шаг — не держать всё в голове и не искать историю в личных чатах.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-daily-s2",
+          "title": "Что проверять каждый день",
+          "content": "• Новые лиды и необработанные диалоги\n• Сделки, где клиент ждёт ответа или расчёта\n• Переписки Open Lines / мессенджеры, если подключены\n• Комментарии и задачи от коллег\n\nГлавное правило: если клиент написал — в CRM должно быть видно, что мы увидели обращение и что делаем дальше.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-daily-s3",
+          "title": "Типичная ошибка",
+          "content": "Ответить клиенту в мессенджере, но не обновить сделку и не оставить заметку. Через день другой менеджер или сам клиент «начинает с нуля» — и теряется доверие.\n\nПосле каждого содержательного контакта: короткая заметка в карточке — повод, продукт, что обещали, когда вернуться.",
+          "sortOrder": 3
+        }
+      ],
+      "videos": [
+        {
+          "id": "bitrix-daily-video-1",
+          "title": "Видео 1",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-daily-video-2",
+          "title": "Видео 2",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-daily-video-3",
+          "title": "Видео 3",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 3
+        },
+        {
+          "id": "bitrix-daily-video-4",
+          "title": "Видео 4",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 4
+        }
+      ],
+      "questions": [
+        {
+          "id": "bitrix-daily-q1",
+          "text": "Зачем менеджеру заходить в Битрикс каждый день?",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "bitrix-daily-q1-a1",
+              "text": "Только чтобы руководитель видел активность",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q1-a2",
+              "text": "Чтобы видеть новые обращения, контекст клиента и не терять договорённости между сменами",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q1-a3",
+              "text": "Чтобы заполнять отчёты без связи с клиентами",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q2",
+          "text": "Клиент написал в чат, менеджер ответил. Что важно сделать в CRM?",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "bitrix-daily-q2-a1",
+              "text": "Ничего — главное ответить быстро",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q2-a2",
+              "text": "Зафиксировать суть разговора и следующий шаг в карточке клиента или сделки",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q2-a3",
+              "text": "Удалить старые сообщения, чтобы не захламлять",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q3",
+          "text": "«Я и так помню, о чём говорили» — почему это риск?",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "bitrix-daily-q3-a1",
+              "text": "Память менеджера всегда надёжнее CRM",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q3-a2",
+              "text": "Коллега, смена или клиент через неделю не увидят контекст — разговор придётся повторять",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q3-a3",
+              "text": "CRM нужна только для новых клиентов",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q4",
+          "text": "Что проверять в начале рабочего дня?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "bitrix-daily-q4-a1",
+              "text": "Только оплаченные счета за прошлый год",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q4-a2",
+              "text": "Новые лиды, необработанные диалоги и сделки, где клиент ждёт ответа",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q4-a3",
+              "text": "Только настройки телефонии",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q5",
+          "text": "CRM для менеджера — это прежде всего:",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "bitrix-daily-q5-a1",
+              "text": "Архив переписок без действий",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q5-a2",
+              "text": "Рабочая память о клиенте и его пути",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q5-a3",
+              "text": "Список задач бухгалтерии",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q6",
+          "text": "После разговора о подарке на юбилей менеджер должен:",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "bitrix-daily-q6-a1",
+              "text": "Ждать, пока клиент сам напишет снова",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q6-a2",
+              "text": "Кратко записать повод, интерес к продукту и что отправили/обещали",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q6-a3",
+              "text": "Сразу закрыть сделку как успешную",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q7",
+          "text": "Когда заметка в CRM особенно нужна?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "bitrix-daily-q7-a1",
+              "text": "Только при отказе клиента",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q7-a2",
+              "text": "После каждого содержательного контакта — звонка, переписки, уточнения даты или продукта",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q7-a3",
+              "text": "Только в конце месяца",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-daily-q8",
+          "text": "Главное, что должен понимать менеджер про Битрикс:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "bitrix-daily-q8-a1",
+              "text": "Это техническая система для IT-отдела",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q8-a2",
+              "text": "Это инструмент, чтобы клиент не потерялся между чатом, расчётом и заказом",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q8-a3",
+              "text": "Это замена общению с клиентом",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bitrix-conversations",
+      "stageId": "crm",
+      "title": "Битрикс24: переписки и клиенты",
+      "shortDescription": "Как читать историю диалога, не терять нить разговора и передавать контекст.",
+      "passingScore": 80,
+      "sortOrder": 2,
+      "sections": [
+        {
+          "id": "bitrix-conversations-s1",
+          "title": "Переписка — часть продажи",
+          "content": "В Retro Pressa много эмоциональных подарков — клиент часто пишет длинно: про повод, человека, сомнения. Менеджер читает не только последнее сообщение, а всю нить: что уже предлагали, что клиент отверг, о чём спрашивал дважды.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-conversations-s2",
+          "title": "Open Lines и мессенджеры",
+          "content": "Диалог может идти через Open Lines, WhatsApp или другие каналы, если они подключены к Битрикс. Важно отвечать там, где пишет клиент, но фиксировать смысл в карточке — особенно если разговор уходит в расчёт или ссылку на оплату.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-conversations-s3",
+          "title": "Передача клиента",
+          "content": "Если подключается другой менеджер или РОП, в карточке должно быть понятно: кто клиент, какой повод, какой продукт обсуждали, какие возражения, что отправлено. Без этого качество падает — клиент чувствует, что его «не помнят».",
+          "sortOrder": 3
+        }
+      ],
+      "videos": [
+        {
+          "id": "bitrix-conversations-video-1",
+          "title": "Видео 1",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-conversations-video-2",
+          "title": "Видео 2",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-conversations-video-3",
+          "title": "Видео 3",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 3
+        },
+        {
+          "id": "bitrix-conversations-video-4",
+          "title": "Видео 4",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 4
+        }
+      ],
+      "questions": [
+        {
+          "id": "bitrix-conversations-q1",
+          "text": "Почему нельзя отвечать только на последнее сообщение?",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q1-a1",
+              "text": "Клиент всегда пишет одно и то же",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q1-a2",
+              "text": "В истории могут быть повод, возражения и уже данные обещания — без них легко ошибиться",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q1-a3",
+              "text": "История переписки в CRM не нужна",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q2",
+          "text": "Клиент три раза спрашивал про срок — что это сигнал?",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q2-a1",
+              "text": "Он не читает ответы",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q2-a2",
+              "text": "Срок для него критичен — нужно явно проговорить и зафиксировать в CRM",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q2-a3",
+              "text": "Пора закрыть диалог",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q3",
+          "text": "Зачем фиксировать в CRM, если переписка уже есть в чате?",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q3-a1",
+              "text": "Чтобы другой человек или вы через неделю быстро поняли суть без чтения 50 сообщений",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q3-a2",
+              "text": "Чтобы удалить чат",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q3-a3",
+              "text": "Это нужно только юристам",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q4",
+          "text": "«Передаю клиента коллеге» — что обязательно должно быть в карточке?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q4-a1",
+              "text": "Только имя клиента",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q4-a2",
+              "text": "Повод, продукт, возражения, что обещали, статус оплаты или расчёта",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q4-a3",
+              "text": "Только дата первого сообщения",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q5",
+          "text": "Клиент написал эмоционально о подарке маме. Менеджер в CRM:",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q5-a1",
+              "text": "Копирует одно слово «мама»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q5-a2",
+              "text": "Кратко сохраняет повод и суть запроса — юбилей, мама, хочет «что-то душевное»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q5-a3",
+              "text": "Не пишет ничего — это личное",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q6",
+          "text": "Когда качество переписки особенно важно для Retro Pressa?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q6-a1",
+              "text": "Когда продаём подарок со смыслом — ошибка в тоне или контексте бьёт по доверию",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q6-a2",
+              "text": "Только при жалобах",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q6-a3",
+              "text": "Только для корпоративных клиентов",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q7",
+          "text": "Клиент ушёл «подумать». Что зафиксировать?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q7-a1",
+              "text": "Ничего — он сам вернётся",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q7-a2",
+              "text": "Что отправили, какие варианты обсуждали, когда мягко напомнить",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q7-a3",
+              "text": "Сразу пометить как отказ",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-conversations-q8",
+          "text": "Главная задача менеджера в переписке + CRM:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "bitrix-conversations-q8-a1",
+              "text": "Отвечать шаблоном как можно быстрее",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q8-a2",
+              "text": "Сохранять живой контакт с клиентом и понятный контекст для всей команды",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q8-a3",
+              "text": "Переводить всех в один канал без исключений",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bitrix-funnel",
+      "stageId": "crm",
+      "title": "Битрикс24: воронка и этапы сделки",
+      "shortDescription": "Как устроена заявка, этапы и что менеджер делает после первого контакта.",
+      "passingScore": 80,
+      "sortOrder": 3,
+      "sections": [
+        {
+          "id": "bitrix-funnel-s1",
+          "title": "Воронка в Битрикс24",
+          "content": "Сделка проходит этапы: новое обращение, расчёт отправлен, клиент думает, оплата, отказ. Менеджер двигает сделку честно — не ставит «успех» без оплаты и не оставляет клиента «висеть» на первом этапе без следующего шага.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-funnel-s2",
+          "title": "Воронка — это путь клиента",
+          "content": "Этапы показывают, где клиент: только написал, получил расчёт, думает, готов оплатить, отказался. Это помогает вам и команде видеть, кому нужно вернуться сегодня, а не искать по памяти.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-funnel-s3",
+          "title": "После первого контакта",
+          "content": "• Уточнить повод и продукт\n• Записать ключевые детали в карточку сделки\n• Назначить себе задачу — перезвонить, отправить расчёт, напомнить\n• Не оставлять заявку без следующего шага",
+          "sortOrder": 3
+        }
+      ],
+      "videos": [
+        {
+          "id": "bitrix-funnel-video-1",
+          "title": "Видео 1",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-funnel-video-2",
+          "title": "Видео 2",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-funnel-video-3",
+          "title": "Видео 3",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 3
+        },
+        {
+          "id": "bitrix-funnel-video-4",
+          "title": "Видео 4",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 4
+        }
+      ],
+      "questions": [
+        {
+          "id": "bitrix-funnel-q1",
+          "text": "Зачем менеджеру смотреть этапы сделки в Битрикс?",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q1-a1",
+              "text": "Только для красивой статистики",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q1-a2",
+              "text": "Чтобы видеть, где клиент, и не терять лид без следующего действия",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q1-a3",
+              "text": "Этапы нужны только бухгалтерии",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q2",
+          "text": "Воронка в Битрикс24 — это:",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q2-a1",
+              "text": "Список сотрудников",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q2-a2",
+              "text": "Путь клиента от первого обращения до оплаты или отказа",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q2-a3",
+              "text": "Архив старых писем",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q3",
+          "text": "Новая заявка «висит» без задачи. Что не так?",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q3-a1",
+              "text": "Всё нормально — клиент сам вернётся",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q3-a2",
+              "text": "Нет следующего шага: перезвон, расчёт, напоминание — лид легко теряется",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q3-a3",
+              "text": "Нужно сразу закрыть как успех",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q4",
+          "text": "Клиент получил расчёт и пропал. Первое действие:",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q4-a1",
+              "text": "Удалить сделку",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q4-a2",
+              "text": "Поставить задачу на мягкое напоминание и проверить, что в карточке есть контекст",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q4-a3",
+              "text": "Ждать месяц без контакта",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q5",
+          "text": "Перемещать сделку на «оплачено» можно, когда:",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q5-a1",
+              "text": "Клиент пообещал «может быть»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q5-a2",
+              "text": "Есть факт оплаты или чёткое подтверждение по правилам компании",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q5-a3",
+              "text": "Менеджер устал вести сделку",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q6",
+          "text": "Что записать в карточку после первого разговора?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q6-a1",
+              "text": "Только телефон",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q6-a2",
+              "text": "Повод, интерес к продукту, дату/срок, ключевые возражения",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q6-a3",
+              "text": "Ничего — Битрикс сам всё запомнит",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q7",
+          "text": "«Заявка из Instagram» — что важно уточнить в CRM?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q7-a1",
+              "text": "Только никнейм",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q7-a2",
+              "text": "Откуда пришёл, о чём спрашивал, какой продукт обсуждали, куда писать дальше",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q7-a3",
+              "text": "Только город",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-funnel-q8",
+          "text": "Главное правило работы с воронкой:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "bitrix-funnel-q8-a1",
+              "text": "Двигать всех вперёд для красивой статистики",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q8-a2",
+              "text": "Этап должен отражать реальность — и у каждой активной сделки есть следующий шаг",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q8-a3",
+              "text": "Не трогать этапы — пусть будут как есть",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bitrix-tasks",
+      "stageId": "crm",
+      "title": "Битрикс24: задачи и порядок в сделках",
+      "shortDescription": "Как ставить задачи, обновлять статус и не терять клиента после разговора.",
+      "passingScore": 80,
+      "sortOrder": 4,
+      "sections": [
+        {
+          "id": "bitrix-tasks-s1",
+          "title": "Задача — это обещание клиенту",
+          "content": "Если вы сказали «отправлю расчёт завтра» или «напомню в пятницу» — в Битрикс должна быть задача с датой. Без задачи легко забыть, особенно когда диалогов много.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-tasks-s2",
+          "title": "Что фиксировать в сделке",
+          "content": "Смысл контакта: повод, продукт, сумма/статус, следующий шаг. Не нужно знать все поля наизусть — важнее не терять суть и держать сделку актуальной.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-tasks-s3",
+          "title": "Если не знаешь, как оформить",
+          "content": "Спроси старшего менеджера или РОП: какой этап поставить, куда записать детали заказа. Лучше один раз уточнить, чем молча оставить пустую карточку.",
+          "sortOrder": 3
+        }
+      ],
+      "videos": [
+        {
+          "id": "bitrix-tasks-video-1",
+          "title": "Видео 1",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 1
+        },
+        {
+          "id": "bitrix-tasks-video-2",
+          "title": "Видео 2",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 2
+        },
+        {
+          "id": "bitrix-tasks-video-3",
+          "title": "Видео 3",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 3
+        },
+        {
+          "id": "bitrix-tasks-video-4",
+          "title": "Видео 4",
+          "goal": "Цель этого урока будет добавлена позже.",
+          "sortOrder": 4
+        }
+      ],
+      "questions": [
+        {
+          "id": "bitrix-tasks-q1",
+          "text": "Обещали клиенту расчёт на завтра. Что в Битрикс?",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q1-a1",
+              "text": "Ничего — вспомню сам",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q1-a2",
+              "text": "Задача с датой и краткая заметка, что именно отправить",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q1-a3",
+              "text": "Сразу закрыть сделку как успех",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q2",
+          "text": "Что важнее запомнить про работу в CRM?",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q2-a1",
+              "text": "Названия всех полей наизусть",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q2-a2",
+              "text": "Смысл контакта: повод, продукт, статус, следующий шаг — не терять клиента",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q2-a3",
+              "text": "Заполнять карточку только раз в месяц",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q3",
+          "text": "Менеджер не знает, на какой этап поставить сделку:",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q3-a1",
+              "text": "Не трогать сделку",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q3-a2",
+              "text": "Спросить старшего — лучше уточнить, чем оставить хаос в воронке",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q3-a3",
+              "text": "Поставить любой этап наугад",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q4",
+          "text": "Пустая карточка сделки без заметок — это:",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q4-a1",
+              "text": "Нормально для быстрых ответов",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q4-a2",
+              "text": "Риск: коллега и вы сами через неделю не поймёте контекст",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q4-a3",
+              "text": "Требование клиента",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q5",
+          "text": "После оплаты подарка в CRM должно быть видно:",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q5-a1",
+              "text": "Только сумма",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q5-a2",
+              "text": "Что заказали, для какого повода, статус производства/доставки если известен",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q5-a3",
+              "text": "Ничего — бухгалтерия сама",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q6",
+          "text": "Технические настройки Битрикс новичку:",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q6-a1",
+              "text": "Нужно знать все на первый день",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q6-a2",
+              "text": "Изучает постепенно; на старте — не терять клиента и фиксировать смысл контакта",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q6-a3",
+              "text": "Не нужны вообще",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q7",
+          "text": "РОП смотрит качество работы. Что он ищет в CRM?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q7-a1",
+              "text": "Количество пустых карточек",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q7-a2",
+              "text": "Понятный путь клиента, заметки, следующие шаги, актуальные этапы",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q7-a3",
+              "text": "Только количество сообщений",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-tasks-q8",
+          "text": "Главная мысль этапа «CRM»:",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "bitrix-tasks-q8-a1",
+              "text": "CRM — для отчётов, клиент вторичен",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q8-a2",
+              "text": "Битрикс помогает не потерять человека и его историю между продуктом, расчётом и оплатой",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q8-a3",
+              "text": "CRM заменяет обучение продуктам",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
