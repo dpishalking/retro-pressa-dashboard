@@ -1,6 +1,7 @@
 "use client";
 
-import { Activity, AlertTriangle, ArrowDown, ArrowUp, Brain, CheckCircle2, Download, RefreshCcw, Settings2, SlidersHorizontal, Target, Zap } from "lucide-react";
+import Link from "next/link";
+import { Activity, AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, Brain, CheckCircle2, Download, RefreshCcw, Settings2, SlidersHorizontal, Target, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -2560,6 +2561,10 @@ export function DashboardApp() {
 
   return (
     <main className="mx-auto w-[min(1480px,calc(100%-32px))] py-6">
+      <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600">
+        <ArrowLeft size={16} />
+        К рабочему кабинету
+      </Link>
       <header className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">ОПЕРАЦИОННЫЙ ПУЛЬТ</p>

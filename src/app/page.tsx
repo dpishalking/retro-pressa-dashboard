@@ -1,5 +1,5 @@
-import { DashboardApp } from "@/components/dashboard-ui";
+import { OfficeHub } from "@/components/office-hub";
 
 export default function Home() {
-  return <DashboardApp />;
+  return <OfficeHub />;
 }

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Аналитика Retro Pressa",
-  description: "Операционный пульт Retro Pressa для цели €100 000"
+  title: "Retro Pressa — Рабочий кабинет",
+  description: "Рабочий кабинет Retro Pressa: аналитика, переписки, инструменты РОП, офис продаж и обучение менеджеров"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
