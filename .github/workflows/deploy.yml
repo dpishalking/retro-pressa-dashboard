@@ -81,9 +81,24 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          TRAINER_API_URL: ${{ secrets.TRAINER_API_URL }}
+          TRAINER_ADMIN_API_KEY: ${{ secrets.TRAINER_ADMIN_API_KEY }}
+          TRAINER_SERVICE_TAG: ${{ secrets.TRAINER_SERVICE_TAG }}
+          TRAINER_BOT_USERNAME: ${{ secrets.TRAINER_BOT_USERNAME }}
         run: |
           node - <<'NODE'
+          const crypto = require("node:crypto");
           const fs = require("node:fs");
+
+          const authSecret = process.env.AUTH_SECRET || "";
+          const adminKey =
+            process.env.TRAINER_ADMIN_API_KEY ||
+            (authSecret
+              ? crypto.createHash("sha256").update(authSecret).digest("hex").slice(0, 32)
+              : "change-me-trainer-admin");
+          const trainerApiUrl = process.env.TRAINER_API_URL || "http://127.0.0.1:3100";
+          const trainerBotUsername = process.env.TRAINER_BOT_USERNAME || "dushnila12_bot";
+
           const keys = [
             "AUTH_SECRET",
             "DEFAULT_ADMIN_LOGIN",
@@ -104,7 +119,26 @@ jobs:
             "GOOGLE_PRIVATE_KEY"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
+          env.TRAINER_API_URL = trainerApiUrl;
+          env.TRAINER_ADMIN_API_KEY = adminKey;
+          env.TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG || "retro-pressa";
+          env.TRAINER_BOT_USERNAME = trainerBotUsername;
           fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
+
+          const backendEnv = {
+            PORT: "3100",
+            NODE_ENV: "production",
+            DATABASE_PATH: "/opt/pressa-backend-shared/data/gift-ai.db",
+            GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+            GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+            GEMINI_MODEL_FALLBACK: "gemini-2.5-flash-lite",
+            ADMIN_API_KEY: adminKey,
+            TRAINER_BOT_USERNAME: trainerBotUsername,
+            PUBLIC_API_URL: "http://127.0.0.1:3100",
+            CRM_PROVIDER: "none",
+            LOG_LEVEL: "info"
+          };
+          fs.writeFileSync("trainer-backend-env.json", JSON.stringify(backendEnv, null, 2));
           NODE
 
       - name: Configure SSH
@@ -120,6 +154,8 @@ jobs:
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-deploy.tar.gz"
           scp -i ~/.ssh/deploy_key runtime-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
+          scp -i ~/.ssh/deploy_key trainer-backend-env.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-env.json"
 
       - name: Deploy on server
         run: |
@@ -128,6 +164,56 @@ jobs:
           if ! command -v pm2 > /dev/null; then
             npm install -g pm2
           fi
+          if ! command -v git > /dev/null; then
+            echo "git is required for trainer backend deploy" >&2
+            exit 1
+          fi
+
+          BACKEND_DATA="/opt/pressa-backend-shared/data"
+          BACKEND_ENV="/opt/pressa-backend/runtime-env.json"
+          PRESSA_SRC="/opt/pressa-src"
+          mkdir -p "$BACKEND_DATA" /opt/pressa-backend
+
+          if [ ! -d "$PRESSA_SRC/.git" ]; then
+            git clone --depth 1 https://github.com/dpishalking/pressa.git "$PRESSA_SRC"
+          else
+            cd "$PRESSA_SRC"
+            git fetch --depth 1 origin main
+            git reset --hard origin/main
+          fi
+
+          cd "$PRESSA_SRC/gift-ai"
+          npm ci
+          npm run build -w backend
+          cp /tmp/trainer-backend-env.json "$BACKEND_ENV"
+          chmod 600 "$BACKEND_ENV"
+
+          cat > "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs" <<'PM2BACKEND'
+          const runtimeEnv = require("/opt/pressa-backend/runtime-env.json");
+
+          module.exports = {
+            apps: [
+              {
+                name: "pressa-backend",
+                script: "dist/index.js",
+                cwd: "/opt/pressa-src/gift-ai/backend",
+                env: {
+                  ...runtimeEnv,
+                  NODE_ENV: "production"
+                }
+              }
+            ]
+          };
+          PM2BACKEND
+
+          if pm2 describe pressa-backend > /dev/null; then
+            pm2 delete pressa-backend
+          fi
+          pm2 start "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs"
+          sleep 5
+          curl -f -sS http://127.0.0.1:3100/health > /dev/null
+          curl -f -sS http://127.0.0.1:3100/trainer/scenarios > /dev/null
+
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"

@@ -59,6 +59,7 @@ function PracticeHubContent() {
   const [modules, setModules] = useState<TrainingTrackModule[]>([]);
   const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
   const [botLink, setBotLink] = useState<string | null>(null);
+  const [fallbackBotLink, setFallbackBotLink] = useState<string | null>(null);
   const [botLinkError, setBotLinkError] = useState<string | null>(null);
   const [botLinkLoading, setBotLinkLoading] = useState(true);
 
@@ -79,11 +80,12 @@ function PracticeHubContent() {
     setBotLinkError(null);
     fetch("/api/training/bot-link")
       .then(async (r) => {
+        const body = (await r.json().catch(() => ({}))) as { error?: string; botLink?: string; fallbackBotLink?: string };
         if (!r.ok) {
-          const body = (await r.json().catch(() => ({}))) as { error?: string };
+          if (body.fallbackBotLink) setFallbackBotLink(body.fallbackBotLink);
           throw new Error(body.error ?? `HTTP ${r.status}`);
         }
-        return r.json() as Promise<{ botLink: string }>;
+        return body as { botLink: string };
       })
       .then((data) => setBotLink(data.botLink))
       .catch((e) => setBotLinkError(e instanceof Error ? e.message : "Не удалось получить ссылку"))
@@ -130,9 +132,22 @@ function PracticeHubContent() {
             <ExternalLink size={18} />
           </a>
         ) : (
-          <p className="mt-6 text-sm text-red-600">
-            {botLinkError ?? "Ссылка временно недоступна. Обратитесь к администратору."}
-          </p>
+          <div className="mt-6 space-y-3">
+            <p className="text-sm text-red-600">
+              {botLinkError ?? "Ссылка временно недоступна. Обратитесь к администратору."}
+            </p>
+            {fallbackBotLink ? (
+              <a
+                href={fallbackBotLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#2481cc] px-6 py-3 text-sm font-bold text-[#2481cc] transition hover:bg-blue-50"
+              >
+                Открыть бот в Telegram (без персональной ссылки)
+                <ExternalLink size={18} />
+              </a>
+            ) : null}
+          </div>
         )}
       </article>
 
