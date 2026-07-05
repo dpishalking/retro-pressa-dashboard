@@ -57,6 +57,7 @@ export type MarketMetrics = {
 
 export type ManagerMetrics = {
   period: PeriodKey;
+  managerId: string;
   manager: string;
   newLeads: number;
   recentClientsLast10Days: number;
@@ -179,6 +180,8 @@ export type ConversationFactorAnalysis = {
 
 export type ConversationDashboardMetrics = {
   totalDialogs: number;
+  sampleReliability: "demo" | "small" | "directional" | "reliable";
+  minimumReliableDialogs: number;
   orderConversion: number;
   conversionByChannel: Array<{ channel: string; dialogs: number; orders: number; conversion: number }>;
   topObjections: Array<{ name: string; count: number }>;
@@ -190,4 +193,37 @@ export type ConversationDashboardMetrics = {
   deliveryRiskShare: number;
   qualityScore: number;
   factors: ConversationFactorAnalysis[];
+};
+
+export type ConversationImportFileDiagnostic = {
+  filename: string;
+  messages: number;
+  dialogs: number;
+  status: "ok" | "error";
+  note: string;
+};
+
+export type GeminiDialogueAnalysis = {
+  dialogId: string;
+  qualityScore: number;
+  outcome: DialogueOutcome;
+  summary: string;
+  managerStrengths: string[];
+  missedOpportunities: string[];
+  lossReason: string | null;
+  recommendedNextAction: string;
+  needsHumanReview: boolean;
+};
+
+export type GeminiConversationSummary = {
+  model: string;
+  requestedDialogs: number;
+  analyzedDialogs: number;
+  cachedDialogs: number;
+  newDialogs: number;
+  averageQualityScore: number;
+  needsHumanReview: number;
+  topMissedOpportunities: Array<{ name: string; count: number }>;
+  topLossReasons: Array<{ name: string; count: number }>;
+  sample: GeminiDialogueAnalysis[];
 };

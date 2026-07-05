@@ -166,6 +166,7 @@ export const managerMetrics: ManagerMetrics[] = [
   ["Даниил", 683, 477, 100, 114, 7041, 12, 42, 11, 19, 31, 5, 18]
 ].map(([manager, newLeads, meaningfulDialogs, invoicesCount, sales, revenue, medianResponseMinutes, responseUnder5MinutesPct, recipientQualificationPct, personalRecommendationPct, visualContentPct, fullFinalPricePct, directClosingQuestionPct]) => ({
   period: "june-2026",
+  managerId: String(manager).toLowerCase(),
   manager: String(manager),
   newLeads: Number(newLeads),
   recentClientsLast10Days: 0,

@@ -1,6 +1,7 @@
 import type {
   ConversationDashboardMetrics,
   ConversationFactorAnalysis,
+  ConversationImportFileDiagnostic,
   ConversationIntent,
   ConversationMessage,
   DialogSummary,
@@ -20,12 +21,12 @@ type RawConversationRow = Record<string, unknown>;
 const supportedExtensions = [".txt", ".csv", ".json", ".xlsx", ".docx", ".pdf"] as const;
 
 const fieldAliases = {
-  date: ["date", "datetime", "created_at", "time", "дата", "время", "дата сообщения"],
+  date: ["date", "datetime", "created_at", "created", "time", "timestamp", "дата", "время", "дата сообщения", "дата создания", "дата и время", "создано"],
   channel: ["channel", "source", "platform", "канал", "источник"],
-  dialogId: ["dialog_id", "dialogid", "chat_id", "conversation_id", "lead_id", "id диалога", "диалог"],
-  sender: ["sender", "author", "from", "name", "отправитель", "автор", "кто"],
-  text: ["text", "message", "body", "content", "сообщение", "текст", "комментарий"],
-  manager: ["manager", "responsible", "assigned", "менеджер", "ответственный"],
+  dialogId: ["dialog_id", "dialogid", "dialog", "chat", "chat_id", "chatid", "conversation_id", "conversation", "thread_id", "room_id", "lead_id", "id диалога", "id_диалога", "диалог", "чат", "id чата", "id_чата", "номер чата", "номер_чата", "ид чата", "ид_чата", "сделка", "id сделки", "лид", "id лида"],
+  sender: ["sender", "author", "from", "name", "username", "отправитель", "автор", "автор сообщения", "кто", "имя", "имя отправителя", "от кого", "роль"],
+  text: ["text", "message", "body", "content", "comment", "сообщение", "текст", "текст сообщения", "комментарий", "тело сообщения", "message text"],
+  manager: ["manager", "responsible", "assigned", "assignee", "менеджер", "ответственный", "ответственный менеджер"],
   stage: ["stage", "этап", "стадия"],
   outcome: ["outcome", "result", "status", "итог", "результат", "статус"],
   amount: ["amount", "order_amount", "sum", "price", "сумма", "сумма заказа", "заказ"]
@@ -83,6 +84,8 @@ function parseCsv(text: string): RawConversationRow[] {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+  const delimiter = firstLine.includes(";") && firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
 
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
@@ -92,7 +95,7 @@ function parseCsv(text: string): RawConversationRow[] {
       index += 1;
     } else if (char === '"') {
       quoted = !quoted;
-    } else if (char === "," && !quoted) {
+    } else if (char === delimiter && !quoted) {
       row.push(cell);
       cell = "";
     } else if ((char === "\n" || char === "\r") && !quoted) {
@@ -114,7 +117,26 @@ function parseCsv(text: string): RawConversationRow[] {
 
 function parseJson(text: string): RawConversationRow[] {
   const parsed = JSON.parse(text) as unknown;
-  if (Array.isArray(parsed)) return parsed as RawConversationRow[];
+  if (Array.isArray(parsed)) {
+    return parsed.flatMap((item) => {
+      const dialog = item as Record<string, unknown>;
+      if (!Array.isArray(dialog.messages)) return [dialog as RawConversationRow];
+
+      return dialog.messages.map((message) => ({
+        ...message as RawConversationRow,
+        dialog_id: dialog.dialog_id ?? dialog.id,
+        lead_id: dialog.lead_id,
+        deal_id: dialog.deal_id,
+        contact_id: dialog.contact_id,
+        manager: dialog.manager,
+        source: dialog.source,
+        country: dialog.country,
+        stage: dialog.stage,
+        outcome: dialog.outcome,
+        amount: dialog.amount
+      }));
+    });
+  }
   if (parsed && typeof parsed === "object") {
     const object = parsed as Record<string, unknown>;
     if (Array.isArray(object.messages)) return object.messages as RawConversationRow[];
@@ -161,6 +183,21 @@ function parsePdfFallback(content: string | ArrayBuffer | Buffer, defaultChannel
 
 function unsupportedBinary(extension: string): never {
   throw new Error(`Формат ${extension} принят загрузчиком, но для извлечения текста нужен бинарный парсер. Подключите xlsx/mammoth/pdf-parse или передайте экспорт в csv/json/txt.`);
+}
+
+function diagnosticNote(messages: number, dialogs: number) {
+  const averageMessagesPerDialog = safeDiv(messages, dialogs);
+
+  if (messages > 20 && dialogs === messages) {
+    return "Каждая строка стала отдельным диалогом: не распознана колонка ID чата/диалога.";
+  }
+  if (messages > 100 && averageMessagesPerDialog < 3) {
+    return `Диалоги выглядят слишком дробно: в среднем ${averageMessagesPerDialog.toFixed(1)} сообщения на диалог. Скорее всего, используется ID сообщения/события, а нужен стабильный ID чата, сделки или лида.`;
+  }
+  if (dialogs < 2 && messages > 20) {
+    return "Много сообщений, но мало dialog_id: файл мог быть склеен в один диалог.";
+  }
+  return "Прочитан";
 }
 
 export function parseConversationFile(file: ConversationFileInput): ConversationMessage[] {
@@ -382,6 +419,14 @@ export function analyzeConversationFactors(dialogs: DialogSummary[]): Conversati
 
 export function buildConversationDashboard(dialogs: DialogSummary[]): ConversationDashboardMetrics {
   const orders = dialogs.filter((dialog) => dialog.outcome === "order");
+  const minimumReliableDialogs = 50;
+  const sampleReliability = dialogs.length < 10
+    ? "small"
+    : dialogs.length < 30
+      ? "directional"
+      : dialogs.length < minimumReliableDialogs
+        ? "directional"
+        : "reliable";
   const averageOrder = orders.reduce((sum, dialog) => sum + dialog.orderAmount, 0) / Math.max(1, orders.filter((dialog) => dialog.orderAmount > 0).length) || 75;
   const channels = Array.from(new Set(dialogs.map((dialog) => dialog.channel))).map((channel) => {
     const rows = dialogs.filter((dialog) => dialog.channel === channel);
@@ -409,6 +454,8 @@ export function buildConversationDashboard(dialogs: DialogSummary[]): Conversati
 
   return {
     totalDialogs: dialogs.length,
+    sampleReliability,
+    minimumReliableDialogs,
     orderConversion: safeDiv(orders.length, dialogs.length),
     conversionByChannel: channels,
     topObjections: countBy(dialogs.flatMap((dialog) => dialog.objections)).slice(0, 5),
@@ -430,5 +477,40 @@ export function importAndAnalyzeConversations(files: ConversationFileInput[]) {
     messages,
     dialogs,
     dashboard: buildConversationDashboard(dialogs)
+  };
+}
+
+export function importAndAnalyzeConversationsWithDiagnostics(files: ConversationFileInput[]) {
+  const diagnostics: ConversationImportFileDiagnostic[] = [];
+  const messages = files.flatMap((file) => {
+    try {
+      const parsed = parseConversationFile(file);
+      const dialogs = summarizeDialogs(parsed);
+      diagnostics.push({
+        filename: file.filename,
+        messages: parsed.length,
+        dialogs: dialogs.length,
+        status: "ok",
+        note: diagnosticNote(parsed.length, dialogs.length)
+      });
+      return parsed;
+    } catch (error) {
+      diagnostics.push({
+        filename: file.filename,
+        messages: 0,
+        dialogs: 0,
+        status: "error",
+        note: error instanceof Error ? error.message : "Не удалось прочитать файл"
+      });
+      return [];
+    }
+  });
+  const dialogs = summarizeDialogs(messages);
+
+  return {
+    messages,
+    dialogs,
+    dashboard: buildConversationDashboard(dialogs),
+    diagnostics
   };
 }

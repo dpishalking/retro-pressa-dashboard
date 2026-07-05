@@ -1,6 +1,7 @@
 .env
 .env.local
 .next
+.cache
 node_modules
 npm-debug.log*
 yarn-debug.log*
@@ -11,3 +12,6 @@ yarn-error.log*
 retro-pressa-deploy.tar.gz
 runtime-env.json
 ecosystem.config.cjs
+data/bitrix-snapshots/
+data/google-snapshots/
+tsconfig.tsbuildinfo

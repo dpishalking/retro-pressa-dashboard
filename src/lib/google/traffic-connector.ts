@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 
 import { googleSources, type GoogleSheetSource } from "@/config/google-sources";
 import type { DailyMetrics } from "@/types/metrics";
+import type { PeriodKey } from "@/types/metrics";
+import { googleSnapshotFilePath, readGoogleTrafficSnapshot, writeGoogleTrafficSnapshot, type GoogleTrafficSnapshot } from "@/lib/google/snapshot-store";
 
 export type TrafficRow = {
   date: string;
@@ -30,6 +32,9 @@ export type GoogleTrafficPayload = {
     averageCpl: number;
     markets: string[];
     channels: string[];
+    dataSource: "snapshot" | "live";
+    snapshotUpdatedAt: string | null;
+    snapshotPath: string;
   };
 };
 
@@ -221,8 +226,37 @@ function normalizeDateValue(value: string) {
   return trimmed;
 }
 
-function currentMonthPrefix(now = new Date()) {
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+function monthPrefixForPeriod(period: PeriodKey) {
+  if (period === "may-2026") return "2026-05";
+  if (period === "june-2026") return "2026-06";
+  return "2026-07";
+}
+
+function monthRangeForPeriod(period: PeriodKey) {
+  const mapping: Record<PeriodKey, { year: number; month: number }> = {
+    "may-2026": { year: 2026, month: 5 },
+    "june-2026": { year: 2026, month: 6 },
+    "july-2026": { year: 2026, month: 7 }
+  };
+  const { year, month } = mapping[period];
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1)),
+    end: new Date(Date.UTC(year, month, 0, 23, 59, 59))
+  };
+}
+
+function isClosedPeriod(period: PeriodKey, now = new Date()) {
+  const { start } = monthRangeForPeriod(period);
+  const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  return start < currentMonthStart;
+}
+
+function isSnapshotFreshToday(createdAt: string, now = new Date()) {
+  const snapshotDate = new Date(createdAt);
+  if (Number.isNaN(snapshotDate.getTime())) return false;
+  return snapshotDate.getFullYear() === now.getFullYear()
+    && snapshotDate.getMonth() === now.getMonth()
+    && snapshotDate.getDate() === now.getDate();
 }
 
 function resolveHeaderIndexes(headers: string[]) {
@@ -318,7 +352,12 @@ async function readCsvRows() {
   return parseCsv(csv);
 }
 
-export async function syncGoogleTraffic(): Promise<GoogleTrafficPayload> {
+export type GoogleTrafficSyncOptions = {
+  period?: PeriodKey;
+  refresh?: boolean;
+};
+
+async function buildGoogleTrafficSnapshot(period: PeriodKey): Promise<GoogleTrafficSnapshot> {
   const facebookSources = googleSources.filter((item) => item.type === "facebookTraffic");
   const organicSources = googleSources.filter((item) => item.leadKind === "organic");
   const fallbackTrafficSources = googleSources.filter((item) => item.type === "traffic" && item.leadKind !== "organic");
@@ -326,7 +365,7 @@ export async function syncGoogleTraffic(): Promise<GoogleTrafficPayload> {
   const canUsePrivateApi = Boolean(serviceAccountCredentials() && trafficSources.length);
   const loadedSources: string[] = [];
   const accessToken = canUsePrivateApi ? await getGoogleAccessToken() : "";
-  const monthPrefix = currentMonthPrefix();
+  const monthPrefix = monthPrefixForPeriod(period);
   const rows = (canUsePrivateApi
     ? (await Promise.all(trafficSources.map(async (source) => {
       const parsed = await readPrivateSheetRows(source, accessToken);
@@ -341,6 +380,10 @@ export async function syncGoogleTraffic(): Promise<GoogleTrafficPayload> {
   const spend = rows.reduce((sum, row) => sum + row.spend, 0);
 
   return {
+    version: 1,
+    period,
+    monthPrefix,
+    createdAt: new Date().toISOString(),
     rows,
     daily: toDaily(rows),
     summary: {
@@ -353,6 +396,44 @@ export async function syncGoogleTraffic(): Promise<GoogleTrafficPayload> {
       averageCpl: paidLeads > 0 ? spend / paidLeads : 0,
       markets: Array.from(new Set(rows.map((row) => row.market).filter(Boolean))),
       channels: Array.from(new Set(rows.map((row) => row.channel).filter(Boolean)))
+    }
+  };
+}
+
+async function loadGoogleTrafficSnapshot(period: PeriodKey, refresh = false) {
+  const now = new Date();
+  const storedSnapshot = refresh ? null : await readGoogleTrafficSnapshot(period);
+
+  if (storedSnapshot) {
+    const shouldUseStoredSnapshot = isClosedPeriod(period, now) || isSnapshotFreshToday(storedSnapshot.createdAt, now);
+    if (shouldUseStoredSnapshot) {
+      return {
+        snapshot: storedSnapshot,
+        dataSource: "snapshot" as const
+      };
+    }
+  }
+
+  const snapshot = await buildGoogleTrafficSnapshot(period);
+  await writeGoogleTrafficSnapshot(snapshot);
+  return {
+    snapshot,
+    dataSource: "live" as const
+  };
+}
+
+export async function syncGoogleTraffic(options: GoogleTrafficSyncOptions = {}): Promise<GoogleTrafficPayload> {
+  const period = options.period ?? "july-2026";
+  const { snapshot, dataSource } = await loadGoogleTrafficSnapshot(period, options.refresh);
+
+  return {
+    rows: snapshot.rows,
+    daily: snapshot.daily,
+    summary: {
+      ...snapshot.summary,
+      dataSource,
+      snapshotUpdatedAt: snapshot.createdAt,
+      snapshotPath: googleSnapshotFilePath(period)
     }
   };
 }

@@ -2,6 +2,8 @@
 
 После настройки каждый push в ветку `main` будет автоматически обновлять сервер Timeweb `85.92.111.202`.
 
+Workflow уже лежит в репозитории: [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
+
 ## 1. Создать GitHub-репозиторий
 
 Создайте пустой приватный репозиторий, например:
@@ -50,6 +52,21 @@ Settings -> Secrets and variables -> Actions -> New repository secret
 DEPLOY_HOST=85.92.111.202
 DEPLOY_USER=root
 DEPLOY_SSH_KEY=<содержимое файла ~/.ssh/retro_pressa_deploy>
+BITRIX_WEBHOOK_URL=...
+GOOGLE_SERVICE_ACCOUNT_JSON=...
+GOOGLE_SERVICE_ACCOUNT_EMAIL=...
+GOOGLE_PRIVATE_KEY=...
+GOOGLE_TRAFFIC_CSV_URL=...
+GOOGLE_TRAFFIC_SHEET_ID=...
+GOOGLE_TRAFFIC_SHEET_NAME=...
+GOOGLE_SHEET_ID=...
+```
+
+Если нужен анализ переписок через Gemini, добавьте ещё:
+
+```text
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 Содержимое приватного ключа посмотреть так:
@@ -105,3 +122,9 @@ http://85.92.111.202:4174
 pm2 status
 pm2 logs retro-pressa --lines 30
 ```
+
+## Что важно в текущей версии
+
+- Деплой сохраняет локальные snapshot-файлы Bitrix и Google между выкладками.
+- Слепки лежат на сервере в общей папке и не стираются при очередном `push`.
+- Если нужен полный пересчёт, можно просто удалить содержимое `data/bitrix-snapshots` или `data/google-snapshots` на сервере и сделать новый деплой.

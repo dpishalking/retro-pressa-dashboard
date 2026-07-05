@@ -6,11 +6,16 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: retro-pressa-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
       APP_DIR: /opt/retro-pressa
+      APP_SHARED_DIR: /opt/retro-pressa-shared
       APP_NAME: retro-pressa
       APP_PORT: "4174"
 
@@ -45,9 +50,15 @@ jobs:
       - name: Create runtime env
         env:
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           GOOGLE_TRAFFIC_CSV_URL: ${{ secrets.GOOGLE_TRAFFIC_CSV_URL }}
           GOOGLE_TRAFFIC_SHEET_ID: ${{ secrets.GOOGLE_TRAFFIC_SHEET_ID }}
           GOOGLE_TRAFFIC_SHEET_NAME: ${{ secrets.GOOGLE_TRAFFIC_SHEET_NAME }}
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
@@ -57,9 +68,15 @@ jobs:
           const fs = require("node:fs");
           const keys = [
             "BITRIX_WEBHOOK_URL",
+            "GEMINI_API_KEY",
+            "GEMINI_MODEL",
             "GOOGLE_TRAFFIC_CSV_URL",
             "GOOGLE_TRAFFIC_SHEET_ID",
             "GOOGLE_TRAFFIC_SHEET_NAME",
+            "GOOGLE_AI_API_KEY",
+            "GOOGLE_API_KEY",
+            "GOOGLE_GENERATIVE_AI_API_KEY",
+            "GOOGLE_GEMINI_API_KEY",
             "GOOGLE_SHEET_ID",
             "GOOGLE_SERVICE_ACCOUNT_JSON",
             "GOOGLE_SERVICE_ACCOUNT_EMAIL",
@@ -90,10 +107,14 @@ jobs:
           if ! command -v pm2 > /dev/null; then
             npm install -g pm2
           fi
-          mkdir -p /opt/retro-pressa
-          rm -rf /opt/retro-pressa/*
-          tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /opt/retro-pressa
-          cd /opt/retro-pressa
+          APP_DIR="/opt/retro-pressa"
+          APP_SHARED_DIR="/opt/retro-pressa-shared"
+          APP_DATA_DIR="$APP_SHARED_DIR/data"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots"
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
+          cd "$APP_DIR"
+          ln -sfn "$APP_DATA_DIR" data
           cp /tmp/retro-pressa-runtime-env.json runtime-env.json
           chmod 600 runtime-env.json
           cat > ecosystem.config.cjs <<'PM2EOF'

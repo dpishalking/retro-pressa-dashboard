@@ -8,10 +8,11 @@ import { conversationIntelligenceDemo, dailyMetrics, managerMetrics, marketMetri
 import { averageInvoice, averagePaidCheck, cashRoas, dailyPlan, delta, deltaPp, invoiceConversion, invoiceRoas, paidCpl, revenuePerLead, revenuePlanCompletion, salesConversion, scenarioForecast, totalLeads } from "@/lib/metrics-engine";
 import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
-import type { ConversationDashboardMetrics, DailyMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, DailyMetrics, GeminiConversationSummary, ManagerMetrics, MarketMetrics, MonthlyMetrics, Status } from "@/types/metrics";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
+type ManagerOption = { value: string; label: string };
 
 const defaultCountryOptions = [
   "Латвия",
@@ -130,6 +131,21 @@ const statusLabel: Record<Status, string> = {
   red: "Критично"
 };
 
+const sampleReliabilityLabel: Record<ConversationDashboardMetrics["sampleReliability"], string> = {
+  demo: "Демо",
+  small: "Малая выборка",
+  directional: "Направление",
+  reliable: "Достаточная выборка"
+};
+
+function conversationSampleNote(dashboard: ConversationDashboardMetrics) {
+  if (dashboard.sampleReliability === "reliable") {
+    return `Выборка достаточная: ${number(dashboard.totalDialogs)} диалогов. Можно использовать в прогнозе и управленческих решениях.`;
+  }
+
+  return `Сейчас загружено ${number(dashboard.totalDialogs)} диалогов. Это разбор примеров и поиск симптомов, а не статистика месяца. Для управленческой аналитики нужно минимум ${number(dashboard.minimumReliableDialogs)} диалогов.`;
+}
+
 function StatusBadge({ status }: { status: Status }) {
   return <span className={`inline-flex min-h-7 items-center rounded-full px-3 text-xs font-bold status-${status}`}>{statusLabel[status]}</span>;
 }
@@ -228,19 +244,21 @@ function PlanFactRow({ label, fact, plan, completion, unit = "" }: { label: stri
   );
 }
 
-function FocusMetric({ title, fact, plan, gap, status, runRate }: { title: string; fact: string; plan: string; gap: string; status: Status; runRate?: string }) {
+function FocusMetric({ title, fact, plan, gap, status, runRate }: { title: string; fact: string; plan?: string; gap?: string; status?: Status; runRate?: string }) {
   return (
     <article className="card grid min-h-32 gap-3 p-4">
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-bold text-slate-500">{title}</span>
-        <StatusBadge status={status} />
+        {status ? <StatusBadge status={status} /> : null}
       </div>
       <strong className="text-3xl leading-none text-slate-950">{fact}</strong>
-      <div className="grid gap-1 text-sm text-slate-500">
-        <span>План: <b className="text-slate-900">{plan}</b></span>
-        <span>Разрыв: <b className="text-slate-900">{gap}</b></span>
-        {runRate ? <span>Ранрейт: <b className="text-slate-900">{runRate}</b></span> : null}
-      </div>
+      {plan || gap || runRate ? (
+        <div className="grid gap-1 text-sm text-slate-500">
+          {plan ? <span>План: <b className="text-slate-900">{plan}</b></span> : null}
+          {gap ? <span>Разрыв: <b className="text-slate-900">{gap}</b></span> : null}
+          {runRate ? <span>Ранрейт: <b className="text-slate-900">{runRate}</b></span> : null}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -287,7 +305,10 @@ function GlobalFilters({
   countryOptions,
   managerFilter,
   setManagerFilter,
-  managerOptions
+  managerOptions,
+  productFilter,
+  setProductFilter,
+  productOptions = []
 }: {
   period: string;
   setPeriod: (period: string) => void;
@@ -298,7 +319,10 @@ function GlobalFilters({
   countryOptions: string[];
   managerFilter: string;
   setManagerFilter: (manager: string) => void;
-  managerOptions: string[];
+  managerOptions: ManagerOption[];
+  productFilter: string;
+  setProductFilter: (product: string) => void;
+  productOptions?: string[];
 }) {
   return (
     <section className="card mb-4 grid gap-3 p-4 lg:grid-cols-7">
@@ -331,18 +355,14 @@ function GlobalFilters({
         Менеджер
         <select className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950" value={managerFilter} onChange={(event) => setManagerFilter(event.target.value)}>
           <option value="all">Все</option>
-          {managerOptions.map((manager) => <option key={manager} value={manager}>{manager}</option>)}
+          {managerOptions.map((manager) => <option key={manager.value} value={manager.value}>{manager.label}</option>)}
         </select>
       </label>
       <label className="grid gap-1 text-xs font-bold text-slate-500">
         Продукт
-        <select className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950">
-          <option>Все</option>
-          <option>Оригинал</option>
-          <option>Репродукция</option>
-          <option>Региональное издание</option>
-          <option>Поздравительная газета</option>
-          <option>Комплект</option>
+        <select className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950" value={productFilter} onChange={(event) => setProductFilter(event.target.value)}>
+          <option value="all">Все</option>
+          {productOptions.map((product) => <option key={product} value={product}>{product}</option>)}
         </select>
       </label>
       <label className="grid gap-1 text-xs font-bold text-slate-500">
@@ -371,6 +391,13 @@ function monthPrefixForPeriod(period: string) {
   if (period === "june-2026") return "2026-06";
   if (period === "may-2026") return "2026-05";
   return "2026-07";
+}
+
+function periodLabel(period: string) {
+  if (period === "july-2026") return "Июль 2026";
+  if (period === "june-2026") return "Июнь 2026";
+  if (period === "may-2026") return "Май 2026";
+  return "Выбранный период";
 }
 
 function safeCompletion(fact: number, plan: number) {
@@ -425,7 +452,7 @@ function dailyFactAt(items: DailyMetrics[], elapsedDays: number) {
   };
 }
 
-function Overview({ current, monthlyPlan, daily }: { current: MonthlyMetrics; previous: MonthlyMetrics; monthlyPlan: MonthlyPlan; daily: DailyMetrics[] }) {
+function Overview({ current, monthlyPlan, daily, showPlan }: { current: MonthlyMetrics; previous: MonthlyMetrics; monthlyPlan: MonthlyPlan; daily: DailyMetrics[]; showPlan: boolean }) {
   const elapsedDays = elapsedDaysForPeriod(current.month);
   const monthPlan = deriveMonthlyPlan(monthlyPlan);
   const tempo = revenuePlanCompletion(current.revenue, monthlyPlan.targetRevenue) / (elapsedDays / monthlyPlan.calendarDays);
@@ -476,29 +503,33 @@ function Overview({ current, monthlyPlan, daily }: { current: MonthlyMetrics; pr
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-black">Сегодня и месяц</h2>
-              <p className="mt-1 text-sm text-slate-500">{monthlyPlan.name} · North Star {eur(targetScenario.targetRevenue)} · рабочий план закрывает {pct(monthPlan.northStarProgress)}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {showPlan
+                  ? `${monthlyPlan.name} · North Star ${eur(targetScenario.targetRevenue)} · рабочий план закрывает ${pct(monthPlan.northStarProgress)}`
+                  : `Фактические показатели за ${periodLabel(current.month)}`}
+              </p>
             </div>
           <div className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
-              {hasFacts ? "Фактический период" : "Демо-режим: факты не загружены"}
+              {showPlan ? hasFacts ? "Текущий период с планом" : "Демо-режим: факты не загружены" : "Фактический период"}
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <FocusMetric title="Выставлено счетов" fact={`${number(current.invoicesCount)} / ${eur(current.invoicesAmount)}`} plan={`${number(monthPlan.invoices)} / ${eur(monthPlan.invoicesAmount)}`} gap={`${number(invoicesGap)} / ${eur(invoicesAmountGap)}`} runRate={`${number(invoicesRunRate)} / ${eur(invoicesAmountRunRate)}`} status={planStatus(safeCompletion(current.invoicesAmount, monthPlan.invoicesAmount))} />
-            <FocusMetric title="Оплачено счетов" fact={`${number(current.salesCount)} / ${eur(current.revenue)}`} plan={`${number(monthPlan.sales)} / ${eur(monthlyPlan.targetRevenue)}`} gap={`${number(salesGap)} / ${eur(revenueGap)}`} runRate={`${number(salesRunRate)} / ${eur(revenueRunRate)}`} status={planStatus(safeCompletion(current.revenue, monthlyPlan.targetRevenue))} />
+            <FocusMetric title="Выставлено счетов" fact={`${number(current.invoicesCount)} / ${eur(current.invoicesAmount)}`} plan={showPlan ? `${number(monthPlan.invoices)} / ${eur(monthPlan.invoicesAmount)}` : undefined} gap={showPlan ? `${number(invoicesGap)} / ${eur(invoicesAmountGap)}` : undefined} runRate={showPlan ? `${number(invoicesRunRate)} / ${eur(invoicesAmountRunRate)}` : undefined} status={showPlan ? planStatus(safeCompletion(current.invoicesAmount, monthPlan.invoicesAmount)) : undefined} />
+            <FocusMetric title="Оплачено счетов" fact={`${number(current.salesCount)} / ${eur(current.revenue)}`} plan={showPlan ? `${number(monthPlan.sales)} / ${eur(monthlyPlan.targetRevenue)}` : undefined} gap={showPlan ? `${number(salesGap)} / ${eur(revenueGap)}` : undefined} runRate={showPlan ? `${number(salesRunRate)} / ${eur(revenueRunRate)}` : undefined} status={showPlan ? planStatus(safeCompletion(current.revenue, monthlyPlan.targetRevenue)) : undefined} />
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <FocusMetric title="Лиды" fact={number(currentLeads)} plan={number(monthPlan.totalLeads)} gap={number(leadsGap)} runRate={number(leadsRunRate)} status={planStatus(safeCompletion(currentLeads, monthPlan.totalLeads))} />
-            <FocusMetric title="Qualified лиды" fact={number(current.qualifiedLeads)} plan={number(monthlyPlan.qualifiedLeads)} gap={number(qlGap)} runRate={number(qlRunRate)} status={planStatus(safeCompletion(current.qualifiedLeads, monthlyPlan.qualifiedLeads))} />
-            <FocusMetric title="Бюджет трафика" fact={eur(current.adSpend)} plan={eur(monthlyPlan.adSpend)} gap={eur(current.adSpend - monthlyPlan.adSpend)} runRate={eur(adSpendRunRate)} status={current.adSpend <= monthlyPlan.adSpend ? "green" : "orange"} />
+            <FocusMetric title="Лиды" fact={number(currentLeads)} plan={showPlan ? number(monthPlan.totalLeads) : undefined} gap={showPlan ? number(leadsGap) : undefined} runRate={showPlan ? number(leadsRunRate) : undefined} status={showPlan ? planStatus(safeCompletion(currentLeads, monthPlan.totalLeads)) : undefined} />
+            <FocusMetric title="Qualified лиды" fact={number(current.qualifiedLeads)} plan={showPlan ? number(monthlyPlan.qualifiedLeads) : undefined} gap={showPlan ? number(qlGap) : undefined} runRate={showPlan ? number(qlRunRate) : undefined} status={showPlan ? planStatus(safeCompletion(current.qualifiedLeads, monthlyPlan.qualifiedLeads)) : undefined} />
+            <FocusMetric title="Бюджет трафика" fact={eur(current.adSpend)} plan={showPlan ? eur(monthlyPlan.adSpend) : undefined} gap={showPlan ? eur(current.adSpend - monthlyPlan.adSpend) : undefined} runRate={showPlan ? eur(adSpendRunRate) : undefined} status={showPlan ? current.adSpend <= monthlyPlan.adSpend ? "green" : "orange" : undefined} />
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <FocusMetric title="CR в продажу" fact={pct(salesConversion(current))} plan={pct(monthlyPlan.salesConversion)} gap={pp(deltaPp(salesConversion(current), monthlyPlan.salesConversion))} status={planStatus(safeCompletion(salesConversion(current), monthlyPlan.salesConversion))} />
-            <FocusMetric title="Средний выставленный чек" fact={eur(averageInvoice(current))} plan={eur(monthlyPlan.averagePaidCheck)} gap={eur(averageInvoice(current) - monthlyPlan.averagePaidCheck)} status={planStatus(safeCompletion(averageInvoice(current), monthlyPlan.averagePaidCheck))} />
-            <FocusMetric title="Средний оплаченный чек" fact={eur(averagePaidCheck(current))} plan={eur(monthlyPlan.averagePaidCheck)} gap={eur(averagePaidCheck(current) - monthlyPlan.averagePaidCheck)} status={planStatus(safeCompletion(averagePaidCheck(current), monthlyPlan.averagePaidCheck))} />
+            <FocusMetric title="CR в продажу" fact={pct(salesConversion(current))} plan={showPlan ? pct(monthlyPlan.salesConversion) : undefined} gap={showPlan ? pp(deltaPp(salesConversion(current), monthlyPlan.salesConversion)) : undefined} status={showPlan ? planStatus(safeCompletion(salesConversion(current), monthlyPlan.salesConversion)) : undefined} />
+            <FocusMetric title="Средний выставленный чек" fact={eur(averageInvoice(current))} plan={showPlan ? eur(monthlyPlan.averagePaidCheck) : undefined} gap={showPlan ? eur(averageInvoice(current) - monthlyPlan.averagePaidCheck) : undefined} status={showPlan ? planStatus(safeCompletion(averageInvoice(current), monthlyPlan.averagePaidCheck)) : undefined} />
+            <FocusMetric title="Средний оплаченный чек" fact={eur(averagePaidCheck(current))} plan={showPlan ? eur(monthlyPlan.averagePaidCheck) : undefined} gap={showPlan ? eur(averagePaidCheck(current) - monthlyPlan.averagePaidCheck) : undefined} status={showPlan ? planStatus(safeCompletion(averagePaidCheck(current), monthlyPlan.averagePaidCheck)) : undefined} />
           </div>
         </section>
 
-        <section className="card p-4">
+        {showPlan ? <section className="card p-4">
           <SectionHead title="Ранрейт месяца" subtitle="Прогноз на конец месяца при текущем темпе" />
           <div className="grid gap-3 md:grid-cols-5">
             <RunRateCard
@@ -547,9 +578,9 @@ function Overview({ current, monthlyPlan, daily }: { current: MonthlyMetrics; pr
               status={runRateStatus(safeCompletion(revenueRunRate, monthlyPlan.targetRevenue))}
             />
           </div>
-        </section>
+        </section> : null}
 
-        <section className="card p-4">
+        {showPlan ? <section className="card p-4">
           <SectionHead title="План на сегодня" subtitle="Минимальный дневной ориентир без лишней аналитики" />
           <div className="grid gap-3 md:grid-cols-3">
             <PlanFactRow label="Счета" fact={`${number(todayInvoicesFact)} / ${eur(todayInvoicesAmount)}`} plan={`${number(monthPlan.dailyInvoices)} / ${eur(monthPlan.dailyInvoicesAmount)}`} completion={safeCompletion(todayInvoicesAmount, monthPlan.dailyInvoicesAmount)} />
@@ -559,10 +590,10 @@ function Overview({ current, monthlyPlan, daily }: { current: MonthlyMetrics; pr
           <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
             Разрыв дня: {eur(todayRevenueGap)} оплат · {number(todayLeadsGap)} лидов · {number(todaySalesGap)} продаж. Темп месяца: <b className="text-slate-950">{pct(tempo)}</b>.
           </div>
-        </section>
+        </section> : null}
 
         <section className="card p-4">
-          <SectionHead title="План-факт оплат" subtitle={hasFacts ? "Оплаты внутри когорты выставленных счетов" : "Факты по июлю ещё не загружены из Битрикса"} />
+          <SectionHead title={showPlan ? "План-факт оплат" : "Факт оплат по дням"} subtitle={hasFacts ? "Оплаты внутри когорты выставленных счетов" : `Факты за ${periodLabel(current.month).toLowerCase()} ещё не загружены из Битрикса`} />
           {hasFacts ? (
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -573,7 +604,7 @@ function Overview({ current, monthlyPlan, daily }: { current: MonthlyMetrics; pr
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="revenue" name="Выручка" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                  <Line dataKey="plan" name="План дня" stroke="#c2413a" strokeDasharray="5 5" dot={false} />
+                  {showPlan ? <Line dataKey="plan" name="План дня" stroke="#c2413a" strokeDasharray="5 5" dot={false} /> : null}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -879,9 +910,20 @@ function SalesTab({ current }: { current: MonthlyMetrics }) {
   );
 }
 
-function QualityTab({ dashboard }: { dashboard: ConversationDashboardMetrics }) {
+function QualityTab({ dashboard, onConversationImport }: { dashboard: ConversationDashboardMetrics; onConversationImport: (dashboard: ConversationDashboardMetrics) => void }) {
   const may = qualityMetrics[0];
   const june = qualityMetrics[1];
+  const [conversationStatus, setConversationStatus] = useState<SyncStatus>({
+    state: "idle",
+    message: "Полный gift-ai импорт уже загружается автоматически. Можно перезагрузить период вручную."
+  });
+  const [lastConversationImport, setLastConversationImport] = useState<ConversationDashboardMetrics | null>(null);
+  const [conversationDiagnostics, setConversationDiagnostics] = useState<ConversationImportFileDiagnostic[]>([]);
+  const [geminiStatus, setGeminiStatus] = useState<SyncStatus>({
+    state: "idle",
+    message: "Gemini-анализ ещё не запускался."
+  });
+  const [geminiSummary, setGeminiSummary] = useState<GeminiConversationSummary | null>(null);
   const rows = [
     ["Персональная рекомендация", may.personalRecommendationPct, june.personalRecommendationPct],
     ["Квалификация получателя", may.recipientQualificationPct, june.recipientQualificationPct],
@@ -892,12 +934,181 @@ function QualityTab({ dashboard }: { dashboard: ConversationDashboardMetrics }) 
     ["SLA медиана, мин", may.medianResponseMinutes, june.medianResponseMinutes],
     ["Расширенное предложение", may.extendedOfferPct, june.extendedOfferPct]
   ];
+  const importGiftAiExport = useCallback(async (key: "may" | "june" | "may-june") => {
+    const label = key === "may" ? "майский экспорт" : key === "june" ? "июньский экспорт" : "экспорты за май и июнь";
+    setConversationStatus({ state: "loading", message: `Загружаю ${label} из gift-ai...` });
+    try {
+      const response = await fetch("/api/conversations/import-local", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key })
+      });
+      const data = await response.json() as ConversationImportPayload;
+      setConversationDiagnostics(data.diagnostics ?? []);
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить экспорт gift-ai");
+      onConversationImport(data.dashboard);
+      setLastConversationImport(data.dashboard);
+      setConversationStatus({
+        state: "ok",
+        message: `Экспорт gift-ai загружен: файлов ${number(data.summary.filesLoaded)}, сообщений ${number(data.summary.messagesLoaded)}, диалогов ${number(data.summary.dialogsLoaded)}.`
+      });
+    } catch (error) {
+      setConversationStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось загрузить экспорт gift-ai"
+      });
+    }
+  }, [onConversationImport]);
+
+  const analyzeWithGemini = useCallback(async () => {
+    setGeminiStatus({ state: "loading", message: "Gemini размечает диалоги. Первый запуск может занять до пары минут..." });
+    try {
+      const response = await fetch("/api/conversations/gemini", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "may-june", limit: 80, batchSize: 8 })
+      });
+      const data = await response.json() as GeminiConversationPayload;
+      if (!response.ok) throw new Error(data.error || "Gemini-анализ не выполнился");
+      setGeminiSummary(data.summary);
+      setGeminiStatus({
+        state: "ok",
+        message: `Gemini обработал ${number(data.summary.analyzedDialogs)} диалогов: новых ${number(data.summary.newDialogs)}, из кеша ${number(data.summary.cachedDialogs)}.`
+      });
+    } catch (error) {
+      setGeminiStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Gemini-анализ не выполнился"
+      });
+    }
+  }, []);
+
   return (
     <div className="grid gap-4">
-      <div className="card border-l-4 border-l-blue-600 p-5">
-        <h2 className="text-xl font-bold">Главный вывод</h2>
-        <p className="mt-2 text-slate-600">Менеджеры уже хорошо расширяют ассортимент, но система теперь отдельно ловит отсутствие конкретной рекомендации и неполные ответы про доставку.</p>
+      <div className={`card border-l-4 p-5 ${dashboard.sampleReliability === "reliable" ? "border-l-blue-600" : "border-l-amber-500"}`}>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <h2 className="text-xl font-bold">Главный вывод</h2>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${dashboard.sampleReliability === "reliable" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-800"}`}>
+            {sampleReliabilityLabel[dashboard.sampleReliability]}
+          </span>
+        </div>
+        <p className="text-slate-600">{conversationSampleNote(dashboard)}</p>
+        <p className="mt-2 text-slate-600">Интерпретация ниже показывает, какие симптомы встречаются в загруженных переписках: рекомендация, доставка, полный расчёт, закрытие и follow-up.</p>
       </div>
+      <section className="card p-4">
+        <SectionHead title="Импорт и AI-разметка" subtitle="gift-ai экспорт и смысловой анализ Gemini для этой вкладки" />
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 disabled:opacity-60"
+            onClick={() => importGiftAiExport("may")}
+            disabled={conversationStatus.state === "loading"}
+          >
+            Загрузить gift-ai за май
+          </button>
+          <button
+            className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 disabled:opacity-60"
+            onClick={() => importGiftAiExport("june")}
+            disabled={conversationStatus.state === "loading"}
+          >
+            Загрузить gift-ai за июнь
+          </button>
+          <button
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            onClick={() => importGiftAiExport("may-june")}
+            disabled={conversationStatus.state === "loading"}
+          >
+            Загрузить май + июнь
+          </button>
+          <button
+            className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            onClick={analyzeWithGemini}
+            disabled={geminiStatus.state === "loading"}
+          >
+            {geminiStatus.state === "loading" ? "Анализирую..." : "Запустить Gemini"}
+          </button>
+        </div>
+        <div className="mt-3 grid gap-2 text-sm font-semibold">
+          <p className={conversationStatus.state === "error" ? "text-red-700" : conversationStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}>
+            {conversationStatus.message}
+          </p>
+          <p className={geminiStatus.state === "error" ? "text-red-700" : geminiStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}>
+            {geminiStatus.message}
+          </p>
+        </div>
+        {conversationDiagnostics.length ? (
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-700">Что реально прочиталось из файлов</div>
+            <div className="table-scroll">
+              <table>
+                <thead><tr><th>Файл</th><th>Статус</th><th>Сообщения</th><th>Диалоги</th><th>Комментарий</th></tr></thead>
+                <tbody>
+                  {conversationDiagnostics.map((item) => (
+                    <tr key={item.filename}>
+                      <td>{item.filename}</td>
+                      <td><span className={item.status === "ok" ? "text-emerald-700" : "text-red-700"}>{item.status === "ok" ? "Прочитан" : "Ошибка"}</span></td>
+                      <td>{number(item.messages)}</td>
+                      <td>{number(item.dialogs)}</td>
+                      <td>{item.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+        {lastConversationImport ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 md:grid-cols-4">
+            <div><span className="text-xs font-bold uppercase text-emerald-700">Диалоги</span><strong className="mt-1 block text-2xl text-slate-950">{number(lastConversationImport.totalDialogs)}</strong></div>
+            <div><span className="text-xs font-bold uppercase text-emerald-700">CR в заказ</span><strong className="mt-1 block text-2xl text-slate-950">{pct(lastConversationImport.orderConversion)}</strong></div>
+            <div><span className="text-xs font-bold uppercase text-emerald-700">Quality Score</span><strong className="mt-1 block text-2xl text-slate-950">{number(lastConversationImport.qualityScore)}/100</strong></div>
+            <div><span className="text-xs font-bold uppercase text-emerald-700">Потерянная выручка</span><strong className="mt-1 block text-2xl text-slate-950">{eur(lastConversationImport.potentialLostRevenue)}</strong></div>
+          </div>
+        ) : null}
+        {geminiSummary ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="rounded-lg bg-white p-3"><span className="text-xs font-bold uppercase text-violet-700">Модель</span><b className="mt-1 block text-slate-950">{geminiSummary.model}</b></div>
+              <div className="rounded-lg bg-white p-3"><span className="text-xs font-bold uppercase text-violet-700">Диалоги</span><b className="mt-1 block text-slate-950">{number(geminiSummary.analyzedDialogs)}</b></div>
+              <div className="rounded-lg bg-white p-3"><span className="text-xs font-bold uppercase text-violet-700">Средний score</span><b className="mt-1 block text-slate-950">{number(geminiSummary.averageQualityScore)}/100</b></div>
+              <div className="rounded-lg bg-white p-3"><span className="text-xs font-bold uppercase text-violet-700">На ревью</span><b className="mt-1 block text-slate-950">{number(geminiSummary.needsHumanReview)}</b></div>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="rounded-lg bg-white p-3">
+                <b className="text-sm">Частые упущения</b>
+                <div className="mt-2 grid gap-2">
+                  {geminiSummary.topMissedOpportunities.slice(0, 5).map((item) => (
+                    <div key={item.name} className="flex justify-between gap-3 text-sm"><span>{item.name}</span><b>{number(item.count)}</b></div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg bg-white p-3">
+                <b className="text-sm">Причины потерь</b>
+                <div className="mt-2 grid gap-2">
+                  {geminiSummary.topLossReasons.slice(0, 5).map((item) => (
+                    <div key={item.name} className="flex justify-between gap-3 text-sm"><span>{item.name}</span><b>{number(item.count)}</b></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="table-scroll rounded-lg bg-white">
+              <table>
+                <thead><tr><th>Диалог</th><th>Score</th><th>Итог</th><th>Вывод</th><th>Следующий шаг</th></tr></thead>
+                <tbody>
+                  {geminiSummary.sample.slice(0, 6).map((item) => (
+                    <tr key={item.dialogId}>
+                      <td>{item.dialogId}</td>
+                      <td>{number(item.qualityScore)}</td>
+                      <td>{item.outcome}</td>
+                      <td>{item.summary}</td>
+                      <td>{item.recommendedNextAction}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </section>
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard title="Диалоги" value={number(dashboard.totalDialogs)} hint="структурированы из переписок" formula="count(dialogs)" />
         <MetricCard title="CR в заказ" value={pct(dashboard.orderConversion)} hint="по импортированным диалогам" formula="orders / dialogs" />
@@ -982,7 +1193,7 @@ function ManagersTab({ managers, daily, managerFilter }: { managers: ManagerMetr
   const [status, setStatus] = useState<"all" | Status>("all");
   const plan = dailyPlan(targetScenario, daily, 20);
   const rows = managers
-    .filter((manager) => managerFilter === "all" || manager.manager === managerFilter)
+    .filter((manager) => managerFilter === "all" || manager.managerId === managerFilter || manager.manager === managerFilter)
     .filter((manager) => status === "all" || managerStatus(manager) === status)
     .sort((a, b) => (b.recentClientsLast10Days - a.recentClientsLast10Days) || (b.newLeads - a.newLeads));
   return (
@@ -1072,7 +1283,8 @@ function buildGrowthContext(current: MonthlyMetrics, previous: MonthlyMetrics, q
   const leads = totalLeads(current);
   const aov = averagePaidCheck(current) || monthlyPlan.averagePaidCheck;
   const forecast = buildForecastSeries(current, daily, monthlyPlan, elapsedDays);
-  const dialogueDrag = conversationDashboard.recommendationMissingShare * 0.07 + conversationDashboard.deliveryRiskShare * 0.05;
+  const canUseConversationForForecast = conversationDashboard.sampleReliability === "reliable";
+  const dialogueDrag = canUseConversationForForecast ? conversationDashboard.recommendationMissingShare * 0.07 + conversationDashboard.deliveryRiskShare * 0.05 : 0;
   const dialogueAdjustedRevenue = forecast.weightedRevenue * (1 - dialogueDrag);
   const forecastGap = dialogueAdjustedRevenue - monthlyPlan.targetRevenue;
   const probability = clamp(0.5 + (dialogueAdjustedRevenue / Math.max(1, monthlyPlan.targetRevenue) - 0.85) * 1.35 - dialogueDrag, 0.05, 0.98);
@@ -1157,14 +1369,14 @@ function buildGrowthContext(current: MonthlyMetrics, previous: MonthlyMetrics, q
     },
     {
       title: "Растёт доля диалогов без конкретной рекомендации",
-      active: conversationDashboard.recommendationMissingShare > 0.35,
+      active: canUseConversationForForecast && conversationDashboard.recommendationMissingShare > 0.35,
       reason: `Без конкретного подарка ${pct(conversationDashboard.recommendationMissingShare)} диалогов.`,
       effect: `Прогноз выручки снижен до ${eur(dialogueAdjustedRevenue)} с учётом качества переписок.`,
       action: "В каждом диалоге фиксировать один лучший подарок: повод, получатель, дата, вариант и следующий шаг."
     },
     {
       title: "Вопросы о доставке остаются без полного ответа",
-      active: conversationDashboard.deliveryRiskShare > 0.12,
+      active: canUseConversationForForecast && conversationDashboard.deliveryRiskShare > 0.12,
       reason: `Риск по доставке найден в ${pct(conversationDashboard.deliveryRiskShare)} диалогов.`,
       effect: `Потенциальная потерянная выручка по перепискам: ${eur(conversationDashboard.potentialLostRevenue)}.`,
       action: "Отвечать на доставку полным блоком: цена, срок, страна/город, дата отправки и финальная сумма."
@@ -1215,7 +1427,7 @@ function buildGrowthContext(current: MonthlyMetrics, previous: MonthlyMetrics, q
     }
   ].map((item) => ({ ...item, effect: Math.max(0, item.effect) })).sort((a, b) => b.priority - a.priority || b.effect - a.effect).slice(0, 5);
 
-  return { elapsedDays, plan, leads, aov, forecast, forecastGap, probability, health, process, bottleneck, losses, warnings, recommendations, productionLimit, projectedOrders, dialogueAdjustedRevenue, conversationDashboard };
+  return { elapsedDays, plan, leads, aov, forecast, forecastGap, probability, health, process, bottleneck, losses, warnings, recommendations, productionLimit, projectedOrders, dialogueAdjustedRevenue, conversationDashboard, canUseConversationForForecast };
 }
 
 function GrowthMetricCard({ title, children, status }: { title: string; children: ReactNode; status?: Status }) {
@@ -1566,6 +1778,9 @@ type GoogleSyncPayload = {
     ql: number;
     spend: number;
     averageCpl: number;
+    dataSource: "snapshot" | "live";
+    snapshotUpdatedAt: string | null;
+    snapshotPath: string;
   };
 };
 
@@ -1574,6 +1789,7 @@ type BitrixSyncPayload = {
   daily: DailyMetrics[];
   managers: ManagerMetrics[];
   countryOptions?: string[];
+  productOptions?: string[];
   summary: {
     leadsLoaded: number;
     recentClientsLoaded: number;
@@ -1581,7 +1797,30 @@ type BitrixSyncPayload = {
     usersLoaded: number;
     periodStart: string;
     periodEnd: string;
+    dataSource: "snapshot" | "live";
+    snapshotUpdatedAt: string | null;
+    snapshotPath: string;
   };
+};
+
+type ConversationImportPayload = {
+  dashboard: ConversationDashboardMetrics;
+  diagnostics?: ConversationImportFileDiagnostic[];
+  sourcePaths?: string[];
+  summary: {
+    filesLoaded: number;
+    messagesLoaded: number;
+    dialogsLoaded: number;
+    filesParsed?: number;
+    filesFailed?: number;
+  };
+  error?: string;
+};
+
+type GeminiConversationPayload = {
+  summary: GeminiConversationSummary;
+  sourcePaths?: string[];
+  error?: string;
 };
 
 function DataTab({
@@ -1589,13 +1828,15 @@ function DataTab({
   bitrixStatus,
   syncGoogleTraffic,
   syncBitrix,
-  onConversationImport
+  onConversationImport,
+  setActiveTab
 }: {
   googleStatus: SyncStatus;
   bitrixStatus: SyncStatus;
-  syncGoogleTraffic: () => Promise<void>;
-  syncBitrix: () => Promise<void>;
+  syncGoogleTraffic: (options?: { refresh?: boolean }) => Promise<void>;
+  syncBitrix: (options?: { refresh?: boolean }) => Promise<boolean>;
   onConversationImport: (dashboard: ConversationDashboardMetrics) => void;
+  setActiveTab: (tab: string) => void;
 }) {
   const [conversationStatus, setConversationStatus] = useState<SyncStatus>({
     state: "idle",
@@ -1603,6 +1844,8 @@ function DataTab({
   });
   const [conversationFiles, setConversationFiles] = useState<File[]>([]);
   const [conversationText, setConversationText] = useState("");
+  const [lastConversationImport, setLastConversationImport] = useState<ConversationDashboardMetrics | null>(null);
+  const [conversationDiagnostics, setConversationDiagnostics] = useState<ConversationImportFileDiagnostic[]>([]);
 
   const importConversations = useCallback(async () => {
     if (!conversationFiles.length && !conversationText.trim()) {
@@ -1617,12 +1860,18 @@ function DataTab({
         formData.append("files", new File([conversationText], "manual-chat.txt", { type: "text/plain" }));
       }
       const response = await fetch("/api/conversations/import", { method: "POST", body: formData });
-      const data = await response.json();
+      const data = await response.json() as ConversationImportPayload;
+      setConversationDiagnostics(data.diagnostics ?? []);
       if (!response.ok) throw new Error(data.error || "Не удалось импортировать переписки");
       onConversationImport(data.dashboard);
+      setLastConversationImport(data.dashboard);
+      const averageMessagesPerDialog = data.summary.messagesLoaded / Math.max(1, data.summary.dialogsLoaded);
+      const groupingWarning = data.summary.messagesLoaded > 100 && averageMessagesPerDialog < 3
+        ? ` Внимание: в среднем ${averageMessagesPerDialog.toFixed(1)} сообщения на диалог, группировка выглядит слишком дробной.`
+        : "";
       setConversationStatus({
         state: "ok",
-        message: `Загружено файлов: ${number(data.summary.filesLoaded)}, сообщений: ${number(data.summary.messagesLoaded)}, диалогов: ${number(data.summary.dialogsLoaded)}.`
+        message: `Загружено файлов: ${number(data.summary.filesLoaded)}, сообщений: ${number(data.summary.messagesLoaded)}, диалогов: ${number(data.summary.dialogsLoaded)}.${groupingWarning}`
       });
     } catch (error) {
       setConversationStatus({
@@ -1639,10 +1888,10 @@ function DataTab({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold">Bitrix24: продажи и счета</h3>
-            <p className="text-sm text-slate-500">Счета считаются по дате выставления, продажи и деньги - по дате оплаты.</p>
+            <p className="text-sm text-slate-500">Закрытые месяцы читаются из локального snapshot. Текущий месяц обновляется автоматически один раз в день при первом открытии дашборда, а кнопка ниже запускает внеочередное обновление.</p>
           </div>
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={syncBitrix} disabled={bitrixStatus.state === "loading"}>
-            {bitrixStatus.state === "loading" ? "Синхронизирую..." : "Синхронизировать Bitrix"}
+          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={() => void syncBitrix({ refresh: true })} disabled={bitrixStatus.state === "loading"}>
+            {bitrixStatus.state === "loading" ? "Обновляю..." : "Обновить snapshot Bitrix"}
           </button>
         </div>
         <p className={`mt-3 text-sm font-semibold ${bitrixStatus.state === "error" ? "text-red-700" : bitrixStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}`}>
@@ -1653,10 +1902,10 @@ function DataTab({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold">Google Sheets: Facebook-трафик</h3>
-            <p className="text-sm text-slate-500">Читает приватные таблицы подрядчиков через service account: лиды, QL, бюджет, CPL, каналы и рынки.</p>
+            <p className="text-sm text-slate-500">Закрытые месяцы читаются из локального snapshot. Текущий месяц обновляется автоматически один раз в день при первом открытии дашборда, а кнопка ниже запускает внеочередное обновление. Читает приватные таблицы подрядчиков через service account: лиды, QL, бюджет, CPL, каналы и рынки.</p>
           </div>
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={syncGoogleTraffic} disabled={googleStatus.state === "loading"}>
-            {googleStatus.state === "loading" ? "Проверяю..." : "Проверить таблицу"}
+          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={() => void syncGoogleTraffic({ refresh: true })} disabled={googleStatus.state === "loading"}>
+            {googleStatus.state === "loading" ? "Обновляю..." : "Обновить snapshot Google"}
           </button>
         </div>
         <p className={`mt-3 text-sm font-semibold ${googleStatus.state === "error" ? "text-red-700" : googleStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}`}>
@@ -1667,7 +1916,7 @@ function DataTab({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold">Анализ клиентских переписок</h3>
-            <p className="text-sm text-slate-500">Форматы: txt, csv, json, xlsx, docx, pdf. Для xlsx/docx нужен подключенный бинарный парсер; csv/json/txt и базовый pdf fallback работают сразу.</p>
+            <p className="text-sm text-slate-500">Рабочие форматы: csv, json, txt. PDF читается базовым fallback-методом. XLSX/DOCX пока требуют отдельного парсера или экспорта в CSV/JSON/TXT.</p>
           </div>
           <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60" onClick={importConversations} disabled={conversationStatus.state === "loading"}>
             {conversationStatus.state === "loading" ? "Импортирую..." : "Импортировать переписки"}
@@ -1676,7 +1925,7 @@ function DataTab({
         <input
           multiple
           type="file"
-          accept=".txt,.csv,.json,.xlsx,.docx,.pdf"
+          accept=".txt,.csv,.json,.pdf"
           className="mt-3 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"
           onChange={(event) => setConversationFiles(Array.from(event.target.files ?? []))}
         />
@@ -1691,6 +1940,57 @@ function DataTab({
         <p className={`mt-3 text-sm font-semibold ${conversationStatus.state === "error" ? "text-red-700" : conversationStatus.state === "ok" ? "text-emerald-700" : "text-slate-500"}`}>
           {conversationStatus.message}
         </p>
+        {conversationDiagnostics.length ? (
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-700">Что реально прочиталось из файлов</div>
+            <div className="table-scroll">
+              <table>
+                <thead><tr><th>Файл</th><th>Статус</th><th>Сообщения</th><th>Диалоги</th><th>Комментарий</th></tr></thead>
+                <tbody>
+                  {conversationDiagnostics.map((item) => (
+                    <tr key={item.filename}>
+                      <td>{item.filename}</td>
+                      <td><span className={item.status === "ok" ? "text-emerald-700" : "text-red-700"}>{item.status === "ok" ? "Прочитан" : "Ошибка"}</span></td>
+                      <td>{number(item.messages)}</td>
+                      <td>{number(item.dialogs)}</td>
+                      <td>{item.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+        {lastConversationImport ? (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <div className="grid gap-3 md:grid-cols-4">
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-700">Диалоги</span>
+                <strong className="mt-1 block text-2xl text-slate-950">{number(lastConversationImport.totalDialogs)}</strong>
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-700">CR в заказ</span>
+                <strong className="mt-1 block text-2xl text-slate-950">{pct(lastConversationImport.orderConversion)}</strong>
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-700">Quality Score</span>
+                <strong className="mt-1 block text-2xl text-slate-950">{number(lastConversationImport.qualityScore)}/100</strong>
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-700">Потерянная выручка</span>
+                <strong className="mt-1 block text-2xl text-slate-950">{eur(lastConversationImport.potentialLostRevenue)}</strong>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white" onClick={() => setActiveTab("Качество переписок")}>
+                Смотреть интерпретацию
+              </button>
+              <button className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700" onClick={() => setActiveTab("Growth Intelligence")}>
+                Смотреть влияние на план
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         {["Месячные финансовые показатели", "Дневные показатели", "Рынки", "Менеджеры"].map((name) => (
@@ -1749,6 +2049,41 @@ function mergeDailyByDate(base: DailyMetrics[], incoming: DailyMetrics[], merge:
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function clearMonthlyFacts(item: MonthlyMetrics): MonthlyMetrics {
+  return {
+    ...item,
+    paidLeads: 0,
+    organicLeads: 0,
+    qualifiedLeads: 0,
+    invoicesCount: 0,
+    invoicesAmount: 0,
+    cancelledInvoicesCount: 0,
+    cancelledInvoicesAmount: 0,
+    salesCount: 0,
+    revenue: 0,
+    adSpend: 0,
+    paidSalesCount: null
+  };
+}
+
+function clearDailyFacts(item: DailyMetrics): DailyMetrics {
+  return {
+    ...item,
+    paidLeads: 0,
+    organicLeads: 0,
+    qualifiedLeads: 0,
+    paidQualifiedLeads: 0,
+    organicQualifiedLeads: 0,
+    invoicesCount: 0,
+    invoicesAmount: 0,
+    salesCount: 0,
+    revenue: 0,
+    adSpend: 0,
+    averagePaidCheck: 0,
+    activeManagers: 0
+  };
+}
+
 export function DashboardApp() {
   const [activeTab, setActiveTab] = useState(tabs[0]);
   const [period, setPeriod] = useState("july-2026");
@@ -1756,6 +2091,8 @@ export function DashboardApp() {
   const [countryFilter, setCountryFilter] = useState("all");
   const [countryOptions, setCountryOptions] = useState(defaultCountryOptions);
   const [managerFilter, setManagerFilter] = useState("all");
+  const [productFilter, setProductFilter] = useState("all");
+  const [productOptions, setProductOptions] = useState<string[]>([]);
   const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlan>(defaultMonthlyPlan);
   const [liveMonthly, setLiveMonthly] = useState<MonthlyMetrics[]>(monthlyMetrics);
   const [liveDaily, setLiveDaily] = useState<DailyMetrics[]>(dailyMetrics);
@@ -1772,6 +2109,7 @@ export function DashboardApp() {
   });
   const bitrixRequestId = useRef(0);
   const lastGooglePeriod = useRef<string | null>(null);
+  const conversationImportLoaded = useRef(false);
   const rawCurrent = liveMonthly.find((item) => item.month === period) ?? liveMonthly[2];
   const rawCurrentDaily = liveDaily.filter((item) => item.date.startsWith(monthPrefixForPeriod(rawCurrent.month)));
   const currentDaily = filterDailyBySource(rawCurrentDaily, sourceFilter);
@@ -1779,13 +2117,64 @@ export function DashboardApp() {
   const previous = current.month === "july-2026" ? liveMonthly[1] : current.month === "june-2026" ? liveMonthly[0] : liveMonthly[1];
   const quality = qualityMetrics.find((item) => item.month === current.month) ?? qualityMetrics[1];
   const signals = useMemo(() => buildSignals(current, previous, quality, targetScenario, elapsedDaysForPeriod(current.month)), [current, previous, quality]);
-  const managerOptions = useMemo(() => Array.from(new Set(liveManagers.map((manager) => manager.manager).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru")), [liveManagers]);
+  const managerOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    for (const manager of liveManagers) {
+      if (!manager.managerId) continue;
+      options.set(manager.managerId, manager.manager);
+    }
+    if (managerFilter !== "all" && !options.has(managerFilter)) {
+      options.set(managerFilter, managerFilter);
+    }
+    return Array.from(options.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "ru"));
+  }, [liveManagers, managerFilter]);
+  const hasCohortFilter = countryFilter !== "all" || managerFilter !== "all" || productFilter !== "all";
+  const showCurrentPlan = period === "july-2026" && !hasCohortFilter;
+  const selectedManagerLabel = useMemo(() => {
+    if (managerFilter === "all") return "все менеджеры";
+    return managerOptions.find((manager) => manager.value === managerFilter)?.label ?? managerFilter;
+  }, [managerFilter, managerOptions]);
+  const selectedProductLabel = useMemo(() => {
+    if (productFilter === "all") return "все продукты";
+    return productFilter;
+  }, [productFilter]);
 
   useEffect(() => {
-    if (managerFilter !== "all" && !managerOptions.includes(managerFilter)) {
-      setManagerFilter("all");
+    if (conversationImportLoaded.current) return;
+    conversationImportLoaded.current = true;
+    let cancelled = false;
+
+    async function loadGiftAiConversations() {
+      try {
+        const response = await fetch("/api/conversations/import-local", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key: "may-june" })
+        });
+        const data = await response.json() as ConversationImportPayload;
+        if (cancelled || !response.ok || !data.dashboard) return;
+        setConversationDashboard(data.dashboard);
+        setSyncStatus(`Переписки gift-ai загружены: ${number(data.summary.dialogsLoaded)} диалогов`);
+      } catch {
+        // Оставляем демо-выборку, если локальный экспорт временно недоступен.
+      }
     }
-  }, [managerFilter, managerOptions]);
+
+    void loadGiftAiConversations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasCohortFilter) return;
+    setSyncStatus("Обновляю факты по выбранному срезу...");
+    setLiveMonthly((items) => items.map((item) => item.month === period ? clearMonthlyFacts(item) : item));
+    setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(period)) ? clearDailyFacts(item) : item));
+  }, [countryFilter, hasCohortFilter, managerFilter, period, productFilter]);
 
   useEffect(() => {
     if (countryFilter !== "all" && !countryOptions.includes(countryFilter)) {
@@ -1793,7 +2182,20 @@ export function DashboardApp() {
     }
   }, [countryFilter, countryOptions]);
 
+  useEffect(() => {
+    if (productFilter !== "all" && !productOptions.includes(productFilter)) {
+      setProductFilter("all");
+    }
+  }, [productFilter, productOptions]);
+
   const applyGoogleSync = useCallback((payload: GoogleSyncPayload) => {
+    if (hasCohortFilter) {
+      setGoogleStatus({
+        state: "idle",
+        message: "Google Sheets не применяются к срезу по стране, менеджеру или продукту."
+      });
+      return;
+    }
     const adSpend = payload.summary.spend;
     setLiveMonthly((items) => items.map((item) => {
       if (item.month !== period) return item;
@@ -1815,17 +2217,18 @@ export function DashboardApp() {
       adSpend: incoming.adSpend
     })));
     setSyncStatus(`Google Sheets обновлены: лиды ${number(payload.summary.paidLeads + payload.summary.organicLeads)}, QL ${number(payload.summary.ql)}, бюджет ${eur(adSpend)}`);
-  }, [period]);
+  }, [hasCohortFilter, period]);
 
   const applyBitrixSync = useCallback((payload: BitrixSyncPayload) => {
+    const useBitrixLeadTotals = hasCohortFilter;
     setLiveMonthly((items) => {
       const existing = items.find((item) => item.month === payload.monthly.month) ?? payload.monthly;
       return mergeMonthly(items, {
         ...payload.monthly,
-        paidLeads: existing.paidLeads || payload.monthly.paidLeads,
-        organicLeads: existing.organicLeads || payload.monthly.organicLeads,
-        qualifiedLeads: existing.qualifiedLeads || payload.monthly.qualifiedLeads,
-        adSpend: existing.adSpend
+        paidLeads: useBitrixLeadTotals ? payload.monthly.paidLeads : existing.paidLeads || payload.monthly.paidLeads,
+        organicLeads: useBitrixLeadTotals ? payload.monthly.organicLeads : existing.organicLeads || payload.monthly.organicLeads,
+        qualifiedLeads: useBitrixLeadTotals ? payload.monthly.qualifiedLeads : existing.qualifiedLeads || payload.monthly.qualifiedLeads,
+        adSpend: useBitrixLeadTotals ? 0 : existing.adSpend
       });
     });
     setLiveDaily((items) => mergeDailyByDate(items, payload.daily, (base, incoming) => ({
@@ -1836,30 +2239,47 @@ export function DashboardApp() {
       revenue: incoming.revenue,
       averagePaidCheck: incoming.averagePaidCheck,
       activeManagers: incoming.activeManagers,
-      paidLeads: base.paidLeads || incoming.paidLeads,
-      organicLeads: base.organicLeads || incoming.organicLeads,
-      qualifiedLeads: base.qualifiedLeads || incoming.qualifiedLeads,
-      paidQualifiedLeads: base.paidQualifiedLeads || incoming.paidQualifiedLeads,
-      organicQualifiedLeads: base.organicQualifiedLeads || incoming.organicQualifiedLeads
+      adSpend: useBitrixLeadTotals ? 0 : base.adSpend,
+      paidLeads: useBitrixLeadTotals ? incoming.paidLeads : base.paidLeads || incoming.paidLeads,
+      organicLeads: useBitrixLeadTotals ? incoming.organicLeads : base.organicLeads || incoming.organicLeads,
+      qualifiedLeads: useBitrixLeadTotals ? incoming.qualifiedLeads : base.qualifiedLeads || incoming.qualifiedLeads,
+      paidQualifiedLeads: useBitrixLeadTotals ? incoming.paidQualifiedLeads : base.paidQualifiedLeads || incoming.paidQualifiedLeads,
+      organicQualifiedLeads: useBitrixLeadTotals ? incoming.organicQualifiedLeads : base.organicQualifiedLeads || incoming.organicQualifiedLeads
     })));
     setLiveManagers(payload.managers);
     if (payload.countryOptions?.length) {
       setCountryOptions(payload.countryOptions);
     }
+    setProductOptions(payload.productOptions ?? []);
     setSyncStatus(`Bitrix обновлён: счета ${number(payload.summary.dealsLoaded)}, оплачено ${eur(payload.monthly.revenue)}, продаж ${number(payload.monthly.salesCount)}`);
-  }, []);
+  }, [hasCohortFilter]);
 
-  const syncGoogleTraffic = useCallback(async () => {
+  const syncGoogleTraffic = useCallback(async (syncOptions?: { refresh?: boolean }) => {
+    if (hasCohortFilter) {
+      setGoogleStatus({
+        state: "idle",
+        message: "Google Sheets не применяются к срезу по стране, менеджеру или продукту."
+      });
+      return;
+    }
     setGoogleStatus({ state: "loading", message: "Проверяю Google Sheets..." });
     try {
-      const response = await fetch("/api/sync/google-traffic", { method: "POST" });
-      const data = await response.json();
+      const response = await fetch("/api/sync/google-traffic", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          period,
+          refresh: syncOptions?.refresh === true
+        })
+      });
+      const data = await response.json() as GoogleSyncPayload & { error?: string };
       if (!response.ok) throw new Error(data.error || "Не удалось прочитать Google Sheets");
       applyGoogleSync(data);
       const sources = data.summary.sourcesLoaded?.length ? ` Источники: ${data.summary.sourcesLoaded.join(", ")}.` : "";
+      const sourceText = data.summary.dataSource === "snapshot" ? "snapshot" : "Google live";
       setGoogleStatus({
         state: "ok",
-        message: `Загружено строк: ${data.summary.rowsLoaded}. Платные лиды: ${number(data.summary.paidLeads)}, органика: ${number(data.summary.organicLeads)}, QL: ${number(data.summary.ql)}, бюджет: ${eur(data.summary.spend)}, CPL: ${eur(data.summary.averageCpl)}.${sources}`
+        message: `${sourceText}: загружено строк ${data.summary.rowsLoaded}. Платные лиды ${number(data.summary.paidLeads)}, органика ${number(data.summary.organicLeads)}, QL ${number(data.summary.ql)}, бюджет ${eur(data.summary.spend)}, CPL ${eur(data.summary.averageCpl)}.${sources}`
       });
     } catch (error) {
       setGoogleStatus({
@@ -1867,61 +2287,76 @@ export function DashboardApp() {
         message: error instanceof Error ? error.message : "Не удалось прочитать Google Sheets"
       });
     }
-  }, [applyGoogleSync]);
+  }, [applyGoogleSync, hasCohortFilter, period]);
 
-  const syncBitrix = useCallback(async () => {
+  const syncBitrix = useCallback(async (syncOptions?: { refresh?: boolean }) => {
     const requestId = bitrixRequestId.current + 1;
     bitrixRequestId.current = requestId;
     const requestPeriod = period;
     const requestCountry = countryFilter;
+    const requestManager = managerFilter;
+    const requestProduct = productFilter;
+    const requestHasCohortFilter = requestCountry !== "all" || requestManager !== "all" || requestProduct !== "all";
     setBitrixStatus({ state: "loading", message: "Загружаю факт из Bitrix..." });
+    if (requestHasCohortFilter) {
+      setLiveMonthly((items) => items.map((item) => item.month === requestPeriod ? clearMonthlyFacts(item) : item));
+      setLiveDaily((items) => items.map((item) => item.date.startsWith(monthPrefixForPeriod(requestPeriod)) ? clearDailyFacts(item) : item));
+    }
     try {
       const response = await fetch("/api/sync/bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           period: requestPeriod,
-          country: requestCountry
+          country: requestCountry,
+          manager: requestManager,
+          product: requestProduct,
+          refresh: syncOptions?.refresh === true
         })
       });
       const data = await response.json();
-      if (requestId !== bitrixRequestId.current) return;
+      if (requestId !== bitrixRequestId.current) return false;
       if (!response.ok) throw new Error(data.error || "Не удалось прочитать Bitrix");
       applyBitrixSync(data);
       const countryText = requestCountry === "all" ? "все страны" : requestCountry;
+      const managerText = requestManager === "all" ? "все менеджеры" : selectedManagerLabel;
+      const productText = requestProduct === "all" ? "все продукты" : selectedProductLabel;
+      const sourceText = data.summary.dataSource === "snapshot" ? "snapshot" : "Bitrix live";
       setBitrixStatus({
         state: "ok",
-        message: `Bitrix обновлён (${countryText}): лиды ${number(data.summary.leadsLoaded)}, клиенты 10 дней ${number(data.summary.recentClientsLoaded)}, счета ${number(data.summary.dealsLoaded)}, менеджеры ${number(data.summary.usersLoaded)}. Выручка ${eur(data.monthly.revenue)}, продажи ${number(data.monthly.salesCount)}.`
+        message: `${sourceText}: ${countryText}, ${managerText}, ${productText}. Лиды ${number(data.summary.leadsLoaded)}, клиенты 10 дней ${number(data.summary.recentClientsLoaded)}, счета ${number(data.summary.dealsLoaded)}, продажи ${number(data.monthly.salesCount)}, выручка ${eur(data.monthly.revenue)}.`
       });
+      return true;
     } catch (error) {
-      if (requestId !== bitrixRequestId.current) return;
+      if (requestId !== bitrixRequestId.current) return false;
       setBitrixStatus({
         state: "error",
         message: error instanceof Error ? error.message : "Не удалось прочитать Bitrix"
       });
+      return false;
     }
-  }, [applyBitrixSync, countryFilter, period]);
+  }, [applyBitrixSync, countryFilter, managerFilter, period, productFilter, selectedManagerLabel, selectedProductLabel]);
 
   useEffect(() => {
     let cancelled = false;
     const timeout = window.setTimeout(async () => {
-      const shouldSyncGoogle = lastGooglePeriod.current !== period;
-      lastGooglePeriod.current = period;
+      const shouldSyncGoogle = !hasCohortFilter && lastGooglePeriod.current !== period;
 
       setSyncStatus("Автосинхронизация фактов...");
-      await syncBitrix();
+      const bitrixOk = await syncBitrix();
       if (cancelled) return;
       if (shouldSyncGoogle) {
         await syncGoogleTraffic();
+        lastGooglePeriod.current = period;
       }
-      if (!cancelled) setSyncStatus("Факты обновлены автоматически");
+      if (!cancelled && bitrixOk) setSyncStatus("Факты обновлены автоматически");
     }, 700);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [period, countryFilter, syncBitrix, syncGoogleTraffic]);
+  }, [period, countryFilter, hasCohortFilter, managerFilter, productFilter, syncBitrix, syncGoogleTraffic]);
 
   return (
     <main className="mx-auto w-[min(1480px,calc(100%-32px))] py-6">
@@ -1949,9 +2384,12 @@ export function DashboardApp() {
         managerFilter={managerFilter}
         setManagerFilter={setManagerFilter}
         managerOptions={managerOptions}
+        productFilter={productFilter}
+        setProductFilter={setProductFilter}
+        productOptions={productOptions}
       />
       {activeTab !== "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} compact /> : null}
-      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} /> : null}
+      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} /> : null}
       {activeTab === "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} /> : null}
       {activeTab === "Growth Intelligence" ? <GrowthIntelligenceTab current={current} previous={previous} quality={quality} daily={currentDaily} monthlyPlan={monthlyPlan} conversationDashboard={conversationDashboard} /> : null}
       {activeTab === "План месяца" ? <MonthPlanningTab current={current} monthlyPlan={monthlyPlan} setMonthlyPlan={setMonthlyPlan} daily={currentDaily} /> : null}
@@ -1959,10 +2397,10 @@ export function DashboardApp() {
       {activeTab === "Воронка" ? <FunnelTab current={current} quality={quality} /> : null}
       {activeTab === "Маркетинг" ? <MarketingTab current={current} previous={previous} /> : null}
       {activeTab === "Продажи" ? <SalesTab current={current} /> : null}
-      {activeTab === "Качество переписок" ? <QualityTab dashboard={conversationDashboard} /> : null}
+      {activeTab === "Качество переписок" ? <QualityTab dashboard={conversationDashboard} onConversationImport={setConversationDashboard} /> : null}
       {activeTab === "Рынки" ? <MarketsTab /> : null}
       {activeTab === "Менеджеры" ? <ManagersTab managers={liveManagers} daily={currentDaily} managerFilter={managerFilter} /> : null}
-      {activeTab === "Данные и настройки" ? <DataTab googleStatus={googleStatus} bitrixStatus={bitrixStatus} syncGoogleTraffic={syncGoogleTraffic} syncBitrix={syncBitrix} onConversationImport={setConversationDashboard} /> : null}
+      {activeTab === "Данные и настройки" ? <DataTab googleStatus={googleStatus} bitrixStatus={bitrixStatus} syncGoogleTraffic={syncGoogleTraffic} syncBitrix={syncBitrix} onConversationImport={setConversationDashboard} setActiveTab={setActiveTab} /> : null}
     </main>
   );
 }

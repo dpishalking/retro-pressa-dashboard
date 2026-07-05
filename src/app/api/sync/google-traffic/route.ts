@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
+import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
+
+export async function POST(request: Request) {
   try {
-    const payload = await syncGoogleTraffic();
+    const body = await request.json().catch(() => ({})) as { period?: string; refresh?: boolean };
+    const period = periods.includes(body.period as PeriodKey) ? body.period as PeriodKey : "july-2026";
+    const payload = await syncGoogleTraffic({ period, refresh: body.refresh === true });
     return NextResponse.json(payload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Google Sheets sync error";

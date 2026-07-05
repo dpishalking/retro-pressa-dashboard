@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { importAndAnalyzeConversations } from "@/lib/conversation-intelligence";
+import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +18,24 @@ export async function POST(request: Request) {
       content: await file.arrayBuffer(),
       defaultChannel: String(formData.get("channel") ?? "manual")
     })));
-    const result = importAndAnalyzeConversations(files);
+    const result = importAndAnalyzeConversationsWithDiagnostics(files);
+
+    if (!result.messages.length) {
+      return NextResponse.json({
+        error: "Не удалось извлечь сообщения из загруженных файлов.",
+        diagnostics: result.diagnostics
+      }, { status: 422 });
+    }
 
     return NextResponse.json({
-      ...result,
+      dashboard: result.dashboard,
+      diagnostics: result.diagnostics,
       summary: {
         filesLoaded: uploads.length,
         messagesLoaded: result.messages.length,
-        dialogsLoaded: result.dialogs.length
+        dialogsLoaded: result.dialogs.length,
+        filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
+        filesFailed: result.diagnostics.filter((item) => item.status === "error").length
       }
     });
   } catch (error) {
