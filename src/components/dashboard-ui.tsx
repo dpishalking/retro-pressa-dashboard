@@ -10,6 +10,7 @@ import { averageInvoice, averagePaidCheck, cashRoas, dailyPlan, delta, deltaPp, 
 import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
 import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerInvoiceMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, ProductInvoiceMetrics, Status } from "@/types/metrics";
+import { HUB_PATH } from "@/lib/auth/routes";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
@@ -2731,7 +2732,7 @@ export function DashboardApp({
 
   return (
     <main className="mx-auto w-[min(1480px,calc(100%-32px))] py-6">
-      <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600">
+      <Link href={HUB_PATH} className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600">
         <ArrowLeft size={16} />
         К рабочему кабинету
       </Link>

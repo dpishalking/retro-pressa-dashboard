@@ -131,8 +131,7 @@ function AdminContent() {
   if (!isAdmin) {
     return (
       <div className="card p-8">
-        <p className="text-sm text-slate-700">Админ-панель доступна только пользователю с ролью Admin.</p>
-        <p className="mt-2 text-sm text-slate-500">Переключите пользователя на «Администратор» в правом верхнем углу.</p>
+        <p className="text-sm text-slate-700">Админ-панель обучения доступна только администратору системы.</p>
       </div>
     );
   }

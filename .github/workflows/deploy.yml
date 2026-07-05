@@ -56,6 +56,9 @@ jobs:
 
       - name: Create runtime env
         env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DEFAULT_ADMIN_LOGIN: ${{ secrets.DEFAULT_ADMIN_LOGIN }}
+          DEFAULT_ADMIN_PASSWORD: ${{ secrets.DEFAULT_ADMIN_PASSWORD }}
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
@@ -74,6 +77,9 @@ jobs:
           node - <<'NODE'
           const fs = require("node:fs");
           const keys = [
+            "AUTH_SECRET",
+            "DEFAULT_ADMIN_LOGIN",
+            "DEFAULT_ADMIN_PASSWORD",
             "BITRIX_WEBHOOK_URL",
             "GEMINI_API_KEY",
             "GEMINI_MODEL",
@@ -117,7 +123,7 @@ jobs:
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth"
           find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"

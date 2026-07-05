@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { HUB_PATH } from "@/lib/auth/routes";
 
 type ComingSoonOfficeProps = {
   title: string;
@@ -9,7 +10,7 @@ type ComingSoonOfficeProps = {
 export function ComingSoonOffice({ title, description }: ComingSoonOfficeProps) {
   return (
     <main className="mx-auto w-[min(720px,calc(100%-32px))] py-16">
-      <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600">
+      <Link href={HUB_PATH} className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600">
         <ArrowLeft size={16} />
         К рабочему кабинету
       </Link>

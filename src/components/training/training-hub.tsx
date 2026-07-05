@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
+import { HUB_PATH } from "@/lib/auth/routes";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { buildTrainingOverview } from "@/lib/training/progress";
@@ -234,7 +235,7 @@ export function TrainingHub() {
     <TrainingLayout
       title="Обучение менеджеров"
       description="Онбординг и тренировочный кабинет: материалы, практика, тесты и контроль прогресса."
-      backHref="/"
+      backHref={HUB_PATH}
       backLabel="К рабочему кабинету"
     >
       <TrainingHubContent />
