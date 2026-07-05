@@ -23,27 +23,40 @@ function MaterialsSection({ product }: { product: ProductTrainingModule }) {
 
   return (
     <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Материалы</h2>
+      <h2 className="text-lg font-black text-slate-950">Видео и материалы</h2>
       <div className="mt-4 space-y-4">
         {product.materials
           .slice()
           .sort((a, b) => a.sortOrder - b.sortOrder)
           .map((material) => {
-            if (material.type === "video" && material.embedUrl) {
+            if (material.type === "video") {
               return (
                 <div key={material.id} className="overflow-hidden rounded-xl border border-[var(--line)]">
                   <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
                     {material.title}
                   </div>
-                  <div className="aspect-video bg-black">
-                    <iframe
-                      src={material.embedUrl}
-                      title={material.title}
-                      className="h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
+                  {material.embedUrl ? (
+                    <div className="aspect-video bg-black">
+                      <iframe
+                        src={material.embedUrl}
+                        title={material.title}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex aspect-video flex-col items-center justify-center bg-slate-50 px-6 text-center">
+                      <PlayCircle size={34} className="text-rose-500" />
+                      <p className="mt-3 text-base font-black text-slate-900">{material.title}</p>
+                      <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                        {material.content ?? "Сюда добавим видеоразбор для учеников и менеджеров."}
+                      </p>
+                      <p className="mt-4 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Плейсмент под видео
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             }
