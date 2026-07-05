@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { BookOpen, CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
@@ -66,21 +66,22 @@ function ProductCard({
           <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
             <BookOpen size={22} />
           </div>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${getStatusClass(status)}`}>
-            {getStatusLabel(status)}
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${getStatusClass(status)}`}>
+              {getStatusLabel(status)}
+            </span>
+            <Link
+              href={`/training/products/${product.id}`}
+              onClick={onStart}
+              className="inline-flex items-center rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
+            >
+              {actionLabel}
+            </Link>
+          </div>
         </div>
         <h2 className="text-xl font-black text-slate-950">{product.title}</h2>
         <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            href={`/training/products/${product.id}`}
-            onClick={onStart}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
-          >
-            <PlayCircle size={16} />
-            {actionLabel}
-          </Link>
           {hasQuiz && status !== "not_started" ? (
             <Link
               href={`/training/products/${product.id}/quiz`}
