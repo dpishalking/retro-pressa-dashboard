@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
-import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
+import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
+import { writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
+import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +18,10 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const uploads = formData.getAll("files").filter((item): item is File => item instanceof File);
+    const periodRaw = String(formData.get("periodKey") ?? "");
+    const periodKey = (["may-2026", "june-2026", "july-2026"] as const).includes(periodRaw as PeriodKey)
+      ? periodRaw as PeriodKey
+      : null;
 
     if (!uploads.length) {
       return NextResponse.json({
@@ -38,6 +45,15 @@ export async function POST(request: Request) {
     }
 
     const importedAt = new Date().toISOString();
+    const label = `gift-ai: ${uploads.map((file) => file.name).join(", ")}`;
+    const resolvedPeriod = periodKey
+      ?? inferPeriodKeyFromLabel(label)
+      ?? inferPeriodKeyFromLabel(uploads[0]?.name ?? "");
+
+    if (!resolvedPeriod) {
+      return NextResponse.json({ error: "Не удалось определить месяц архива. Укажи periodKey или загрузи файл с «май»/«июнь» в названии." }, { status: 400 });
+    }
+
     const summary = {
       filesLoaded: uploads.length,
       messagesLoaded: result.messages.length,
@@ -46,12 +62,13 @@ export async function POST(request: Request) {
       filesFailed: result.diagnostics.filter((item) => item.status === "error").length
     };
 
-    await writeConversationSnapshot({
+    await writePeriodArchiveSnapshot(resolvedPeriod, {
       version: 1,
       source: "gift-ai",
       importedAt,
       importedDay: importedAt.slice(0, 10),
-      label: `gift-ai: ${uploads.map((file) => file.name).join(", ")}`,
+      periodKey: resolvedPeriod,
+      label,
       dashboard: result.dashboard,
       diagnostics: result.diagnostics,
       summary

@@ -23,5 +23,5 @@ jobs:
           set -e
           curl -f -sS -X POST http://127.0.0.1:4174/api/rop/daily-sync \
             -H "Content-Type: application/json" \
-            -d '{"refresh":true,"daysBack":1,"dialogLimit":80}'
+            -d '{"refresh":true,"daysBack":1,"dialogLimit":500}'
           EOF

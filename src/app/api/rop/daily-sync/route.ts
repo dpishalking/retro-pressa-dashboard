@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
 import { syncBitrixMetrics } from "@/lib/bitrix/connector";
+import { currentPeriodKey } from "@/lib/conversation-periods";
 import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
+import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +13,16 @@ export async function POST(request: Request) {
       refresh?: boolean;
       daysBack?: number;
       dialogLimit?: number;
+      period?: PeriodKey;
     };
 
+    const period = body.period ?? currentPeriodKey();
+
     const [bitrix, google, conversations] = await Promise.all([
-      syncBitrixMetrics({ refresh: body.refresh === true }),
-      syncGoogleTraffic({ refresh: body.refresh === true }),
+      syncBitrixMetrics({ refresh: body.refresh === true, period }),
+      syncGoogleTraffic({ refresh: body.refresh === true, period }),
       syncBitrixConversationHistory({
+        period,
         daysBack: body.daysBack,
         dialogLimit: body.dialogLimit ?? 500
       })
@@ -25,6 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       syncedAt: new Date().toISOString(),
+      period,
       bitrix: {
         revenue: bitrix.monthly.revenue,
         salesCount: bitrix.monthly.salesCount,

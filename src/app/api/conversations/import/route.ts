@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
-import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
+import { writeConversationSnapshot, writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -34,8 +35,8 @@ export async function POST(request: Request) {
       const importedAt = body.importedAt ?? new Date().toISOString();
       const importedDay = body.importedDay ?? importedAt.slice(0, 10);
 
-      await writeConversationSnapshot({
-        version: 1,
+      const snapshot = {
+        version: 1 as const,
         source: body.source ?? "manual",
         importedAt,
         importedDay,
@@ -44,7 +45,13 @@ export async function POST(request: Request) {
         dashboard: body.dashboard,
         diagnostics: body.diagnostics,
         summary: body.summary
-      });
+      };
+
+      if (body.periodKey && body.source !== "bitrix") {
+        await writePeriodArchiveSnapshot(body.periodKey, snapshot);
+      } else {
+        await writeConversationSnapshot(snapshot);
+      }
 
       return NextResponse.json({
         dashboard: body.dashboard,
@@ -55,6 +62,12 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const uploads = formData.getAll("files").filter((item): item is File => item instanceof File);
+    const source = String(formData.get("source") ?? "manual") as "manual" | "gift-ai" | "bitrix";
+    const periodRaw = String(formData.get("periodKey") ?? "");
+    const periodKey = (["may-2026", "june-2026", "july-2026"] as const).includes(periodRaw as PeriodKey)
+      ? periodRaw as PeriodKey
+      : null;
+    const label = String(formData.get("label") ?? "").trim();
 
     if (!uploads.length) {
       return NextResponse.json({ error: "Добавьте хотя бы один файл в поле files." }, { status: 400 });
@@ -64,7 +77,7 @@ export async function POST(request: Request) {
       filename: file.name,
       mimeType: file.type,
       content: await file.arrayBuffer(),
-      defaultChannel: String(formData.get("channel") ?? "manual")
+      defaultChannel: String(formData.get("channel") ?? (source === "gift-ai" ? "gift-ai" : "manual"))
     })));
     const result = importAndAnalyzeConversationsWithDiagnostics(files);
 
@@ -83,17 +96,27 @@ export async function POST(request: Request) {
       filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
       filesFailed: result.diagnostics.filter((item) => item.status === "error").length
     };
+    const defaultLabel = source === "gift-ai"
+      ? `gift-ai: ${uploads.map((file) => file.name).join(", ")}`
+      : "Ручной импорт переписок";
 
-    await writeConversationSnapshot({
-      version: 1,
-      source: "manual",
+    const snapshot = {
+      version: 1 as const,
+      source: source === "gift-ai" ? "gift-ai" as const : "manual" as const,
       importedAt,
       importedDay: importedAt.slice(0, 10),
-      label: "Ручной импорт переписок",
+      periodKey,
+      label: label || defaultLabel,
       dashboard: result.dashboard,
       diagnostics: result.diagnostics,
       summary
-    });
+    };
+
+    if (periodKey) {
+      await writePeriodArchiveSnapshot(periodKey, snapshot);
+    } else {
+      await writeConversationSnapshot(snapshot);
+    }
 
     return NextResponse.json({
       dashboard: result.dashboard,

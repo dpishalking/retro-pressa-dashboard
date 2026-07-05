@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, RefreshCcw } from "lucide-react";
+import { ArrowLeft, RefreshCcw, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
 import { eur, number, pct } from "@/lib/format";
-import type { ConversationDashboardMetrics, PeriodKey } from "@/types/metrics";
+import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
+import type { ConversationDashboardMetrics, GeminiConversationSummary, PeriodKey } from "@/types/metrics";
 
 type ConversationHistoryItem = {
   importedDay: string;
@@ -55,6 +55,17 @@ type LocalImportPayload = {
   error?: string;
 };
 
+const archivePeriodMap: Record<"may" | "june" | "july", PeriodKey> = {
+  may: "may-2026",
+  june: "june-2026",
+  july: "july-2026"
+};
+
+const archiveLabelMap: Record<"may" | "june" | "july", string> = {
+  may: "майский",
+  june: "июньский",
+  july: "июльский"
+};
 const periodOptions: Array<{ value: PeriodKey; label: string }> = [
   { value: "july-2026", label: "Июль 2026" },
   { value: "june-2026", label: "Июнь 2026" },
@@ -62,6 +73,15 @@ const periodOptions: Array<{ value: PeriodKey; label: string }> = [
 ];
 
 type SyncStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
+
+function itemPeriodKey(item: ConversationHistoryItem): PeriodKey | null {
+  return item.periodKey ?? inferPeriodKeyFromLabel(item.label);
+}
+
+function pickDefaultSelected(items: ConversationHistoryItem[], period: PeriodKey) {
+  const matched = items.filter((item) => itemPeriodKey(item) === period);
+  return matched[0]?.importedAt ?? null;
+}
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
@@ -75,7 +95,8 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
 
 export function RopConversationsScreen() {
   const archiveInputRef = useRef<HTMLInputElement | null>(null);
-  const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | "july" | null>(null);
+  const [geminiSummary, setGeminiSummary] = useState<GeminiConversationSummary | null>(null);
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
@@ -84,9 +105,9 @@ export function RopConversationsScreen() {
     message: "Готово к загрузке архива или живого Bitrix-среза."
   });
 
-  const pickDefaultSelected = (items: ConversationHistoryItem[], period: PeriodKey) => {
-    const matched = items.find((item) => item.periodKey === period);
-    return matched?.importedAt ?? items[0]?.importedAt ?? null;
+  const pickForPeriod = (items: ConversationHistoryItem[], period: PeriodKey) => {
+    const matched = items.filter((item) => itemPeriodKey(item) === period);
+    return matched[0]?.importedAt ?? null;
   };
 
   useEffect(() => {
@@ -101,7 +122,7 @@ export function RopConversationsScreen() {
         setHistory(items);
         const latest = data.latest ?? items[0] ?? null;
         if (latest) {
-          const nextSelection = pickDefaultSelected(items, selectedPeriod);
+          const nextSelection = pickForPeriod(items, selectedPeriod);
           setSelectedImportedAt(nextSelection ?? latest.importedAt);
         }
       } catch {
@@ -118,13 +139,17 @@ export function RopConversationsScreen() {
     };
   }, []);
 
-  const visibleHistory = useMemo(() => {
-    const matched = history.filter((item) => item.periodKey === selectedPeriod);
-    if (matched.length) return matched;
-    return history.filter((item) => !item.periodKey);
-  }, [history, selectedPeriod]);
+  useEffect(() => {
+    const nextSelection = pickForPeriod(history, selectedPeriod);
+    if (nextSelection) setSelectedImportedAt(nextSelection);
+  }, [selectedPeriod, history]);
+
+  const visibleHistory = useMemo(
+    () => history.filter((item) => itemPeriodKey(item) === selectedPeriod),
+    [history, selectedPeriod]
+  );
   const selectedImportedKey = useMemo(
-    () => visibleHistory.find((item) => item.importedAt === selectedImportedAt)?.importedAt ?? pickDefaultSelected(visibleHistory, selectedPeriod),
+    () => visibleHistory.find((item) => item.importedAt === selectedImportedAt)?.importedAt ?? pickForPeriod(visibleHistory, selectedPeriod),
     [selectedImportedAt, selectedPeriod, visibleHistory]
   );
   const selectedSnapshot = visibleHistory.find((item) => item.importedAt === selectedImportedKey) ?? visibleHistory[0] ?? null;
@@ -132,18 +157,22 @@ export function RopConversationsScreen() {
   const selectedPeriodLabel = periodOptions.find((item) => item.value === selectedPeriod)?.label ?? selectedPeriod;
 
   const refreshFromBitrix = async () => {
-    setStatus({ state: "loading", message: `Забираю переписки за ${selectedPeriodLabel.toLowerCase()}...` });
+    if (selectedPeriod !== "july-2026") {
+      setStatus({ state: "error", message: "Bitrix-синк доступен только для текущего месяца (июль)." });
+      return;
+    }
+    setStatus({ state: "loading", message: "Забираю переписки за июль 2026 из Bitrix..." });
     try {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: selectedPeriod, dialogLimit: 500 })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 500 })
       });
       const data = await response.json() as BitrixSyncPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
       setStatus({
         state: "ok",
-        message: `Загружен ${selectedPeriodLabel.toLowerCase()}: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+        message: `Июль обновлён из Bitrix: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
@@ -151,7 +180,7 @@ export function RopConversationsScreen() {
       if (historyResponse.ok) {
         const items = historyData.history ?? [];
         setHistory(items);
-        const nextSelected = pickDefaultSelected(items, selectedPeriod);
+        const nextSelected = pickForPeriod(items, selectedPeriod);
         if (nextSelected) setSelectedImportedAt(nextSelected);
       }
     } catch (error) {
@@ -164,58 +193,72 @@ export function RopConversationsScreen() {
 
   const importLocalExports = async (files: FileList | File[]) => {
     const selectedFiles = Array.from(files);
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length || !archiveTarget) return;
 
-    const targetLabel = archiveTarget === "may" ? "майский" : archiveTarget === "june" ? "июньский" : "локальный";
-    setStatus({ state: "loading", message: `Разбираю ${targetLabel} архив локально в браузере...` });
+    const periodKey = archivePeriodMap[archiveTarget];
+    const targetLabel = archiveLabelMap[archiveTarget];
+    setStatus({ state: "loading", message: `Загружаю ${targetLabel} архив на сервер (${selectedFiles.length} файл(ов))...` });
     try {
-      const inputs = await Promise.all(selectedFiles.map(async (file) => ({
-        filename: file.name,
-        content: await file.text(),
-        defaultChannel: "gift-ai"
-      })));
-      const result = importAndAnalyzeConversationsWithDiagnostics(inputs);
-      if (!result.messages.length) {
-        throw new Error(result.diagnostics.find((item) => item.status === "error")?.note ?? "Не удалось извлечь сообщения из файла.");
-      }
-      const summary = {
-        filesLoaded: selectedFiles.length,
-        messagesLoaded: result.messages.length,
-        dialogsLoaded: result.dialogs.length,
-        filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
-        filesFailed: result.diagnostics.filter((item) => item.status === "error").length
-      };
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append("files", file));
+      formData.append("source", "gift-ai");
+      formData.append("periodKey", periodKey);
+      formData.append("channel", "gift-ai");
 
       const response = await fetch("/api/conversations/import", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          source: "gift-ai",
-          label: `gift-ai: ${selectedFiles.map((file) => file.name).join(", ")}`,
-          dashboard: result.dashboard,
-          diagnostics: result.diagnostics,
-          summary
-        })
+        body: formData
       });
       const data = await response.json() as LocalImportPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить локальный экспорт");
+      const summary = data.summary;
       setStatus({
         state: "ok",
-        message: `Архив загружен: ${number(summary.dialogsLoaded)} диалогов и ${number(summary.messagesLoaded)} сообщений.`
+        message: `${targetLabel.charAt(0).toUpperCase()}${targetLabel.slice(1)} архив сохранён: ${number(summary.dialogsLoaded)} диалогов и ${number(summary.messagesLoaded)} сообщений.`
       });
+      setSelectedPeriod(periodKey);
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
       const historyData = await historyResponse.json() as ConversationHistoryPayload;
       if (historyResponse.ok) {
         const items = historyData.history ?? [];
         setHistory(items);
-        const nextSelection = pickDefaultSelected(items, selectedPeriod);
+        const nextSelection = pickForPeriod(items, periodKey);
         if (nextSelection) setSelectedImportedAt(nextSelection);
       }
     } catch (error) {
       setStatus({
         state: "error",
         message: error instanceof Error ? error.message : "Не удалось загрузить локальный экспорт"
+      });
+    }
+  };
+
+  const runGeminiAnalysis = async () => {
+    const geminiKey = selectedPeriod === "may-2026" ? "may" : selectedPeriod === "june-2026" ? "june" : null;
+    if (!geminiKey) {
+      setStatus({ state: "error", message: "Глубокий AI-анализ доступен для архивов мая и июня. Июль обновляется из Bitrix." });
+      return;
+    }
+
+    setStatus({ state: "loading", message: "Запускаю глубокий AI-анализ переписок через Gemini..." });
+    try {
+      const response = await fetch("/api/conversations/gemini", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: geminiKey, limit: 200, batchSize: 20 })
+      });
+      const data = await response.json() as { summary?: GeminiConversationSummary; error?: string };
+      if (!response.ok) throw new Error(data.error || "Не удалось выполнить AI-анализ");
+      setGeminiSummary(data.summary ?? null);
+      setStatus({
+        state: "ok",
+        message: `AI-анализ готов: ${number(data.summary?.analyzedDialogs ?? 0)} диалогов, ${number(data.summary?.topMissedOpportunities?.length ?? 0)} упущенных возможностей.`
+      });
+    } catch (error) {
+      setStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось выполнить AI-анализ"
       });
     }
   };
@@ -244,8 +287,8 @@ export function RopConversationsScreen() {
               onChange={(event) => {
                 const next = event.target.value as PeriodKey;
                 setSelectedPeriod(next);
-                const nextHistory = history.filter((item) => item.periodKey === next);
-                const nextSelection = pickDefaultSelected(nextHistory.length ? nextHistory : history.filter((item) => !item.periodKey), next);
+                const nextHistory = history.filter((item) => itemPeriodKey(item) === next);
+                const nextSelection = pickForPeriod(nextHistory.length ? nextHistory : history, next);
                 setSelectedImportedAt(nextSelection);
               }}
             >
@@ -276,13 +319,33 @@ export function RopConversationsScreen() {
               Загрузить июнь
             </button>
             <button
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              disabled={status.state === "loading"}
+              onClick={() => {
+                setArchiveTarget("july");
+                archiveInputRef.current?.click();
+              }}
+            >
+              Полная загрузка
+            </button>
+            <button
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
               onClick={refreshFromBitrix}
-              disabled={status.state === "loading"}
+              disabled={status.state === "loading" || selectedPeriod !== "july-2026"}
             >
               <RefreshCcw size={16} />
-              {status.state === "loading" ? "Обновляю..." : `Обновить ${selectedPeriodLabel.toLowerCase()}`}
+              {status.state === "loading" ? "Обновляю..." : "Обновить июль из Bitrix"}
             </button>
+            {(selectedPeriod === "may-2026" || selectedPeriod === "june-2026") ? (
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-60"
+                onClick={runGeminiAnalysis}
+                disabled={status.state === "loading"}
+              >
+                <Sparkles size={16} />
+                AI-анализ
+              </button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -305,7 +368,7 @@ export function RopConversationsScreen() {
           <div>
             <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
             <p className="mt-1 text-sm font-semibold text-slate-700">
-              Архивы май и июнь загружаются отдельно. Живой Bitrix — только свежий срез.
+              Май и июнь — полные архивы из ChatGPT (загружаются один раз и сохраняются навсегда). Июль — живой Bitrix, обновляется автоматически каждый день в 06:15 UTC (как лёд и транзакции).
             </p>
           </div>
           <p className="text-sm text-slate-500">
@@ -357,9 +420,42 @@ export function RopConversationsScreen() {
                 {item.importedDay} · {item.label}
               </button>
             );
-          }) : <p className="text-sm text-slate-500">Для этого периода ещё нет сохранённых срезов. Нажми обновление справа.</p>}
+          }) : <p className="text-sm text-slate-500">Для {selectedPeriodLabel.toLowerCase()} ещё нет архива. {selectedPeriod === "july-2026" ? "Нажми «Обновить июль из Bitrix»." : `Нажми «Загрузить ${selectedPeriod === "may-2026" ? "май" : "июнь"}».}`}</p>}
         </div>
       </section>
+
+      {geminiSummary ? (
+        <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50 p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-violet-950">AI-анализ (Gemini)</h2>
+            <span className="text-sm text-violet-700">{number(geminiSummary.analyzedDialogs)} диалогов · quality {number(geminiSummary.averageQualityScore)}/100</span>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <article>
+              <h3 className="text-sm font-bold uppercase tracking-normal text-violet-700">Упущенные возможности</h3>
+              <div className="mt-3 grid gap-2">
+                {geminiSummary.topMissedOpportunities.slice(0, 5).map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
+                    <span className="text-sm font-semibold text-slate-700">{item.name}</span>
+                    <b>{number(item.count)}</b>
+                  </div>
+                ))}
+              </div>
+            </article>
+            <article>
+              <h3 className="text-sm font-bold uppercase tracking-normal text-violet-700">Причины потерь (AI)</h3>
+              <div className="mt-3 grid gap-2">
+                {geminiSummary.topLossReasons.slice(0, 5).map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
+                    <span className="text-sm font-semibold text-slate-700">{item.name}</span>
+                    <b>{number(item.count)}</b>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
+      ) : null}
 
       {dashboard ? (
         <div className="grid gap-6">
