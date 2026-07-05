@@ -4,8 +4,11 @@ export async function readJsonResponse<T>(response: Response): Promise<T> {
     return JSON.parse(text) as T;
   } catch {
     if (text.trimStart().startsWith("<")) {
+      const hint = response.status >= 500 || response.status === 408
+        ? "Похоже на таймаут или перезапуск сервера."
+        : "Похоже, прокси вернул HTML-страницу вместо JSON.";
       throw new Error(
-        "Сервер вернул HTML вместо данных — часто это таймаут, перезапуск или слишком большой файл. Попробуйте JSON-архив или повторите через минуту."
+        `${hint} Попробуйте ещё раз через минуту или загрузите JSON-архив вручную.`
       );
     }
     throw new Error(text.slice(0, 240) || "Некорректный ответ сервера");

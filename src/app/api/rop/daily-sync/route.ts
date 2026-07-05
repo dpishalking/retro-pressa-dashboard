@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       syncBitrixConversationHistory({
         period,
         daysBack: body.daysBack,
-        dialogLimit: body.dialogLimit ?? 500
+        dialogLimit: body.dialogLimit ?? 120
       })
     ]);
 

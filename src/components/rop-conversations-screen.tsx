@@ -114,11 +114,23 @@ export function RopConversationsScreen() {
   useEffect(() => {
     let cancelled = false;
 
+    async function bootstrapArchives() {
+      try {
+        await fetch("/api/conversations/seed-archives", { method: "POST" });
+      } catch {
+        // Archives may already exist; history reload still runs below.
+      }
+    }
+
     async function loadHistory() {
       try {
         const response = await fetch("/api/conversations/history?limit=30");
         const data = await readJsonResponse<ConversationHistoryPayload>(response);
-        if (!response.ok || cancelled) return;
+        if (cancelled) return;
+        if (!response.ok) {
+          setStatus({ state: "error", message: data.error || "Не удалось загрузить историю переписок." });
+          return;
+        }
         const items = data.history ?? [];
         setHistory(items);
         const latest = data.latest ?? items[0] ?? null;
@@ -126,14 +138,17 @@ export function RopConversationsScreen() {
           const nextSelection = pickForPeriod(items, selectedPeriod);
           setSelectedImportedAt(nextSelection ?? latest.importedAt);
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          setStatus({ state: "error", message: "Не удалось загрузить историю переписок." });
+          setStatus({
+            state: "error",
+            message: error instanceof Error ? error.message : "Не удалось загрузить историю переписок."
+          });
         }
       }
     }
 
-    void loadHistory();
+    void bootstrapArchives().then(loadHistory);
 
     return () => {
       cancelled = true;
@@ -157,7 +172,7 @@ export function RopConversationsScreen() {
   const dashboard = selectedSnapshot?.dashboard ?? null;
   const selectedPeriodLabel = periodOptions.find((item) => item.value === selectedPeriod)?.label ?? selectedPeriod;
 
-  const refreshFromBitrix = async () => {
+  const refreshFromBitrix = async (attempt = 0) => {
     if (selectedPeriod !== "july-2026") {
       setStatus({ state: "error", message: "Bitrix-синк доступен только для текущего месяца (июль)." });
       return;
@@ -167,7 +182,7 @@ export function RopConversationsScreen() {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 500 })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 120 })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
@@ -185,10 +200,14 @@ export function RopConversationsScreen() {
         if (nextSelected) setSelectedImportedAt(nextSelected);
       }
     } catch (error) {
-      setStatus({
-        state: "error",
-        message: error instanceof Error ? error.message : "Не удалось обновить переписки из Bitrix"
-      });
+      const message = error instanceof Error ? error.message : "Не удалось обновить переписки из Bitrix";
+      const shouldRetry = attempt < 1 && /HTML|таймаут|timeout|502|503|504/i.test(message);
+      if (shouldRetry) {
+        setStatus({ state: "loading", message: "Сервер ещё прогревается, повторяю запрос..." });
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        return refreshFromBitrix(attempt + 1);
+      }
+      setStatus({ state: "error", message });
     }
   };
 
@@ -288,6 +307,7 @@ export function RopConversationsScreen() {
               onChange={(event) => {
                 const next = event.target.value as PeriodKey;
                 setSelectedPeriod(next);
+                setStatus({ state: "idle", message: "Готово к загрузке архива или живого Bitrix-среза." });
                 const nextHistory = history.filter((item) => itemPeriodKey(item) === next);
                 const nextSelection = pickForPeriod(nextHistory.length ? nextHistory : history, next);
                 setSelectedImportedAt(nextSelection);
@@ -331,7 +351,7 @@ export function RopConversationsScreen() {
             </button>
             <button
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
-              onClick={refreshFromBitrix}
+              onClick={() => void refreshFromBitrix()}
               disabled={status.state === "loading" || selectedPeriod !== "july-2026"}
             >
               <RefreshCcw size={16} />

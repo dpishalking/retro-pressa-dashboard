@@ -436,7 +436,7 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   }
 
   const daysBack = Math.max(1, Math.min(14, options.daysBack ?? 1));
-  const dialogLimit = Math.max(10, Math.min(500, options.dialogLimit ?? 80));
+  const dialogLimit = Math.max(10, Math.min(120, options.dialogLimit ?? 80));
   const importedAt = new Date().toISOString();
   const periodKey = options.period ?? periodFromDate(new Date(importedAt));
   const range = periodKey ? periodRange(periodKey, new Date()) : null;

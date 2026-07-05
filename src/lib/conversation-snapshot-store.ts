@@ -193,7 +193,6 @@ export async function readPeriodArchive(periodKey: PeriodKey) {
 }
 
 export async function listConversationSnapshots(): Promise<ConversationSnapshot[]> {
-  await ensureConversationArchives();
   await ensureSnapshotDir();
 
   const files = (await readdir(snapshotDir)).filter((file) => file.endsWith(".json"));
