@@ -75,6 +75,7 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
 
 export function RopConversationsScreen() {
   const archiveInputRef = useRef<HTMLInputElement | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | null>(null);
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
@@ -165,7 +166,8 @@ export function RopConversationsScreen() {
     const selectedFiles = Array.from(files);
     if (!selectedFiles.length) return;
 
-    setStatus({ state: "loading", message: "Разбираю архивы локально в браузере..." });
+    const targetLabel = archiveTarget === "may" ? "майский" : archiveTarget === "june" ? "июньский" : "локальный";
+    setStatus({ state: "loading", message: `Разбираю ${targetLabel} архив локально в браузере...` });
     try {
       const inputs = await Promise.all(selectedFiles.map(async (file) => ({
         filename: file.name,
@@ -256,9 +258,22 @@ export function RopConversationsScreen() {
             <button
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               disabled={status.state === "loading"}
-              onClick={() => archiveInputRef.current?.click()}
+              onClick={() => {
+                setArchiveTarget("may");
+                archiveInputRef.current?.click();
+              }}
             >
-              Загрузить май + июнь
+              Загрузить май
+            </button>
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              disabled={status.state === "loading"}
+              onClick={() => {
+                setArchiveTarget("june");
+                archiveInputRef.current?.click();
+              }}
+            >
+              Загрузить июнь
             </button>
             <button
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
@@ -280,6 +295,7 @@ export function RopConversationsScreen() {
         className="hidden"
         onChange={(event) => {
           void importLocalExports(event.target.files ?? []);
+          setArchiveTarget(null);
           event.currentTarget.value = "";
         }}
       />
@@ -289,7 +305,7 @@ export function RopConversationsScreen() {
           <div>
             <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
             <p className="mt-1 text-sm font-semibold text-slate-700">
-              Локальный архив — это май + июнь с тысячами диалогов. Живой Bitrix — только свежий срез.
+              Архивы май и июнь загружаются отдельно. Живой Bitrix — только свежий срез.
             </p>
           </div>
           <p className="text-sm text-slate-500">
