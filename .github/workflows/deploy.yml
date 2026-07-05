@@ -59,6 +59,7 @@ jobs:
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/practice-modules.json /tmp/retro-pressa-deploy/training-seed/practice-modules.json
           fi
+          cp -R scripts/trainer-backend-overlay /tmp/retro-pressa-deploy/trainer-backend-overlay
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
 
@@ -158,8 +159,6 @@ jobs:
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
           scp -i ~/.ssh/deploy_key trainer-backend-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-env.json"
-          scp -i ~/.ssh/deploy_key -r scripts/trainer-backend-overlay \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-overlay"
 
       - name: Deploy on server
         run: |
@@ -176,7 +175,14 @@ jobs:
           BACKEND_DATA="/opt/pressa-backend-shared/data"
           BACKEND_ENV="/opt/pressa-backend/runtime-env.json"
           PRESSA_SRC="/opt/pressa-src"
-          mkdir -p "$BACKEND_DATA" /opt/pressa-backend
+          mkdir -p "$BACKEND_DATA" /opt/pressa-backend /tmp/trainer-backend-overlay
+
+          tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /tmp/trainer-backend-overlay trainer-backend-overlay
+          if [ ! -f /tmp/trainer-backend-overlay/trainer-backend-overlay/manager-sessions.ts ]; then
+            echo "Trainer overlay missing from deploy archive" >&2
+            exit 1
+          fi
+          OVERLAY_DIR="/tmp/trainer-backend-overlay/trainer-backend-overlay"
 
           if [ ! -d "$PRESSA_SRC/.git" ]; then
             git clone --depth 1 https://github.com/dpishalking/pressa.git "$PRESSA_SRC"
@@ -186,7 +192,7 @@ jobs:
             git reset --hard origin/main
           fi
 
-          node /tmp/trainer-backend-overlay/apply-patch.mjs "$PRESSA_SRC/gift-ai"
+          node "$OVERLAY_DIR/apply-patch.mjs" "$PRESSA_SRC/gift-ai"
           cd "$PRESSA_SRC/gift-ai"
           npm ci
           npm run build -w backend

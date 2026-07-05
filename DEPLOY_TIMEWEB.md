@@ -53,6 +53,11 @@ TRAINER_SERVICE_TAG=retro-pressa
 
 # Telegram-бот @dushnila12_bot запускается ТОЛЬКО на Railway (проект retro-pressa-bot).
 # Не запускайте npm run dev:trainer на Mac, пока бот живёт на Railway.
+
+# На Railway (проект pressa-production / backend) обязательно задайте:
+# GEMINI_API_KEY=<ключ из https://aistudio.google.com/apikey>
+# GEMINI_MODEL=gemini-2.5-flash
+# Без GEMINI_API_KEY бот отвечает «Не удалось обработать сообщение» после первого ответа менеджера.
 ```
 
 Если Google JSON неудобно хранить одной строкой, можно использовать:
