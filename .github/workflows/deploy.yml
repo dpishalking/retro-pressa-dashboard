@@ -85,6 +85,7 @@ jobs:
           TRAINER_ADMIN_API_KEY: ${{ secrets.TRAINER_ADMIN_API_KEY }}
           TRAINER_SERVICE_TAG: ${{ secrets.TRAINER_SERVICE_TAG }}
           TRAINER_BOT_USERNAME: ${{ secrets.TRAINER_BOT_USERNAME }}
+          TRAINER_BOT_TOKEN: ${{ secrets.TRAINER_BOT_TOKEN }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -139,6 +140,20 @@ jobs:
             LOG_LEVEL: "info"
           };
           fs.writeFileSync("trainer-backend-env.json", JSON.stringify(backendEnv, null, 2));
+
+          const botToken = process.env.TRAINER_BOT_TOKEN || "";
+          fs.writeFileSync(
+            "trainer-bot-env.json",
+            JSON.stringify(
+              {
+                TRAINER_BOT_TOKEN: botToken,
+                API_URL: "http://127.0.0.1:3100",
+                NODE_ENV: "production"
+              },
+              null,
+              2
+            )
+          );
           NODE
 
       - name: Configure SSH
@@ -156,6 +171,8 @@ jobs:
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
           scp -i ~/.ssh/deploy_key trainer-backend-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-backend-env.json"
+          scp -i ~/.ssh/deploy_key trainer-bot-env.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/trainer-bot-env.json"
 
       - name: Deploy on server
         run: |
@@ -185,6 +202,7 @@ jobs:
           cd "$PRESSA_SRC/gift-ai"
           npm ci
           npm run build -w backend
+          npm run build -w trainer-bot
           cp /tmp/trainer-backend-env.json "$BACKEND_ENV"
           chmod 600 "$BACKEND_ENV"
 
@@ -213,6 +231,34 @@ jobs:
           sleep 5
           curl -f -sS http://127.0.0.1:3100/health > /dev/null
           curl -f -sS http://127.0.0.1:3100/trainer/scenarios > /dev/null
+
+          TRAINER_BOT_ENV="/opt/pressa-trainer-bot/runtime-env.json"
+          mkdir -p /opt/pressa-trainer-bot
+          cp /tmp/trainer-bot-env.json "$TRAINER_BOT_ENV"
+          chmod 600 "$TRAINER_BOT_ENV"
+
+          if node -e "const e=require('$TRAINER_BOT_ENV'); process.exit(e.TRAINER_BOT_TOKEN ? 0 : 1)"; then
+            cat > "$PRESSA_SRC/gift-ai/trainer-bot/ecosystem.config.cjs" <<'PM2BOT'
+          const runtimeEnv = require("/opt/pressa-trainer-bot/runtime-env.json");
+
+          module.exports = {
+            apps: [
+              {
+                name: "pressa-trainer-bot",
+                script: "dist/index.js",
+                cwd: "/opt/pressa-src/gift-ai/trainer-bot",
+                env: runtimeEnv
+              }
+            ]
+          };
+          PM2BOT
+            if pm2 describe pressa-trainer-bot > /dev/null; then
+              pm2 delete pressa-trainer-bot
+            fi
+            pm2 start "$PRESSA_SRC/gift-ai/trainer-bot/ecosystem.config.cjs"
+          else
+            echo "TRAINER_BOT_TOKEN not set — skip trainer bot deploy"
+          fi
 
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
