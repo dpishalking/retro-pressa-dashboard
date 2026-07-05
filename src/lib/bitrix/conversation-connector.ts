@@ -1,6 +1,6 @@
 import { buildConversationDashboard, classifyMessage, summarizeDialogs } from "@/lib/conversation-intelligence";
 import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
-import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, ConversationMessage, DialogueOutcome, DialogueStage } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, ConversationMessage, DialogueOutcome, DialogueStage, PeriodKey } from "@/types/metrics";
 
 type BitrixResponse<T> = {
   result?: T;
@@ -46,6 +46,7 @@ type BitrixDialogMessagesResult = {
 };
 
 type BitrixConversationSyncOptions = {
+  period?: PeriodKey;
   daysBack?: number;
   dialogLimit?: number;
   refresh?: boolean;
@@ -65,6 +66,7 @@ export type BitrixConversationSyncPayload = {
     filesLoaded: number;
     dialogsLoaded: number;
   };
+  periodKey?: PeriodKey | null;
 };
 
 function normalizeWebhookUrl(url: string) {
@@ -73,6 +75,27 @@ function normalizeWebhookUrl(url: string) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function periodRange(period: PeriodKey, now = new Date()) {
+  const months: Record<PeriodKey, { year: number; month: number }> = {
+    "may-2026": { year: 2026, month: 5 },
+    "june-2026": { year: 2026, month: 6 },
+    "july-2026": { year: 2026, month: 7 }
+  };
+  const { year, month } = months[period];
+  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+  const factualEnd = now < end ? now : end;
+  return { start, end, factualEnd };
+}
+
+function periodFromDate(date: Date): PeriodKey | null {
+  const month = date.getUTCMonth() + 1;
+  if (month === 5) return "may-2026";
+  if (month === 6) return "june-2026";
+  if (month === 7) return "july-2026";
+  return null;
 }
 
 function hasBitrixConfig() {
@@ -180,7 +203,7 @@ async function fetchRecentDialogs(since: string, dialogLimit: number) {
   return Array.from(unique.values()).slice(0, dialogLimit);
 }
 
-async function fetchDialogMessages(dialogId: string, sinceDate: Date) {
+async function fetchDialogMessages(dialogId: string, sinceDate: Date, untilDate: Date) {
   const messages: BitrixDialogMessage[] = [];
   const users = new Map<number, BitrixDialogUser>();
   let firstId = 0;
@@ -197,7 +220,7 @@ async function fetchDialogMessages(dialogId: string, sinceDate: Date) {
     const batch = [...(result.messages ?? [])]
       .filter((item) => {
         const messageDate = dateOrFallback(item.date);
-        return messageDate ? messageDate >= sinceDate : false;
+        return messageDate ? messageDate >= sinceDate && messageDate <= untilDate : false;
       })
       .sort((a, b) => a.id - b.id);
 
@@ -250,7 +273,10 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   const daysBack = Math.max(1, Math.min(14, options.daysBack ?? 1));
   const dialogLimit = Math.max(10, Math.min(200, options.dialogLimit ?? 80));
   const importedAt = new Date().toISOString();
-  const sinceDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+  const periodKey = options.period ?? periodFromDate(new Date(importedAt));
+  const range = periodKey ? periodRange(periodKey, new Date()) : null;
+  const sinceDate = range?.start ?? new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+  const untilDate = range?.factualEnd ?? new Date();
   const sinceIso = sinceDate.toISOString();
 
   const recentDialogs = await fetchRecentDialogs(sinceIso, dialogLimit);
@@ -260,7 +286,7 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   for (const dialog of recentDialogs) {
     const dialogId = String(dialog.id ?? `chat${dialog.chat_id}`);
     try {
-      const { messages, users } = await fetchDialogMessages(dialogId, sinceDate);
+      const { messages, users } = await fetchDialogMessages(dialogId, sinceDate, untilDate);
       const normalized = normalizeBitrixMessages(dialog, messages, users);
       if (!normalized.length) continue;
       collectedMessages.push(...normalized);
@@ -290,7 +316,8 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
     source: "bitrix",
     importedAt,
     importedDay: importedAt.slice(0, 10),
-    label: `Bitrix daily sync (${daysBack} дн.)`,
+    periodKey,
+    label: periodKey ? `Bitrix monthly sync (${periodKey})` : `Bitrix daily sync (${daysBack} дн.)`,
     dashboard,
     diagnostics,
     summary: {

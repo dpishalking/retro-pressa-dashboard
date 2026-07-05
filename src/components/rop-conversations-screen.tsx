@@ -4,12 +4,13 @@ import Link from "next/link";
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { eur, number, pct } from "@/lib/format";
-import type { ConversationDashboardMetrics } from "@/types/metrics";
+import type { ConversationDashboardMetrics, PeriodKey } from "@/types/metrics";
 
 type ConversationHistoryItem = {
   importedDay: string;
   importedAt: string;
   source: "manual" | "gift-ai" | "bitrix";
+  periodKey?: PeriodKey | null;
   label: string;
   dashboard: ConversationDashboardMetrics;
   dialogs: number;
@@ -40,6 +41,12 @@ type BitrixSyncPayload = {
   error?: string;
 };
 
+const periodOptions: Array<{ value: PeriodKey; label: string }> = [
+  { value: "july-2026", label: "Июль 2026" },
+  { value: "june-2026", label: "Июнь 2026" },
+  { value: "may-2026", label: "Май 2026" }
+];
+
 type SyncStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
@@ -55,10 +62,16 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
 export function RopConversationsScreen() {
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
   const [status, setStatus] = useState<SyncStatus>({
     state: "idle",
     message: "Готово к загрузке последнего дневного среза Bitrix."
   });
+
+  const pickDefaultSelected = (items: ConversationHistoryItem[], period: PeriodKey) => {
+    const matched = items.find((item) => item.periodKey === period);
+    return matched?.importedAt ?? items[0]?.importedAt ?? null;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +84,10 @@ export function RopConversationsScreen() {
         const items = data.history ?? [];
         setHistory(items);
         const latest = data.latest ?? items[0] ?? null;
-        if (latest) setSelectedImportedAt(latest.importedAt);
+        if (latest) {
+          const nextSelection = pickDefaultSelected(items, selectedPeriod);
+          setSelectedImportedAt(nextSelection ?? latest.importedAt);
+        }
       } catch {
         if (!cancelled) {
           setStatus({ state: "error", message: "Не удалось загрузить историю переписок." });
@@ -86,25 +102,32 @@ export function RopConversationsScreen() {
     };
   }, []);
 
-  const selected = useMemo(
-    () => history.find((item) => item.importedAt === selectedImportedAt) ?? history[0] ?? null,
-    [history, selectedImportedAt]
+  const visibleHistory = useMemo(() => {
+    const matched = history.filter((item) => item.periodKey === selectedPeriod);
+    if (matched.length) return matched;
+    return history.filter((item) => !item.periodKey);
+  }, [history, selectedPeriod]);
+  const selectedImportedKey = useMemo(
+    () => visibleHistory.find((item) => item.importedAt === selectedImportedAt)?.importedAt ?? pickDefaultSelected(visibleHistory, selectedPeriod),
+    [selectedImportedAt, selectedPeriod, visibleHistory]
   );
-  const dashboard = selected?.dashboard ?? null;
+  const selectedSnapshot = visibleHistory.find((item) => item.importedAt === selectedImportedKey) ?? visibleHistory[0] ?? null;
+  const dashboard = selectedSnapshot?.dashboard ?? null;
+  const selectedPeriodLabel = periodOptions.find((item) => item.value === selectedPeriod)?.label ?? selectedPeriod;
 
   const refreshFromBitrix = async () => {
-    setStatus({ state: "loading", message: "Забираю свежие переписки из Bitrix..." });
+    setStatus({ state: "loading", message: `Забираю переписки за ${selectedPeriodLabel.toLowerCase()}...` });
     try {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ daysBack: 1, dialogLimit: 80 })
+        body: JSON.stringify({ period: selectedPeriod, dialogLimit: 200 })
       });
       const data = await response.json() as BitrixSyncPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
       setStatus({
         state: "ok",
-        message: `Забрано ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+        message: `Загружен ${selectedPeriodLabel.toLowerCase()}: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
@@ -112,8 +135,8 @@ export function RopConversationsScreen() {
       if (historyResponse.ok) {
         const items = historyData.history ?? [];
         setHistory(items);
-        const latest = historyData.latest ?? items[0] ?? null;
-        if (latest) setSelectedImportedAt(latest.importedAt);
+        const nextSelected = pickDefaultSelected(items, selectedPeriod);
+        if (nextSelected) setSelectedImportedAt(nextSelected);
       }
     } catch (error) {
       setStatus({
@@ -138,14 +161,34 @@ export function RopConversationsScreen() {
             Здесь живёт один рабочий слой: дневные и месячные срезы переписок, откуда мы видим конверсию, возражения, потери и лучшие сценарии.
           </p>
         </div>
-        <button
-          className="inline-flex items-center gap-2 self-start rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
-          onClick={refreshFromBitrix}
-          disabled={status.state === "loading"}
-        >
-          <RefreshCcw size={16} />
-          {status.state === "loading" ? "Обновляю..." : "Обновить из Bitrix"}
-        </button>
+        <div className="flex flex-col gap-2 self-start">
+          <label className="grid gap-1 text-xs font-bold uppercase tracking-normal text-slate-500">
+            Период
+            <select
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950"
+              value={selectedPeriod}
+              onChange={(event) => {
+                const next = event.target.value as PeriodKey;
+                setSelectedPeriod(next);
+                const nextHistory = history.filter((item) => item.periodKey === next);
+                const nextSelection = pickDefaultSelected(nextHistory.length ? nextHistory : history.filter((item) => !item.periodKey), next);
+                setSelectedImportedAt(nextSelection);
+              }}
+            >
+              {periodOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="inline-flex items-center gap-2 self-start rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+            onClick={refreshFromBitrix}
+            disabled={status.state === "loading"}
+          >
+            <RefreshCcw size={16} />
+            {status.state === "loading" ? "Обновляю..." : `Обновить ${selectedPeriodLabel.toLowerCase()}`}
+          </button>
+        </div>
       </header>
 
       <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
@@ -177,11 +220,11 @@ export function RopConversationsScreen() {
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3">
-          <p className="text-sm font-bold text-slate-700">Дневные и месячные срезы</p>
+          <p className="text-sm font-bold text-slate-700">Дневные и месячные срезы: {selectedPeriodLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2 p-4">
-          {history.length ? history.map((item) => {
-            const active = item.importedAt === selected?.importedAt;
+          {visibleHistory.length ? visibleHistory.map((item) => {
+            const active = item.importedAt === selectedSnapshot?.importedAt;
             return (
               <button
                 key={item.importedAt}
@@ -191,7 +234,7 @@ export function RopConversationsScreen() {
                 {item.importedDay} · {item.label}
               </button>
             );
-          }) : <p className="text-sm text-slate-500">История появится после первого импорта.</p>}
+          }) : <p className="text-sm text-slate-500">Для этого периода ещё нет сохранённых срезов. Нажми обновление справа.</p>}
         </div>
       </section>
 
@@ -288,7 +331,7 @@ export function RopConversationsScreen() {
                   </thead>
                   <tbody>
                     {history.slice(0, 7).map((item) => (
-                      <tr key={item.importedAt} className={item.importedAt === selected?.importedAt ? "bg-blue-50" : "border-t border-slate-100"}>
+                      <tr key={item.importedAt} className={item.importedAt === selectedSnapshot?.importedAt ? "bg-blue-50" : "border-t border-slate-100"}>
                         <td className="px-4 py-3 font-semibold text-slate-700">{item.importedDay}</td>
                         <td className="px-4 py-3">{number(item.dialogs)}</td>
                         <td className="px-4 py-3">{pct(item.conversion)}</td>

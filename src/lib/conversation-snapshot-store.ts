@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, PeriodKey } from "@/types/metrics";
 
 export type ConversationSnapshotSource = "manual" | "gift-ai" | "bitrix";
 
@@ -17,6 +17,7 @@ export type ConversationSnapshot = {
   source: ConversationSnapshotSource;
   importedAt: string;
   importedDay: string;
+  periodKey?: PeriodKey | null;
   label: string;
   dashboard: ConversationDashboardMetrics;
   diagnostics: ConversationImportFileDiagnostic[];
@@ -27,6 +28,7 @@ export type ConversationSnapshotHistoryItem = {
   importedDay: string;
   importedAt: string;
   source: ConversationSnapshotSource;
+  periodKey?: PeriodKey | null;
   label: string;
   dashboard: ConversationDashboardMetrics;
   dialogs: number;
@@ -94,6 +96,7 @@ export async function listConversationSnapshotHistory(limit = 14): Promise<Conve
     importedDay: snapshot.importedDay,
     importedAt: snapshot.importedAt,
     source: snapshot.source,
+    periodKey: snapshot.periodKey ?? null,
     label: snapshot.label,
     dashboard: snapshot.dashboard,
     dialogs: snapshot.dashboard.totalDialogs,

@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
+import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as {
+      period?: PeriodKey;
       daysBack?: number;
       dialogLimit?: number;
     };
 
     const payload = await syncBitrixConversationHistory({
+      period: body.period,
       daysBack: body.daysBack,
       dialogLimit: body.dialogLimit
     });
