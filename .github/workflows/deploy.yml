@@ -153,6 +153,8 @@ jobs:
 
       - name: Upload archive
         run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "rm -rf /tmp/trainer-backend-overlay /tmp/overlay-fallback"
           scp -i ~/.ssh/deploy_key retro-pressa-deploy.tar.gz \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-deploy.tar.gz"
           scp -i ~/.ssh/deploy_key runtime-env.json \
