@@ -355,7 +355,10 @@ export async function getQuizAttempt(userId: string, attemptId: string) {
       product: null,
       questions: module.questions.map((question) => ({
         question,
-        userAnswer: attempt.answers.find((answer) => answer.questionId === question.id)!
+        userAnswer: attempt.answers.find((answer) => answer.questionId === question.id) ?? {
+          questionId: question.id,
+          isCorrect: false
+        }
       }))
     };
   }
@@ -370,7 +373,10 @@ export async function getQuizAttempt(userId: string, attemptId: string) {
     module: null,
     questions: product.questions.map((question) => ({
       question,
-      userAnswer: attempt.answers.find((answer) => answer.questionId === question.id)!
+      userAnswer: attempt.answers.find((answer) => answer.questionId === question.id) ?? {
+        questionId: question.id,
+        isCorrect: false
+      }
     }))
   };
 }

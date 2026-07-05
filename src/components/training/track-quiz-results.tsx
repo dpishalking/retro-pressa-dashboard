@@ -38,20 +38,64 @@ function TrackQuizResultsContent({
   moduleId: string;
   attemptId: string;
 }) {
-  const { user } = useTrainingUser();
+  const { user, loading: userLoading } = useTrainingUser();
   const [data, setData] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    fetch(`/api/training/quiz?userId=${user.id}&attemptId=${attemptId}`)
-      .then((response) => response.json())
-      .then((payload: ResultData) => setData(payload))
-      .finally(() => setLoading(false));
-  }, [attemptId, user]);
+    if (userLoading) return;
 
-  if (loading || !data?.module) {
+    if (!user) {
+      setLoading(false);
+      setError("Сессия не найдена. Войдите в аккаунт и откройте результаты снова.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    fetch(`/api/training/quiz?userId=${encodeURIComponent(user.id)}&attemptId=${encodeURIComponent(attemptId)}`, {
+      cache: "no-store"
+    })
+      .then(async (response) => {
+        const payload = (await response.json()) as ResultData & { error?: string };
+        if (!response.ok || !payload?.attempt || !payload?.module || !Array.isArray(payload.questions)) {
+          throw new Error(payload.error ?? "Не удалось загрузить результаты теста");
+        }
+        setData(payload);
+      })
+      .catch((loadError) => {
+        setData(null);
+        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить результаты теста");
+      })
+      .finally(() => setLoading(false));
+  }, [attemptId, user, userLoading]);
+
+  if (loading || userLoading) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка результатов...</div>;
+  }
+
+  if (error || !data?.module) {
+    return (
+      <div className="card space-y-4 p-8">
+        <p className="text-sm font-semibold text-red-600">{error ?? "Результаты не найдены."}</p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/training/${stageId}/${moduleId}/quiz`}
+            className="rounded-xl border border-[var(--line)] px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+          >
+            Пройти тест снова
+          </Link>
+          <Link
+            href={`/training/${stageId}`}
+            className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+          >
+            К списку модулей
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const correctCount = data.attempt.answers.filter((answer) => answer.isCorrect).length;
@@ -81,7 +125,7 @@ function TrackQuizResultsContent({
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Вопрос {index + 1}</p>
                 <h3 className="mt-1 text-base font-black text-slate-950">{question.text}</h3>
               </div>
-              {userAnswer.isCorrect ? (
+              {userAnswer?.isCorrect ? (
                 <CheckCircle2 className="shrink-0 text-emerald-600" size={20} />
               ) : (
                 <XCircle className="shrink-0 text-red-500" size={20} />
@@ -92,7 +136,7 @@ function TrackQuizResultsContent({
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Ваш ответ</p>
                 <p className="mt-1 text-sm text-slate-800">{answerLabel(question, userAnswer)}</p>
               </div>
-              {!userAnswer.isCorrect ? (
+              {!userAnswer?.isCorrect ? (
                 <div className="rounded-xl bg-emerald-50 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Правильный ответ</p>
                   <p className="mt-1 text-sm text-emerald-900">{correctLabel(question)}</p>
