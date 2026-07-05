@@ -1,4 +1,6 @@
 import type { ProductMaterial, ProductTrainingModule, TrainingUser } from "@/types/training";
+import { applyGiftSiteContentToCatalog, applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
+import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 
 const now = new Date().toISOString();
 
@@ -501,13 +503,159 @@ export const familySubscriptionProduct = createProductSeed({
   ]
 });
 
+export const passportDiscoveryProduct = createProductSeed({
+  id: "passport-discovery",
+  title: "Паспорт Открытий",
+  shortDescription:
+    "Физическая оболочка для персонального приключения: путешествие, исследование города или семейная игра с заданиями.",
+  coverImage: "https://static.tildacdn.net/tild6339-3765-4839-a239-363565613436/_.webp",
+  passingScore: 80,
+  sortOrder: 7,
+  description:
+    "Паспорт Открытий — это физический документ с заданиями, который запускает приключение. Его можно подарить человеку перед поездкой, на новый жизненный этап или как семейную игру с открытиями.",
+  targetAudience:
+    "Тем, кто собирается в путешествие, открывает новый этап жизни или хочет запустить открытия внутри семьи и круга близких.",
+  clientProblems:
+    "Нужен оригинальный персональный подарок с эффектом «вау», который дарит эмоции и впечатления, а не очередной сувенир на полку.",
+  emotions:
+    "Удивление, азарт, ощущение приключения, индивидуальность подарка и желание выполнять задания вместе с близкими.",
+  purchaseReasons:
+    "Перед поездкой, на день рождения, годовщину, семейный праздник или когда хочется подарить не вещь, а впечатление и сценарий.",
+  objections:
+    "«Это не слишком сложно организовать?»\n«А если человек не любит квесты?»\n«Сколько времени нужно на подготовку?»",
+  presentationGuide:
+    "Объясняйте, что паспорт — это инструмент для эмоций и впечатлений. Есть три уровня: готовые задания из архива, подбор по интересам или полностью персональный сценарий с эвент-менеджером.",
+  materials: [
+    videoMaterial(
+      "video-passport-discovery",
+      "Видео для менеджеров",
+      "Сюда загрузим видео о том, как продавать Паспорт Открытий: кому предлагать и чем он отличается от обычного подарка.",
+      1
+    ),
+    textMaterial(
+      "mat-passport-discovery",
+      "Три варианта оформления",
+      "• Вариант 1: готовые задания из архива.\n• Вариант 2: подбор заданий по интересам с фото клиента.\n• Вариант 3: персональный эвент-менеджер и индивидуальные задания."
+    )
+  ],
+  questions: [
+    {
+      id: "passport-discovery-q1",
+      text: "Что такое Паспорт Открытий?",
+      type: "single",
+      sortOrder: 1,
+      answers: [
+        { id: "passport-discovery-q1-a1", text: "Обычный сувенир без сценария", isCorrect: false },
+        { id: "passport-discovery-q1-a2", text: "Физический документ с заданиями для приключения", isCorrect: true },
+        { id: "passport-discovery-q1-a3", text: "Только электронный PDF", isCorrect: false }
+      ]
+    },
+    {
+      id: "passport-discovery-q2",
+      text: "Кому особенно подходит этот продукт?",
+      type: "single",
+      sortOrder: 2,
+      answers: [
+        { id: "passport-discovery-q2-a1", text: "Только детям до 10 лет", isCorrect: false },
+        { id: "passport-discovery-q2-a2", text: "Путешественникам и тем, кто начинает новый этап", isCorrect: true },
+        { id: "passport-discovery-q2-a3", text: "Только корпоративным клиентам", isCorrect: false }
+      ]
+    },
+    {
+      id: "passport-discovery-q3",
+      text: "Что мы продаём по смыслу?",
+      type: "single",
+      sortOrder: 3,
+      answers: [
+        { id: "passport-discovery-q3-a1", text: "Только бумажную обложку", isCorrect: false },
+        { id: "passport-discovery-q3-a2", text: "Эмоции, впечатления и персональное приключение", isCorrect: true },
+        { id: "passport-discovery-q3-a3", text: "Стандартный подарочный сертификат", isCorrect: false }
+      ]
+    }
+  ]
+});
+
+export const passportAlcoholicProduct = createProductSeed({
+  id: "passport-alcoholic",
+  title: "Паспорт Алкоголика",
+  shortDescription:
+    "Шутливый паспорт с визами-заданиями для друзей и компании: повод для встречи и сценарий вечера.",
+  coverImage: "https://static.tildacdn.net/tild3564-3662-4637-b064-313138376231/IMG_5570.webp",
+  passingScore: 80,
+  sortOrder: 8,
+  description:
+    "Паспорт Алкоголика — это физический документ в форме паспорта с вклеенными визами-заданиями. Подарок для друзей, коллег и близких, которым хочется разнообразить вечер, подшутить и добавить игровой сценарий.",
+  targetAudience:
+    "Для друзей, коллег, родственников и компании, где уместен лёгкий юмор и совместные «алко-приключения».",
+  clientProblems:
+    "Скучно сидеть и заниматься одним и тем же — хочется разнообразить вечер, найти повод для встречи и добавить внутреннюю шутку «для своих».",
+  emotions:
+    "Смех, азарт, ощущение своей компании, желание выполнять задания и делать вечер необычным.",
+  purchaseReasons:
+    "День рождения друга, корпоратив, поездка, баня, выходные с компанией — когда хочется приколоться и подарить сценарий, а не бутылку.",
+  objections:
+    "«А если человек не пьёт?»\n«Не слишком ли это пошло?»\n«Можно ли сделать задания мягче?»",
+  presentationGuide:
+    "Подчёркивайте, что это подарок-шутка и сценарий для своих. Задания можно выбрать из архива, подобрать по интересам или сделать полностью персональными. Можно предложить пари, чтобы было интереснее выполнять визы.",
+  materials: [
+    videoMaterial(
+      "video-passport-alcoholic",
+      "Видео для менеджеров",
+      "Сюда загрузим видео о том, как продавать Паспорт Алкоголика: кому предлагать и как объяснять формат без лишнего пафоса.",
+      1
+    ),
+    textMaterial(
+      "mat-passport-alcoholic",
+      "Три варианта оформления",
+      "• Вариант 1: готовые задания из архива.\n• Вариант 2: подбор по интересам с вашими фото.\n• Вариант 3: персональные задания под ваши внутренние приколы."
+    )
+  ],
+  questions: [
+    {
+      id: "passport-alcoholic-q1",
+      text: "Что такое Паспорт Алкоголика?",
+      type: "single",
+      sortOrder: 1,
+      answers: [
+        { id: "passport-alcoholic-q1-a1", text: "Настоящий документ для пересечения границы", isCorrect: false },
+        { id: "passport-alcoholic-q1-a2", text: "Шутливый паспорт с визами-заданиями для вечера", isCorrect: true },
+        { id: "passport-alcoholic-q1-a3", text: "Книга рецептов коктейлей", isCorrect: false }
+      ]
+    },
+    {
+      id: "passport-alcoholic-q2",
+      text: "Для кого этот продукт подходит лучше всего?",
+      type: "single",
+      sortOrder: 2,
+      answers: [
+        { id: "passport-alcoholic-q2-a1", text: "Для детского праздника", isCorrect: false },
+        { id: "passport-alcoholic-q2-a2", text: "Для друзей и компании с лёгким юмором", isCorrect: true },
+        { id: "passport-alcoholic-q2-a3", text: "Для официального корпоративного отчёта", isCorrect: false }
+      ]
+    },
+    {
+      id: "passport-alcoholic-q3",
+      text: "Какой главный смысл продукта?",
+      type: "single",
+      sortOrder: 3,
+      answers: [
+        { id: "passport-alcoholic-q3-a1", text: "Продать алкоголь", isCorrect: false },
+        { id: "passport-alcoholic-q3-a2", text: "Дать повод для встречи и сценарий вечера", isCorrect: true },
+        { id: "passport-alcoholic-q3-a3", text: "Заменить обычный паспорт", isCorrect: false }
+      ]
+    }
+  ]
+});
+
 export const trainingProductsSeed: ProductTrainingModule[] = [
   birthDateNewspaperProduct,
   lifeBookProduct,
   partyPageProduct,
   glossyMagazineProduct,
   memoriesBookProduct,
-  familySubscriptionProduct
+  familySubscriptionProduct,
+  passportDiscoveryProduct,
+  passportAlcoholicProduct
 ];
 
 export type TrainingCatalog = {
@@ -517,9 +665,12 @@ export type TrainingCatalog = {
 };
 
 export function createTrainingCatalogSeed(): TrainingCatalog {
+  const withGifts = applyGiftSiteContentToCatalog(trainingProductsSeed);
+  const withSheet = applySheetContentToCatalog(withGifts);
+
   return {
     version: 1,
-    products: trainingProductsSeed,
+    products: applyGiftSiteImagesToCatalog(withSheet),
     updatedAt: now
   };
 }

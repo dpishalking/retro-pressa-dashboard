@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { generateId } from "@/lib/training/id";
-import type { ProductMaterial, ProductTrainingModule, QuizAnswer, QuizQuestion } from "@/types/training";
+import type { ProductMaterial, ProductSectionKey, ProductTrainingModule, QuizAnswer, QuizQuestion } from "@/types/training";
 
 const emptyProduct = (): ProductTrainingModule => ({
   id: "",
@@ -154,6 +154,13 @@ function ProductEditorContent({ productId }: { productId: string }) {
         <div className="md:col-span-2">
           <Field label="Как презентовать" value={product.presentationGuide} onChange={(value) => update("presentationGuide", value)} multiline />
         </div>
+        <div className="md:col-span-2">
+          <Field
+            label="Google Slides (URL презентации)"
+            value={product.presentationUrl ?? ""}
+            onChange={(value) => update("presentationUrl", value)}
+          />
+        </div>
       </section>
 
       <section className="card p-6">
@@ -195,6 +202,33 @@ function ProductEditorContent({ productId }: { productId: string }) {
                     <option value="link">Ссылка</option>
                   </select>
                 </label>
+                {material.type === "image" ? (
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-700">Блок на странице</span>
+                    <select
+                      className="w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
+                      value={material.sectionKey ?? ""}
+                      onChange={(event) => {
+                        const materials = [...product.materials];
+                        const sectionKey = event.target.value as ProductSectionKey | "";
+                        materials[index] = {
+                          ...material,
+                          sectionKey: sectionKey || undefined
+                        };
+                        update("materials", materials);
+                      }}
+                    >
+                      <option value="">Галерея (без привязки)</option>
+                      <option value="description">Что это за продукт</option>
+                      <option value="targetAudience">Для кого подходит</option>
+                      <option value="clientProblems">Задачи клиента</option>
+                      <option value="emotions">Эмоции</option>
+                      <option value="purchaseReasons">Поводы для покупки</option>
+                      <option value="objections">Возражения</option>
+                      <option value="presentationGuide">Как презентовать</option>
+                    </select>
+                  </label>
+                ) : null}
                 <Field
                   label="URL"
                   value={material.url ?? ""}

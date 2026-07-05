@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port ${PORT:-4174}",
     "start:standalone": "HOSTNAME=0.0.0.0 PORT=${PORT:-4174} node .next/standalone/server.js",
-    "test": "tsx src/tests/metrics-engine.test.ts"
+    "test": "tsx src/tests/metrics-engine.test.ts",
+    "sync:training-sheet": "tsx src/scripts/sync-training-sheet.ts",
+    "seed:training": "tsx src/scripts/seed-training-catalog.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.11",

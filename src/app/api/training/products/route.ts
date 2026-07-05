@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     purchaseReasons: body.purchaseReasons?.trim() ?? "",
     objections: body.objections?.trim() ?? "",
     presentationGuide: body.presentationGuide?.trim() ?? "",
+    presentationUrl: body.presentationUrl?.trim() || undefined,
     materials: body.materials ?? [],
     questions: body.questions ?? [],
     sortOrder: body.sortOrder ?? 999

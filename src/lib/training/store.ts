@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createTrainingCatalogSeed, trainingUsers, type TrainingCatalog } from "@/data/training-seed";
+import { applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
+import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 import type {
   ProductTrainingModule,
   QuizSubmission,
@@ -33,7 +35,12 @@ export async function readTrainingCatalog(): Promise<TrainingCatalog> {
     const raw = await readFile(catalogPath, "utf8");
     const parsed = JSON.parse(raw) as Partial<TrainingCatalog>;
     if (parsed?.version === 1 && Array.isArray(parsed.products)) {
-      return parsed as TrainingCatalog;
+      return {
+        ...(parsed as TrainingCatalog),
+        products: applyGiftSiteImagesToCatalog(
+          applySheetContentToCatalog(parsed.products as ProductTrainingModule[])
+        )
+      };
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

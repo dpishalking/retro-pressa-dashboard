@@ -7,119 +7,195 @@ import { ExternalLink, FileText, Link2, PlayCircle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import type { ProductTrainingModule } from "@/types/training";
+import {
+  buildProductSections,
+  presentationEmbedUrl,
+  splitProductMaterials,
+  type ProductContentSection
+} from "@/lib/training/product-sections";
+import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
 
-function ContentBlock({ title, content }: { title: string; content: string }) {
+function ContentSection({ title, content, imageUrl }: ProductContentSection) {
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
-      <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{content}</div>
+    <section className="card overflow-hidden">
+      <div className={imageUrl ? "grid gap-0 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]" : ""}>
+        {imageUrl ? (
+          <div className="relative min-h-56 bg-slate-100 md:min-h-full">
+            <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
+          </div>
+        ) : null}
+        <div className="p-6">
+          <h2 className="text-lg font-black text-slate-950">{title}</h2>
+          <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{content}</div>
+        </div>
+      </div>
     </section>
   );
 }
 
-function MaterialsSection({ product }: { product: ProductTrainingModule }) {
-  if (!product.materials.length) return null;
+function VideoBlock({ material }: { material: ProductMaterial }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[var(--line)]">
+      <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
+        {material.title}
+      </div>
+      {material.embedUrl ? (
+        <div className="aspect-video bg-black">
+          <iframe
+            src={material.embedUrl}
+            title={material.title}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <div className="flex aspect-video flex-col items-center justify-center bg-slate-50 px-6 text-center">
+          <PlayCircle size={34} className="text-rose-500" />
+          <p className="mt-3 text-base font-black text-slate-900">{material.title}</p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+            {material.content ?? "Сюда добавим видеоразбор для учеников и менеджеров."}
+          </p>
+          <p className="mt-4 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Видео скоро появится
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VideoSection({ materials }: { materials: ProductMaterial[] }) {
+  if (!materials.length) return null;
 
   return (
     <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Видео и материалы</h2>
+      <h2 className="text-lg font-black text-slate-950">Видеообучение</h2>
       <div className="mt-4 space-y-4">
-        {product.materials
-          .slice()
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((material) => {
-            if (material.type === "video") {
-              return (
-                <div key={material.id} className="overflow-hidden rounded-xl border border-[var(--line)]">
-                  <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
-                    {material.title}
-                  </div>
-                  {material.embedUrl ? (
-                    <div className="aspect-video bg-black">
-                      <iframe
-                        src={material.embedUrl}
-                        title={material.title}
-                        className="h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex aspect-video flex-col items-center justify-center bg-slate-50 px-6 text-center">
-                      <PlayCircle size={34} className="text-rose-500" />
-                      <p className="mt-3 text-base font-black text-slate-900">{material.title}</p>
-                      <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                        {material.content ?? "Сюда добавим видеоразбор для учеников и менеджеров."}
-                      </p>
-                      <p className="mt-4 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Плейсмент под видео
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            if (material.type === "image" && material.url) {
-              return (
-                <figure key={material.id} className="overflow-hidden rounded-xl border border-[var(--line)]">
-                  <div className="relative h-64 w-full bg-slate-100">
-                    <Image src={material.url} alt={material.title} fill className="object-cover" unoptimized />
-                  </div>
-                  <figcaption className="px-4 py-3 text-sm font-semibold text-slate-700">{material.title}</figcaption>
-                </figure>
-              );
-            }
-
-            if (material.type === "document" && material.url) {
-              return (
-                <a
-                  key={material.id}
-                  href={material.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
-                >
-                  <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
-                    <FileText size={18} className="text-blue-600" />
-                    {material.title}
-                  </span>
-                  <ExternalLink size={16} className="text-slate-400" />
-                </a>
-              );
-            }
-
-            if (material.type === "link" && material.url) {
-              return (
-                <a
-                  key={material.id}
-                  href={material.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
-                >
-                  <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
-                    <Link2 size={18} className="text-violet-600" />
-                    {material.title}
-                  </span>
-                  <ExternalLink size={16} className="text-slate-400" />
-                </a>
-              );
-            }
-
-            if (material.type === "text" && material.content) {
-              return (
-                <div key={material.id} className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-                  <p className="text-sm font-bold text-slate-900">{material.title}</p>
-                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6 text-slate-700">{material.content}</pre>
-                </div>
-              );
-            }
-
-            return null;
-          })}
+        {materials.map((material) => (
+          <VideoBlock key={material.id} material={material} />
+        ))}
       </div>
+    </section>
+  );
+}
+
+function PresentationSection({ product }: { product: ProductTrainingModule }) {
+  const embedUrl = presentationEmbedUrl(product.presentationUrl);
+  if (!embedUrl) return null;
+
+  return (
+    <section className="card overflow-hidden">
+      <div className="border-b border-[var(--line)] px-6 py-4">
+        <h2 className="text-lg font-black text-slate-950">Презентация продукта</h2>
+        <p className="mt-1 text-sm text-slate-600">Слайды из Google Presentations для этого продукта.</p>
+      </div>
+      <div className="aspect-[16/10] bg-slate-100">
+        <iframe
+          src={embedUrl}
+          title={`Презентация: ${product.title}`}
+          className="h-full w-full"
+          allowFullScreen
+        />
+      </div>
+      {product.presentationUrl ? (
+        <div className="border-t border-[var(--line)] px-6 py-3">
+          <a
+            href={product.presentationUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+          >
+            Открыть презентацию в Google Slides
+            <ExternalLink size={14} />
+          </a>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ExtraMaterialItem({ material }: { material: ProductMaterial }) {
+  if (material.type === "image" && material.url) {
+    return (
+      <figure className="overflow-hidden rounded-xl border border-[var(--line)]">
+        <div className="relative h-64 w-full bg-slate-100">
+          <Image src={material.url} alt={material.title} fill className="object-cover" unoptimized />
+        </div>
+        <figcaption className="px-4 py-3 text-sm font-semibold text-slate-700">{material.title}</figcaption>
+      </figure>
+    );
+  }
+
+  if (material.type === "document" && material.url) {
+    return (
+      <a
+        href={material.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
+      >
+        <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
+          <FileText size={18} className="text-blue-600" />
+          {material.title}
+        </span>
+        <ExternalLink size={16} className="text-slate-400" />
+      </a>
+    );
+  }
+
+  if (material.type === "link" && material.url) {
+    return (
+      <a
+        href={material.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
+      >
+        <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
+          <Link2 size={18} className="text-violet-600" />
+          {material.title}
+        </span>
+        <ExternalLink size={16} className="text-slate-400" />
+      </a>
+    );
+  }
+
+  if (material.type === "text" && material.content) {
+    return (
+      <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+        <p className="text-sm font-bold text-slate-900">{material.title}</p>
+        <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6 text-slate-700">{material.content}</pre>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ExtraMaterialsSection({ materials }: { materials: ProductMaterial[] }) {
+  if (!materials.length) return null;
+
+  const images = materials.filter((material) => material.type === "image");
+  const others = materials.filter((material) => material.type !== "image");
+
+  return (
+    <section className="card p-6">
+      <h2 className="text-lg font-black text-slate-950">Дополнительные материалы</h2>
+      {images.length ? (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {images.map((material) => (
+            <ExtraMaterialItem key={material.id} material={material} />
+          ))}
+        </div>
+      ) : null}
+      {others.length ? (
+        <div className={`space-y-4 ${images.length ? "mt-4" : "mt-4"}`}>
+          {others.map((material) => (
+            <ExtraMaterialItem key={material.id} material={material} />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -160,6 +236,8 @@ function ProductDetailContent({ productId }: { productId: string }) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка материала...</div>;
   }
 
+  const sections = buildProductSections(product);
+  const { videos, extras } = splitProductMaterials(product.materials);
   const hasQuiz = product.questions.length > 0;
 
   return (
@@ -174,15 +252,14 @@ function ProductDetailContent({ productId }: { productId: string }) {
         </div>
       </section>
 
-      <ContentBlock title="Что это за продукт" content={product.description} />
-      <ContentBlock title="Для кого подходит" content={product.targetAudience} />
-      <ContentBlock title="Какие задачи клиента закрывает" content={product.clientProblems} />
-      <ContentBlock title="Какие эмоции вызывает" content={product.emotions} />
-      <ContentBlock title="Основные поводы для покупки" content={product.purchaseReasons} />
-      <ContentBlock title="Частые возражения клиентов" content={product.objections} />
-      <ContentBlock title="Как правильно презентовать продукт" content={product.presentationGuide} />
+      <VideoSection materials={videos} />
 
-      <MaterialsSection product={product} />
+      {sections.map((section) => (
+        <ContentSection key={section.sectionKey} {...section} />
+      ))}
+
+      <PresentationSection product={product} />
+      <ExtraMaterialsSection materials={extras} />
 
       <section className="card p-6">
         {hasQuiz ? (

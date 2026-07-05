@@ -4,6 +4,15 @@ export type TrainingStatus = "not_started" | "in_progress" | "completed";
 
 export type MaterialType = "image" | "video" | "document" | "link" | "text";
 
+export type ProductSectionKey =
+  | "description"
+  | "targetAudience"
+  | "clientProblems"
+  | "emotions"
+  | "purchaseReasons"
+  | "objections"
+  | "presentationGuide";
+
 export type QuestionType = "single" | "multiple" | "text";
 
 export type ProductMaterial = {
@@ -13,6 +22,7 @@ export type ProductMaterial = {
   url?: string;
   embedUrl?: string;
   content?: string;
+  sectionKey?: ProductSectionKey;
   sortOrder: number;
 };
 
@@ -43,6 +53,7 @@ export type ProductTrainingModule = {
   purchaseReasons: string;
   objections: string;
   presentationGuide: string;
+  presentationUrl?: string;
   materials: ProductMaterial[];
   questions: QuizQuestion[];
   sortOrder: number;
