@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
+import { importAndAnalyzeConversationsWithDiagnostics, tryParseConversationSnapshotFile } from "@/lib/conversation-intelligence";
+import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
 import { writeConversationSnapshot, writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
 import type { PeriodKey } from "@/types/metrics";
 
@@ -79,6 +80,42 @@ export async function POST(request: Request) {
       content: await file.arrayBuffer(),
       defaultChannel: String(formData.get("channel") ?? (source === "gift-ai" ? "gift-ai" : "manual"))
     })));
+
+    const snapshotUpload = files
+      .map((file) => ({ file, snapshot: tryParseConversationSnapshotFile(file) }))
+      .find((item) => item.snapshot)?.snapshot;
+
+    if (snapshotUpload) {
+      const importedAt = snapshotUpload.importedAt ?? new Date().toISOString();
+      const resolvedPeriod = periodKey
+        ?? snapshotUpload.periodKey
+        ?? inferPeriodKeyFromLabel(label)
+        ?? inferPeriodKeyFromLabel(uploads.map((file) => file.name).join(" "));
+      const snapshot = {
+        version: 1 as const,
+        source: snapshotUpload.source ?? (source === "gift-ai" ? "gift-ai" as const : "manual" as const),
+        importedAt,
+        importedDay: snapshotUpload.importedDay ?? importedAt.slice(0, 10),
+        periodKey: resolvedPeriod,
+        label: label || snapshotUpload.label || `Архив: ${uploads.map((file) => file.name).join(", ")}`,
+        dashboard: snapshotUpload.dashboard,
+        diagnostics: snapshotUpload.diagnostics,
+        summary: snapshotUpload.summary
+      };
+
+      if (resolvedPeriod) {
+        await writePeriodArchiveSnapshot(resolvedPeriod, snapshot);
+      } else {
+        await writeConversationSnapshot(snapshot);
+      }
+
+      return NextResponse.json({
+        dashboard: snapshot.dashboard,
+        diagnostics: snapshot.diagnostics,
+        summary: snapshot.summary
+      });
+    }
+
     const result = importAndAnalyzeConversationsWithDiagnostics(files);
 
     if (!result.messages.length) {

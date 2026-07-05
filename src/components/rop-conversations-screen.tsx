@@ -217,7 +217,7 @@ export function RopConversationsScreen() {
 
     const periodKey = archivePeriodMap[archiveTarget];
     const targetLabel = archiveLabelMap[archiveTarget];
-    setStatus({ state: "loading", message: `Загружаю ${targetLabel} архив на сервер (${selectedFiles.length} файл(ов))...` });
+    setStatus({ state: "loading", message: `Загружаю ${targetLabel} архив (${selectedFiles.map((file) => file.name).join(", ")})...` });
     try {
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append("files", file));
@@ -347,7 +347,7 @@ export function RopConversationsScreen() {
                 archiveInputRef.current?.click();
               }}
             >
-              Полная загрузка
+              Загрузить июль
             </button>
             <button
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
@@ -389,11 +389,16 @@ export function RopConversationsScreen() {
           <div>
             <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
             <p className="mt-1 text-sm font-semibold text-slate-700">
-              Май и июнь — полные архивы из ChatGPT (загружаются один раз и сохраняются навсегда). Июль — живой Bitrix, обновляется автоматически каждый день в 06:15 UTC (как лёд и транзакции).
+              Май и июнь уже лежат на сервере — просто выберите период в списке. Если нужно обновить архив, нажмите «Загрузить май» или «Загрузить июнь» и выберите уже скачанный JSON/CSV.
+            </p>
+            <p className="text-sm text-slate-600">
+              Для июля не обязательно тянуть Bitrix заново: нажмите «Загрузить июль» и выберите свой файл
+              (<code className="rounded bg-slate-100 px-1">retro-pressa-conversations-2026-07.json</code> или CSV с сообщениями).
+              Подойдёт и готовый JSON с dashboard — пересчитывать не нужно.
             </p>
           </div>
           <p className="text-sm text-slate-500">
-            Основные действия уже вынесены наверх, чтобы их было видно сразу в первом экране.
+            Bitrix-синк — запасной вариант для живого июля; он может падать по таймауту, поэтому архив надёжнее.
           </p>
         </div>
       </section>
@@ -441,7 +446,7 @@ export function RopConversationsScreen() {
                 {item.importedDay} · {item.label}
               </button>
             );
-          }) : <p className="text-sm text-slate-500">Для {selectedPeriodLabel.toLowerCase()} ещё нет архива. {selectedPeriod === "july-2026" ? "Нажми «Обновить июль из Bitrix»." : `Нажми «Загрузить ${selectedPeriod === "may-2026" ? "май" : "июнь"}».}`}</p>}
+          }) : <p className="text-sm text-slate-500">Для {selectedPeriodLabel.toLowerCase()} ещё нет архива. {selectedPeriod === "july-2026" ? "Нажми «Загрузить июль» и выбери уже скачанный JSON/CSV — или «Обновить июль из Bitrix»." : `Нажми «Загрузить ${selectedPeriod === "may-2026" ? "май" : "июнь"}» и выбери файл.`}</p>}
         </div>
       </section>
 
@@ -586,7 +591,7 @@ export function RopConversationsScreen() {
         </div>
       ) : (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-slate-500">
-          Пока нет сохранённого среза переписок. Нажми `Обновить из Bitrix`, и этот экран сразу наполнится фактами.
+          Пока нет сохранённого среза переписок. Загрузите уже скачанный архив кнопкой «Загрузить {selectedPeriod === "july-2026" ? "июль" : selectedPeriod === "may-2026" ? "май" : "июнь"}» — или обновите июль из Bitrix.
         </section>
       )}
     </main>

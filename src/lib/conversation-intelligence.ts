@@ -6,7 +6,8 @@ import type {
   ConversationMessage,
   DialogSummary,
   DialogueOutcome,
-  DialogueStage
+  DialogueStage,
+  PeriodKey
 } from "@/types/metrics";
 
 export type ConversationFileInput = {
@@ -482,6 +483,66 @@ export function importAndAnalyzeConversations(files: ConversationFileInput[]) {
     dialogs,
     dashboard: buildConversationDashboard(dialogs)
   };
+}
+
+export type UploadedConversationSnapshot = {
+  version: 1;
+  source?: "manual" | "gift-ai" | "bitrix";
+  importedAt?: string;
+  importedDay?: string;
+  periodKey?: PeriodKey | null;
+  label?: string;
+  dashboard: ConversationDashboardMetrics;
+  diagnostics: ConversationImportFileDiagnostic[];
+  summary: {
+    filesLoaded: number;
+    messagesLoaded: number;
+    dialogsLoaded: number;
+    filesParsed?: number;
+    filesFailed?: number;
+  };
+};
+
+export function tryParseConversationSnapshotFile(file: ConversationFileInput): UploadedConversationSnapshot | null {
+  if (extensionOf(file.filename) !== ".json") return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(asText(file.content));
+  } catch {
+    return null;
+  }
+
+  if (!parsed || typeof parsed !== "object") return null;
+  const object = parsed as Record<string, unknown>;
+
+  if (
+    object.version === 1
+    && object.dashboard
+    && object.summary
+    && Array.isArray(object.diagnostics)
+  ) {
+    return object as UploadedConversationSnapshot;
+  }
+
+  if (object.dashboard && object.summary && !object.messages && !Array.isArray(object)) {
+    return {
+      version: 1,
+      dashboard: object.dashboard as ConversationDashboardMetrics,
+      diagnostics: Array.isArray(object.diagnostics)
+        ? object.diagnostics as ConversationImportFileDiagnostic[]
+        : [{
+            filename: file.filename,
+            messages: Number((object.summary as Record<string, unknown>).messagesLoaded ?? 0),
+            dialogs: Number((object.summary as Record<string, unknown>).dialogsLoaded ?? 0),
+            status: "ok",
+            note: "Готовый dashboard из архива"
+          }],
+      summary: object.summary as UploadedConversationSnapshot["summary"]
+    };
+  }
+
+  return null;
 }
 
 export function importAndAnalyzeConversationsWithDiagnostics(files: ConversationFileInput[]) {
