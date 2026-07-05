@@ -1,0 +1,32 @@
+name: Restart Trainer Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Restart trainer stack on VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << 'EOF'
+          set -e
+          echo "=== pm2 status ==="
+          pm2 list || true
+          echo "=== restart backend + trainer ==="
+          pm2 restart pressa-backend pressa-trainer-bot 2>/dev/null || pm2 restart all
+          sleep 3
+          echo "=== health ==="
+          curl -fsS http://127.0.0.1:3100/health | head -c 200 || echo "backend health FAILED"
+          echo
+          echo "=== trainer logs ==="
+          pm2 logs pressa-trainer-bot --lines 15 --nostream 2>/dev/null || true
+          pm2 save
+          EOF
