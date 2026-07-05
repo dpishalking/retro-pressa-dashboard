@@ -19,6 +19,14 @@ export function periodArchiveFilename(periodKey: PeriodKey) {
   return `archive-${periodKey}.json`;
 }
 
+export function livePeriodFilename(periodKey: PeriodKey) {
+  return `live-${periodKey}.json`;
+}
+
+export function isLivePeriodFilename(filename: string) {
+  return /^live-(may|june|july)-2026\.json$/.test(filename);
+}
+
 export function isPeriodArchiveFilename(filename: string) {
   return /^archive-(may|june|july)-2026\.json$/.test(filename);
 }

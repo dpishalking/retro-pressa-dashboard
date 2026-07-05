@@ -39,6 +39,11 @@ type BitrixSyncPayload = {
     lookbackSince: string;
     filesLoaded: number;
     dialogsLoaded: number;
+    messagesAdded?: number;
+    dialogsAdded?: number;
+    totalDialogs?: number;
+    totalMessages?: number;
+    incremental?: boolean;
   };
   error?: string;
 };
@@ -80,8 +85,13 @@ function itemPeriodKey(item: ConversationHistoryItem): PeriodKey | null {
 }
 
 function pickDefaultSelected(items: ConversationHistoryItem[], period: PeriodKey) {
+  return pickForPeriod(items, period);
+}
+
+function pickForPeriod(items: ConversationHistoryItem[], period: PeriodKey) {
   const matched = items.filter((item) => itemPeriodKey(item) === period);
-  return matched[0]?.importedAt ?? null;
+  const cumulative = matched.find((item) => item.label.includes("накопительно"));
+  return cumulative?.importedAt ?? matched[0]?.importedAt ?? null;
 }
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
@@ -105,11 +115,6 @@ export function RopConversationsScreen() {
     state: "idle",
     message: "Готово к загрузке архива или живого Bitrix-среза."
   });
-
-  const pickForPeriod = (items: ConversationHistoryItem[], period: PeriodKey) => {
-    const matched = items.filter((item) => itemPeriodKey(item) === period);
-    return matched[0]?.importedAt ?? null;
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -182,13 +187,15 @@ export function RopConversationsScreen() {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 120 })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 50, daysBack: 2, incremental: true })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
       setStatus({
         state: "ok",
-        message: `Июль обновлён из Bitrix: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+        message: data.summary.incremental
+          ? `Июль обновлён: +${number(data.summary.dialogsAdded ?? data.summary.dialogsLoaded)} диалогов сегодня, всего ${number(data.summary.totalDialogs ?? data.summary.dialogsLoaded)}.`
+          : `Июль обновлён из Bitrix: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
@@ -392,9 +399,8 @@ export function RopConversationsScreen() {
               Май и июнь уже лежат на сервере — просто выберите период в списке. Если нужно обновить архив, нажмите «Загрузить май» или «Загрузить июнь» и выберите уже скачанный JSON/CSV.
             </p>
             <p className="text-sm text-slate-600">
-              Для июля не обязательно тянуть Bitrix заново: нажмите «Загрузить июль» и выберите свой файл
-              (<code className="rounded bg-slate-100 px-1">retro-pressa-conversations-2026-07.json</code> или CSV с сообщениями).
-              Подойдёт и готовый JSON с dashboard — пересчитывать не нужно.
+              Июль подтягивается автоматически каждый день в 06:15 UTC небольшими порциями из Bitrix и копится в накопительном архиве.
+              Ручная загрузка JSON — только если нужен полный архив разом.
             </p>
           </div>
           <p className="text-sm text-slate-500">

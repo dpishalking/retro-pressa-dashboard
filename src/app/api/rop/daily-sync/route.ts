@@ -6,6 +6,7 @@ import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
       daysBack?: number;
       dialogLimit?: number;
       period?: PeriodKey;
+      incremental?: boolean;
     };
 
     const period = body.period ?? currentPeriodKey();
@@ -23,8 +25,9 @@ export async function POST(request: Request) {
       syncGoogleTraffic({ refresh: body.refresh === true, period }),
       syncBitrixConversationHistory({
         period,
-        daysBack: body.daysBack,
-        dialogLimit: body.dialogLimit ?? 120
+        daysBack: body.daysBack ?? 1,
+        dialogLimit: body.dialogLimit ?? 40,
+        incremental: body.incremental !== false
       })
     ]);
 
@@ -43,10 +46,13 @@ export async function POST(request: Request) {
         ql: google.summary.ql
       },
       conversations: {
-        dialogsLoaded: conversations.summary.dialogsLoaded,
-        messagesLoaded: conversations.summary.messagesLoaded,
+        dialogsLoaded: conversations.summary.totalDialogs ?? conversations.summary.dialogsLoaded,
+        messagesLoaded: conversations.summary.totalMessages ?? conversations.summary.messagesLoaded,
+        messagesAdded: conversations.summary.messagesAdded ?? 0,
+        dialogsAdded: conversations.summary.dialogsAdded ?? 0,
         qualityScore: conversations.dashboard.qualityScore,
-        potentialLostRevenue: conversations.dashboard.potentialLostRevenue
+        potentialLostRevenue: conversations.dashboard.potentialLostRevenue,
+        incremental: conversations.summary.incremental === true
       }
     });
   } catch (error) {

@@ -1,7 +1,8 @@
 import { access, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
-import { currentPeriodKey, inferPeriodKeyFromLabel, isPeriodArchiveFilename, periodArchiveFilename } from "@/lib/conversation-periods";
+import { readLivePeriodStore } from "@/lib/conversation-live-store";
+import { currentPeriodKey, inferPeriodKeyFromLabel, isPeriodArchiveFilename, isLivePeriodFilename, periodArchiveFilename } from "@/lib/conversation-periods";
 import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, PeriodKey } from "@/types/metrics";
 
 export type ConversationSnapshotSource = "manual" | "gift-ai" | "bitrix";
@@ -40,6 +41,12 @@ export type ConversationSnapshotHistoryItem = {
 };
 
 const snapshotDir = path.join(process.cwd(), "data", "conversation-snapshots");
+
+const periodLabelMap: Record<PeriodKey, string> = {
+  "may-2026": "Май 2026",
+  "june-2026": "Июнь 2026",
+  "july-2026": "Июль 2026"
+};
 
 const bundledExports: Partial<Record<PeriodKey, string>> = {
   "may-2026": "retro-pressa-conversations-2026-05.json",
@@ -211,8 +218,28 @@ export async function listConversationSnapshots(): Promise<ConversationSnapshot[
     }
   }
 
+  const livePeriodKey = currentPeriodKey();
+  const liveStore = await readLivePeriodStore(livePeriodKey);
+  if (liveStore) {
+    result.push({
+      version: 1,
+      source: "bitrix",
+      importedAt: liveStore.updatedAt,
+      importedDay: liveStore.updatedAt.slice(0, 10),
+      periodKey: livePeriodKey,
+      label: `${periodLabelMap[livePeriodKey]} · накопительно (${liveStore.summary.dialogsLoaded} диалогов)`,
+      dashboard: liveStore.dashboard,
+      diagnostics: [],
+      summary: {
+        filesLoaded: liveStore.syncRuns,
+        messagesLoaded: liveStore.summary.messagesLoaded,
+        dialogsLoaded: liveStore.summary.dialogsLoaded
+      }
+    });
+  }
+
   for (const { file, snapshot } of valid) {
-    if (isPeriodArchiveFilename(file)) continue;
+    if (isPeriodArchiveFilename(file) || isLivePeriodFilename(file)) continue;
     const periodKey = effectivePeriodKey(snapshot);
     if (periodKey && (periodKey === "may-2026" || periodKey === "june-2026") && snapshot.source !== "bitrix") {
       continue;

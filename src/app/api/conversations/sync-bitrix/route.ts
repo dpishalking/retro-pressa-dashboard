@@ -11,12 +11,14 @@ export async function POST(request: Request) {
       period?: PeriodKey;
       daysBack?: number;
       dialogLimit?: number;
+      incremental?: boolean;
     };
 
     const payload = await syncBitrixConversationHistory({
       period: body.period,
       daysBack: body.daysBack,
-      dialogLimit: body.dialogLimit
+      dialogLimit: body.dialogLimit,
+      incremental: body.incremental !== false
     });
 
     return NextResponse.json(payload);

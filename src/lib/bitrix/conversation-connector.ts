@@ -1,5 +1,7 @@
 import { buildConversationDashboard, classifyMessage, summarizeDialogs } from "@/lib/conversation-intelligence";
+import { appendToLivePeriodStore, conversationMessageKey, readLivePeriodStore } from "@/lib/conversation-live-store";
 import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
+import { currentPeriodKey } from "@/lib/conversation-periods";
 import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, ConversationMessage, DialogueOutcome, DialogueStage, PeriodKey } from "@/types/metrics";
 
 type BitrixResponse<T> = {
@@ -75,6 +77,7 @@ type BitrixConversationSyncOptions = {
   daysBack?: number;
   dialogLimit?: number;
   refresh?: boolean;
+  incremental?: boolean;
 };
 
 export type BitrixConversationSyncPayload = {
@@ -82,6 +85,7 @@ export type BitrixConversationSyncPayload = {
   importedAt: string;
   dashboard: ConversationDashboardMetrics;
   diagnostics: ConversationImportFileDiagnostic[];
+  periodKey?: PeriodKey | null;
   summary: {
     dialogsScanned: number;
     dialogsImported: number;
@@ -90,8 +94,12 @@ export type BitrixConversationSyncPayload = {
     lookbackSince: string;
     filesLoaded: number;
     dialogsLoaded: number;
+    messagesAdded?: number;
+    dialogsAdded?: number;
+    totalDialogs?: number;
+    totalMessages?: number;
+    incremental?: boolean;
   };
-  periodKey?: PeriodKey | null;
 };
 
 function normalizeWebhookUrl(url: string) {
@@ -259,24 +267,27 @@ function sortSessionsByRecency(sessions: BitrixOpenLineSession[]) {
   });
 }
 
-async function fetchOpenLineSessions(period: PeriodKey, dialogLimit: number) {
+async function fetchOpenLineSessions(period: PeriodKey, dialogLimit: number, incrementalSince?: Date) {
   const range = periodRange(period);
+  const filterStart = incrementalSince && incrementalSince > range.start ? incrementalSince : range.start;
   const inPeriod = new Map<string, BitrixOpenLineSession>();
   const fallback = new Map<string, BitrixOpenLineSession>();
   const pageSize = 50;
-  const maxPages = Math.max(4, Math.ceil(dialogLimit / pageSize) + 2);
+  const maxPages = incrementalSince
+    ? Math.max(2, Math.ceil(dialogLimit / pageSize))
+    : Math.max(4, Math.ceil(dialogLimit / pageSize) + 2);
 
   const queries = [
     {
       FILTER: {
-        ">=DATE_CREATE": range.start.toISOString(),
+        ">=DATE_CREATE": filterStart.toISOString(),
         "<=DATE_CREATE": range.end.toISOString()
       },
       ORDER: { DATE_CREATE: "ASC" }
     },
-    {
+    ...(incrementalSince ? [] : [{
       ORDER: { DATE_CREATE: "DESC" }
-    }
+    }])
   ];
 
   try {
@@ -435,30 +446,31 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
     throw new Error("BITRIX_WEBHOOK_URL is not configured");
   }
 
-  const daysBack = Math.max(1, Math.min(14, options.daysBack ?? 1));
-  const dialogLimit = Math.max(10, Math.min(120, options.dialogLimit ?? 80));
+  const incremental = options.incremental === true;
+  const daysBack = Math.max(1, Math.min(incremental ? 3 : 14, options.daysBack ?? (incremental ? 1 : 1)));
+  const dialogLimit = Math.max(
+    10,
+    Math.min(incremental ? 50 : 120, options.dialogLimit ?? (incremental ? 40 : 80))
+  );
   const importedAt = new Date().toISOString();
-  const periodKey = options.period ?? periodFromDate(new Date(importedAt));
+  const periodKey = options.period ?? periodFromDate(new Date(importedAt)) ?? currentPeriodKey();
   const range = periodKey ? periodRange(periodKey, new Date()) : null;
-  const sinceDate = range?.start ?? new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+  const rollingSince = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
+  const sinceDate = incremental ? rollingSince : (range?.start ?? rollingSince);
   const untilDate = range?.factualEnd ?? new Date();
   const sinceIso = sinceDate.toISOString();
 
   const recentDialogs = await fetchRecentDialogs(sinceIso, dialogLimit);
-  const openLineSessions = periodKey ? await fetchOpenLineSessions(periodKey, dialogLimit) : [];
+  const openLineSessions = periodKey
+    ? await fetchOpenLineSessions(periodKey, dialogLimit, incremental ? sinceDate : undefined)
+    : [];
   const diagnostics: ConversationImportFileDiagnostic[] = [];
   const collectedMessages: ConversationMessage[] = [];
   const seenMessages = new Set<string>();
 
   function addMessages(messages: ConversationMessage[]) {
     for (const message of messages) {
-      const key = [
-        message.dialogId,
-        message.date ?? "",
-        message.sender,
-        message.senderRole,
-        message.text
-      ].join("|");
+      const key = conversationMessageKey(message);
       if (seenMessages.has(key)) continue;
       seenMessages.add(key);
       collectedMessages.push(message);
@@ -467,6 +479,9 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
 
   for (const session of openLineSessions) {
     const sessionKey = String(session.id ?? session.session_id ?? session.chat_id ?? session.chat?.id ?? "openline");
+    const createdAt = dateOrFallback(session.date_create);
+    if (incremental && createdAt && createdAt < sinceDate) continue;
+
     try {
       const { messages, users } = await fetchOpenLineHistory(session, sinceDate, untilDate);
       const normalized = normalizeOpenLineMessages(session, messages, users);
@@ -515,28 +530,59 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
     }
   }
 
-  const dialogs = summarizeDialogs(collectedMessages);
-  if (!dialogs.length) {
+  const batchDialogs = summarizeDialogs(collectedMessages);
+  const existingLive = incremental ? await readLivePeriodStore(periodKey) : null;
+
+  if (!batchDialogs.length && !existingLive) {
     throw new Error(
       "Webhook Bitrix не имеет доступа к чатам. В настройках входящего вебхука добавьте права «Чат и уведомления (im)» и «Открытые линии (imopenlines)», затем повторите."
     );
   }
 
-  const dashboard = buildConversationDashboard(dialogs);
+  let dashboard: ConversationDashboardMetrics;
+  let totalDialogs: number;
+  let totalMessages: number;
+  let messagesAdded = collectedMessages.length;
+  let dialogsAdded = batchDialogs.length;
+
+  if (incremental) {
+    const liveStore = await appendToLivePeriodStore({
+      periodKey,
+      incomingMessages: collectedMessages,
+      importedAt
+    });
+    dashboard = liveStore.dashboard;
+    totalDialogs = liveStore.summary.dialogsLoaded;
+    totalMessages = liveStore.summary.messagesLoaded;
+    messagesAdded = liveStore.summary.lastBatchMessages;
+    dialogsAdded = liveStore.summary.lastBatchDialogs;
+  } else {
+    const dialogs = batchDialogs.length ? batchDialogs : summarizeDialogs(existingLive?.messages ?? []);
+    dashboard = buildConversationDashboard(dialogs);
+    totalDialogs = dialogs.length;
+    totalMessages = collectedMessages.length || existingLive?.summary.messagesLoaded || 0;
+  }
+
+  const importedDay = importedAt.slice(0, 10);
+  const dailyLabel = incremental
+    ? `Bitrix · ${importedDay} (+${dialogsAdded} диалогов)`
+    : periodKey
+      ? `Bitrix monthly sync (${periodKey})`
+      : `Bitrix daily sync (${daysBack} дн.)`;
 
   await writeConversationSnapshot({
     version: 1,
     source: "bitrix",
     importedAt,
-    importedDay: importedAt.slice(0, 10),
+    importedDay,
     periodKey,
-    label: periodKey ? `Bitrix monthly sync (${periodKey})` : `Bitrix daily sync (${daysBack} дн.)`,
-    dashboard,
+    label: dailyLabel,
+    dashboard: incremental ? dashboard : buildConversationDashboard(batchDialogs),
     diagnostics,
     summary: {
       filesLoaded: recentDialogs.length,
-      messagesLoaded: collectedMessages.length,
-      dialogsLoaded: dialogs.length,
+      messagesLoaded: incremental ? messagesAdded : collectedMessages.length,
+      dialogsLoaded: incremental ? dialogsAdded : batchDialogs.length,
       filesParsed: diagnostics.filter((item) => item.status === "ok").length,
       filesFailed: diagnostics.filter((item) => item.status === "error").length
     }
@@ -547,14 +593,20 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
     importedAt,
     dashboard,
     diagnostics,
+    periodKey,
     summary: {
       dialogsScanned: recentDialogs.length,
-      dialogsImported: dialogs.length,
-      messagesLoaded: collectedMessages.length,
+      dialogsImported: incremental ? dialogsAdded : batchDialogs.length,
+      messagesLoaded: incremental ? messagesAdded : collectedMessages.length,
       daysBack,
       lookbackSince: sinceIso,
       filesLoaded: recentDialogs.length,
-      dialogsLoaded: dialogs.length
+      dialogsLoaded: incremental ? dialogsAdded : batchDialogs.length,
+      messagesAdded,
+      dialogsAdded,
+      totalDialogs,
+      totalMessages,
+      incremental
     }
   };
 }
