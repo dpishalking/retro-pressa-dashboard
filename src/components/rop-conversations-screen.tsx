@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, RefreshCcw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { eur, number, pct } from "@/lib/format";
 import type { ConversationDashboardMetrics, PeriodKey } from "@/types/metrics";
 
@@ -44,7 +44,6 @@ type BitrixSyncPayload = {
 type LocalImportPayload = {
   dashboard: ConversationDashboardMetrics;
   diagnostics: Array<{ filename: string; messages: number; dialogs: number; status: string; note: string }>;
-  sourcePaths: string[];
   summary: {
     filesLoaded: number;
     messagesLoaded: number;
@@ -74,6 +73,7 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
 }
 
 export function RopConversationsScreen() {
+  const archiveInputRef = useRef<HTMLInputElement | null>(null);
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
@@ -160,19 +160,25 @@ export function RopConversationsScreen() {
     }
   };
 
-  const importLocalExports = async () => {
-    setStatus({ state: "loading", message: "Поднимаю локальный экспорт gift-ai за май и июнь..." });
+  const importLocalExports = async (files: FileList | File[]) => {
+    const selectedFiles = Array.from(files);
+    if (!selectedFiles.length) return;
+
+    setStatus({ state: "loading", message: "Загружаю май и июнь через браузер..." });
     try {
-      const response = await fetch("/api/conversations/import-local", {
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append("files", file));
+      formData.append("channel", "gift-ai");
+
+      const response = await fetch("/api/conversations/import", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key: "may-june" })
+        body: formData
       });
       const data = await response.json() as LocalImportPayload;
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить локальный экспорт");
       setStatus({
         state: "ok",
-        message: `Локальный экспорт загружен: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+        message: `Архив загружен: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
@@ -225,22 +231,11 @@ export function RopConversationsScreen() {
               ))}
             </select>
           </label>
-        </div>
-      </header>
-
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
-            <p className="mt-1 text-sm font-semibold text-slate-700">
-              Локальный архив — это май + июнь с тысячами диалогов. Живой Bitrix — только свежий срез.
-            </p>
-          </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-              onClick={importLocalExports}
               disabled={status.state === "loading"}
+              onClick={() => archiveInputRef.current?.click()}
             >
               Загрузить май + июнь
             </button>
@@ -253,6 +248,32 @@ export function RopConversationsScreen() {
               {status.state === "loading" ? "Обновляю..." : `Обновить ${selectedPeriodLabel.toLowerCase()}`}
             </button>
           </div>
+        </div>
+      </header>
+
+      <input
+        ref={archiveInputRef}
+        type="file"
+        accept=".csv,.json,.txt,.xlsx,.docx,.pdf"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          void importLocalExports(event.target.files ?? []);
+          event.currentTarget.value = "";
+        }}
+      />
+
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-normal text-slate-500">Источники данных</p>
+            <p className="mt-1 text-sm font-semibold text-slate-700">
+              Локальный архив — это май + июнь с тысячами диалогов. Живой Bitrix — только свежий срез.
+            </p>
+          </div>
+          <p className="text-sm text-slate-500">
+            Основные действия уже вынесены наверх, чтобы их было видно сразу в первом экране.
+          </p>
         </div>
       </section>
 

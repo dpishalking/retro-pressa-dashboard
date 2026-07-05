@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
+import { basename, resolve } from "node:path";
 import { NextResponse } from "next/server";
 import { analyzeConversationsWithGemini } from "@/lib/gemini-conversation-analyzer";
 import { parseConversationFile } from "@/lib/conversation-intelligence";
@@ -7,10 +7,10 @@ import { parseConversationFile } from "@/lib/conversation-intelligence";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const allowedExportRoot = "/Users/danielpishchalkin/Documents/pressa/gift-ai/backend/data/exports/";
+const allowedExportRoot = resolve(process.cwd(), "data/conversation-exports");
 const exportFiles = {
-  may: `${allowedExportRoot}retro-pressa-conversations-2026-05.json`,
-  june: `${allowedExportRoot}retro-pressa-conversations-2026-06.json`
+  may: resolve(allowedExportRoot, "retro-pressa-conversations-2026-05.json"),
+  june: resolve(allowedExportRoot, "retro-pressa-conversations-2026-06.json")
 } as const;
 
 function selectedExportPaths(key?: string) {
