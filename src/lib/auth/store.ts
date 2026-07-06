@@ -8,6 +8,21 @@ import { registerTrainerManager } from "@/lib/training/trainer-api";
 const usersPath = path.join(process.cwd(), "data", "auth", "users.json");
 const usersBackupPath = `${usersPath}.bak`;
 
+let catalogLock: Promise<void> = Promise.resolve();
+
+function withCatalogLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = catalogLock.then(fn);
+  catalogLock = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function toPublicUser(user: AppUser): AppUserPublic {
   const { passwordHash: _passwordHash, ...publicUser } = user;
   return publicUser;
@@ -57,60 +72,77 @@ async function readCatalogFile(filePath: string): Promise<UsersCatalog | null> {
   }
 }
 
-async function restoreFromBackup(): Promise<UsersCatalog | null> {
-  const backup = await readCatalogFile(usersBackupPath);
-  if (!backup) return null;
-  await writeUsersCatalog(backup, { skipBackup: true });
-  console.warn("Restored auth users catalog from backup");
-  return backup;
+async function readCatalogWithRetry(filePath: string, attempts = 5): Promise<UsersCatalog | null> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const catalog = await readCatalogFile(filePath);
+    if (catalog) return catalog;
+    if (attempt < attempts - 1) await sleep(40);
+  }
+  return null;
 }
 
-async function writeUsersCatalogAtomic(catalog: UsersCatalog, skipBackup = false) {
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await readFile(filePath, "utf8");
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    return !message.includes("ENOENT");
+  }
+}
+
+async function writeUsersCatalogAtomic(catalog: UsersCatalog) {
   await ensureAuthDir();
   const payload: UsersCatalog = { ...catalog, updatedAt: new Date().toISOString() };
   const content = JSON.stringify(payload, null, 2);
   const tmpPath = `${usersPath}.tmp`;
 
-  if (!skipBackup) {
-    try {
-      await copyFile(usersPath, usersBackupPath);
-    } catch {
-      // no previous file yet
-    }
-  }
-
   await writeFile(tmpPath, content, "utf8");
   await rename(tmpPath, usersPath);
-}
-
-export async function readUsersCatalog(): Promise<UsersCatalog> {
-  await ensureAuthDir();
-
-  const existing = await readCatalogFile(usersPath);
-  if (existing) return existing;
-
-  const restored = await restoreFromBackup();
-  if (restored) return restored;
 
   try {
-    await readFile(usersPath, "utf8");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (message.includes("ENOENT")) {
-      const seed = buildSeedCatalog();
-      await writeUsersCatalogAtomic(seed, true);
-      return seed;
+    await copyFile(usersPath, usersBackupPath);
+  } catch {
+    // backup is best-effort
+  }
+}
+
+async function readUsersCatalogUnsafe(): Promise<UsersCatalog> {
+  await ensureAuthDir();
+
+  const existing = await readCatalogWithRetry(usersPath);
+  if (existing) return existing;
+
+  const hasMainFile = await fileExists(usersPath);
+  if (hasMainFile) {
+    const backup = await readCatalogWithRetry(usersBackupPath);
+    if (backup) {
+      console.error("Auth users catalog is corrupt; repairing from backup");
+      await writeUsersCatalogAtomic(backup);
+      return backup;
     }
+    throw new Error("Auth users catalog is corrupt and backup is unavailable");
   }
 
-  console.error("Auth users catalog is missing or invalid and backup restore failed");
+  const backup = await readCatalogWithRetry(usersBackupPath);
+  if (backup) {
+    await writeUsersCatalogAtomic(backup);
+    return backup;
+  }
+
   const seed = buildSeedCatalog();
-  await writeUsersCatalogAtomic(seed, true);
+  await writeUsersCatalogAtomic(seed);
   return seed;
 }
 
-export async function writeUsersCatalog(catalog: UsersCatalog, options?: { skipBackup?: boolean }) {
-  await writeUsersCatalogAtomic(catalog, options?.skipBackup);
+export async function readUsersCatalog(): Promise<UsersCatalog> {
+  return withCatalogLock(readUsersCatalogUnsafe);
+}
+
+export async function writeUsersCatalog(catalog: UsersCatalog) {
+  return withCatalogLock(async () => {
+    await writeUsersCatalogAtomic(catalog);
+  });
 }
 
 export async function listPublicUsers(): Promise<AppUserPublic[]> {
@@ -143,33 +175,35 @@ type CreateUserInput = {
 };
 
 export async function createUser(input: CreateUserInput): Promise<AppUserPublic> {
-  const catalog = await readUsersCatalog();
-  const normalizedLogin = input.login.trim().toLowerCase();
-  if (!normalizedLogin) throw new Error("Логин обязателен");
-  if (catalog.users.some((user) => user.login.toLowerCase() === normalizedLogin)) {
-    throw new Error("Пользователь с таким логином уже существует");
-  }
+  return withCatalogLock(async () => {
+    const catalog = await readUsersCatalogUnsafe();
+    const normalizedLogin = input.login.trim().toLowerCase();
+    if (!normalizedLogin) throw new Error("Логин обязателен");
+    if (catalog.users.some((user) => user.login.toLowerCase() === normalizedLogin)) {
+      throw new Error("Пользователь с таким логином уже существует");
+    }
 
-  const now = new Date().toISOString();
-  const user: AppUser = {
-    id: generateId("user"),
-    login: normalizedLogin,
-    passwordHash: hashPassword(input.password),
-    name: input.name.trim() || normalizedLogin,
-    accessLevel: input.accessLevel,
-    active: input.active ?? true,
-    createdAt: now,
-    updatedAt: now
-  };
+    const now = new Date().toISOString();
+    const user: AppUser = {
+      id: generateId("user"),
+      login: normalizedLogin,
+      passwordHash: hashPassword(input.password),
+      name: input.name.trim() || normalizedLogin,
+      accessLevel: input.accessLevel,
+      active: input.active ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
 
-  catalog.users.push(user);
-  await writeUsersCatalog(catalog);
+    catalog.users.push(user);
+    await writeUsersCatalogAtomic(catalog);
 
-  if (user.accessLevel === "mop" || user.accessLevel === "rop") {
-    void registerTrainerManager({ id: user.id, name: user.name });
-  }
+    if (user.accessLevel === "mop" || user.accessLevel === "rop") {
+      void registerTrainerManager({ id: user.id, name: user.name });
+    }
 
-  return toPublicUser(user);
+    return toPublicUser(user);
+  });
 }
 
 type UpdateUserInput = {
@@ -182,39 +216,43 @@ type UpdateUserInput = {
 };
 
 export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic> {
-  const catalog = await readUsersCatalog();
-  const index = catalog.users.findIndex((user) => user.id === input.id);
-  if (index === -1) throw new Error("Пользователь не найден");
+  return withCatalogLock(async () => {
+    const catalog = await readUsersCatalogUnsafe();
+    const index = catalog.users.findIndex((user) => user.id === input.id);
+    if (index === -1) throw new Error("Пользователь не найден");
 
-  const current = catalog.users[index]!;
-  if (input.login !== undefined) {
-    const normalizedLogin = input.login.trim().toLowerCase();
-    if (!normalizedLogin) throw new Error("Логин обязателен");
-    if (catalog.users.some((user) => user.id !== input.id && user.login.toLowerCase() === normalizedLogin)) {
-      throw new Error("Пользователь с таким логином уже существует");
+    const current = catalog.users[index]!;
+    if (input.login !== undefined) {
+      const normalizedLogin = input.login.trim().toLowerCase();
+      if (!normalizedLogin) throw new Error("Логин обязателен");
+      if (catalog.users.some((user) => user.id !== input.id && user.login.toLowerCase() === normalizedLogin)) {
+        throw new Error("Пользователь с таким логином уже существует");
+      }
+      current.login = normalizedLogin;
     }
-    current.login = normalizedLogin;
-  }
-  if (input.name !== undefined) current.name = input.name.trim() || current.login;
-  if (input.accessLevel !== undefined) current.accessLevel = input.accessLevel;
-  if (input.active !== undefined) current.active = input.active;
-  if (input.password) current.passwordHash = hashPassword(input.password);
-  current.updatedAt = new Date().toISOString();
+    if (input.name !== undefined) current.name = input.name.trim() || current.login;
+    if (input.accessLevel !== undefined) current.accessLevel = input.accessLevel;
+    if (input.active !== undefined) current.active = input.active;
+    if (input.password) current.passwordHash = hashPassword(input.password);
+    current.updatedAt = new Date().toISOString();
 
-  catalog.users[index] = current;
-  await writeUsersCatalog(catalog);
-  return toPublicUser(current);
+    catalog.users[index] = current;
+    await writeUsersCatalogAtomic(catalog);
+    return toPublicUser(current);
+  });
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  const catalog = await readUsersCatalog();
-  const admins = catalog.users.filter((user) => user.accessLevel === "admin" && user.active);
-  const target = catalog.users.find((user) => user.id === id);
-  if (!target) throw new Error("Пользователь не найден");
-  if (target.accessLevel === "admin" && admins.length <= 1) {
-    throw new Error("Нельзя удалить последнего активного администратора");
-  }
+  return withCatalogLock(async () => {
+    const catalog = await readUsersCatalogUnsafe();
+    const admins = catalog.users.filter((user) => user.accessLevel === "admin" && user.active);
+    const target = catalog.users.find((user) => user.id === id);
+    if (!target) throw new Error("Пользователь не найден");
+    if (target.accessLevel === "admin" && admins.length <= 1) {
+      throw new Error("Нельзя удалить последнего активного администратора");
+    }
 
-  catalog.users = catalog.users.filter((user) => user.id !== id);
-  await writeUsersCatalog(catalog);
+    catalog.users = catalog.users.filter((user) => user.id !== id);
+    await writeUsersCatalogAtomic(catalog);
+  });
 }
