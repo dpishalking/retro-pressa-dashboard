@@ -40,7 +40,7 @@ export const giftSiteContent: Record<string, GiftSiteContent> = {
     }
   },
   "personal-magazine": {
-    coverImage: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
+    coverImage: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
     shortDescription:
       "История человека, собранная через газетные заголовки каждого года его жизни. Подарок про память, эпоху и прожитую историю.",
     description:
@@ -58,13 +58,13 @@ export const giftSiteContent: Record<string, GiftSiteContent> = {
     presentationGuide:
       "Говорите, что мы показываем жизнь человека через время — не набор фотографий, а целую эпоху. Подчёркивайте физический вес книги, вау-эффект при вручении и то, что это подарок, который хочется листать всей семьёй. Особенно силён для людей 50+ и старше.",
     sectionImages: {
-      description: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
-      emotions: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
-      purchaseReasons: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp"
+      description: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
+      emotions: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
+      purchaseReasons: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp"
     }
   },
   "retro-newspaper": {
-    coverImage: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
+    coverImage: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
     shortDescription:
       "Точная копия ретро-газеты или журнала за дату рождения, в которую вставлены ваши фото и поздравительный текст. Всё остальное — как в оригинале.",
     description:
@@ -82,9 +82,9 @@ export const giftSiteContent: Record<string, GiftSiteContent> = {
     presentationGuide:
       "Объясняйте: это копия оригинала с фото и текстом, а не вставка в архивный экземпляр. Рекомендуйте размещать поздравление на 2–3 или последней странице — эффект сильнее. Если клиент не знает, что писать — есть программа-помощник.",
     sectionImages: {
-      description: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
-      presentationGuide: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
-      emotions: "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp"
+      description: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
+      presentationGuide: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
+      emotions: "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp"
     }
   },
   "gift-edition": {
