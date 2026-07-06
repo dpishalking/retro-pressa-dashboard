@@ -91,6 +91,14 @@ function patchGeminiEvaluationFix() {
   const providerPatch = path.join(overlayDir, "patches", "gemini-provider.ts");
   if (!fs.existsSync(geminiPatch) || !fs.existsSync(providerPatch)) return;
 
+  const currentProvider = fs.readFileSync(geminiProviderFile, "utf8");
+  if (
+    currentProvider.includes("evaluateSession attempt failed") &&
+    currentProvider.includes("generateLiveScenario")
+  ) {
+    return;
+  }
+
   fs.copyFileSync(geminiPatch, geminiIntegrationFile);
   fs.copyFileSync(providerPatch, geminiProviderFile);
 }
