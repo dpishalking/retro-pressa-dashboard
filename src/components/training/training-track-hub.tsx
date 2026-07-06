@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ClipboardCheck, Database } from "lucide-react";
+import { ClipboardCheck, Database, ExternalLink } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStageConfig } from "@/lib/training/stages";
@@ -10,7 +10,8 @@ import { resolveTrackModuleStatus } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrackStageId, TrainingTrackModule, TrainingStatus, UserTrainingProgress } from "@/types/training";
 
-const stageIcons = {
+const CRM_PLAYBOOK_URL =
+  "https://docs.google.com/document/d/1EpXyf7ss_oToJImZx66BMfZK_1FWjJn6AISCfn7ObZY/edit?tab=t.0";
   crm: Database,
   practice: ClipboardCheck
 } as const;
@@ -122,6 +123,26 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
           />
         ))}
       </section>
+
+      {stageId === "crm" ? (
+        <section className="mt-5">
+          <a
+            href={CRM_PLAYBOOK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card flex items-center justify-between gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-lg sm:p-6"
+          >
+            <div>
+              <p className="text-base font-black text-slate-950 sm:text-lg">Плейбук Работа в CRM Bitrix</p>
+              <p className="mt-1 text-sm text-slate-600">Подробные этапы, зоны ответственности и регламенты по воронкам</p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-bold text-slate-700">
+              Открыть
+              <ExternalLink size={16} />
+            </span>
+          </a>
+        </section>
+      ) : null}
     </>
   );
 }

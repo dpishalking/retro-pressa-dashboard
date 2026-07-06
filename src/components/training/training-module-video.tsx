@@ -2,35 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
-import type { TrackStageId, TrainingTrackModule, TrainingTrackVideo } from "@/types/training";
-
-function VideoPlayer({ video }: { video: TrainingTrackVideo }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-      {video.embedUrl ? (
-        <div className="aspect-video bg-black">
-          <iframe
-            src={video.embedUrl}
-            title={video.title}
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div className="flex aspect-video flex-col items-center justify-center bg-slate-50 px-6 text-center">
-          <PlayCircle size={40} className="text-blue-500" />
-          <p className="mt-3 text-base font-black text-slate-900">{video.title}</p>
-          <p className="mt-4 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-500">
-            Видео скоро появится
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+import { TrackVideoPlayer } from "@/components/training/track-video-player";
+import type { TrackStageId, TrainingTrackModule } from "@/types/training";
 
 function ModuleVideoContent({
   stageId,
@@ -86,7 +61,7 @@ function ModuleVideoContent({
       </section>
 
       <section className="card p-6">
-        <VideoPlayer video={video} />
+        <TrackVideoPlayer video={video} />
       </section>
 
       <section className="card p-6">

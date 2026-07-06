@@ -2,17 +2,38 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
+import { TrackVideoPlayer } from "@/components/training/track-video-player";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStageConfig } from "@/lib/training/stages";
 import type { TrackStageId, TrainingTrackModule } from "@/types/training";
 
+function RichText({ content }: { content: string }) {
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+
+  return (
+    <div className="whitespace-pre-line text-sm leading-7 text-slate-700">
+      {parts.map((part, index) =>
+        part.startsWith("**") && part.endsWith("**") ? (
+          <strong key={index} className="font-bold text-slate-900">
+            {part.slice(2, -2)}
+          </strong>
+        ) : (
+          part
+        )
+      )}
+    </div>
+  );
+}
+
 function SectionBlock({ title, content }: { title: string; content: string }) {
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
-      <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{content}</div>
+    <section className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6">
+      <h2 className="text-base font-black text-slate-950 sm:text-lg">{title}</h2>
+      <div className="mt-3">
+        <RichText content={content} />
+      </div>
     </section>
   );
 }
@@ -44,47 +65,50 @@ function ModuleDetailContent({ stageId, moduleId }: { stageId: TrackStageId; mod
 
   const hasQuiz = module.questions.length > 0;
   const videos = [...(module.videos ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sections = module.sections.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+  const stageLabel = getStageConfig(stageId)?.title.split(".")[0];
 
   return (
-    <div className="space-y-4">
-      <section className="card p-6">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-          {getStageConfig(stageId)?.title.split(".")[0]}
-        </p>
-        <h1 className="mt-2 text-3xl font-black text-slate-950">{module.title}</h1>
-        <p className="mt-3 text-sm leading-7 text-slate-600">{module.shortDescription}</p>
+    <div className="space-y-5">
+      <section className="card overflow-hidden">
+        <div className="border-b border-[var(--line)] p-6">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{stageLabel}</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{module.title}</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">{module.shortDescription}</p>
+        </div>
+
+        {videos.length > 0 ? (
+          <div className="space-y-5 p-6">
+            {videos.map((video) => (
+              <div key={video.id} className="space-y-3">
+                {videos.length > 1 ? (
+                  <p className="text-sm font-bold text-slate-950">
+                    {video.sortOrder}. {video.title}
+                  </p>
+                ) : null}
+                <TrackVideoPlayer video={video} />
+                {video.goal ? (
+                  <p className="text-sm leading-7 text-slate-600">
+                    <span className="font-bold text-slate-900">Цель урока: </span>
+                    {video.goal}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      {videos.length > 0 ? (
-        <section className="card p-6">
-          <h2 className="text-lg font-black text-slate-950">Видеоуроки</h2>
-          <ul className="mt-4 space-y-2">
-            {videos.map((video) => (
-              <li key={video.id}>
-                <Link
-                  href={`/training/${stageId}/${module.id}/videos/${video.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-4 py-3 transition hover:bg-slate-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-black text-blue-600">
-                      {video.sortOrder}
-                    </span>
-                    <p className="text-sm font-bold text-slate-950">{video.title}</p>
-                  </div>
-                  <ArrowRight size={16} className="shrink-0 text-slate-400" />
-                </Link>
-              </li>
+      {sections.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="px-1 text-xs font-bold uppercase tracking-wide text-slate-500">Краткая выжимка</h2>
+          <div className="space-y-3">
+            {sections.map((section) => (
+              <SectionBlock key={section.id} title={section.title} content={section.content} />
             ))}
-          </ul>
+          </div>
         </section>
       ) : null}
-
-      {module.sections
-        .slice()
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((section) => (
-          <SectionBlock key={section.id} title={section.title} content={section.content} />
-        ))}
 
       <section className="card p-6">
         {hasQuiz ? (
