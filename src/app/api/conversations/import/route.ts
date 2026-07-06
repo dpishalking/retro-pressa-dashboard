@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { saveConversationExportFile } from "@/lib/conversation-export-store";
 import { importAndAnalyzeConversationsWithDiagnostics, tryParseConversationSnapshotFile } from "@/lib/conversation-intelligence";
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
 import { writeConversationSnapshot, writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
@@ -74,12 +75,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Добавьте хотя бы один файл в поле files." }, { status: 400 });
     }
 
-    const files = await Promise.all(uploads.map(async (file) => ({
+    const fileBuffers = await Promise.all(uploads.map(async (file) => ({
+      file,
+      buffer: Buffer.from(await file.arrayBuffer())
+    })));
+    const files = fileBuffers.map(({ file, buffer }) => ({
       filename: file.name,
       mimeType: file.type,
-      content: await file.arrayBuffer(),
+      content: buffer,
       defaultChannel: String(formData.get("channel") ?? (source === "gift-ai" ? "gift-ai" : "manual"))
-    })));
+    }));
 
     const snapshotUpload = files
       .map((file) => ({ file, snapshot: tryParseConversationSnapshotFile(file) }))
@@ -150,6 +155,13 @@ export async function POST(request: Request) {
     };
 
     if (periodKey) {
+      if (source === "gift-ai") {
+        await Promise.all(fileBuffers.map(({ file, buffer }) => saveConversationExportFile({
+          periodKey,
+          originalFilename: file.name,
+          content: buffer
+        })));
+      }
       await writePeriodArchiveSnapshot(periodKey, snapshot);
     } else {
       await writeConversationSnapshot(snapshot);

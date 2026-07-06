@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { eur, number, pct } from "@/lib/format";
 import { readJsonResponse } from "@/lib/api-response";
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
-import type { ConversationDashboardMetrics, GeminiConversationSummary, PeriodKey } from "@/types/metrics";
+import type { ConversationDashboardMetrics, ConversationRopReport, GeminiConversationSummary, PeriodKey } from "@/types/metrics";
 
 type ConversationHistoryItem = {
   importedDay: string;
@@ -61,6 +61,12 @@ type LocalImportPayload = {
   error?: string;
 };
 
+type RopReportPayload = {
+  source?: string;
+  report?: ConversationRopReport;
+  error?: string;
+};
+
 const archivePeriodMap: Record<"may" | "june" | "july", PeriodKey> = {
   may: "may-2026",
   june: "june-2026",
@@ -104,11 +110,20 @@ function Metric({ label, value, hint }: { label: string; value: string; hint: st
   );
 }
 
+function ropMetricValue(metric: ConversationRopReport["metrics"][number]) {
+  if (metric.unit === "percent") return pct(metric.value);
+  if (metric.unit === "minutes") return `${number(Math.round(metric.value))} мин`;
+  if (metric.unit === "money") return eur(metric.value);
+  return number(metric.value);
+}
+
 export function RopConversationsScreen() {
   const archiveInputRef = useRef<HTMLInputElement | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | "july" | null>(null);
   const [geminiSummary, setGeminiSummary] = useState<GeminiConversationSummary | null>(null);
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
+  const [ropReport, setRopReport] = useState<ConversationRopReport | null>(null);
+  const [ropReportError, setRopReportError] = useState<string>("");
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
   const [status, setStatus] = useState<SyncStatus>({ state: "idle", message: "" });
@@ -162,6 +177,36 @@ export function RopConversationsScreen() {
     if (nextSelection) setSelectedImportedAt(nextSelection);
   }, [selectedPeriod, history]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRopReport() {
+      setRopReportError("");
+      try {
+        const response = await fetch(`/api/conversations/rop-report?period=${selectedPeriod}`);
+        const data = await readJsonResponse<RopReportPayload>(response);
+        if (cancelled) return;
+        if (!response.ok) {
+          setRopReport(null);
+          setRopReportError(data.error || "Не удалось построить управленческий отчёт по перепискам.");
+          return;
+        }
+        setRopReport(data.report ?? null);
+      } catch (error) {
+        if (!cancelled) {
+          setRopReport(null);
+          setRopReportError(error instanceof Error ? error.message : "Не удалось построить управленческий отчёт по перепискам.");
+        }
+      }
+    }
+
+    void loadRopReport();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPeriod, history.length, selectedImportedAt]);
+
   const visibleHistory = useMemo(
     () => history.filter((item) => itemPeriodKey(item) === selectedPeriod),
     [history, selectedPeriod]
@@ -184,7 +229,7 @@ export function RopConversationsScreen() {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 50, daysBack: 2, incremental: true })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 250, daysBack: 3, incremental: true })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
@@ -416,6 +461,98 @@ export function RopConversationsScreen() {
           hint="Оценка денег, теряемых на слабых сценариях"
         />
       </section>
+
+      {ropReport ? (
+        <section className="mb-6 grid gap-6 rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+            <div>
+              <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Вывод РОПа</p>
+              <h2 className="mt-1 text-2xl font-black text-slate-950">Что происходит в переписках</h2>
+              <div className="mt-3 grid gap-2 text-sm leading-6 text-slate-600">
+                {ropReport.executiveSummary.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+                {ropReport.caveat}
+              </p>
+            </div>
+            <article className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-normal text-rose-700">Главная проблема</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-rose-950">{ropReport.mainProblem}</p>
+            </article>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <article className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-lg font-bold text-slate-950">Типичный слабый сценарий</h3>
+              <ol className="mt-3 grid gap-2 text-sm text-slate-600">
+                {ropReport.typicalWeakScenario.map((item, index) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="font-bold text-slate-400">{index + 1}.</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 p-4 lg:col-span-2">
+              <h3 className="text-lg font-bold text-slate-950">Ключевые метрики качества</h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {ropReport.metrics.slice(0, 8).map((metric) => (
+                  <div key={metric.name} className="rounded-xl bg-slate-50 px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-700">{metric.name}</p>
+                      <b className="whitespace-nowrap text-slate-950">{ropMetricValue(metric)}</b>
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{metric.note}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-lg font-bold text-slate-950">Сильные закономерности</h3>
+              <div className="mt-3 grid gap-3">
+                {ropReport.correlations.map((item) => (
+                  <div key={item.factor} className="rounded-xl border border-slate-100 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-bold text-slate-800">{item.factor}</p>
+                      <span className={`rounded-full px-2 py-1 text-xs font-bold ${item.liftPp >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                        {item.liftPp >= 0 ? "+" : ""}{pct(item.liftPp)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">
+                      С фактором: {pct(item.withFactorConversion)} · без фактора: {pct(item.withoutFactorConversion)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{item.note}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-2xl border border-slate-200 p-4">
+              <h3 className="text-lg font-bold text-slate-950">Гипотезы роста</h3>
+              <div className="mt-3 grid gap-3">
+                {ropReport.hypotheses.slice(0, 6).map((item) => (
+                  <div key={item.title} className="rounded-xl bg-slate-50 px-4 py-3">
+                    <p className="text-sm font-bold text-slate-800">{item.title}</p>
+                    <p className="mt-1 text-xs text-slate-500">Сейчас: {item.current}</p>
+                    <p className="text-xs text-slate-500">Цель: {item.target}</p>
+                    <p className="mt-1 text-xs font-semibold text-blue-700">{item.expectedImpact}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
+      ) : ropReportError ? (
+        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+          Управленческий отчёт пока не построен: {ropReportError}
+        </section>
+      ) : null}
 
       <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-3">

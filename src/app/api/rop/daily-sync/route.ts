@@ -6,7 +6,7 @@ import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +25,8 @@ export async function POST(request: Request) {
       syncGoogleTraffic({ refresh: body.refresh === true, period }),
       syncBitrixConversationHistory({
         period,
-        daysBack: body.daysBack ?? 1,
-        dialogLimit: body.dialogLimit ?? 40,
+        daysBack: body.daysBack ?? 3,
+        dialogLimit: body.dialogLimit ?? 250,
         incremental: body.incremental !== false
       })
     ]);

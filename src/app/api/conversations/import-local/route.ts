@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { saveConversationExportFile } from "@/lib/conversation-export-store";
 import { importAndAnalyzeConversationsWithDiagnostics } from "@/lib/conversation-intelligence";
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
 import { writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
@@ -29,12 +30,16 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const files = await Promise.all(uploads.map(async (file) => ({
+    const fileBuffers = await Promise.all(uploads.map(async (file) => ({
+      file,
+      buffer: Buffer.from(await file.arrayBuffer())
+    })));
+    const files = fileBuffers.map(({ file, buffer }) => ({
       filename: file.name,
       mimeType: file.type,
-      content: await file.arrayBuffer(),
+      content: buffer,
       defaultChannel: String(formData.get("channel") ?? "gift-ai")
-    })));
+    }));
     const result = importAndAnalyzeConversationsWithDiagnostics(files);
 
     if (!result.messages.length) {
@@ -61,6 +66,12 @@ export async function POST(request: Request) {
       filesParsed: result.diagnostics.filter((item) => item.status === "ok").length,
       filesFailed: result.diagnostics.filter((item) => item.status === "error").length
     };
+
+    await Promise.all(fileBuffers.map(({ file, buffer }) => saveConversationExportFile({
+      periodKey: resolvedPeriod,
+      originalFilename: file.name,
+      content: buffer
+    })));
 
     await writePeriodArchiveSnapshot(resolvedPeriod, {
       version: 1,

@@ -220,6 +220,46 @@ export type ConversationDashboardMetrics = {
   factors: ConversationFactorAnalysis[];
 };
 
+export type ConversationRopMetric = {
+  name: string;
+  value: number;
+  unit: "count" | "percent" | "minutes" | "money";
+  note: string;
+};
+
+export type ConversationRopCorrelation = {
+  factor: string;
+  withFactorConversion: number;
+  withoutFactorConversion: number;
+  liftPp: number;
+  dialogsWithFactor: number;
+  dialogsWithoutFactor: number;
+  note: string;
+};
+
+export type ConversationRopHypothesis = {
+  title: string;
+  current: string;
+  target: string;
+  expectedImpact: string;
+};
+
+export type ConversationRopReport = {
+  periodKey: PeriodKey;
+  generatedAt: string;
+  analyzedMessages: number;
+  analyzedDialogs: number;
+  leadDialogs: number;
+  respondingLeadDialogs: number;
+  caveat: string;
+  mainProblem: string;
+  typicalWeakScenario: string[];
+  metrics: ConversationRopMetric[];
+  correlations: ConversationRopCorrelation[];
+  hypotheses: ConversationRopHypothesis[];
+  executiveSummary: string[];
+};
+
 export type ConversationImportFileDiagnostic = {
   filename: string;
   messages: number;
