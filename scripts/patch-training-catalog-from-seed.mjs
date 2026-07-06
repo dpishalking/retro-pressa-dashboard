@@ -38,6 +38,88 @@ function normalizeVideoEmbedUrl(input) {
   return trimmed;
 }
 
+const CONTENT_FIELDS = [
+  "title",
+  "shortDescription",
+  "coverImage",
+  "passingScore",
+  "sortOrder",
+  "description",
+  "targetAudience",
+  "clientProblems",
+  "emotions",
+  "purchaseReasons",
+  "objections",
+  "presentationGuide"
+];
+
+function mergeMaterials(seedMaterials = [], liveMaterials = []) {
+  const liveById = new Map(liveMaterials.map((item) => [item.id, item]));
+  const merged = [];
+
+  for (const seedMaterial of seedMaterials) {
+    const liveMaterial = liveById.get(seedMaterial.id);
+    if (!liveMaterial) {
+      merged.push({ ...seedMaterial });
+      continue;
+    }
+
+    const next = { ...liveMaterial, ...seedMaterial };
+
+    if (next.type === "video") {
+      const source = next.embedUrl?.trim() || next.url?.trim() || "";
+      const normalizedEmbed = normalizeVideoEmbedUrl(source);
+      if (normalizedEmbed) {
+        next.embedUrl = normalizedEmbed;
+      }
+    }
+
+    merged.push(next);
+    liveById.delete(seedMaterial.id);
+  }
+
+  for (const leftover of liveById.values()) {
+    if (leftover.type === "video") {
+      const source = leftover.embedUrl?.trim() || leftover.url?.trim() || "";
+      const normalizedEmbed = normalizeVideoEmbedUrl(source);
+      if (normalizedEmbed) {
+        leftover.embedUrl = normalizedEmbed;
+      }
+    }
+    merged.push(leftover);
+  }
+
+  return merged.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}
+
+function syncProductFromSeed(seedProduct, liveProduct) {
+  let productChanged = false;
+
+  for (const field of CONTENT_FIELDS) {
+    if (seedProduct[field] === undefined || liveProduct[field] === seedProduct[field]) continue;
+    liveProduct[field] = seedProduct[field];
+    productChanged = true;
+  }
+
+  if (Array.isArray(seedProduct.questions)) {
+    const nextQuestions = JSON.stringify(seedProduct.questions);
+    const currentQuestions = JSON.stringify(liveProduct.questions ?? []);
+    if (nextQuestions !== currentQuestions) {
+      liveProduct.questions = seedProduct.questions;
+      productChanged = true;
+    }
+  }
+
+  const nextMaterials = mergeMaterials(seedProduct.materials ?? [], liveProduct.materials ?? []);
+  const currentMaterials = JSON.stringify(liveProduct.materials ?? []);
+  if (JSON.stringify(nextMaterials) !== currentMaterials) {
+    liveProduct.materials = nextMaterials;
+    productChanged = true;
+  }
+
+  return productChanged;
+}
+
 const seedPath = process.argv[2];
 const livePath = process.argv[3];
 
@@ -50,49 +132,13 @@ const seed = JSON.parse(fs.readFileSync(seedPath, "utf8"));
 const live = JSON.parse(fs.readFileSync(livePath, "utf8"));
 let changed = false;
 
-for (const liveProduct of live.products ?? []) {
-  for (const liveMaterial of liveProduct.materials ?? []) {
-    if (liveMaterial.type !== "video") continue;
-
-    const source = liveMaterial.embedUrl?.trim() || liveMaterial.url?.trim() || "";
-    const normalizedEmbed = normalizeVideoEmbedUrl(source);
-    if (!normalizedEmbed) continue;
-
-    if (liveMaterial.embedUrl !== normalizedEmbed) {
-      liveMaterial.embedUrl = normalizedEmbed;
-      changed = true;
-      console.log(`Normalized embed for ${liveMaterial.id} in ${liveProduct.id}`);
-    }
-  }
-}
-
 for (const seedProduct of seed.products ?? []) {
   const liveProduct = live.products?.find((item) => item.id === seedProduct.id);
   if (!liveProduct) continue;
 
-  for (const seedMaterial of seedProduct.materials ?? []) {
-    if (seedMaterial.type !== "video" || !seedMaterial.embedUrl) continue;
-
-    const liveMaterial = liveProduct.materials?.find((item) => item.id === seedMaterial.id);
-    if (!liveMaterial) continue;
-
-    const nextUrl = seedMaterial.url ?? liveMaterial.url;
-    const nextEmbed = seedMaterial.embedUrl;
-    const nextContent = seedMaterial.content ?? liveMaterial.content;
-
-    if (
-      liveMaterial.url === nextUrl &&
-      liveMaterial.embedUrl === nextEmbed &&
-      liveMaterial.content === nextContent
-    ) {
-      continue;
-    }
-
-    liveMaterial.url = nextUrl;
-    liveMaterial.embedUrl = nextEmbed;
-    liveMaterial.content = nextContent;
+  if (syncProductFromSeed(seedProduct, liveProduct)) {
     changed = true;
-    console.log(`Synced video ${seedMaterial.id} in ${seedProduct.id}`);
+    console.log(`Synced product content for ${seedProduct.id}`);
   }
 }
 
@@ -101,7 +147,7 @@ if (changed) {
   fs.writeFileSync(livePath, `${JSON.stringify(live, null, 2)}\n`, "utf8");
   console.log(`Updated ${livePath}`);
 } else {
-  console.log("Video materials already in sync with seed");
+  console.log("Training catalog already in sync with seed");
 }
 
 for (const product of live.products ?? []) {
