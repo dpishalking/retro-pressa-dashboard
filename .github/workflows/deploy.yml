@@ -141,6 +141,8 @@ jobs:
           env.TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG || "retro-pressa";
           env.TRAINER_BOT_USERNAME = trainerBotUsername;
           env.TRAINING_DATA_DIR = "/opt/retro-pressa-shared/data/training";
+          env.AUTH_USERS_FILE = "/opt/retro-pressa-shared/data/auth/users.json";
+          env.AUTH_CATALOG_DIR = "/opt/retro-pressa-shared/auth-catalog";
           fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
 
           const backendEnv = {
@@ -298,6 +300,7 @@ jobs:
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
           mkdir -p "$AUTH_STAGING"
+          # Collect every known auth catalog copy before touching APP_DIR.
           if [ -f "$AUTH_FILE" ]; then
             cp -a "$AUTH_FILE" "$AUTH_STAGING/users.json"
           fi
@@ -306,6 +309,10 @@ jobs:
           fi
           if [ -f "$AUTH_PERSISTENT" ]; then
             cp -a "$AUTH_PERSISTENT" "$AUTH_STAGING/users.persistent.json"
+          fi
+          if [ -d "$APP_DIR/data" ] && [ ! -L "$APP_DIR/data" ] && [ -f "$APP_DIR/data/auth/users.json" ]; then
+            echo "Recovering auth catalog from broken in-app data directory"
+            cp -a "$APP_DIR/data/auth/users.json" "$AUTH_STAGING/users.recovered.json"
           fi
           # GNU rm -rf follows symlinks and would wipe $APP_DATA_DIR — remove links without -r.
           for entry in "$APP_DIR"/* "$APP_DIR"/.[!.]* ; do
@@ -318,19 +325,54 @@ jobs:
           done
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"
-          ln -sfn "$APP_DATA_DIR" data
-          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.json" ]; then
-            cp -a "$AUTH_STAGING/users.json" "$AUTH_FILE"
-          fi
-          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.json.bak" ]; then
-            cp -a "$AUTH_STAGING/users.json.bak" "$AUTH_FILE"
-          fi
-          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.persistent.json" ]; then
-            cp -a "$AUTH_STAGING/users.persistent.json" "$AUTH_FILE"
-          fi
-          if [ ! -f "$AUTH_PERSISTENT" ] && [ -f "$AUTH_FILE" ]; then
-            cp -a "$AUTH_FILE" "$AUTH_PERSISTENT"
-          fi
+          # ln -sfn into an existing data/ directory creates data/data instead of replacing data/.
+          rm -rf "$APP_DIR/data"
+          ln -sfn "$APP_DATA_DIR" "$APP_DIR/data"
+          export AUTH_FILE AUTH_STAGING AUTH_PERSISTENT
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const authFile = process.env.AUTH_FILE;
+          const stagingDir = process.env.AUTH_STAGING;
+          const persistentFile = process.env.AUTH_PERSISTENT;
+
+          const candidates = [
+            path.join(stagingDir, "users.json"),
+            path.join(stagingDir, "users.json.bak"),
+            path.join(stagingDir, "users.persistent.json"),
+            path.join(stagingDir, "users.recovered.json"),
+            authFile,
+            persistentFile
+          ].filter((file) => fs.existsSync(file));
+
+          let best = null;
+          let bestCount = -1;
+
+          for (const file of candidates) {
+            try {
+              const catalog = JSON.parse(fs.readFileSync(file, "utf8"));
+              const count = Array.isArray(catalog.users) ? catalog.users.length : 0;
+              if (count > bestCount) {
+                bestCount = count;
+                best = catalog;
+              }
+            } catch {
+              // ignore invalid candidate
+            }
+          }
+
+          if (!best || bestCount <= 0) {
+            console.log("Auth catalog: no valid backup found, app will seed on first request");
+            process.exit(0);
+          }
+
+          fs.mkdirSync(path.dirname(authFile), { recursive: true });
+          fs.writeFileSync(authFile, `${JSON.stringify(best, null, 2)}\n`, "utf8");
+          fs.mkdirSync(path.dirname(persistentFile), { recursive: true });
+          fs.writeFileSync(persistentFile, `${JSON.stringify(best, null, 2)}\n`, "utf8");
+          console.log(`Auth catalog restored with ${bestCount} user(s)`);
+          NODE
           if [ -f "$AUTH_FILE" ]; then
             echo "Auth users file present"
           else

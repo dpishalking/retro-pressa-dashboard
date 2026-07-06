@@ -5,13 +5,22 @@ import { hashPassword } from "@/lib/auth/password";
 import { generateId } from "@/lib/training/id";
 import { registerTrainerManager } from "@/lib/training/trainer-api";
 
-const usersPath = path.join(process.cwd(), "data", "auth", "users.json");
+function resolveUsersPath(): string {
+  const configured = process.env.AUTH_USERS_FILE?.trim();
+  if (configured) return configured;
+  return path.join(process.cwd(), "data", "auth", "users.json");
+}
+
+function resolvePersistentBackupPath(usersFile: string): string {
+  const catalogDir = process.env.AUTH_CATALOG_DIR?.trim();
+  if (catalogDir) return path.join(catalogDir, "users.json");
+  const sharedRoot = path.resolve(path.dirname(usersFile), "..", "..");
+  return path.join(sharedRoot, "auth-catalog", "users.json");
+}
+
+const usersPath = resolveUsersPath();
 const usersBackupPath = `${usersPath}.bak`;
-const usersPersistentBackupPath = path.join(
-  path.resolve(path.dirname(usersPath), "..", ".."),
-  "auth-catalog",
-  "users.json"
-);
+const usersPersistentBackupPath = resolvePersistentBackupPath(usersPath);
 
 let catalogLock: Promise<void> = Promise.resolve();
 
@@ -155,6 +164,10 @@ async function readUsersCatalogUnsafe(): Promise<UsersCatalog> {
     return persistentBackup;
   }
 
+  console.error(
+    "Auth users catalog missing with no backup — creating admin-only seed",
+    { usersPath, persistentBackupPath: usersPersistentBackupPath }
+  );
   const seed = buildSeedCatalog();
   await writeUsersCatalogAtomic(seed);
   return seed;
