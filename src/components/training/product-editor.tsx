@@ -347,6 +347,26 @@ function ProductEditorContent({ productId }: { productId: string }) {
                     </select>
                   </label>
                 ) : null}
+                {material.type === "video" ? (
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-700">Блок на странице</span>
+                    <select
+                      className="w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
+                      value={material.sectionKey === "reviews" ? "reviews" : "training"}
+                      onChange={(event) => {
+                        const materials = [...product.materials];
+                        materials[index] = {
+                          ...material,
+                          sectionKey: event.target.value === "reviews" ? "reviews" : undefined
+                        };
+                        update("materials", materials);
+                      }}
+                    >
+                      <option value="training">Видеообучение</option>
+                      <option value="reviews">Отзывы</option>
+                    </select>
+                  </label>
+                ) : null}
                 <Field
                   label={material.type === "video" ? "Ссылка на YouTube" : "URL"}
                   value={material.type === "video" ? material.url ?? material.embedUrl ?? "" : material.url ?? ""}

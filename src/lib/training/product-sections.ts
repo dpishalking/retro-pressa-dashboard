@@ -59,12 +59,17 @@ export function buildProductSections(product: ProductTrainingModule): ProductCon
 
 export function splitProductMaterials(materials: ProductMaterial[]) {
   const videos: ProductMaterial[] = [];
+  const reviews: ProductMaterial[] = [];
   const gallery: ProductMaterial[] = [];
   const extras: ProductMaterial[] = [];
 
   for (const material of materials) {
     if (material.type === "video") {
-      videos.push(material);
+      if (material.sectionKey === "reviews") {
+        reviews.push(material);
+      } else {
+        videos.push(material);
+      }
       continue;
     }
 
@@ -79,10 +84,11 @@ export function splitProductMaterials(materials: ProductMaterial[]) {
   }
 
   videos.sort((a, b) => a.sortOrder - b.sortOrder);
+  reviews.sort((a, b) => a.sortOrder - b.sortOrder);
   gallery.sort((a, b) => a.sortOrder - b.sortOrder);
   extras.sort((a, b) => a.sortOrder - b.sortOrder);
 
-  return { videos, gallery, extras };
+  return { videos, reviews, gallery, extras };
 }
 
 export function presentationEmbedUrl(presentationUrl?: string) {

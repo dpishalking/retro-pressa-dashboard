@@ -71,6 +71,15 @@
           "content": "wide",
           "sectionKey": "gallery",
           "sortOrder": 5
+        },
+        {
+          "id": "video-personal-newspaper-review-1",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/zeeYytcncTw",
+          "embedUrl": "https://www.youtube.com/embed/zeeYytcncTw",
+          "sectionKey": "reviews",
+          "sortOrder": 6
         }
       ],
       "questions": [

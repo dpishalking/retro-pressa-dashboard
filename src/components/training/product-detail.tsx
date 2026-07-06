@@ -69,7 +69,7 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
             key={material.id}
             className={`overflow-hidden rounded-xl border border-[var(--line)] bg-white ${isWide ? "sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}`}
           >
-            <div className={`relative w-full bg-slate-100 ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
+            <div className={`relative w-full bg-white ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
               <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
             </div>
             <figcaption className="border-t border-[var(--line)] px-4 py-3 text-sm font-semibold text-slate-700">
@@ -85,6 +85,8 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
 
 function VideoBlock({ material }: { material: ProductMaterial }) {
   const embedUrl = normalizeVideoEmbedUrl(material.embedUrl ?? material.url);
+  const isShorts =
+    (material.url ?? material.embedUrl ?? "").includes("/shorts/") || material.content === "shorts";
 
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--line)]">
@@ -92,7 +94,7 @@ function VideoBlock({ material }: { material: ProductMaterial }) {
         {material.title}
       </div>
       {embedUrl ? (
-        <div className="aspect-video bg-black">
+        <div className={`bg-black ${isShorts ? "mx-auto aspect-[9/16] max-w-sm" : "aspect-video"}`}>
           <iframe
             src={embedUrl}
             title={material.title}
@@ -124,6 +126,21 @@ function VideoSection({ materials }: { materials: ProductMaterial[] }) {
     <section className="card p-6">
       <h2 className="text-lg font-black text-slate-950">Видеообучение</h2>
       <div className="mt-4 space-y-4">
+        {materials.map((material) => (
+          <VideoBlock key={material.id} material={material} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReviewsSection({ materials }: { materials: ProductMaterial[] }) {
+  if (!materials.length) return null;
+
+  return (
+    <section className="card p-6">
+      <h2 className="text-lg font-black text-slate-950">Отзывы</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {materials.map((material) => (
           <VideoBlock key={material.id} material={material} />
         ))}
@@ -289,7 +306,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
   }
 
   const sections = buildProductSections(product);
-  const { videos, gallery, extras } = splitProductMaterials(product.materials);
+  const { videos, reviews, gallery, extras } = splitProductMaterials(product.materials);
   const hasQuiz = product.questions.length > 0;
 
   return (
@@ -307,6 +324,8 @@ function ProductDetailContent({ productId }: { productId: string }) {
       <VideoSection materials={videos} />
 
       <GiftGallerySection materials={gallery} />
+
+      <ReviewsSection materials={reviews} />
 
       {sections.map((section) => (
         <ContentSection key={section.sectionKey} {...section} />
