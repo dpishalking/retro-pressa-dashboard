@@ -79,6 +79,7 @@ function mergeMaterials(seedMaterials = [], liveMaterials = []) {
   }
 
   for (const leftover of liveById.values()) {
+    if (leftover.sectionKey === "gallery") continue;
     if (leftover.type === "video") {
       const source = leftover.embedUrl?.trim() || leftover.url?.trim() || "";
       const normalizedEmbed = normalizeVideoEmbedUrl(source);
