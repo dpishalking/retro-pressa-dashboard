@@ -207,7 +207,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const [product, setProduct] = useState<ProductTrainingModule | null>(fallbackProduct);
 
   useEffect(() => {
-    fetch(`/api/training/products/${productId}`)
+    fetch(`/api/training/products/${productId}`, { cache: "no-store" })
       .then((response) => response.json())
       .then((data: { product: ProductTrainingModule }) => {
         if (data?.product) {

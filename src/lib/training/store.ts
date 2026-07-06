@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findUserById } from "@/lib/auth/store";
 import { createTrainingCatalogSeed, trainingUsers, type TrainingCatalog } from "@/data/training-seed";
@@ -46,8 +46,12 @@ export async function readRawTrainingCatalog(): Promise<TrainingCatalog | null> 
   try {
     const raw = await readFile(catalogPath, "utf8");
     const parsed = JSON.parse(raw) as Partial<TrainingCatalog>;
-    if (parsed?.version === 1 && Array.isArray(parsed.products)) {
-      return parsed as TrainingCatalog;
+    if (Array.isArray(parsed.products)) {
+      return {
+        version: 1,
+        products: parsed.products as ProductTrainingModule[],
+        updatedAt: parsed.updatedAt ?? new Date().toISOString()
+      };
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
@@ -72,7 +76,16 @@ export async function readTrainingCatalog(): Promise<TrainingCatalog> {
 
 export async function writeTrainingCatalog(catalog: TrainingCatalog) {
   await ensureTrainingDirs();
-  await writeFile(catalogPath, JSON.stringify({ ...catalog, updatedAt: new Date().toISOString() }, null, 2), "utf8");
+  const payload = `${JSON.stringify({ ...catalog, version: 1, updatedAt: new Date().toISOString() }, null, 2)}\n`;
+  const tempPath = `${catalogPath}.${process.pid}.tmp`;
+
+  try {
+    await writeFile(tempPath, payload, "utf8");
+    await rename(tempPath, catalogPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown write error";
+    throw new Error(`Failed to write training catalog (${catalogPath}): ${message}`);
+  }
 }
 
 export async function listProducts(): Promise<ProductTrainingModule[]> {

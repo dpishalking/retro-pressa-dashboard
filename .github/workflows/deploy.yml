@@ -384,6 +384,7 @@ jobs:
           fi
           if [ -f "$APP_DIR/training-seed/products.json" ]; then
             mkdir -p "$APP_DATA_DIR/training"
+            chmod -R u+rwX "$APP_DATA_DIR/training"
             if [ ! -f "$APP_DATA_DIR/training/products.json" ]; then
               cp "$APP_DIR/training-seed/products.json" "$APP_DATA_DIR/training/products.json"
               echo "Initialized training catalog from deploy seed"

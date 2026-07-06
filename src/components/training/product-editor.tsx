@@ -69,12 +69,22 @@ function ProductEditorContent({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const loadProduct = () =>
+    fetch(`/api/training/products/${productId}?raw=1`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Не удалось загрузить продукт");
+        }
+        return response.json() as Promise<{ product: ProductTrainingModule }>;
+      })
+      .then((data) => setProduct(data.product));
 
   useEffect(() => {
     if (isNew) return;
-    fetch(`/api/training/products/${productId}?raw=1`)
-      .then((response) => response.json())
-      .then((data: { product: ProductTrainingModule }) => setProduct(data.product))
+    loadProduct()
+      .catch((error: Error) => setSaveError(error.message))
       .finally(() => setLoading(false));
   }, [isNew, productId]);
 
@@ -110,6 +120,7 @@ function ProductEditorContent({ productId }: { productId: string }) {
   const save = async () => {
     setSaving(true);
     setSaveError(null);
+    setSaveMessage(null);
     const payload = {
       ...product,
       title: product.title.trim(),
@@ -120,19 +131,30 @@ function ProductEditorContent({ productId }: { productId: string }) {
     const response = await fetch(isNew ? "/api/training/products" : `/api/training/products/${product.id}`, {
       method: isNew ? "POST" : "PUT",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify(payload)
     });
 
+    const data = (await response.json().catch(() => null)) as
+      | { product?: ProductTrainingModule; error?: string; savedAt?: string }
+      | null;
+
     setSaving(false);
     if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
       setSaveError(data?.error ?? "Не удалось сохранить изменения. Попробуйте ещё раз.");
       return;
     }
 
-    const data = await response.json();
-    setProduct(data.product);
-    router.push(`/training/admin/products/${data.product.id}`);
+    if (data?.product) {
+      setProduct(data.product);
+    }
+
+    if (isNew && data?.product) {
+      router.push(`/training/admin/products/${data.product.id}`);
+      return;
+    }
+
+    setSaveMessage("Изменения сохранены. Можно проверить страницу продукта у менеджеров.");
   };
 
   if (!isAdmin) {
@@ -412,6 +434,11 @@ function ProductEditorContent({ productId }: { productId: string }) {
       <section className="flex flex-wrap gap-3">
         {saveError ? (
           <p className="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{saveError}</p>
+        ) : null}
+        {saveMessage ? (
+          <p className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {saveMessage}
+          </p>
         ) : null}
         <button
           type="button"
