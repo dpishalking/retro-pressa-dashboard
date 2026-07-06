@@ -12,6 +12,8 @@ import type { TrackStageId, TrainingTrackModule, TrainingStatus, UserTrainingPro
 
 const CRM_PLAYBOOK_URL =
   "https://docs.google.com/document/d/1EpXyf7ss_oToJImZx66BMfZK_1FWjJn6AISCfn7ObZY/edit?tab=t.0";
+
+const stageIcons = {
   crm: Database,
   practice: ClipboardCheck
 } as const;
