@@ -1,6 +1,7 @@
 import type { ProductMaterial, ProductTrainingModule, TrainingUser } from "@/types/training";
 import { applyGiftSiteContentToCatalog, applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
 import { applySheetContentToCatalog } from "@/data/training-sheet-content";
+import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 
 const now = new Date().toISOString();
 
@@ -31,13 +32,21 @@ function textMaterial(id: string, title: string, content: string, sortOrder = 1)
   };
 }
 
-function videoMaterial(id: string, title: string, content: string, sortOrder = 1): ProductMaterial {
+function videoMaterial(
+  id: string,
+  title: string,
+  content: string,
+  sortOrder = 1,
+  videoUrl?: string
+): ProductMaterial {
   return {
     id,
     type: "video",
     title,
     content,
-    sortOrder
+    sortOrder,
+    url: videoUrl,
+    embedUrl: videoUrl ? normalizeVideoEmbedUrl(videoUrl) : undefined
   };
 }
 
@@ -67,8 +76,9 @@ export const birthDateNewspaperProduct = createProductSeed({
     videoMaterial(
       "video-original-newspaper",
       "Видео для менеджеров",
-      "Сюда загрузим короткий видеоразбор: кому предлагать, как вытянуть дату и повод, и почему это не сувенир, а эмоциональный триггер.",
-      1
+      "Короткий видеоразбор: кому предлагать, как вытянуть дату и повод, и почему это не сувенир, а эмоциональный триггер.",
+      1,
+      "https://youtu.be/nkz1umEMcOk"
     ),
     textMaterial(
       "mat-original-newspaper",

@@ -35,28 +35,39 @@ function progressFilePath(userId: string) {
   return path.join(progressDir, `${userId}.json`);
 }
 
-export async function readTrainingCatalog(): Promise<TrainingCatalog> {
+function decorateTrainingCatalog(catalog: TrainingCatalog): TrainingCatalog {
+  return {
+    ...catalog,
+    products: applyGiftSiteImagesToCatalog(applySheetContentToCatalog(catalog.products))
+  };
+}
+
+export async function readRawTrainingCatalog(): Promise<TrainingCatalog | null> {
   try {
     const raw = await readFile(catalogPath, "utf8");
     const parsed = JSON.parse(raw) as Partial<TrainingCatalog>;
     if (parsed?.version === 1 && Array.isArray(parsed.products)) {
-      return {
-        ...(parsed as TrainingCatalog),
-        products: applyGiftSiteImagesToCatalog(
-          applySheetContentToCatalog(parsed.products as ProductTrainingModule[])
-        )
-      };
+      return parsed as TrainingCatalog;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (!message.includes("ENOENT")) {
-      console.warn("Failed to read training catalog, using seed:", message);
+      console.warn("Failed to read training catalog:", message);
     }
+  }
+
+  return null;
+}
+
+export async function readTrainingCatalog(): Promise<TrainingCatalog> {
+  const stored = await readRawTrainingCatalog();
+  if (stored) {
+    return decorateTrainingCatalog(stored);
   }
 
   const seed = createTrainingCatalogSeed();
   await writeTrainingCatalog(seed);
-  return seed;
+  return decorateTrainingCatalog(seed);
 }
 
 export async function writeTrainingCatalog(catalog: TrainingCatalog) {
@@ -69,13 +80,22 @@ export async function listProducts(): Promise<ProductTrainingModule[]> {
   return [...catalog.products].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export async function getProduct(id: string): Promise<ProductTrainingModule | null> {
+export async function getProduct(id: string, options?: { raw?: boolean }): Promise<ProductTrainingModule | null> {
+  if (options?.raw) {
+    const catalog = await readRawTrainingCatalog();
+    return catalog?.products.find((product) => product.id === id) ?? null;
+  }
+
   const products = await listProducts();
   return products.find((product) => product.id === id) ?? null;
 }
 
 export async function createProduct(input: Omit<ProductTrainingModule, "createdAt" | "updatedAt">) {
-  const catalog = await readTrainingCatalog();
+  const catalog = (await readRawTrainingCatalog()) ?? {
+    version: 1 as const,
+    products: [],
+    updatedAt: new Date().toISOString()
+  };
   const now = new Date().toISOString();
   const product: ProductTrainingModule = { ...input, createdAt: now, updatedAt: now };
   catalog.products.push(product);
@@ -84,7 +104,9 @@ export async function createProduct(input: Omit<ProductTrainingModule, "createdA
 }
 
 export async function updateProduct(id: string, patch: Partial<ProductTrainingModule>) {
-  const catalog = await readTrainingCatalog();
+  const catalog = await readRawTrainingCatalog();
+  if (!catalog) return null;
+
   const index = catalog.products.findIndex((product) => product.id === id);
   if (index === -1) return null;
 
@@ -100,7 +122,9 @@ export async function updateProduct(id: string, patch: Partial<ProductTrainingMo
 }
 
 export async function deleteProduct(id: string) {
-  const catalog = await readTrainingCatalog();
+  const catalog = await readRawTrainingCatalog();
+  if (!catalog) return false;
+
   const nextProducts = catalog.products.filter((product) => product.id !== id);
   if (nextProducts.length === catalog.products.length) return false;
   catalog.products = nextProducts;

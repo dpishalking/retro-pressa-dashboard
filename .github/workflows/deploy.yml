@@ -50,6 +50,7 @@ jobs:
           if [ -f data/training/products.json ]; then
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/products.json /tmp/retro-pressa-deploy/training-seed/products.json
+            cp scripts/patch-training-catalog-from-seed.mjs /tmp/retro-pressa-deploy/training-seed/patch-training-catalog-from-seed.mjs
           fi
           if [ -f data/training/crm-modules.json ]; then
             mkdir -p /tmp/retro-pressa-deploy/training-seed
@@ -382,7 +383,16 @@ jobs:
             cp -R "$APP_DIR/conversation-exports/." "$APP_DATA_DIR/conversation-exports/"
           fi
           if [ -f "$APP_DIR/training-seed/products.json" ]; then
-            cp "$APP_DIR/training-seed/products.json" "$APP_DATA_DIR/training/products.json"
+            mkdir -p "$APP_DATA_DIR/training"
+            if [ ! -f "$APP_DATA_DIR/training/products.json" ]; then
+              cp "$APP_DIR/training-seed/products.json" "$APP_DATA_DIR/training/products.json"
+              echo "Initialized training catalog from deploy seed"
+            else
+              echo "Keeping existing training catalog at $APP_DATA_DIR/training/products.json"
+              node "$APP_DIR/training-seed/patch-training-catalog-from-seed.mjs" \
+                "$APP_DIR/training-seed/products.json" \
+                "$APP_DATA_DIR/training/products.json"
+            fi
           fi
           if [ -f "$APP_DIR/training-seed/crm-modules.json" ]; then
             cp "$APP_DIR/training-seed/crm-modules.json" "$APP_DATA_DIR/training/crm-modules.json"

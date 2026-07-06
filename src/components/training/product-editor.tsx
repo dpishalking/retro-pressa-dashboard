@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { generateId } from "@/lib/training/id";
+import { normalizeProductMaterials } from "@/lib/training/video-embed";
 import type { ProductMaterial, ProductSectionKey, ProductTrainingModule, QuizAnswer, QuizQuestion } from "@/types/training";
 
 const emptyProduct = (): ProductTrainingModule => ({
@@ -67,10 +68,11 @@ function ProductEditorContent({ productId }: { productId: string }) {
   const [product, setProduct] = useState<ProductTrainingModule>(emptyProduct());
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isNew) return;
-    fetch(`/api/training/products/${productId}`)
+    fetch(`/api/training/products/${productId}?raw=1`)
       .then((response) => response.json())
       .then((data: { product: ProductTrainingModule }) => setProduct(data.product))
       .finally(() => setLoading(false));
@@ -107,10 +109,12 @@ function ProductEditorContent({ productId }: { productId: string }) {
 
   const save = async () => {
     setSaving(true);
+    setSaveError(null);
     const payload = {
       ...product,
       title: product.title.trim(),
-      shortDescription: product.shortDescription.trim()
+      shortDescription: product.shortDescription.trim(),
+      materials: normalizeProductMaterials(product.materials)
     };
 
     const response = await fetch(isNew ? "/api/training/products" : `/api/training/products/${product.id}`, {
@@ -120,9 +124,14 @@ function ProductEditorContent({ productId }: { productId: string }) {
     });
 
     setSaving(false);
-    if (!response.ok) return;
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      setSaveError(data?.error ?? "Не удалось сохранить изменения. Попробуйте ещё раз.");
+      return;
+    }
 
     const data = await response.json();
+    setProduct(data.product);
     router.push(`/training/admin/products/${data.product.id}`);
   };
 
@@ -230,24 +239,25 @@ function ProductEditorContent({ productId }: { productId: string }) {
                   </label>
                 ) : null}
                 <Field
-                  label="URL"
-                  value={material.url ?? ""}
+                  label={material.type === "video" ? "Ссылка на YouTube" : "URL"}
+                  value={material.type === "video" ? material.url ?? material.embedUrl ?? "" : material.url ?? ""}
                   onChange={(value) => {
                     const materials = [...product.materials];
-                    materials[index] = { ...material, url: value };
+                    if (material.type === "video") {
+                      materials[index] = { ...material, url: value, embedUrl: value };
+                    } else {
+                      materials[index] = { ...material, url: value };
+                    }
                     update("materials", materials);
                   }}
                 />
               </div>
-              <Field
-                label="Embed URL (для видео)"
-                value={material.embedUrl ?? ""}
-                onChange={(value) => {
-                  const materials = [...product.materials];
-                  materials[index] = { ...material, embedUrl: value };
-                  update("materials", materials);
-                }}
-              />
+              {material.type === "video" ? (
+                <p className="mb-3 text-xs leading-5 text-slate-500">
+                  Можно вставить обычную ссылку с YouTube, например https://youtu.be/... — при сохранении она автоматически
+                  превратится в embed для плеера.
+                </p>
+              ) : null}
               <Field
                 label="Текст / инструкция"
                 value={material.content ?? ""}
@@ -400,6 +410,9 @@ function ProductEditorContent({ productId }: { productId: string }) {
       </section>
 
       <section className="flex flex-wrap gap-3">
+        {saveError ? (
+          <p className="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{saveError}</p>
+        ) : null}
         <button
           type="button"
           onClick={() => void save()}
