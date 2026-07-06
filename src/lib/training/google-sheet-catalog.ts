@@ -84,18 +84,11 @@ function resolveProductId(marker: string, name: string) {
   if (text.includes("глянцевый журнал") || text.includes("именной журнал") || text.includes("персональный журнал")) {
     return "gift-edition";
   }
-  if (text.includes("книга воспоминаний")) return "family-history";
-  if (text.includes("подписка") || text.includes("семейная газета")) return "company-history";
-  if (text.includes("паспорт открытий")) return "passport-discovery";
-  if (text.includes("паспорт алкоголика") || text.includes("pasportus")) return "passport-alcoholic";
 
   return null;
 }
 
-const CANONICAL_PRODUCT_TITLES: Record<string, string> = {
-  "passport-discovery": "Паспорт Открытий",
-  "passport-alcoholic": "Паспорт Алкоголика"
-};
+const CANONICAL_PRODUCT_TITLES: Record<string, string> = {};
 
 function parseProductBlock(rows: string[][]) {
   const markerRow = rows.find((row) => row[0]?.startsWith("Продукт:"));
