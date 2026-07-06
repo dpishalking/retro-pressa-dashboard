@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 const seedPath = process.argv[2];
 const livePath = process.argv[3];
@@ -22,13 +21,24 @@ for (const seedProduct of seed.products ?? []) {
 
     const liveMaterial = liveProduct.materials?.find((item) => item.id === seedMaterial.id);
     if (!liveMaterial) continue;
-    if (liveMaterial.embedUrl?.trim()) continue;
 
-    liveMaterial.url = seedMaterial.url ?? liveMaterial.url;
-    liveMaterial.embedUrl = seedMaterial.embedUrl;
-    liveMaterial.content = seedMaterial.content ?? liveMaterial.content;
+    const nextUrl = seedMaterial.url ?? liveMaterial.url;
+    const nextEmbed = seedMaterial.embedUrl;
+    const nextContent = seedMaterial.content ?? liveMaterial.content;
+
+    if (
+      liveMaterial.url === nextUrl &&
+      liveMaterial.embedUrl === nextEmbed &&
+      liveMaterial.content === nextContent
+    ) {
+      continue;
+    }
+
+    liveMaterial.url = nextUrl;
+    liveMaterial.embedUrl = nextEmbed;
+    liveMaterial.content = nextContent;
     changed = true;
-    console.log(`Patched video ${seedMaterial.id} in ${seedProduct.id}`);
+    console.log(`Synced video ${seedMaterial.id} in ${seedProduct.id}`);
   }
 }
 
@@ -37,5 +47,10 @@ if (changed) {
   fs.writeFileSync(livePath, `${JSON.stringify(live, null, 2)}\n`, "utf8");
   console.log(`Updated ${livePath}`);
 } else {
-  console.log("No video patches needed");
+  console.log("Video materials already in sync with seed");
+}
+
+for (const product of live.products ?? []) {
+  const video = product.materials?.find((item) => item.type === "video");
+  console.log(`${product.id}: ${video?.embedUrl ?? "(no embed)"}`);
 }

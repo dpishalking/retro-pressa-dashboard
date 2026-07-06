@@ -437,7 +437,10 @@ function ProductEditorContent({ productId }: { productId: string }) {
         ) : null}
         {saveMessage ? (
           <p className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {saveMessage}
+            {saveMessage}{" "}
+            <Link href={`/training/products/${product.id}`} className="font-bold underline">
+              Открыть страницу продукта
+            </Link>
           </p>
         ) : null}
         <button

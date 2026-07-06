@@ -2,8 +2,6 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findUserById } from "@/lib/auth/store";
 import { createTrainingCatalogSeed, trainingUsers, type TrainingCatalog } from "@/data/training-seed";
-import { applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
-import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 import type {
   ProductTrainingModule,
   QuizSubmission,
@@ -36,10 +34,9 @@ function progressFilePath(userId: string) {
 }
 
 function decorateTrainingCatalog(catalog: TrainingCatalog): TrainingCatalog {
-  return {
-    ...catalog,
-    products: applyGiftSiteImagesToCatalog(applySheetContentToCatalog(catalog.products))
-  };
+  // products.json on disk is the source of truth for the live cabinet.
+  // Runtime overlays from sheet/gift snapshots were overwriting admin edits on every read.
+  return catalog;
 }
 
 export async function readRawTrainingCatalog(): Promise<TrainingCatalog | null> {
