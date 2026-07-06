@@ -229,14 +229,14 @@ export function RopConversationsScreen() {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 250, daysBack: 3, incremental: true })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 25, daysBack: 1, incremental: true })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
       setStatus({
         state: "ok",
         message: data.summary.incremental
-          ? `Июль обновлён: +${number(data.summary.dialogsAdded ?? data.summary.dialogsLoaded)} диалогов сегодня, всего ${number(data.summary.totalDialogs ?? data.summary.dialogsLoaded)}.`
+          ? `Июль обновлён быстрым срезом: +${number(data.summary.dialogsAdded ?? data.summary.dialogsLoaded)} диалогов сегодня, всего ${number(data.summary.totalDialogs ?? data.summary.dialogsLoaded)}. Большой импорт идёт автоматически утром.`
           : `Июль обновлён из Bitrix: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 

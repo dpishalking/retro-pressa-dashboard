@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         period,
         daysBack: body.daysBack ?? 3,
         dialogLimit: body.dialogLimit ?? 250,
+        maxDialogLimit: 250,
         incremental: body.incremental !== false
       })
     ]);
