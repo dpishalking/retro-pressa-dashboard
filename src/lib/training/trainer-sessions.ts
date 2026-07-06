@@ -1,5 +1,5 @@
 import type { TrainingStatus } from "@/types/training";
-import { fetchManagerBotSessions, type TrainerBotSession } from "@/lib/training/trainer-api";
+import { fetchManagerBotSessions, registerTrainerManager, type TrainerBotSession } from "@/lib/training/trainer-api";
 
 function mapTrainerStatus(status: string, hasCompleted: boolean): TrainingStatus {
   if (hasCompleted || status === "completed") return "completed";
@@ -57,7 +57,13 @@ export function buildBotScenarioRowsFromTrainerSessions(sessions: TrainerBotSess
     .sort((left, right) => (right.lastAttemptAt ?? "").localeCompare(left.lastAttemptAt ?? ""));
 }
 
-export async function loadManagerBotScenarioRows(externalId: string): Promise<BotScenarioReportRow[]> {
+export async function loadManagerBotScenarioRows(
+  externalId: string,
+  userName?: string
+): Promise<BotScenarioReportRow[]> {
+  if (userName) {
+    await registerTrainerManager({ id: externalId, name: userName });
+  }
   const sessions = await fetchManagerBotSessions(externalId);
   return buildBotScenarioRowsFromTrainerSessions(sessions);
 }

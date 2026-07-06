@@ -21,7 +21,7 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     listTrackModules("crm"),
     listTrackModules("practice"),
     getOrCreateUserProgress(user.id, user.name),
-    loadManagerBotScenarioRows(user.id)
+    loadManagerBotScenarioRows(user.id, user.name)
   ]);
 
   const overview = buildTrainingOverview(products, crmModules, practiceModules, progress);
