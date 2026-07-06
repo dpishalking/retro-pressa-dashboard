@@ -80,6 +80,12 @@ ${routeBlock}`
   fs.writeFileSync(routesFile, routes);
 }
 
+function patchScenarioTemplates() {
+  const patch = path.join(overlayDir, "patches", "scenario-templates.ts");
+  if (!fs.existsSync(patch)) return;
+  fs.copyFileSync(patch, path.join(backendRoot, "src/training/scenario-templates.ts"));
+}
+
 function patchGeminiEvaluationFix() {
   const geminiPatch = path.join(overlayDir, "patches", "gemini.ts");
   const providerPatch = path.join(overlayDir, "patches", "gemini-provider.ts");
@@ -218,6 +224,7 @@ function patchBackendBuildPrompts() {
 
 patchManagerSessions();
 patchBackendBuildPrompts();
+patchScenarioTemplates();
 patchGeminiEvaluationFix();
 patchGeminiClientReplyRetries();
 patchTrainingServiceFallbackReply();
