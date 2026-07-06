@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ClientReviewsAdmin } from "@/components/training/client-reviews-admin";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import type { ProductTrainingModule, TrainingOverview, TrainingUser, UserTrainingProgress } from "@/types/training";
@@ -106,7 +107,7 @@ function ManagerProgressTable({ rows }: { rows: ManagerRow[] }) {
 
 function AdminContent() {
   const { isAdmin } = useTrainingUser();
-  const [tab, setTab] = useState<"products" | "progress">("products");
+  const [tab, setTab] = useState<"products" | "reviews" | "progress">("products");
   const [products, setProducts] = useState<ProductTrainingModule[]>([]);
   const [rows, setRows] = useState<ManagerRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +153,13 @@ function AdminContent() {
         </button>
         <button
           type="button"
+          onClick={() => setTab("reviews")}
+          className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "reviews" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
+        >
+          Отзывы
+        </button>
+        <button
+          type="button"
           onClick={() => setTab("progress")}
           className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "progress" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
         >
@@ -172,6 +180,8 @@ function AdminContent() {
           </div>
           <ProductsTable products={products} onRefresh={() => void load()} />
         </>
+      ) : tab === "reviews" ? (
+        <ClientReviewsAdmin />
       ) : (
         <ManagerProgressTable rows={rows} />
       )}

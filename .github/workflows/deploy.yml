@@ -56,6 +56,10 @@ jobs:
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/crm-modules.json /tmp/retro-pressa-deploy/training-seed/crm-modules.json
           fi
+          if [ -f data/training/client-review-videos.json ]; then
+            mkdir -p /tmp/retro-pressa-deploy/training-seed
+            cp data/training/client-review-videos.json /tmp/retro-pressa-deploy/training-seed/client-review-videos.json
+          fi
           if [ -f data/training/practice-modules.json ]; then
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/practice-modules.json /tmp/retro-pressa-deploy/training-seed/practice-modules.json
@@ -397,6 +401,15 @@ jobs:
           fi
           if [ -f "$APP_DIR/training-seed/crm-modules.json" ]; then
             cp "$APP_DIR/training-seed/crm-modules.json" "$APP_DATA_DIR/training/crm-modules.json"
+          fi
+          if [ -f "$APP_DIR/training-seed/client-review-videos.json" ]; then
+            mkdir -p "$APP_DATA_DIR/training"
+            if [ ! -f "$APP_DATA_DIR/training/client-review-videos.json" ]; then
+              cp "$APP_DIR/training-seed/client-review-videos.json" "$APP_DATA_DIR/training/client-review-videos.json"
+              echo "Initialized client review videos from deploy seed"
+            else
+              echo "Keeping existing client review videos at $APP_DATA_DIR/training/client-review-videos.json"
+            fi
           fi
           if [ -f "$APP_DIR/training-seed/practice-modules.json" ]; then
             cp "$APP_DIR/training-seed/practice-modules.json" "$APP_DATA_DIR/training/practice-modules.json"

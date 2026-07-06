@@ -59,6 +59,20 @@ export type TrainingTrackVideo = {
   sortOrder: number;
 };
 
+export type TrainingClientReviewVideo = {
+  id: string;
+  title: string;
+  url?: string;
+  embedUrl: string;
+  sortOrder: number;
+};
+
+export type TrainingClientReviewCatalog = {
+  version: 1;
+  sectionTitle: string;
+  videos: TrainingClientReviewVideo[];
+};
+
 /** CRM или практика — отдельный модуль внутри этапа обучения */
 export type TrainingTrackModule = {
   id: string;

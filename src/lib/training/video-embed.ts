@@ -17,6 +17,18 @@ function extractYouTubeId(url: URL) {
   return null;
 }
 
+function extractStartSeconds(url: URL) {
+  const raw = url.searchParams.get("t") ?? url.searchParams.get("start");
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) return Number(raw);
+
+  const secondsMatch = raw.match(/^(\d+)s?$/i);
+  if (secondsMatch) return Number(secondsMatch[1]);
+
+  return null;
+}
+
 export function normalizeVideoEmbedUrl(input?: string | null) {
   const trimmed = input?.trim() ?? "";
   if (!trimmed) return "";
@@ -27,7 +39,9 @@ export function normalizeVideoEmbedUrl(input?: string | null) {
     const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
     const videoId = extractYouTubeId(url);
     if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
+      const start = extractStartSeconds(url);
+      const base = `https://www.youtube.com/embed/${videoId}`;
+      return start != null ? `${base}?start=${start}` : base;
     }
   } catch {
     return trimmed;

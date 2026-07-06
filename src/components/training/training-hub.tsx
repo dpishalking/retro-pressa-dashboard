@@ -8,6 +8,7 @@ import { ru } from "date-fns/locale";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
+import { ClientReviewVideos } from "@/components/training/client-review-videos";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { buildTrainingOverview } from "@/lib/training/progress";
@@ -290,6 +291,8 @@ function TrainingHubContent() {
           </div>
         </section>
       )}
+
+      <ClientReviewVideos />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.products.map((product) => {

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "sectionTitle": "Отзывы от клиентов и блогеров.",
+  "videos": [
+    {
+      "id": "client-review-1",
+      "title": "Отзыв 1",
+      "url": "https://www.youtube.com/watch?v=kUQP5Dxz8gg",
+      "embedUrl": "https://www.youtube.com/embed/kUQP5Dxz8gg",
+      "sortOrder": 1
+    },
+    {
+      "id": "client-review-2",
+      "title": "Отзыв 2",
+      "url": "https://www.youtube.com/watch?v=UUAeIw7td_o",
+      "embedUrl": "https://www.youtube.com/embed/UUAeIw7td_o",
+      "sortOrder": 2
+    },
+    {
+      "id": "client-review-3",
+      "title": "Отзыв 3",
+      "url": "https://www.youtube.com/watch?v=voB0xgY9STM&t=4s",
+      "embedUrl": "https://www.youtube.com/embed/voB0xgY9STM?start=4",
+      "sortOrder": 3
+    }
+  ]
+}
