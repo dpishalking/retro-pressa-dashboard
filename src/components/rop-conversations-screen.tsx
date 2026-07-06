@@ -84,7 +84,7 @@ const periodOptions: Array<{ value: PeriodKey; label: string }> = [
   { value: "may-2026", label: "Май 2026" }
 ];
 
-type SyncStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
+type SyncStatus = { state: "idle" | "loading" | "ok" | "warning" | "error"; message: string };
 
 function itemPeriodKey(item: ConversationHistoryItem): PeriodKey | null {
   return item.periodKey ?? inferPeriodKeyFromLabel(item.label);
@@ -224,12 +224,12 @@ export function RopConversationsScreen() {
       setStatus({ state: "error", message: "Bitrix-синк доступен только для текущего месяца (июль)." });
       return;
     }
-    setStatus({ state: "loading", message: "Забираю переписки за июль 2026 из Bitrix..." });
+    setStatus({ state: "loading", message: "Проверяю свежие переписки июля в Bitrix..." });
     try {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 25, daysBack: 1, incremental: true })
+        body: JSON.stringify({ period: "july-2026", dialogLimit: 5, daysBack: 1, incremental: true })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
@@ -257,6 +257,13 @@ export function RopConversationsScreen() {
         return refreshFromBitrix(attempt + 1);
       }
       setStatus({ state: "error", message });
+      if (/HTML|прокси|таймаут|timeout|перезапуск/i.test(message)) {
+        setStatus({
+          state: "warning",
+          message: "Bitrix сейчас не отдал быстрый ответ. Для аналитики всего июля нажмите «Загрузить июль» и выберите CSV/JSON-архив; ежедневный большой импорт продолжит работать на сервере автоматически."
+        });
+        return;
+      }
     }
   };
 
@@ -404,7 +411,7 @@ export function RopConversationsScreen() {
               disabled={status.state === "loading" || selectedPeriod !== "july-2026"}
             >
               <RefreshCcw size={16} />
-              {status.state === "loading" ? "Обновляю..." : "Обновить июль из Bitrix"}
+              {status.state === "loading" ? "Проверяю..." : "Свежий срез Bitrix"}
             </button>
             {(selectedPeriod === "may-2026" || selectedPeriod === "june-2026") ? (
               <button
@@ -434,7 +441,7 @@ export function RopConversationsScreen() {
       />
 
       {status.state !== "idle" ? (
-        <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
+        <div className={`mb-6 rounded-2xl border p-4 text-sm font-semibold ${status.state === "error" ? "border-red-200 bg-red-50 text-red-700" : status.state === "warning" ? "border-amber-200 bg-amber-50 text-amber-900" : status.state === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`}>
           {status.message}
         </div>
       ) : null}
