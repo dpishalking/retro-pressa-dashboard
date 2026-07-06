@@ -13,6 +13,7 @@ import {
   splitProductMaterials,
   type ProductContentSection
 } from "@/lib/training/product-sections";
+import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
 
 function ContentSection({ title, content, emoji }: ProductContentSection) {
@@ -32,15 +33,17 @@ function ContentSection({ title, content, emoji }: ProductContentSection) {
 }
 
 function VideoBlock({ material }: { material: ProductMaterial }) {
+  const embedUrl = normalizeVideoEmbedUrl(material.embedUrl ?? material.url);
+
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--line)]">
       <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
         {material.title}
       </div>
-      {material.embedUrl ? (
+      {embedUrl ? (
         <div className="aspect-video bg-black">
           <iframe
-            src={material.embedUrl}
+            src={embedUrl}
             title={material.title}
             className="h-full w-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

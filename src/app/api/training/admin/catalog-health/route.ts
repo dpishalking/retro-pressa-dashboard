@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readTrainingAdminSession } from "@/lib/training/admin-auth";
 import { readRawTrainingCatalog } from "@/lib/training/store";
+import { normalizeProductMaterials, normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import path from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -23,13 +24,14 @@ export async function GET(request: Request) {
       title: product.title,
       updatedAt: product.updatedAt,
       shortDescriptionPreview: product.shortDescription.slice(0, 120),
-      videos: product.materials
+      videos: normalizeProductMaterials(product.materials)
         .filter((material) => material.type === "video")
         .map((material) => ({
           id: material.id,
           title: material.title,
           url: material.url ?? null,
-          embedUrl: material.embedUrl ?? null
+          embedUrl: material.embedUrl ?? null,
+          resolvedEmbedUrl: normalizeVideoEmbedUrl(material.embedUrl ?? material.url) || null
         }))
     })) ?? [];
 

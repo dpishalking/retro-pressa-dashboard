@@ -13,6 +13,7 @@ import type {
   UserTrainingProgress
 } from "@/types/training";
 import { generateId } from "@/lib/training/id";
+import { normalizeProductMaterials } from "@/lib/training/video-embed";
 import { scoreQuizSubmission } from "@/lib/training/quiz-scoring";
 import { buildTrainingOverview, getTrackModuleProgress } from "@/lib/training/progress";
 import { findTrackModule, listTrackModules } from "@/lib/training/track-modules";
@@ -34,9 +35,13 @@ function progressFilePath(userId: string) {
 }
 
 function decorateTrainingCatalog(catalog: TrainingCatalog): TrainingCatalog {
-  // products.json on disk is the source of truth for the live cabinet.
-  // Runtime overlays from sheet/gift snapshots were overwriting admin edits on every read.
-  return catalog;
+  return {
+    ...catalog,
+    products: catalog.products.map((product) => ({
+      ...product,
+      materials: normalizeProductMaterials(product.materials)
+    }))
+  };
 }
 
 export async function readRawTrainingCatalog(): Promise<TrainingCatalog | null> {
