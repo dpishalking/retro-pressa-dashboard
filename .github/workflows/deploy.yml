@@ -86,6 +86,11 @@ jobs:
           TRAINER_ADMIN_API_KEY: ${{ secrets.TRAINER_ADMIN_API_KEY }}
           TRAINER_SERVICE_TAG: ${{ secrets.TRAINER_SERVICE_TAG }}
           TRAINER_BOT_USERNAME: ${{ secrets.TRAINER_BOT_USERNAME }}
+          TRAINER_BOT_TOKEN: ${{ secrets.TRAINER_BOT_TOKEN }}
+          TRAINER_NOTIFY_TELEGRAM_IDS: ${{ secrets.TRAINER_NOTIFY_TELEGRAM_IDS }}
+          TRAINER_BACKEND_PUBLIC_URL: ${{ secrets.TRAINER_BACKEND_PUBLIC_URL }}
+          ADMIN_TELEGRAM_IDS: ${{ secrets.ADMIN_TELEGRAM_IDS }}
+          ROP_ALERTS_TELEGRAM_CHAT_IDS: ${{ secrets.ROP_ALERTS_TELEGRAM_CHAT_IDS }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -97,9 +102,19 @@ jobs:
             (authSecret
               ? crypto.createHash("sha256").update(authSecret).digest("hex").slice(0, 32)
               : "change-me-trainer-admin");
-          const trainerApiUrl =
-            process.env.TRAINER_API_URL || "https://pressa-production-d394.up.railway.app";
+          const trainerBackendPublicUrl =
+            process.env.TRAINER_BACKEND_PUBLIC_URL || "http://85.92.111.202:3100";
+          const trainerApiUrl = process.env.TRAINER_API_URL || trainerBackendPublicUrl;
           const trainerBotUsername = process.env.TRAINER_BOT_USERNAME || "dushnila12_bot";
+          const trainerBotToken =
+            process.env.TRAINER_BOT_TOKEN ||
+            process.env.TRAINER_NOTIFY_BOT_TOKEN ||
+            "";
+          const trainerNotifyIds =
+            process.env.TRAINER_NOTIFY_TELEGRAM_IDS ||
+            process.env.ROP_ALERTS_TELEGRAM_CHAT_IDS ||
+            process.env.ADMIN_TELEGRAM_IDS ||
+            "";
 
           const keys = [
             "AUTH_SECRET",
@@ -137,11 +152,27 @@ jobs:
             GEMINI_MODEL_FALLBACK: "gemini-2.5-flash-lite",
             ADMIN_API_KEY: adminKey,
             TRAINER_BOT_USERNAME: trainerBotUsername,
-            PUBLIC_API_URL: "http://127.0.0.1:3100",
+            TRAINER_BOT_TOKEN: trainerBotToken,
+            TRAINER_NOTIFY_BOT_TOKEN: trainerBotToken,
+            TRAINER_NOTIFY_TELEGRAM_IDS: trainerNotifyIds,
+            ADMIN_TELEGRAM_IDS: process.env.ADMIN_TELEGRAM_IDS || "",
+            ROP_ALERTS_TELEGRAM_CHAT_IDS: process.env.ROP_ALERTS_TELEGRAM_CHAT_IDS || "",
+            PUBLIC_API_URL: trainerBackendPublicUrl,
             CRM_PROVIDER: "none",
             LOG_LEVEL: "info"
           };
           fs.writeFileSync("trainer-backend-env.json", JSON.stringify(backendEnv, null, 2));
+
+          if (!trainerNotifyIds) {
+            console.warn(
+              "WARNING: TRAINER_NOTIFY_TELEGRAM_IDS is empty — ROP will not receive Telegram reports after training"
+            );
+          }
+          if (!trainerBotToken) {
+            console.warn(
+              "WARNING: TRAINER_BOT_TOKEN is empty — training notify messages cannot be sent"
+            );
+          }
           NODE
 
       - name: Configure SSH
@@ -235,6 +266,20 @@ jobs:
           if ! node -e "const env=require('$BACKEND_ENV'); if(!env.GEMINI_API_KEY){process.exit(1)}"; then
             echo "WARNING: GEMINI_API_KEY is empty — trainer bot replies will fail until the secret is set" >&2
           fi
+          node - <<'NODE'
+          const env = require("/opt/pressa-backend/runtime-env.json");
+          const ids = String(env.TRAINER_NOTIFY_TELEGRAM_IDS || env.ROP_ALERTS_TELEGRAM_CHAT_IDS || env.ADMIN_TELEGRAM_IDS || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+          const token = env.TRAINER_BOT_TOKEN || env.TRAINER_NOTIFY_BOT_TOKEN || "";
+          console.log("Trainer notify recipients:", ids.length ? ids.join(", ") : "NONE");
+          console.log("Trainer notify bot token:", token ? "configured" : "MISSING");
+          if (!ids.length) {
+            console.warn("Add GitHub secret TRAINER_NOTIFY_TELEGRAM_IDS (ROP Telegram chat id)");
+          }
+          NODE
+          echo "Railway trainer-bot should use API_URL=${TRAINER_BACKEND_PUBLIC_URL:-http://85.92.111.202:3100} to reach this backend"
 
           # Trainer Telegram bot runs on Railway only (retro-pressa-bot / trainer-bot).
           # Never start it on VPS — duplicate token causes silent failures in Telegram.
