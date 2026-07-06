@@ -1352,6 +1352,14 @@
           "url": "/training/gift-edition/forbes-maksim.png",
           "sectionKey": "gallery",
           "sortOrder": 7
+        },
+        {
+          "id": "img-gift-edition-gallery-8",
+          "type": "image",
+          "title": "Маленький рассказ — персональная книга",
+          "url": "/training/gift-edition/malenkiy-rasskaz.png",
+          "sectionKey": "gallery",
+          "sortOrder": 8
         }
       ],
       "questions": [
