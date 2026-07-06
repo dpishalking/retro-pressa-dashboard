@@ -243,7 +243,7 @@ export function applySheetProductContent(product: ProductTrainingModule, sheet?:
         {
           id: `mat-${product.id}-sheet-cost`,
           type: "text" as const,
-          title: "Стоимость и сроки",
+          title: "Сроки и объём",
           content: sheet.costNote,
           sortOrder: 10
         }
