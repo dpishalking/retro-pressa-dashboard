@@ -1343,6 +1343,15 @@
           "url": "/training/gift-edition/forbes-maksim.png",
           "sectionKey": "gallery",
           "sortOrder": 7
+        },
+        {
+          "id": "img-gift-edition-gallery-8",
+          "type": "image",
+          "title": "Персональная газета и персональный журнал",
+          "url": "/training/gift-edition/personal-gifts-banner.png",
+          "content": "landscape",
+          "sectionKey": "gallery",
+          "sortOrder": 8
         }
       ],
       "questions": [

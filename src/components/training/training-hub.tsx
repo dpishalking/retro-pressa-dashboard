@@ -294,21 +294,24 @@ function TrainingHubContent() {
 
       <ClientReviewVideos />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {data.products.map((product) => {
-          const productProgress = data.progress.products.find((item) => item.productId === product.id);
-          const status = productProgress?.status ?? "not_started";
-          return (
-            <ProductCard
-              key={product.id}
-              product={product}
-              status={status}
-              bestScorePercent={productProgress?.bestScorePercent}
-              attemptCount={productProgress?.attemptCount ?? 0}
-              onStart={() => void markStarted(product.id)}
-            />
-          );
-        })}
+      <section className="mb-6">
+        <h3 className="text-lg font-black text-slate-950">Наши подарки</h3>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {data.products.map((product) => {
+            const productProgress = data.progress.products.find((item) => item.productId === product.id);
+            const status = productProgress?.status ?? "not_started";
+            return (
+              <ProductCard
+                key={product.id}
+                product={product}
+                status={status}
+                bestScorePercent={productProgress?.bestScorePercent}
+                attemptCount={productProgress?.attemptCount ?? 0}
+                onStart={() => void markStarted(product.id)}
+              />
+            );
+          })}
+        </div>
       </section>
 
       {isAdmin ? (

@@ -63,12 +63,13 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {photos.map((material) => {
           const isWide = material.content === "wide";
+          const isLandscape = material.content === "landscape";
           return (
           <figure
             key={material.id}
             className={`overflow-hidden rounded-xl border border-[var(--line)] bg-white ${isWide ? "sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}`}
           >
-            <div className={`relative w-full bg-slate-100 ${isWide ? "aspect-[3/2]" : "aspect-[3/4]"}`}>
+            <div className={`relative w-full bg-slate-100 ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
               <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
             </div>
             <figcaption className="border-t border-[var(--line)] px-4 py-3 text-sm font-semibold text-slate-700">
