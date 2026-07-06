@@ -67,7 +67,9 @@ function ModuleTable({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5}>Нет модулей</td>
+                <td colSpan={5} className="text-slate-600">
+                  Нет данных. Стажёр должен открыть бота по персональной ссылке из этапа «Практика» (не через обычный /start).
+                </td>
               </tr>
             ) : (
               rows.map((row) => (
