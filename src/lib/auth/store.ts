@@ -7,6 +7,11 @@ import { registerTrainerManager } from "@/lib/training/trainer-api";
 
 const usersPath = path.join(process.cwd(), "data", "auth", "users.json");
 const usersBackupPath = `${usersPath}.bak`;
+const usersPersistentBackupPath = path.join(
+  path.resolve(path.dirname(usersPath), "..", ".."),
+  "auth-catalog",
+  "users.json"
+);
 
 let catalogLock: Promise<void> = Promise.resolve();
 
@@ -105,6 +110,13 @@ async function writeUsersCatalogAtomic(catalog: UsersCatalog) {
   } catch {
     // backup is best-effort
   }
+
+  try {
+    await mkdir(path.dirname(usersPersistentBackupPath), { recursive: true });
+    await copyFile(usersPath, usersPersistentBackupPath);
+  } catch {
+    // persistent backup is best-effort
+  }
 }
 
 async function readUsersCatalogUnsafe(): Promise<UsersCatalog> {
@@ -121,6 +133,12 @@ async function readUsersCatalogUnsafe(): Promise<UsersCatalog> {
       await writeUsersCatalogAtomic(backup);
       return backup;
     }
+    const persistentBackup = await readCatalogWithRetry(usersPersistentBackupPath);
+    if (persistentBackup) {
+      console.error("Auth users catalog is corrupt; repairing from persistent backup");
+      await writeUsersCatalogAtomic(persistentBackup);
+      return persistentBackup;
+    }
     throw new Error("Auth users catalog is corrupt and backup is unavailable");
   }
 
@@ -128,6 +146,13 @@ async function readUsersCatalogUnsafe(): Promise<UsersCatalog> {
   if (backup) {
     await writeUsersCatalogAtomic(backup);
     return backup;
+  }
+
+  const persistentBackup = await readCatalogWithRetry(usersPersistentBackupPath);
+  if (persistentBackup) {
+    console.error("Auth users catalog missing; repairing from persistent backup");
+    await writeUsersCatalogAtomic(persistentBackup);
+    return persistentBackup;
   }
 
   const seed = buildSeedCatalog();

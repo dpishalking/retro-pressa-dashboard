@@ -14,4 +14,5 @@ runtime-env.json
 ecosystem.config.cjs
 data/bitrix-snapshots/
 data/google-snapshots/
+data/auth/
 tsconfig.tsbuildinfo

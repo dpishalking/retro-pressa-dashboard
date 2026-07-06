@@ -292,18 +292,44 @@ jobs:
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth"
+          AUTH_STAGING="/tmp/retro-pressa-auth-staging"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
+          AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
+          mkdir -p "$AUTH_STAGING"
           if [ -f "$AUTH_FILE" ]; then
-            cp "$AUTH_FILE" "$AUTH_BACKUP"
+            cp -a "$AUTH_FILE" "$AUTH_STAGING/users.json"
           fi
-          find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          if [ -f "$AUTH_BACKUP" ]; then
+            cp -a "$AUTH_BACKUP" "$AUTH_STAGING/users.json.bak"
+          fi
+          if [ -f "$AUTH_PERSISTENT" ]; then
+            cp -a "$AUTH_PERSISTENT" "$AUTH_STAGING/users.persistent.json"
+          fi
+          # GNU rm -rf follows symlinks and would wipe $APP_DATA_DIR — remove links without -r.
+          for entry in "$APP_DIR"/* "$APP_DIR"/.[!.]* ; do
+            [ -e "$entry" ] || [ -L "$entry" ] || continue
+            if [ -L "$entry" ]; then
+              rm -f "$entry"
+            else
+              rm -rf "$entry"
+            fi
+          done
           tar -xzf /tmp/retro-pressa-deploy.tar.gz -C "$APP_DIR"
           cd "$APP_DIR"
           ln -sfn "$APP_DATA_DIR" data
-          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_BACKUP" ]; then
-            cp "$AUTH_BACKUP" "$AUTH_FILE"
+          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.json" ]; then
+            cp -a "$AUTH_STAGING/users.json" "$AUTH_FILE"
+          fi
+          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.json.bak" ]; then
+            cp -a "$AUTH_STAGING/users.json.bak" "$AUTH_FILE"
+          fi
+          if [ ! -f "$AUTH_FILE" ] && [ -f "$AUTH_STAGING/users.persistent.json" ]; then
+            cp -a "$AUTH_STAGING/users.persistent.json" "$AUTH_FILE"
+          fi
+          if [ ! -f "$AUTH_PERSISTENT" ] && [ -f "$AUTH_FILE" ]; then
+            cp -a "$AUTH_FILE" "$AUTH_PERSISTENT"
           fi
           if [ -f "$AUTH_FILE" ]; then
             echo "Auth users file present"
