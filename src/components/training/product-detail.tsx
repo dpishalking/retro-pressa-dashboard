@@ -61,16 +61,22 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
       <h2 className="text-lg font-black text-slate-950">Как выглядит подарок</h2>
       <p className="mt-1 text-sm text-slate-600">Примеры готовых изданий — чтобы менеджер видел, что получает клиент.</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {photos.map((material) => (
-          <figure key={material.id} className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
-            <div className="relative aspect-[3/4] w-full bg-slate-100">
+        {photos.map((material) => {
+          const isWide = material.content === "wide";
+          return (
+          <figure
+            key={material.id}
+            className={`overflow-hidden rounded-xl border border-[var(--line)] bg-white ${isWide ? "sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}`}
+          >
+            <div className={`relative w-full bg-slate-100 ${isWide ? "aspect-[3/2]" : "aspect-[3/4]"}`}>
               <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
             </div>
             <figcaption className="border-t border-[var(--line)] px-4 py-3 text-sm font-semibold text-slate-700">
               {material.title}
             </figcaption>
           </figure>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

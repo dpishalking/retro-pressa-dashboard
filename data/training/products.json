@@ -62,6 +62,15 @@
           "url": "https://static.tildacdn.net/tild6335-3161-4537-b433-353738363539/1_.webp",
           "sectionKey": "emotions",
           "sortOrder": 4
+        },
+        {
+          "id": "img-personal-newspaper-gallery-catalog",
+          "type": "image",
+          "title": "Примеры журналов и форматы на сайте",
+          "url": "/training/personal-newspaper/catalog-formats.webp",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 5
         }
       ],
       "questions": [
