@@ -13,6 +13,7 @@ const backendRoot = path.join(giftAiRoot, "backend");
 const botRoot = path.join(giftAiRoot, "trainer-bot");
 const routesFile = path.join(backendRoot, "src/api/trainer-routes.ts");
 const geminiProviderFile = path.join(backendRoot, "src/llm/gemini-provider.ts");
+const geminiIntegrationFile = path.join(backendRoot, "src/integrations/ai/gemini.ts");
 const trainingServiceFile = path.join(backendRoot, "src/training/training-service.ts");
 const botIndexFile = path.join(botRoot, "src/index.ts");
 
@@ -77,6 +78,15 @@ ${routeBlock}`
   }
 
   fs.writeFileSync(routesFile, routes);
+}
+
+function patchGeminiEvaluationFix() {
+  const geminiPatch = path.join(overlayDir, "patches", "gemini.ts");
+  const providerPatch = path.join(overlayDir, "patches", "gemini-provider.ts");
+  if (!fs.existsSync(geminiPatch) || !fs.existsSync(providerPatch)) return;
+
+  fs.copyFileSync(geminiPatch, geminiIntegrationFile);
+  fs.copyFileSync(providerPatch, geminiProviderFile);
 }
 
 function patchGeminiClientReplyRetries() {
@@ -197,7 +207,18 @@ function patchTrainerBotErrors() {
   fs.writeFileSync(botIndexFile, source);
 }
 
+function patchBackendBuildPrompts() {
+  const packageFile = path.join(backendRoot, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(packageFile, "utf8"));
+  const build = String(pkg.scripts?.build ?? "");
+  if (build.includes("dist/llm/prompts")) return;
+  pkg.scripts.build = 'tsc && cp -R src/llm/prompts dist/llm/prompts';
+  fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+}
+
 patchManagerSessions();
+patchBackendBuildPrompts();
+patchGeminiEvaluationFix();
 patchGeminiClientReplyRetries();
 patchTrainingServiceFallbackReply();
 patchTrainerBotErrors();
