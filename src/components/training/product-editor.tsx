@@ -103,6 +103,25 @@ function ProductEditorContent({ productId }: { productId: string }) {
     update("materials", [...product.materials, material]);
   };
 
+  const addGalleryPhoto = () => {
+    const material: ProductMaterial = {
+      id: generateId("material"),
+      type: "image",
+      title: "Фото подарка",
+      url: "",
+      sectionKey: "gallery",
+      sortOrder: product.materials.length + 1
+    };
+    update("materials", [...product.materials, material]);
+  };
+
+  const galleryMaterials = product.materials.filter(
+    (material) => material.type === "image" && (!material.sectionKey || material.sectionKey === "gallery")
+  );
+  const otherMaterials = product.materials.filter(
+    (material) => !(material.type === "image" && (!material.sectionKey || material.sectionKey === "gallery"))
+  );
+
   const addQuestion = () => {
     const question: QuizQuestion = {
       id: generateId("question"),
@@ -195,6 +214,72 @@ function ProductEditorContent({ productId }: { productId: string }) {
       </section>
 
       <section className="card p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">Как выглядит подарок</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Фото показываются на странице продукта сразу под видео, перед блоком «Что это за продукт».
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addGalleryPhoto}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+          >
+            <Plus size={14} />
+            Добавить фото
+          </button>
+        </div>
+        <div className="space-y-4">
+          {galleryMaterials.length ? (
+            galleryMaterials.map((material) => {
+              const index = product.materials.findIndex((item) => item.id === material.id);
+              return (
+                <div key={material.id} className="rounded-xl border border-[var(--line)] p-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field
+                      label="Подпись к фото"
+                      value={material.title}
+                      onChange={(value) => {
+                        const materials = [...product.materials];
+                        materials[index] = { ...material, title: value };
+                        update("materials", materials);
+                      }}
+                    />
+                    <Field
+                      label="URL изображения"
+                      value={material.url ?? ""}
+                      onChange={(value) => {
+                        const materials = [...product.materials];
+                        materials[index] = { ...material, url: value, sectionKey: "gallery" };
+                        update("materials", materials);
+                      }}
+                    />
+                  </div>
+                  {material.url ? (
+                    <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-xl border border-[var(--line)] bg-slate-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={material.url} alt={material.title} className="h-full w-full object-cover" />
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => update("materials", product.materials.filter((item) => item.id !== material.id))}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-600"
+                  >
+                    <Trash2 size={14} />
+                    Удалить фото
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-sm text-slate-600">Фото пока не добавлены.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-black text-slate-950">Материалы</h2>
           <button type="button" onClick={addMaterial} className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">
@@ -203,7 +288,9 @@ function ProductEditorContent({ productId }: { productId: string }) {
           </button>
         </div>
         <div className="space-y-4">
-          {product.materials.map((material, index) => (
+          {otherMaterials.map((material) => {
+            const index = product.materials.findIndex((item) => item.id === material.id);
+            return (
             <div key={material.id} className="rounded-xl border border-[var(--line)] p-4">
               <div className="mb-3 grid gap-3 md:grid-cols-3">
                 <Field
@@ -249,7 +336,7 @@ function ProductEditorContent({ productId }: { productId: string }) {
                         update("materials", materials);
                       }}
                     >
-                      <option value="">Галерея (без привязки)</option>
+                      <option value="gallery">Как выглядит подарок</option>
                       <option value="description">Что это за продукт</option>
                       <option value="targetAudience">Для кого подходит</option>
                       <option value="clientProblems">Задачи клиента</option>
@@ -299,7 +386,8 @@ function ProductEditorContent({ productId }: { productId: string }) {
                 Удалить материал
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

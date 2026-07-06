@@ -15,7 +15,8 @@ export type ProductSectionKey =
   | "emotions"
   | "purchaseReasons"
   | "objections"
-  | "presentationGuide";
+  | "presentationGuide"
+  | "gallery";
 
 export type QuestionType = "single" | "multiple" | "text";
 

@@ -59,6 +59,7 @@ export function buildProductSections(product: ProductTrainingModule): ProductCon
 
 export function splitProductMaterials(materials: ProductMaterial[]) {
   const videos: ProductMaterial[] = [];
+  const gallery: ProductMaterial[] = [];
   const extras: ProductMaterial[] = [];
 
   for (const material of materials) {
@@ -66,16 +67,22 @@ export function splitProductMaterials(materials: ProductMaterial[]) {
       videos.push(material);
       continue;
     }
-    if (material.type === "image" && material.sectionKey) {
+
+    if (material.type === "image") {
+      if (!material.sectionKey || material.sectionKey === "gallery") {
+        gallery.push(material);
+      }
       continue;
     }
+
     extras.push(material);
   }
 
   videos.sort((a, b) => a.sortOrder - b.sortOrder);
+  gallery.sort((a, b) => a.sortOrder - b.sortOrder);
   extras.sort((a, b) => a.sortOrder - b.sortOrder);
 
-  return { videos, extras };
+  return { videos, gallery, extras };
 }
 
 export function presentationEmbedUrl(presentationUrl?: string) {

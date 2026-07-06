@@ -16,6 +16,24 @@ import {
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
 
+function RichText({ content }: { content: string }) {
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.startsWith("**") && part.endsWith("**") ? (
+          <strong key={index} className="font-bold text-slate-900">
+            {part.slice(2, -2)}
+          </strong>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 function ContentSection({ title, content, emoji }: ProductContentSection) {
   return (
     <section className="card overflow-hidden">
@@ -25,8 +43,34 @@ function ContentSection({ title, content, emoji }: ProductContentSection) {
         </div>
         <div className="p-6">
           <h2 className="text-lg font-black text-slate-950">{title}</h2>
-          <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{content}</div>
+          <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">
+            <RichText content={content} />
+          </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
+  const photos = materials.filter((material) => material.url);
+  if (!photos.length) return null;
+
+  return (
+    <section className="card p-6">
+      <h2 className="text-lg font-black text-slate-950">Как выглядит подарок</h2>
+      <p className="mt-1 text-sm text-slate-600">Примеры готовых изданий — чтобы менеджер видел, что получает клиент.</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {photos.map((material) => (
+          <figure key={material.id} className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+            <div className="relative aspect-[3/4] w-full bg-slate-100">
+              <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
+            </div>
+            <figcaption className="border-t border-[var(--line)] px-4 py-3 text-sm font-semibold text-slate-700">
+              {material.title}
+            </figcaption>
+          </figure>
+        ))}
       </div>
     </section>
   );
@@ -238,7 +282,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
   }
 
   const sections = buildProductSections(product);
-  const { videos, extras } = splitProductMaterials(product.materials);
+  const { videos, gallery, extras } = splitProductMaterials(product.materials);
   const hasQuiz = product.questions.length > 0;
 
   return (
@@ -254,6 +298,8 @@ function ProductDetailContent({ productId }: { productId: string }) {
       </section>
 
       <VideoSection materials={videos} />
+
+      <GiftGallerySection materials={gallery} />
 
       {sections.map((section) => (
         <ContentSection key={section.sectionKey} {...section} />

@@ -1280,28 +1280,60 @@
           "sortOrder": 10
         },
         {
-          "id": "img-gift-edition-description",
+          "id": "img-gift-edition-gallery-1",
           "type": "image",
-          "title": "Фото с сайта Retro Pressa",
-          "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
-          "sectionKey": "description",
+          "title": "Женщина года — персональный журнал",
+          "url": "/training/gift-edition/zhenschina-goda-marina.png",
+          "sectionKey": "gallery",
+          "sortOrder": 1
+        },
+        {
+          "id": "img-gift-edition-gallery-2",
+          "type": "image",
+          "title": "Forbes — персональный журнал",
+          "url": "/training/gift-edition/forbes-vitaliy.png",
+          "sectionKey": "gallery",
           "sortOrder": 2
         },
         {
-          "id": "img-gift-edition-emotions",
+          "id": "img-gift-edition-gallery-3",
           "type": "image",
-          "title": "Фото с сайта Retro Pressa",
-          "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
-          "sectionKey": "emotions",
+          "title": "ЖЗЛ — персональный журнал",
+          "url": "/training/gift-edition/zhl-elena.png",
+          "sectionKey": "gallery",
           "sortOrder": 3
         },
         {
-          "id": "img-gift-edition-purchaseReasons",
+          "id": "img-gift-edition-gallery-4",
           "type": "image",
-          "title": "Фото с сайта Retro Pressa",
-          "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
-          "sectionKey": "purchaseReasons",
+          "title": "Мужчина года — персональный журнал",
+          "url": "/training/gift-edition/muzhchina-goda-igor.png",
+          "sectionKey": "gallery",
           "sortOrder": 4
+        },
+        {
+          "id": "img-gift-edition-gallery-5",
+          "type": "image",
+          "title": "Forbes — персональный журнал",
+          "url": "/training/gift-edition/forbes-adlet.png",
+          "sectionKey": "gallery",
+          "sortOrder": 5
+        },
+        {
+          "id": "img-gift-edition-gallery-6",
+          "type": "image",
+          "title": "Glamour — персональный журнал",
+          "url": "/training/gift-edition/glamour-tatyana.png",
+          "sectionKey": "gallery",
+          "sortOrder": 6
+        },
+        {
+          "id": "img-gift-edition-gallery-7",
+          "type": "image",
+          "title": "Forbes — персональный журнал",
+          "url": "/training/gift-edition/forbes-maksim.png",
+          "sectionKey": "gallery",
+          "sortOrder": 7
         }
       ],
       "questions": [
