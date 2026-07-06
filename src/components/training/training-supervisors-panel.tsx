@@ -187,6 +187,12 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           lastAttemptAt: item.lastAttemptAt ?? item.completedAt ?? item.startedAt
         }))}
       />
+      {report.botScenarios.length === 0 ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на
+          этапе «Практика» — иначе результаты не привяжутся к аккаунту.
+        </p>
+      ) : null}
     </div>
   );
 }

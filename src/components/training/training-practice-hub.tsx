@@ -122,15 +122,20 @@ function PracticeHubContent() {
         {botLinkLoading ? (
           <p className="mt-6 text-sm text-slate-500">Подготавливаем вашу персональную ссылку…</p>
         ) : botLink ? (
-          <a
-            href={botLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#2481cc] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#1a6ead]"
-          >
-            Открыть тренажёр в Telegram
-            <ExternalLink size={18} />
-          </a>
+          <>
+            <p className="mt-4 text-sm text-amber-800">
+              Важно: открывайте бота только по этой персональной ссылке — иначе результаты не попадут в кабинет.
+            </p>
+            <a
+              href={botLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#2481cc] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#1a6ead]"
+            >
+              Открыть тренажёр в Telegram
+              <ExternalLink size={18} />
+            </a>
+          </>
         ) : (
           <div className="mt-6 space-y-3">
             <p className="text-sm text-red-600">
