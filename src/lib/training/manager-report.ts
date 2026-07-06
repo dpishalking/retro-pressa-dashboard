@@ -16,13 +16,14 @@ function pickLatestTimestamp(values: Array<string | undefined>): string | undefi
 }
 
 export async function buildManagerTrainingReport(user: AppUserPublic): Promise<ManagerTrainingReport> {
-  const [products, crmModules, practiceModules, progress, botScenarios] = await Promise.all([
+  const [products, crmModules, practiceModules, progress, botData] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
     listTrackModules("practice"),
     getOrCreateUserProgress(user.id, user.name),
     loadManagerBotScenarioRows(user.id, user.name)
   ]);
+  const botScenarios = botData.rows;
 
   const overview = buildTrainingOverview(products, crmModules, practiceModules, progress);
 
@@ -81,6 +82,7 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     crmModules: crmRows,
     practiceModules: practiceRows,
     botScenarios,
+    botLinkStatus: botData.linkStatus,
     lastActivityAt
   };
 }

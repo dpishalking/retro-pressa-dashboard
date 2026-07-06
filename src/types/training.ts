@@ -241,5 +241,12 @@ export type ManagerTrainingReport = {
     completedAt?: string;
     lastAttemptAt?: string;
   }[];
+  botLinkStatus?: {
+    managerRegistered: boolean;
+    linkedTelegramUsers: number;
+    sessionCount: number;
+    sessionsFetchStatus?: number;
+    sessionsFetchError?: string;
+  };
   lastActivityAt?: string;
 };

@@ -93,6 +93,29 @@ function ModuleTable({
   );
 }
 
+function formatBotLinkHint(report: ManagerTrainingReport): string {
+  const status = report.botLinkStatus;
+  if (!status) {
+    return "Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на этапе «Практика» — иначе результаты не привяжутся к аккаунту.";
+  }
+  if (status.sessionsFetchError?.includes("TRAINER_ADMIN_API_KEY")) {
+    return "Кабинет не может запросить ролевки: на сервере не настроен TRAINER_ADMIN_API_KEY.";
+  }
+  if (status.sessionsFetchStatus === 401) {
+    return "Кабинет не может запросить ролевки: неверный ключ доступа к trainer-backend (TRAINER_ADMIN_API_KEY).";
+  }
+  if (status.sessionCount > 0 && report.botScenarios.length === 0) {
+    return `На trainer-backend найдено ${status.sessionCount} ролевок, но кабинет их не получил. Обновите страницу или сообщите администратору.`;
+  }
+  if (status.linkedTelegramUsers === 0) {
+    return "Telegram не привязан к этому аккаунту. Стажёр должен открыть бота по персональной ссылке с этапа «Практика» и дождаться сообщения «Аккаунт привязан».";
+  }
+  if (status.sessionCount === 0) {
+    return "Telegram привязан, но ролевок на сервере пока нет. Стажёр должен пройти ролевку в боте после привязки.";
+  }
+  return "Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на этапе «Практика».";
+}
+
 function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
   const productsStage = report.overview.stages.find((stage) => stage.id === "products");
   const crmStage = report.overview.stages.find((stage) => stage.id === "crm");
@@ -189,8 +212,7 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
       />
       {report.botScenarios.length === 0 ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на
-          этапе «Практика» — иначе результаты не привяжутся к аккаунту.
+          {formatBotLinkHint(report)}
         </p>
       ) : null}
     </div>

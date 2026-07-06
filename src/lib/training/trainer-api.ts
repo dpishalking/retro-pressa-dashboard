@@ -98,10 +98,12 @@ export function buildFallbackBotLink(): string {
   return `https://t.me/${TRAINER_BOT_USERNAME}`;
 }
 
-export async function fetchManagerBotSessions(externalId: string): Promise<TrainerBotSession[]> {
+export async function fetchManagerBotSessions(
+  externalId: string
+): Promise<{ sessions: TrainerBotSession[]; status: number; error?: string }> {
   if (!TRAINER_ADMIN_API_KEY) {
     console.warn("TRAINER_ADMIN_API_KEY not set — skip trainer sessions fetch");
-    return [];
+    return { sessions: [], status: 0, error: "TRAINER_ADMIN_API_KEY not set" };
   }
 
   try {
@@ -114,15 +116,71 @@ export async function fetchManagerBotSessions(externalId: string): Promise<Train
     );
 
     if (!res.ok) {
-      console.warn("Trainer sessions fetch failed", { status: res.status, externalId });
-      return [];
+      const error = await res.text();
+      console.warn("Trainer sessions fetch failed", { status: res.status, externalId, error: error.slice(0, 200) });
+      return { sessions: [], status: res.status, error: error.slice(0, 200) };
     }
 
     const data = (await res.json()) as { sessions?: TrainerBotSession[] };
-    return Array.isArray(data.sessions) ? data.sessions : [];
+    return {
+      sessions: Array.isArray(data.sessions) ? data.sessions : [],
+      status: res.status,
+    };
   } catch (error) {
-    console.warn("Trainer sessions fetch error", { externalId, error: String(error) });
-    return [];
+    const message = String(error);
+    console.warn("Trainer sessions fetch error", { externalId, error: message });
+    return { sessions: [], status: 0, error: message };
+  }
+}
+
+export async function fetchLmsLinkStatus(externalId: string): Promise<{
+  managerRegistered: boolean;
+  linkedTelegramUsers: number;
+  sessionCount: number;
+  status: number;
+  error?: string;
+} | null> {
+  if (!TRAINER_ADMIN_API_KEY) return null;
+
+  try {
+    const res = await fetch(
+      `${TRAINER_API_URL}/trainer/managers/${encodeURIComponent(externalId)}/lms-status`,
+      {
+        headers: { "X-Admin-Key": TRAINER_ADMIN_API_KEY },
+        signal: AbortSignal.timeout(15_000),
+      }
+    );
+
+    if (!res.ok) {
+      return {
+        managerRegistered: false,
+        linkedTelegramUsers: 0,
+        sessionCount: 0,
+        status: res.status,
+        error: (await res.text()).slice(0, 200),
+      };
+    }
+
+    const data = (await res.json()) as {
+      managerRegistered?: boolean;
+      linkedTelegramUsers?: unknown[];
+      sessionCount?: number;
+    };
+
+    return {
+      managerRegistered: Boolean(data.managerRegistered),
+      linkedTelegramUsers: Array.isArray(data.linkedTelegramUsers) ? data.linkedTelegramUsers.length : 0,
+      sessionCount: Number(data.sessionCount ?? 0),
+      status: res.status,
+    };
+  } catch (error) {
+    return {
+      managerRegistered: false,
+      linkedTelegramUsers: 0,
+      sessionCount: 0,
+      status: 0,
+      error: String(error),
+    };
   }
 }
 

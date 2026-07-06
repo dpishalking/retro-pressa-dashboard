@@ -1,5 +1,5 @@
 import type { TrainingStatus } from "@/types/training";
-import { fetchManagerBotSessions, registerTrainerManager, type TrainerBotSession } from "@/lib/training/trainer-api";
+import { fetchManagerBotSessions, fetchLmsLinkStatus, registerTrainerManager, type TrainerBotSession } from "@/lib/training/trainer-api";
 
 function mapTrainerStatus(status: string, hasCompleted: boolean): TrainingStatus {
   if (hasCompleted || status === "completed") return "completed";
@@ -60,10 +60,32 @@ export function buildBotScenarioRowsFromTrainerSessions(sessions: TrainerBotSess
 export async function loadManagerBotScenarioRows(
   externalId: string,
   userName?: string
-): Promise<BotScenarioReportRow[]> {
+): Promise<{
+  rows: BotScenarioReportRow[];
+  linkStatus?: {
+    managerRegistered: boolean;
+    linkedTelegramUsers: number;
+    sessionCount: number;
+    sessionsFetchStatus?: number;
+    sessionsFetchError?: string;
+  };
+}> {
   if (userName) {
     await registerTrainerManager({ id: externalId, name: userName });
   }
-  const sessions = await fetchManagerBotSessions(externalId);
-  return buildBotScenarioRowsFromTrainerSessions(sessions);
+  const [sessionsResult, lmsStatus] = await Promise.all([
+    fetchManagerBotSessions(externalId),
+    fetchLmsLinkStatus(externalId),
+  ]);
+
+  return {
+    rows: buildBotScenarioRowsFromTrainerSessions(sessionsResult.sessions),
+    linkStatus: {
+      managerRegistered: lmsStatus?.managerRegistered ?? false,
+      linkedTelegramUsers: lmsStatus?.linkedTelegramUsers ?? 0,
+      sessionCount: lmsStatus?.sessionCount ?? 0,
+      sessionsFetchStatus: sessionsResult.status || lmsStatus?.status,
+      sessionsFetchError: sessionsResult.error ?? lmsStatus?.error,
+    },
+  };
 }
