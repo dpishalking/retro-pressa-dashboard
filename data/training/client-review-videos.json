@@ -22,6 +22,13 @@
       "url": "https://www.youtube.com/watch?v=voB0xgY9STM&t=4s",
       "embedUrl": "https://www.youtube.com/embed/voB0xgY9STM?start=4",
       "sortOrder": 3
+    },
+    {
+      "id": "client-review-4",
+      "title": "Отзыв 4",
+      "url": "https://www.youtube.com/shorts/7wygdVyplo8",
+      "embedUrl": "https://www.youtube.com/embed/7wygdVyplo8",
+      "sortOrder": 4
     }
   ]
 }

@@ -59,6 +59,7 @@ jobs:
           if [ -f data/training/client-review-videos.json ]; then
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/client-review-videos.json /tmp/retro-pressa-deploy/training-seed/client-review-videos.json
+            cp scripts/patch-client-review-videos-from-seed.mjs /tmp/retro-pressa-deploy/training-seed/patch-client-review-videos-from-seed.mjs
           fi
           if [ -f data/training/practice-modules.json ]; then
             mkdir -p /tmp/retro-pressa-deploy/training-seed
@@ -409,6 +410,9 @@ jobs:
               echo "Initialized client review videos from deploy seed"
             else
               echo "Keeping existing client review videos at $APP_DATA_DIR/training/client-review-videos.json"
+              node "$APP_DIR/training-seed/patch-client-review-videos-from-seed.mjs" \
+                "$APP_DIR/training-seed/client-review-videos.json" \
+                "$APP_DATA_DIR/training/client-review-videos.json"
             fi
           fi
           if [ -f "$APP_DIR/training-seed/practice-modules.json" ]; then
