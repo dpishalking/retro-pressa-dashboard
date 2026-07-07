@@ -80,6 +80,24 @@
           "embedUrl": "https://www.youtube.com/embed/zeeYytcncTw",
           "sectionKey": "reviews",
           "sortOrder": 6
+        },
+        {
+          "id": "video-personal-newspaper-review-2",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://youtu.be/FL1n9bKhNWc",
+          "embedUrl": "https://www.youtube.com/embed/FL1n9bKhNWc",
+          "sectionKey": "reviews",
+          "sortOrder": 7
+        },
+        {
+          "id": "video-personal-newspaper-review-3",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/crysSL57yWY",
+          "embedUrl": "https://www.youtube.com/embed/crysSL57yWY",
+          "sectionKey": "reviews",
+          "sortOrder": 8
         }
       ],
       "questions": [
