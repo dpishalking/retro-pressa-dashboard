@@ -5,7 +5,7 @@ import {
   assertRopCanModifyUser,
   canAccessUserManagement
 } from "@/lib/auth/admin-users-auth";
-import { createUser, deleteUser, findUserById, listPublicUsers, updateUser } from "@/lib/auth/store";
+import { createUser, deleteUser, findUserById, listPublicUsers, listTraineeUsers, updateUser } from "@/lib/auth/store";
 import { readSessionCookie } from "@/lib/auth/session";
 import type { AccessLevel } from "@/types/auth";
 
@@ -23,7 +23,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const users = await listPublicUsers();
+  const users =
+    session.accessLevel === "rop" ? await listTraineeUsers() : await listPublicUsers();
   return NextResponse.json({ users });
 }
 

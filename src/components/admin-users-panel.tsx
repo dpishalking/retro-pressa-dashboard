@@ -364,7 +364,7 @@ export function AdminUsersPanel() {
 
         <div className="card overflow-hidden">
           <div className="border-b border-[var(--line)] px-6 py-4">
-            <h2 className="text-lg font-black text-slate-950">Пользователи</h2>
+            <h2 className="text-lg font-black text-slate-950">{canManageManagersOnly ? "Менеджеры" : "Пользователи"}</h2>
           </div>
           <div className="table-scroll">
             <table>
@@ -384,19 +384,16 @@ export function AdminUsersPanel() {
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>Пользователей пока нет</td>
+                    <td colSpan={5}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
                   </tr>
                 ) : (
-                  users.map((user) => {
-                    const canManageRow = isFullAdmin || user.accessLevel === "mop";
-                    return (
+                  users.map((user) => (
                     <tr key={user.id}>
                       <td>{user.login}</td>
                       <td>{user.name}</td>
                       <td>{accessLevelLabel(user.accessLevel)}</td>
                       <td>{user.active ? "Активен" : "Отключён"}</td>
                       <td>
-                        {canManageRow ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -414,13 +411,9 @@ export function AdminUsersPanel() {
                             Удалить
                           </button>
                         </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
-                        )}
                       </td>
                     </tr>
-                    );
-                  })
+                  ))
                 )}
               </tbody>
             </table>
