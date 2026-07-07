@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -259,7 +260,11 @@ export function TrainingSupervisorsPanel() {
   if (reports.length === 0) {
     return (
       <div className="card p-8 text-sm text-slate-600">
-        Пока нет менеджеров с уровнем доступа «Менеджер». Создайте аккаунты в разделе «Доступы».
+        Пока нет менеджеров с уровнем доступа «Менеджер».{" "}
+        <Link href="/admin/users" className="font-bold text-violet-700 hover:text-violet-900">
+          Создайте аккаунты в разделе «Менеджеры»
+        </Link>
+        .
       </div>
     );
   }

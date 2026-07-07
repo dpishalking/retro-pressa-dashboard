@@ -39,8 +39,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (pathname.startsWith("/api/admin/") && session.accessLevel !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (pathname.startsWith("/api/admin/")) {
+      if (pathname.startsWith("/api/admin/users")) {
+        if (session.accessLevel !== "admin" && session.accessLevel !== "rop") {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      } else if (session.accessLevel !== "admin") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     return NextResponse.next();

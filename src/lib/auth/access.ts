@@ -1,10 +1,11 @@
 import type { AccessLevel } from "@/types/auth";
 import { HUB_PATH } from "@/lib/auth/routes";
+import { USER_MANAGEMENT_PATH, canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 
 /** Route prefixes each access level may visit. Admin uses wildcard. */
 export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   admin: "*",
-  rop: [HUB_PATH, "/analytics", "/rop", "/training"],
+  rop: [HUB_PATH, "/analytics", "/rop", "/training", USER_MANAGEMENT_PATH],
   mop: [HUB_PATH, "/training"]
 };
 
@@ -13,6 +14,10 @@ export const ADMIN_ROUTE_PREFIXES = ["/admin"];
 
 export function canAccessRoute(accessLevel: AccessLevel, pathname: string): boolean {
   const normalized = normalizePath(pathname);
+
+  if (normalized.startsWith(USER_MANAGEMENT_PATH)) {
+    return canAccessUserManagement(accessLevel);
+  }
 
   if (ADMIN_ROUTE_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
     return accessLevel === "admin";

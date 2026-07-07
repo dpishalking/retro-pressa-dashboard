@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, BookOpen, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
+import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel } from "@/types/auth";
@@ -95,13 +96,13 @@ export function OfficeHub() {
           <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Retro Pressa</p>
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-slate-600">{user.name}</span>
-            {user.accessLevel === "admin" ? (
+            {canAccessUserManagement(user.accessLevel) ? (
               <Link
                 href="/admin/users"
                 className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Settings size={16} />
-                Доступы
+                {user.accessLevel === "rop" ? "Менеджеры" : "Доступы"}
               </Link>
             ) : null}
             <button

@@ -123,7 +123,7 @@ function MyTrainingContent() {
 }
 
 function StagesContent() {
-  const { isSupervisor } = useTrainingUser();
+  const { isAdmin, isSupervisor } = useTrainingUser();
   const [tab, setTab] = useState<HubTab>("my");
 
   if (!isSupervisor) {
@@ -132,7 +132,8 @@ function StagesContent() {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setTab("my")}
@@ -147,6 +148,15 @@ function StagesContent() {
         >
           Стажёры
         </button>
+        </div>
+        {!isAdmin ? (
+          <Link
+            href="/admin/users"
+            className="inline-flex rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 hover:bg-violet-100"
+          >
+            Создать менеджера →
+          </Link>
+        ) : null}
       </div>
 
       {tab === "my" ? <MyTrainingContent /> : <TrainingSupervisorsPanel />}

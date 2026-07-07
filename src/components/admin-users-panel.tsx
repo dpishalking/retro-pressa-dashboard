@@ -4,7 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Copy, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
 import { accessLevelLabel, accessLevelScope } from "@/lib/auth/access";
+import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
+import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel, AppUserPublic } from "@/types/auth";
 
 type UserFormState = {
@@ -63,6 +65,10 @@ function buildAccessMessage(input: {
 }
 
 export function AdminUsersPanel() {
+  const { user: viewer } = useAuth();
+  const isFullAdmin = viewer?.accessLevel === "admin";
+  const isRopManager = viewer?.accessLevel === "rop";
+  const canManageManagersOnly = isRopManager;
   const [users, setUsers] = useState<AppUserPublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +116,7 @@ export function AdminUsersPanel() {
   }, []);
 
   const startEdit = (user: AppUserPublic) => {
+    if (canManageManagersOnly && user.accessLevel !== "mop") return;
     setEditingId(user.id);
     setForm({
       login: user.login,
@@ -153,7 +160,7 @@ export function AdminUsersPanel() {
             id: editingId,
             login: form.login,
             name: form.name,
-            accessLevel: form.accessLevel,
+            accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
             active: form.active,
             ...(form.password ? { password: form.password } : {})
           }
@@ -161,7 +168,7 @@ export function AdminUsersPanel() {
             login: form.login,
             password: form.password,
             name: form.name,
-            accessLevel: form.accessLevel,
+            accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
             active: form.active
           };
 
@@ -200,6 +207,14 @@ export function AdminUsersPanel() {
     }
   };
 
+  if (!viewer || !canAccessUserManagement(viewer.accessLevel)) {
+    return (
+      <main className="mx-auto w-[min(1100px,calc(100%-32px))] py-8">
+        <div className="card p-8 text-sm text-slate-700">У вашего аккаунта нет доступа к управлению пользователями.</div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto w-[min(1100px,calc(100%-32px))] py-8">
       <header className="mb-8">
@@ -212,20 +227,25 @@ export function AdminUsersPanel() {
             <UserCog size={24} />
           </div>
           <div>
-            <p className="text-sm font-extrabold uppercase tracking-normal text-violet-600">Администрирование</p>
-            <h1 className="text-3xl font-black text-slate-950">Управление доступами</h1>
+            <p className="text-sm font-extrabold uppercase tracking-normal text-violet-600">
+              {isFullAdmin ? "Администрирование" : "Кабинет РОП"}
+            </p>
+            <h1 className="text-3xl font-black text-slate-950">
+              {isFullAdmin ? "Управление доступами" : "Аккаунты менеджеров"}
+            </h1>
           </div>
         </div>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-          Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику, инструменты РОП и обучение,
-          менеджер — только обучение.
+          {isFullAdmin
+            ? "Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику, инструменты РОП и обучение, менеджер — только обучение."
+            : "Создавайте и редактируйте аккаунты менеджеров для обучения. РОП может заводить только менеджеров — администраторов и других РОП здесь создать нельзя."}
         </p>
       </header>
 
       <section className="mb-8 grid gap-6 lg:grid-cols-[360px,1fr]">
         <form className="card h-fit p-6" onSubmit={handleSubmit}>
           <h2 className="mb-4 text-lg font-black text-slate-950">
-            {editingId ? "Редактировать пользователя" : "Новый пользователь"}
+            {editingId ? "Редактировать менеджера" : isFullAdmin ? "Новый пользователь" : "Новый менеджер"}
           </h2>
 
           <div className="space-y-4">
@@ -270,18 +290,24 @@ export function AdminUsersPanel() {
               />
             </label>
 
-            <label className="block text-sm font-semibold text-slate-700">
-              Уровень доступа
-              <select
-                className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
-                value={form.accessLevel}
-                onChange={(event) => setForm((prev) => ({ ...prev, accessLevel: event.target.value as AccessLevel }))}
-              >
-                <option value="admin">Администратор — все разделы</option>
-                <option value="rop">РОП — аналитика, инструменты РОП, обучение</option>
-                <option value="mop">Менеджер — только обучение</option>
-              </select>
-            </label>
+            {isFullAdmin ? (
+              <label className="block text-sm font-semibold text-slate-700">
+                Уровень доступа
+                <select
+                  className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                  value={form.accessLevel}
+                  onChange={(event) => setForm((prev) => ({ ...prev, accessLevel: event.target.value as AccessLevel }))}
+                >
+                  <option value="admin">Администратор — все разделы</option>
+                  <option value="rop">РОП — аналитика, инструменты РОП, обучение</option>
+                  <option value="mop">Менеджер — только обучение</option>
+                </select>
+              </label>
+            ) : (
+              <p className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                Уровень доступа: <span className="font-bold">Менеджер — только обучение</span>
+              </p>
+            )}
 
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <input
@@ -361,13 +387,16 @@ export function AdminUsersPanel() {
                     <td colSpan={5}>Пользователей пока нет</td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  users.map((user) => {
+                    const canManageRow = isFullAdmin || user.accessLevel === "mop";
+                    return (
                     <tr key={user.id}>
                       <td>{user.login}</td>
                       <td>{user.name}</td>
                       <td>{accessLevelLabel(user.accessLevel)}</td>
                       <td>{user.active ? "Активен" : "Отключён"}</td>
                       <td>
+                        {canManageRow ? (
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -385,9 +414,13 @@ export function AdminUsersPanel() {
                             Удалить
                           </button>
                         </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
