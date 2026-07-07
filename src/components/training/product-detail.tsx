@@ -83,16 +83,18 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
   );
 }
 
-function VideoBlock({ material }: { material: ProductMaterial }) {
+function VideoBlock({ material, hideTitle = false }: { material: ProductMaterial; hideTitle?: boolean }) {
   const embedUrl = normalizeVideoEmbedUrl(material.embedUrl ?? material.url);
   const isShorts =
     (material.url ?? material.embedUrl ?? "").includes("/shorts/") || material.content === "shorts";
 
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--line)]">
-      <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
-        {material.title}
-      </div>
+      {!hideTitle ? (
+        <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
+          {material.title}
+        </div>
+      ) : null}
       {embedUrl ? (
         <div className={`bg-black ${isShorts ? "mx-auto aspect-[9/16] max-w-sm" : "aspect-video"}`}>
           <iframe
@@ -142,7 +144,7 @@ function ReviewsSection({ materials }: { materials: ProductMaterial[] }) {
       <h2 className="text-lg font-black text-slate-950">Отзывы</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {materials.map((material) => (
-          <VideoBlock key={material.id} material={material} />
+          <VideoBlock key={material.id} material={material} hideTitle />
         ))}
       </div>
     </section>
