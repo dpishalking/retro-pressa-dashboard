@@ -98,6 +98,42 @@
           "embedUrl": "https://www.youtube.com/embed/crysSL57yWY",
           "sectionKey": "reviews",
           "sortOrder": 8
+        },
+        {
+          "id": "video-personal-newspaper-review-4",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/UUAeIw7td_o",
+          "embedUrl": "https://www.youtube.com/embed/UUAeIw7td_o",
+          "sectionKey": "reviews",
+          "sortOrder": 9
+        },
+        {
+          "id": "video-personal-newspaper-review-5",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/kUQP5Dxz8gg",
+          "embedUrl": "https://www.youtube.com/embed/kUQP5Dxz8gg",
+          "sectionKey": "reviews",
+          "sortOrder": 10
+        },
+        {
+          "id": "video-personal-newspaper-review-6",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/xPw3Wj2GLA4",
+          "embedUrl": "https://www.youtube.com/embed/xPw3Wj2GLA4",
+          "sectionKey": "reviews",
+          "sortOrder": 11
+        },
+        {
+          "id": "video-personal-newspaper-review-7",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/lvq2Io-tqRI",
+          "embedUrl": "https://www.youtube.com/embed/lvq2Io-tqRI",
+          "sectionKey": "reviews",
+          "sortOrder": 12
         }
       ],
       "questions": [
