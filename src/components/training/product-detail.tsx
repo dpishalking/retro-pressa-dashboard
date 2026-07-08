@@ -325,9 +325,9 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
       <VideoSection materials={videos} />
 
-      <GiftGallerySection materials={gallery} />
-
       <ReviewsSection materials={reviews} />
+
+      <GiftGallerySection materials={gallery} />
 
       {sections.map((section) => (
         <ContentSection key={section.sectionKey} {...section} />
