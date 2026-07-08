@@ -191,17 +191,6 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
       />
 
       <ModuleTable
-        title="Практика: тесты перед ботом"
-        rows={report.practiceModules.map((item) => ({
-          title: item.title,
-          status: item.status,
-          bestScorePercent: item.bestScorePercent,
-          attemptCount: item.attemptCount,
-          lastAttemptAt: item.lastAttemptAt
-        }))}
-      />
-
-      <ModuleTable
         title="Тренировочный бот в Telegram"
         rows={report.botScenarios.map((item) => ({
           title: item.title,
