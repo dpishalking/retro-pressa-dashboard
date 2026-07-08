@@ -120,7 +120,6 @@ function formatBotLinkHint(report: ManagerTrainingReport): string {
 function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
   const productsStage = report.overview.stages.find((stage) => stage.id === "products");
   const crmStage = report.overview.stages.find((stage) => stage.id === "crm");
-  const practiceStage = report.overview.stages.find((stage) => stage.id === "practice");
   const completedBotScenarios = report.botScenarios.filter((item) => item.status === "completed").length;
 
   return (
@@ -141,7 +140,7 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StageSummaryCard
           title="Этап 1. Продукт"
           completed={productsStage?.completedModules ?? 0}
@@ -153,12 +152,6 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           completed={crmStage?.completedModules ?? 0}
           total={crmStage?.totalModules ?? 0}
           percent={crmStage?.percent ?? 0}
-        />
-        <StageSummaryCard
-          title="Этап 3. Практика"
-          completed={practiceStage?.completedModules ?? 0}
-          total={practiceStage?.totalModules ?? 0}
-          percent={practiceStage?.percent ?? 0}
         />
         <StageSummaryCard
           title="Тренировочный бот"
