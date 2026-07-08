@@ -13,6 +13,8 @@ import type { TrackStageId, TrainingTrackModule, TrainingStatus, UserTrainingPro
 const CRM_PLAYBOOK_URL =
   "https://docs.google.com/document/d/1EpXyf7ss_oToJImZx66BMfZK_1FWjJn6AISCfn7ObZY/edit?tab=t.0";
 
+const CRM_ARCHIVE_MODULE_ID = "retro-archive";
+
 const stageIcons = {
   crm: Database,
   practice: ClipboardCheck
@@ -112,10 +114,18 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
     return <div className="card p-8 text-sm text-slate-600">Загрузка модулей...</div>;
   }
 
+  const gridModules = modules.filter((module) => module.id !== CRM_ARCHIVE_MODULE_ID);
+  const archiveModule = modules.find((module) => module.id === CRM_ARCHIVE_MODULE_ID);
+  const archiveStatus = archiveModule && progress
+    ? resolveTrackModuleStatus(progress, stageId, archiveModule.id)
+    : "not_started";
+  const archiveActionLabel =
+    archiveStatus === "not_started" ? "Начать" : archiveStatus === "in_progress" ? "Продолжить" : "Повторить";
+
   return (
     <>
       <section className="grid gap-4 md:grid-cols-2">
-        {modules.map((module) => (
+        {gridModules.map((module) => (
           <ModuleCard
             key={module.id}
             module={module}
@@ -127,7 +137,7 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
       </section>
 
       {stageId === "crm" ? (
-        <section className="mt-5">
+        <section className="mt-5 space-y-4">
           <a
             href={CRM_PLAYBOOK_URL}
             target="_blank"
@@ -143,6 +153,32 @@ function TrackHubContent({ stageId }: { stageId: TrackStageId }) {
               <ExternalLink size={16} />
             </span>
           </a>
+
+          {archiveModule ? (
+            <div className="card flex flex-col gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div>
+                <p className="text-base font-black text-slate-950 sm:text-lg">{archiveModule.title}</p>
+                <p className="mt-1 text-sm text-slate-600">{archiveModule.shortDescription}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/training/${stageId}/${archiveModule.id}`}
+                  onClick={() => void markStarted(archiveModule.id)}
+                  className="inline-flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                  {archiveActionLabel}
+                </Link>
+                {archiveModule.questions.length > 0 && archiveStatus !== "not_started" ? (
+                  <Link
+                    href={`/training/${stageId}/${archiveModule.id}/quiz`}
+                    className="inline-flex shrink-0 items-center rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    К тесту
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </>
