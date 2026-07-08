@@ -956,6 +956,24 @@
           "url": "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
           "sectionKey": "emotions",
           "sortOrder": 4
+        },
+        {
+          "id": "video-retro-newspaper-review-1",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/jUp4II9pxsI",
+          "embedUrl": "https://www.youtube.com/embed/jUp4II9pxsI",
+          "sectionKey": "reviews",
+          "sortOrder": 5
+        },
+        {
+          "id": "video-retro-newspaper-review-2",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/MF7uEeiMsPg",
+          "embedUrl": "https://www.youtube.com/embed/MF7uEeiMsPg",
+          "sectionKey": "reviews",
+          "sortOrder": 6
         }
       ],
       "questions": [
