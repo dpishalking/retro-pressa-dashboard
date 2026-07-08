@@ -1346,8 +1346,8 @@
           "type": "video",
           "title": "Видео для менеджеров",
           "content": "Видеоразбор двух продуктов: Party Page (персонализированная газета с нуля) и глянцевый персональный журнал — отличия, сроки, возражения и как выбирать между ними.",
-          "url": "https://www.youtube.com/shorts/20JAY71AM6I",
-          "embedUrl": "https://www.youtube.com/embed/20JAY71AM6I",
+          "url": "https://youtu.be/OWYiMN_K37s",
+          "embedUrl": "https://www.youtube.com/embed/OWYiMN_K37s",
           "sortOrder": 1
         },
         {
@@ -1434,6 +1434,24 @@
           "url": "/training/gift-edition/malenkiy-rasskaz.png",
           "sectionKey": "gallery",
           "sortOrder": 8
+        },
+        {
+          "id": "video-gift-edition-review-1",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/20JAY71AM6I",
+          "embedUrl": "https://www.youtube.com/embed/20JAY71AM6I",
+          "sectionKey": "reviews",
+          "sortOrder": 11
+        },
+        {
+          "id": "video-gift-edition-review-2",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/YCCq1nm-NLQ",
+          "embedUrl": "https://www.youtube.com/embed/YCCq1nm-NLQ",
+          "sectionKey": "reviews",
+          "sortOrder": 12
         }
       ],
       "questions": [
