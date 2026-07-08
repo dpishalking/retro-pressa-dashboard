@@ -86,10 +86,8 @@ export function buildTrainingOverview(
     return { id: stage.id, title: stage.title, description: stage.description, href: stage.href, ...practiceStats };
   });
 
-  const totalUnits =
-    totalProducts + crmStats.totalModules + practiceStats.totalModules;
-  const completedUnits =
-    completedProducts + crmStats.completedModules + practiceStats.completedModules;
+  const totalUnits = totalProducts + crmStats.totalModules;
+  const completedUnits = completedProducts + crmStats.completedModules;
   const totalStagesPercent = totalUnits ? Math.round((completedUnits / totalUnits) * 100) : 0;
 
   return {
