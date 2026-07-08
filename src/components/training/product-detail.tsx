@@ -14,7 +14,13 @@ import {
   type ProductContentSection
 } from "@/lib/training/product-sections";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
+import { productBodyFont, productDisplayFont } from "@/lib/fonts/product-page-fonts";
 import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
+
+const sectionHeadingClass = "product-heading text-xl font-extrabold text-slate-950 sm:text-2xl";
+const sectionLeadClass = "product-lead mt-2 text-slate-600";
+const bodyTextClass = "whitespace-pre-line text-slate-700";
+const captionClass = "text-base font-semibold text-slate-700";
 
 function RichText({ content }: { content: string }) {
   const parts = content.split(/(\*\*[^*]+\*\*)/g);
@@ -41,9 +47,9 @@ function ContentSection({ title, content, emoji }: ProductContentSection) {
         <div className="flex items-center justify-center border-b border-[var(--line)] bg-slate-50 px-6 py-6 md:border-b-0 md:border-r md:px-8 md:py-8">
           <span className="text-5xl leading-none" aria-hidden="true">{emoji}</span>
         </div>
-        <div className="p-6">
-          <h2 className="text-lg font-black text-slate-950">{title}</h2>
-          <div className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">
+        <div className="p-6 sm:p-8">
+          <h2 className={sectionHeadingClass}>{title}</h2>
+          <div className={`mt-4 ${bodyTextClass}`}>
             <RichText content={content} />
           </div>
         </div>
@@ -57,9 +63,9 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
   if (!photos.length) return null;
 
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Как выглядит подарок</h2>
-      <p className="mt-1 text-sm text-slate-600">Примеры готовых изданий — чтобы менеджер видел, что получает клиент.</p>
+    <section className="card p-6 sm:p-8">
+      <h2 className={sectionHeadingClass}>Как выглядит подарок</h2>
+      <p className={sectionLeadClass}>Примеры готовых изданий — чтобы менеджер видел, что получает клиент.</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {photos.map((material) => {
           const isWide = material.content === "wide";
@@ -72,7 +78,7 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
             <div className={`relative w-full bg-white ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
               <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
             </div>
-            <figcaption className="border-t border-[var(--line)] px-4 py-3 text-sm font-semibold text-slate-700">
+            <figcaption className={`border-t border-[var(--line)] px-4 py-3 ${captionClass}`}>
               {material.title}
             </figcaption>
           </figure>
@@ -91,7 +97,7 @@ function VideoBlock({ material, hideTitle = false }: { material: ProductMaterial
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--line)]">
       {!hideTitle ? (
-        <div className="border-b border-[var(--line)] bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800">
+        <div className={`border-b border-[var(--line)] bg-slate-50 px-4 py-3 ${captionClass}`}>
           {material.title}
         </div>
       ) : null}
@@ -109,7 +115,7 @@ function VideoBlock({ material, hideTitle = false }: { material: ProductMaterial
         <div className="flex aspect-video flex-col items-center justify-center bg-slate-50 px-6 text-center">
           <PlayCircle size={34} className="text-rose-500" />
           <p className="mt-3 text-base font-black text-slate-900">{material.title}</p>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+          <p className={`mt-2 max-w-xl ${bodyTextClass} text-slate-600`}>
             {material.content ?? "Сюда добавим видеоразбор для учеников и менеджеров."}
           </p>
           <p className="mt-4 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -125,8 +131,8 @@ function VideoSection({ materials }: { materials: ProductMaterial[] }) {
   if (!materials.length) return null;
 
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Видеообучение</h2>
+    <section className="card p-6 sm:p-8">
+      <h2 className={sectionHeadingClass}>Видеообучение</h2>
       <div className="mt-4 space-y-4">
         {materials.map((material) => (
           <VideoBlock key={material.id} material={material} />
@@ -140,8 +146,8 @@ function ReviewsSection({ materials }: { materials: ProductMaterial[] }) {
   if (!materials.length) return null;
 
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Отзывы</h2>
+    <section className="card p-6 sm:p-8">
+      <h2 className={sectionHeadingClass}>Отзывы</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {materials.map((material) => (
           <VideoBlock key={material.id} material={material} hideTitle />
@@ -157,9 +163,9 @@ function PresentationSection({ product }: { product: ProductTrainingModule }) {
 
   return (
     <section className="card overflow-hidden">
-      <div className="border-b border-[var(--line)] px-6 py-4">
-        <h2 className="text-lg font-black text-slate-950">Презентация продукта</h2>
-        <p className="mt-1 text-sm text-slate-600">Слайды из Google Presentations для этого продукта.</p>
+      <div className="border-b border-[var(--line)] px-6 py-5 sm:px-8">
+        <h2 className={sectionHeadingClass}>Презентация продукта</h2>
+        <p className={sectionLeadClass}>Слайды из Google Presentations для этого продукта.</p>
       </div>
       <div className="aspect-[16/10] bg-slate-100">
         <iframe
@@ -175,7 +181,7 @@ function PresentationSection({ product }: { product: ProductTrainingModule }) {
             href={product.presentationUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+            className="inline-flex items-center gap-2 text-base font-semibold text-blue-700 hover:text-blue-800"
           >
             Открыть презентацию в Google Slides
             <ExternalLink size={14} />
@@ -193,7 +199,7 @@ function ExtraMaterialItem({ material }: { material: ProductMaterial }) {
         <div className="relative h-64 w-full bg-slate-100">
           <Image src={material.url} alt={material.title} fill className="object-cover" unoptimized />
         </div>
-        <figcaption className="px-4 py-3 text-sm font-semibold text-slate-700">{material.title}</figcaption>
+        <figcaption className={`px-4 py-3 ${captionClass}`}>{material.title}</figcaption>
       </figure>
     );
   }
@@ -206,7 +212,7 @@ function ExtraMaterialItem({ material }: { material: ProductMaterial }) {
         rel="noreferrer"
         className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
       >
-        <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
+        <span className={`flex items-center gap-3 ${captionClass} text-slate-800`}>
           <FileText size={18} className="text-blue-600" />
           {material.title}
         </span>
@@ -223,7 +229,7 @@ function ExtraMaterialItem({ material }: { material: ProductMaterial }) {
         rel="noreferrer"
         className="flex items-center justify-between rounded-xl border border-[var(--line)] px-4 py-3 hover:bg-slate-50"
       >
-        <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
+        <span className={`flex items-center gap-3 ${captionClass} text-slate-800`}>
           <Link2 size={18} className="text-violet-600" />
           {material.title}
         </span>
@@ -234,9 +240,9 @@ function ExtraMaterialItem({ material }: { material: ProductMaterial }) {
 
   if (material.type === "text" && material.content) {
     return (
-      <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-        <p className="text-sm font-bold text-slate-900">{material.title}</p>
-        <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6 text-slate-700">{material.content}</pre>
+      <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-5">
+        <p className={`${captionClass} text-slate-900`}>{material.title}</p>
+        <pre className={`mt-3 whitespace-pre-wrap ${bodyTextClass}`}>{material.content}</pre>
       </div>
     );
   }
@@ -251,8 +257,8 @@ function ExtraMaterialsSection({ materials }: { materials: ProductMaterial[] }) 
   const others = materials.filter((material) => material.type !== "image");
 
   return (
-    <section className="card p-6">
-      <h2 className="text-lg font-black text-slate-950">Дополнительные материалы</h2>
+    <section className="card p-6 sm:p-8">
+      <h2 className={sectionHeadingClass}>Дополнительные материалы</h2>
       {images.length ? (
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {images.map((material) => (
@@ -312,14 +318,14 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const hasQuiz = product.questions.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className={`product-page space-y-5 ${productBodyFont.className} ${productDisplayFont.variable}`}>
       <section className="card overflow-hidden">
         <div className="relative h-56 w-full bg-slate-100 md:h-72">
           <Image src={product.coverImage} alt={product.title} fill className="object-cover" unoptimized />
         </div>
-        <div className="p-6">
-          <h1 className="text-3xl font-black text-slate-950">{product.title}</h1>
-          <p className="mt-3 text-sm leading-7 text-slate-600">{product.shortDescription}</p>
+        <div className="p-6 sm:p-8">
+          <h1 className="product-heading text-3xl font-extrabold text-slate-950 sm:text-4xl">{product.title}</h1>
+          <p className={`product-lead mt-4 text-slate-600`}>{product.shortDescription}</p>
         </div>
       </section>
 
@@ -336,19 +342,19 @@ function ProductDetailContent({ productId }: { productId: string }) {
       <PresentationSection product={product} />
       <ExtraMaterialsSection materials={extras} />
 
-      <section className="card p-6">
+      <section className="card p-6 sm:p-8">
         {hasQuiz ? (
           <Link
             href={`/training/products/${product.id}/quiz`}
-            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white hover:bg-rose-700"
+            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-3 text-base font-bold text-white hover:bg-rose-700"
           >
             <PlayCircle size={18} />
             Перейти к тесту
           </Link>
         ) : (
-          <p className="text-sm text-slate-600">Тест для этого продукта ещё не добавлен администратором.</p>
+          <p className={bodyTextClass}>Тест для этого продукта ещё не добавлен администратором.</p>
         )}
-        <p className="mt-3 text-xs text-slate-500">Проходной балл: {product.passingScore}%</p>
+        <p className="mt-3 text-sm text-slate-500">Проходной балл: {product.passingScore}%</p>
       </section>
     </div>
   );

@@ -79,3 +79,30 @@ th {
 td {
   font-size: 14px;
 }
+
+.product-page {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.product-page .product-heading {
+  font-family: var(--font-product-display), Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.product-page .product-lead {
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+@media (min-width: 640px) {
+  .product-page {
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+
+  .product-page .product-lead {
+    font-size: 1.25rem;
+    line-height: 1.75;
+  }
+}

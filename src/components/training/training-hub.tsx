@@ -94,8 +94,8 @@ function ProductCard({
             </Link>
           </div>
         </div>
-        <h2 className="text-xl font-black text-slate-950">{product.title}</h2>
-        <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{product.shortDescription}</p>
+        <h2 className="text-xl font-black text-slate-950 sm:text-2xl">{product.title}</h2>
+        <p className="mt-3 flex-1 text-base leading-7 text-slate-600 sm:text-[17px] sm:leading-8">{product.shortDescription}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           {hasQuiz && status !== "not_started" ? (
             <Link
