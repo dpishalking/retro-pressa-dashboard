@@ -149,7 +149,7 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           percent={productsStage?.percent ?? 0}
         />
         <StageSummaryCard
-          title="Этап 2. CRM / Bitrix"
+          title="CRM + Архив изданий"
           completed={crmStage?.completedModules ?? 0}
           total={crmStage?.totalModules ?? 0}
           percent={crmStage?.percent ?? 0}

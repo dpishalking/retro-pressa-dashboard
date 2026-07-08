@@ -20,7 +20,7 @@ export const TRAINING_STAGES: TrainingStageConfig[] = [
   },
   {
     id: "crm",
-    title: "Этап 2. CRM",
+    title: "CRM + Архив изданий",
     description: "Битрикс24: где смотреть заявки, как вести клиента, фиксировать переписку и не терять контекст.",
     href: "/training/crm",
     order: 2,
