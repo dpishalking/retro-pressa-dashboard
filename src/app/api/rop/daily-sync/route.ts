@@ -3,7 +3,9 @@ import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connect
 import { syncBitrixMetrics } from "@/lib/bitrix/connector";
 import { buildCompanySnapshot } from "@/lib/company-snapshot/build-snapshot";
 import { writeCompanySnapshot } from "@/lib/company-snapshot/snapshot-store";
+import { syncLiveStoreToExportFile } from "@/lib/conversation-live-export";
 import { currentPeriodKey } from "@/lib/conversation-periods";
+import { syncManagerDialogsToSheet } from "@/lib/manager-dialogs-sheet-sync";
 import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
 import type { PeriodKey } from "@/types/metrics";
 
@@ -18,6 +20,11 @@ export async function POST(request: Request) {
       dialogLimit?: number;
       period?: PeriodKey;
       incremental?: boolean;
+      exportToSheet?: boolean;
+      manager?: string;
+      spreadsheetId?: string;
+      tabTitle?: string;
+      sheetMode?: "full" | "backfill" | "incremental";
     };
 
     const period = body.period ?? currentPeriodKey();
@@ -33,6 +40,22 @@ export async function POST(request: Request) {
         incremental: body.incremental !== false
       })
     ]);
+
+    const liveExport = await syncLiveStoreToExportFile(period);
+
+    let sheetExport: Awaited<ReturnType<typeof syncManagerDialogsToSheet>> | null = null;
+    if (body.exportToSheet !== false) {
+      sheetExport = await syncManagerDialogsToSheet({
+        periodKey: period,
+        managerQuery: body.manager ?? "*",
+        spreadsheetId: body.spreadsheetId,
+        tabTitle: body.tabTitle,
+        successSource: "text",
+        refreshBitrix: false,
+        syncLiveExport: false,
+        mode: body.sheetMode ?? "incremental",
+      });
+    }
 
     const companySnapshot = await buildCompanySnapshot({ period, refresh: false });
     await writeCompanySnapshot(companySnapshot);
@@ -66,7 +89,20 @@ export async function POST(request: Request) {
         qualityScore: conversations.dashboard.qualityScore,
         potentialLostRevenue: conversations.dashboard.potentialLostRevenue,
         incremental: conversations.summary.incremental === true
-      }
+      },
+      liveExport,
+      sheetExport: sheetExport ? {
+        uploaded: sheetExport.uploaded,
+        mode: sheetExport.mode,
+        totalDialogs: sheetExport.totalDialogs,
+        exportedDialogs: sheetExport.exportedDialogs,
+        skippedDialogs: sheetExport.skippedDialogs,
+        spreadsheetId: sheetExport.spreadsheetId,
+        tabTitle: sheetExport.tabTitle,
+        dateFrom: sheetExport.dateFrom,
+        dateTo: sheetExport.dateTo,
+        sheetUrl: `https://docs.google.com/spreadsheets/d/${sheetExport.spreadsheetId}/edit`
+      } : null
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось выполнить ежедневный sync";

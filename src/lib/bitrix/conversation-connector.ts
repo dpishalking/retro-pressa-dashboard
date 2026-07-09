@@ -79,6 +79,7 @@ type BitrixConversationSyncOptions = {
   refresh?: boolean;
   incremental?: boolean;
   maxDialogLimit?: number;
+  maxDaysBack?: number;
 };
 
 export type BitrixConversationSyncPayload = {
@@ -448,7 +449,8 @@ export async function syncBitrixConversationHistory(options: BitrixConversationS
   }
 
   const incremental = options.incremental === true;
-  const daysBack = Math.max(1, Math.min(incremental ? 3 : 14, options.daysBack ?? (incremental ? 1 : 1)));
+  const daysBackCap = options.maxDaysBack ?? (incremental ? 3 : 14);
+  const daysBack = Math.max(1, Math.min(daysBackCap, options.daysBack ?? (incremental ? 3 : 14)));
   const maxDialogLimit = Math.max(10, Math.min(300, options.maxDialogLimit ?? (incremental ? 50 : 120)));
   const dialogLimit = Math.max(
     10,

@@ -179,13 +179,58 @@ export async function writeSheetTab(input: {
   spreadsheetId: string;
   tabTitle: string;
   rows: string[][];
+  clearRange?: string;
 }) {
   await ensureSheetTab(input.spreadsheetId, input.tabTitle);
   const tabPrefix = quoteSheetTab(input.tabTitle);
   await writeSheetValues({
     spreadsheetId: input.spreadsheetId,
     range: `${tabPrefix}!A1`,
-    clearRange: `${tabPrefix}!A:I`,
+    clearRange: input.clearRange ?? `${tabPrefix}!A:K`,
     rows: input.rows,
   });
+}
+
+export async function appendSheetRows(input: {
+  spreadsheetId: string;
+  tabTitle: string;
+  rows: string[][];
+}) {
+  if (!input.rows.length) return { appended: 0, startRow: 1 };
+
+  await ensureSheetTab(input.spreadsheetId, input.tabTitle);
+  const tabPrefix = quoteSheetTab(input.tabTitle);
+  const existing = await readSheetValues({
+    spreadsheetId: input.spreadsheetId,
+    range: `${tabPrefix}!A:A`,
+  });
+  const startRow = Math.max(1, existing.length + 1);
+
+  await writeSheetValues({
+    spreadsheetId: input.spreadsheetId,
+    range: `${tabPrefix}!A${startRow}`,
+    rows: input.rows,
+  });
+
+  return { appended: input.rows.length, startRow };
+}
+
+export async function readSheetDialogIds(input: {
+  spreadsheetId: string;
+  tabTitle: string;
+  headerLabel?: string;
+}) {
+  const tabPrefix = quoteSheetTab(input.tabTitle);
+  const headerLabel = input.headerLabel ?? "ID диалога";
+  const values = await readSheetValues({
+    spreadsheetId: input.spreadsheetId,
+    range: `${tabPrefix}!A:A`,
+  });
+
+  const headerIndex = values.findIndex((row) => row[0] === headerLabel);
+  const startIndex = headerIndex >= 0 ? headerIndex + 1 : 1;
+  return values
+    .slice(startIndex)
+    .map((row) => row[0]?.trim())
+    .filter((value): value is string => Boolean(value));
 }
