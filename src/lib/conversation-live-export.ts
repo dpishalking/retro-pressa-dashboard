@@ -65,7 +65,7 @@ export function conversationMessagesToGiftAiDialogs(messages: ConversationMessag
       manager: managerName,
       source: sorted[0]?.channel ?? "bitrix",
       country: "",
-      stage: summary?.lastStage ?? "",
+      stage: summary?.stages.at(-1) ?? "",
       outcome: summary?.outcome ?? "unknown",
       amount: summary?.orderAmount ? String(summary.orderAmount) : "",
       messages: sorted.map((message, index) => ({
