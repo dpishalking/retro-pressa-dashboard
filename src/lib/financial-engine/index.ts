@@ -2,6 +2,7 @@ export type {
   CashFlowStatement,
   ComputeFinancialReportOptions,
   DataQualityIssue,
+  FinancialComputationContext,
   FinancialContext,
   FinancialForecast,
   FinancialHealth,
@@ -16,8 +17,7 @@ export type {
   UnitEconomicsItem
 } from "./types";
 
-export { computeFinancialReport } from "./compute";
-export type { FinancialReportOptions } from "./compute";
+export { computeFinancialReport, computeFinancialReportFromSnapshot } from "./compute";
 export { buildFinancialContext, applyDriverOverridesToSnapshot } from "./context";
 export { toFinancialStatement, toUnitEconomics } from "./adapter";
 export { buildNetProfitLineage, buildRevenueLineage, lineageNode } from "./explainability";

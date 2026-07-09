@@ -1,4 +1,5 @@
 import type { SnapshotDataMode } from "@/lib/company-snapshot/types";
+import type { DeltaMetricRow, PlanningMetadata } from "@/lib/planning-layer";
 import type {
   CashFlowStatement,
   DataQualityIssue,
@@ -45,6 +46,8 @@ export type CanonicalFinancialReport = {
   dataQuality: DataQualityIssue[];
   slices: Record<SliceDimension, FinancialSlice[]>;
   tree: FinancialTreeNode;
+  planning: PlanningMetadata;
+  delta?: DeltaMetricRow[];
 };
 
 export type FinancialReportError = {

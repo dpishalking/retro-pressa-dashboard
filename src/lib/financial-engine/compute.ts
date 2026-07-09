@@ -1,6 +1,5 @@
-import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import { snapshotToDriverInputs } from "@/lib/company-snapshot/to-drivers";
-import { applyDriverOverridesToSnapshot, buildFinancialContext } from "./context";
+import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import { computeCashFlow } from "./cash-flow";
 import { buildRevenueLineage } from "./explainability";
 import { computeForecast } from "./forecast";
@@ -8,39 +7,31 @@ import { buildFinancialTree } from "./financial-tree";
 import { computeHealth } from "./health";
 import { computePnL } from "./pnl";
 import { computeSlices, computeUnitEconomics } from "./slices";
-import type { ComputeFinancialReportOptions, FinancialReport } from "./types";
-
-export type FinancialReportOptions = ComputeFinancialReportOptions & {
-  driverOverrides?: Partial<Record<string, number>>;
-};
+import { buildFinancialContext } from "./context";
+import type { FinancialComputationContext, FinancialReport } from "./types";
 
 /**
  * Financial Operating System — единственный канонический финансовый движок.
- * Все финансовые расчёты проекта должны проходить через эту функцию.
+ * Принимает FinancialComputationContext без знания о FACT / PLAN / SCENARIO.
  */
-export function computeFinancialReport(
-  snapshot: CompanySnapshot,
-  options: FinancialReportOptions = {}
-): FinancialReport {
+export function computeFinancialReport(context: FinancialComputationContext): FinancialReport {
   const start = performance.now();
-  const effectiveSnapshot = options.driverOverrides
-    ? applyDriverOverridesToSnapshot(snapshot, options.driverOverrides)
-    : snapshot;
+  const { snapshot, elapsedDays } = context;
 
-  const ctx = buildFinancialContext(effectiveSnapshot, options.elapsedDays);
+  const ctx = buildFinancialContext(snapshot, elapsedDays);
   const { pnl, netProfitLineage } = computePnL(ctx);
-  const cashFlow = computeCashFlow(effectiveSnapshot, ctx, pnl);
-  const slices = computeSlices(effectiveSnapshot, ctx, pnl);
-  const discountRate = snapshotToDriverInputs(effectiveSnapshot).find((d) => d.id === "discountRate")?.actual ?? 0;
+  const cashFlow = computeCashFlow(snapshot, ctx, pnl);
+  const slices = computeSlices(snapshot, ctx, pnl);
+  const discountRate = snapshotToDriverInputs(snapshot).find((d) => d.id === "discountRate")?.actual ?? 0;
   const unitEconomics = computeUnitEconomics(slices, ctx, pnl, discountRate);
   const health = computeHealth(ctx, pnl, cashFlow);
-  const forecast = computeForecast(effectiveSnapshot, ctx, pnl);
+  const forecast = computeForecast(snapshot, ctx, pnl);
   const tree = buildFinancialTree(ctx, pnl);
 
   return {
     version: 1,
-    period: effectiveSnapshot.meta.period,
-    dataMode: effectiveSnapshot.meta.dataMode,
+    period: snapshot.meta.period,
+    dataMode: snapshot.meta.dataMode,
     computedAt: new Date().toISOString(),
     computeMs: performance.now() - start,
     pnl,
@@ -56,4 +47,12 @@ export function computeFinancialReport(
       revenue: buildRevenueLineage(ctx)
     }
   };
+}
+
+/** @deprecated Use Planning Layer → computeFinancialReport(context) */
+export function computeFinancialReportFromSnapshot(
+  snapshot: CompanySnapshot,
+  options?: { elapsedDays?: number }
+): FinancialReport {
+  return computeFinancialReport({ snapshot, elapsedDays: options?.elapsedDays });
 }

@@ -1,4 +1,6 @@
 import type { FinancialReport } from "@/lib/financial-engine/types";
+import type { LineageNode } from "@/lib/financial-engine/types";
+import type { PlanningMetadata } from "@/lib/planning-layer";
 import { periodToIsoMonth } from "./period";
 import type { CanonicalFinancialReport, FinancialReportSummary } from "./types";
 
@@ -17,7 +19,12 @@ export function buildFinancialReportSummary(report: FinancialReport): FinancialR
 
 export function serializeFinancialReport(
   report: FinancialReport,
-  meta: { builtAt: string; fromCache: boolean }
+  meta: {
+    builtAt: string;
+    fromCache: boolean;
+    planning: PlanningMetadata;
+    explain?: Record<string, LineageNode>;
+  }
 ): CanonicalFinancialReport {
   return {
     ok: true,
@@ -35,9 +42,10 @@ export function serializeFinancialReport(
     unitEconomics: report.unitEconomics,
     health: report.health,
     forecast: report.forecast,
-    explain: report.explain,
+    explain: meta.explain ?? report.explain,
     dataQuality: report.dataQuality,
     slices: report.slices,
-    tree: report.tree
+    tree: report.tree,
+    planning: meta.planning
   };
 }

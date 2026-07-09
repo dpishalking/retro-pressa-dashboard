@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function FinancialReportLiveSummary({ period }: Props) {
-  const { report, loading, error, refresh, isFallback } = useFinancialReport({ period });
+  const { report, loading, error, refresh, isFallback } = useFinancialReport({ period, mode: "FACT" });
 
   if (loading && !report) {
     return (

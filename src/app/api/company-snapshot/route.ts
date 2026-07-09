@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { buildCompanySnapshot, getCompanySnapshot } from "@/lib/company-snapshot/build-snapshot";
 import { computeTwin } from "@/lib/digital-twin/compute";
-import { computeFinancialReport } from "@/lib/financial-engine/compute";
+import { buildCanonicalFinancialReport } from "@/lib/financial-report/build";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,10 @@ export async function GET(request: Request) {
 
     const payload = await getCompanySnapshot({ period, refresh, forceRebuild: refresh });
     const twin = computeTwin({ snapshot: payload.snapshot });
-    const financial = computeFinancialReport(payload.snapshot);
+    const financial = await buildCanonicalFinancialReport({
+      period,
+      mode: "FACT"
+    });
 
     return NextResponse.json({
       ok: true,
@@ -28,11 +31,12 @@ export async function GET(request: Request) {
       snapshot: payload.snapshot,
       previous: payload.previous,
       financial: {
-        netProfit: financial.pnl.netProfit.value,
-        revenue: financial.pnl.revenue.value,
+        netProfit: financial.summary.netProfit,
+        revenue: financial.summary.revenue,
         grossMargin: financial.pnl.grossMargin.value,
         dataQuality: financial.dataQuality,
-        forecast30d: financial.forecast.points.find((p) => p.horizonDays === 30)
+        forecast30d: financial.forecast.points.find((p) => p.horizonDays === 30),
+        mode: financial.planning.mode
       },
       twinSummary: {
         revenue: twin.financials.revenue,

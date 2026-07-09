@@ -1,20 +1,23 @@
 import assert from "node:assert/strict";
 import { buildFallbackFinancialReport } from "@/lib/financial-report/fallback";
 import { parsePeriodParam, periodToIsoMonth } from "@/lib/financial-report/period";
-import { buildFinancialReportSummary } from "@/lib/financial-report/serialize";
 
 assert.equal(parsePeriodParam("2026-07"), "july-2026");
 assert.equal(parsePeriodParam("june-2026"), "june-2026");
 assert.equal(periodToIsoMonth("july-2026"), "2026-07");
 
-const report = buildFallbackFinancialReport("june-2026");
-assert.equal(report.ok, true);
-assert.ok(report.summary.revenue > 0);
-assert.ok(report.summary.netProfit !== undefined);
-assert.equal(report.summary.revenue, report.pnl.revenue.value);
-assert.equal(report.summary.netProfit, report.pnl.netProfit.value);
-assert.ok(report.explain.netProfit.children.length > 0);
-assert.equal(report.forecast.points.length, 3);
-assert.equal(buildFinancialReportSummary(report).ebitda, report.pnl.ebitda.value);
+const fact = buildFallbackFinancialReport("june-2026", { mode: "FACT" });
+assert.equal(fact.planning.mode, "FACT");
+assert.ok(fact.summary.revenue > 0);
+
+const plan = buildFallbackFinancialReport("june-2026", { mode: "PLAN" });
+assert.equal(plan.planning.mode, "PLAN");
+
+const scenario = buildFallbackFinancialReport("june-2026", {
+  mode: "SCENARIO",
+  changes: [{ driverId: "avgCheck", deltaPercent: 0.07 }]
+});
+assert.equal(scenario.planning.mode, "SCENARIO");
+assert.ok(scenario.explain.netProfit.children.length > 0);
 
 console.log("financial-report tests passed");

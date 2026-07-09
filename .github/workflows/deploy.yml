@@ -315,7 +315,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"

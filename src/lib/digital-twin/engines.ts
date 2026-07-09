@@ -2,6 +2,7 @@ import { buildFallbackCompanySnapshot } from "@/lib/company-snapshot/fallback";
 import { snapshotToDriverInputs } from "@/lib/company-snapshot/to-drivers";
 import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import { computeFinancialReport } from "@/lib/financial-engine/compute";
+import { resolvePlanningContext } from "@/lib/planning-layer";
 import { toFinancialStatement, toUnitEconomics } from "@/lib/financial-engine/adapter";
 import { DRIVER_CATALOG, applyOverrides, getDriverValue } from "./drivers";
 import type { DriverInput } from "./types";
@@ -106,7 +107,13 @@ export function runPipeline(options?: PipelineOptions | Partial<Record<string, n
   const production = runProductionEngine(sales, input);
   const hr = runHrEngine(input);
 
-  const financialReport = computeFinancialReport(snapshot, { driverOverrides: normalized.overrides });
+  const financialReport = computeFinancialReport(
+    resolvePlanningContext(snapshot, {
+      mode: normalized.overrides && Object.keys(normalized.overrides).length > 0 ? "SCENARIO" : "FACT",
+      period: snapshot.meta.period,
+      overrides: normalized.overrides
+    }).computation
+  );
   const financials = toFinancialStatement(financialReport);
   const unitEconomics = toUnitEconomics(financialReport);
 

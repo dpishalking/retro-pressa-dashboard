@@ -2,16 +2,19 @@
 
 import { pct, eur } from "@/lib/format";
 import { useFinancialReport } from "@/hooks/use-financial-report";
-import type { Scenario } from "@/lib/digital-twin/types";
+import type { SavedScenario } from "@/lib/planning-layer";
 
 type Props = {
-  scenario: Scenario;
+  scenario: SavedScenario;
   isActive: boolean;
   onSelect: () => void;
 };
 
 export function ScenarioFinancialCard({ scenario, isActive, onSelect }: Props) {
-  const { report, loading } = useFinancialReport({ driverOverrides: scenario.overrides });
+  const { report, loading } = useFinancialReport({
+    mode: "SCENARIO",
+    scenarioId: scenario.id
+  });
 
   return (
     <button

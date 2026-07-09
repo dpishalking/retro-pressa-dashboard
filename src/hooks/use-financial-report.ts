@@ -4,11 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchFinancialReport } from "@/lib/financial-report/client";
 import { parsePeriodParam } from "@/lib/financial-report/period";
 import type { CanonicalFinancialReport } from "@/lib/financial-report/types";
+import { parsePlanningMode, type PlanningMode, type ScenarioChange } from "@/lib/planning-layer";
 import type { PeriodKey } from "@/types/metrics";
 
 export type UseFinancialReportOptions = {
   period?: PeriodKey | string;
+  mode?: PlanningMode | string;
   driverOverrides?: Partial<Record<string, number>>;
+  changes?: ScenarioChange[];
+  scenarioId?: string;
+  includeDelta?: boolean;
   enabled?: boolean;
 };
 
@@ -19,20 +24,32 @@ export type UseFinancialReportResult = {
   refresh: () => void;
   isFallback: boolean;
   period: PeriodKey;
+  mode: PlanningMode;
 };
 
-function overridesKey(overrides?: Partial<Record<string, number>>) {
-  if (!overrides || Object.keys(overrides).length === 0) return "";
-  return JSON.stringify(
-    Object.entries(overrides).sort(([a], [b]) => a.localeCompare(b))
-  );
+function requestSignature(options: UseFinancialReportOptions) {
+  return JSON.stringify({
+    period: parsePeriodParam(options.period ?? null),
+    mode: parsePlanningMode(options.mode),
+    overrides: options.driverOverrides ?? {},
+    changes: options.changes ?? [],
+    scenarioId: options.scenarioId ?? "",
+    includeDelta: options.includeDelta === true
+  });
 }
 
 export function useFinancialReport(options: UseFinancialReportOptions = {}): UseFinancialReportResult {
   const enabled = options.enabled !== false;
   const period = parsePeriodParam(options.period ?? null);
-  const overrides = options.driverOverrides;
-  const overridesSignature = useMemo(() => overridesKey(overrides), [overrides]);
+  const mode = parsePlanningMode(options.mode);
+  const signature = useMemo(() => requestSignature(options), [
+    options.period,
+    options.mode,
+    options.driverOverrides,
+    options.changes,
+    options.scenarioId,
+    options.includeDelta
+  ]);
 
   const [report, setReport] = useState<CanonicalFinancialReport | null>(null);
   const [loading, setLoading] = useState(enabled);
@@ -51,8 +68,12 @@ export function useFinancialReport(options: UseFinancialReportOptions = {}): Use
       try {
         const result = await fetchFinancialReport({
           period,
+          mode,
           refresh,
-          driverOverrides: overrides
+          driverOverrides: mode === "SCENARIO" ? options.driverOverrides : undefined,
+          changes: mode === "SCENARIO" ? options.changes : undefined,
+          scenarioId: mode === "SCENARIO" ? options.scenarioId : undefined,
+          includeDelta: options.includeDelta
         });
 
         if (currentRequest !== requestId.current) return;
@@ -72,12 +93,12 @@ export function useFinancialReport(options: UseFinancialReportOptions = {}): Use
         }
       }
     },
-    [enabled, overrides, period]
+    [enabled, mode, options.changes, options.driverOverrides, options.includeDelta, options.scenarioId, period]
   );
 
   useEffect(() => {
     void load(false);
-  }, [load, overridesSignature]);
+  }, [load, signature]);
 
   const refresh = useCallback(() => {
     void load(true);
@@ -89,6 +110,7 @@ export function useFinancialReport(options: UseFinancialReportOptions = {}): Use
     error,
     refresh,
     isFallback,
-    period
+    period,
+    mode
   };
 }

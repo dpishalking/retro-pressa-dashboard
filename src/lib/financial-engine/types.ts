@@ -1,4 +1,5 @@
 import type { SnapshotDataMode, SnapshotSourceId } from "@/lib/company-snapshot/types";
+import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import type { PeriodKey } from "@/types/metrics";
 
 export type FinancialUnit = "currency" | "percent" | "count" | "days" | "ratio";
@@ -185,5 +186,11 @@ export type FinancialContext = {
 };
 
 export type ComputeFinancialReportOptions = {
+  elapsedDays?: number;
+};
+
+/** Mode-agnostic input for FOS. Planning Layer resolves FACT/PLAN/SCENARIO into this shape. */
+export type FinancialComputationContext = {
+  snapshot: CompanySnapshot;
   elapsedDays?: number;
 };

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port ${PORT:-4174}",
     "start:standalone": "HOSTNAME=0.0.0.0 PORT=${PORT:-4174} node .next/standalone/server.js",
-    "test": "tsx src/tests/metrics-engine.test.ts && tsx src/tests/company-snapshot.test.ts && tsx src/tests/financial-engine.test.ts && tsx src/tests/financial-report.test.ts && tsx src/tests/driver-bounds.test.ts && tsx src/tests/recommendations.test.ts",
+    "test": "tsx src/tests/metrics-engine.test.ts && tsx src/tests/company-snapshot.test.ts && tsx src/tests/planning-layer.test.ts && tsx src/tests/financial-engine.test.ts && tsx src/tests/financial-report.test.ts && tsx src/tests/driver-bounds.test.ts && tsx src/tests/recommendations.test.ts",
     "sync:training-sheet": "tsx src/scripts/sync-training-sheet.ts",
     "export:manager-dialogs": "tsx src/scripts/export-manager-dialogs-to-sheet.ts",
     "seed:training": "tsx src/scripts/seed-training-catalog.ts"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Activity,
@@ -23,10 +23,13 @@ import { HUB_PATH } from "@/lib/auth/routes";
 import { FinancialPnLView } from "@/components/financial-report/pnl-view";
 import { FinancialReportInspector } from "@/components/financial-report/inspector";
 import { ScenarioFinancialCard } from "@/components/financial-report/scenario-card";
+import { PlanningDeltaView } from "@/components/planning/planning-delta-view";
+import { PlanningModeSwitcher } from "@/components/planning/planning-mode-switcher";
 import { useFinancialReport } from "@/hooks/use-financial-report";
 import { mergeTwinWithFinancialReport } from "@/lib/financial-report/twin-bridge";
 import { computeTwin, suggestConstraintRelief } from "@/lib/digital-twin/compute";
 import { DEFAULT_SCENARIOS, getDriverBounds, clampDriverValue } from "@/lib/digital-twin/drivers";
+import { getSeedScenarioLibrary, type PlanningMode, type SavedScenario } from "@/lib/planning-layer";
 import type { ComputedMetric, DriverCategory, DriverState, DriverTreeNode, ScenarioId } from "@/lib/digital-twin/types";
 import { eur, number, pct } from "@/lib/format";
 
@@ -100,16 +103,18 @@ function CeoMetricCard({ metric }: { metric: ComputedMetric }) {
 
 function DriverSlider({
   driver,
-  onChange
+  onChange,
+  disabled = false
 }: {
   driver: DriverState;
   onChange: (id: string, value: number) => void;
+  disabled?: boolean;
 }) {
   const { min, max, step } = getDriverBounds(driver);
   const value = clampDriverValue(driver, driver.actual);
 
   return (
-    <div className="rounded-xl border border-[var(--line)] bg-white p-4">
+    <div className={`rounded-xl border border-[var(--line)] bg-white p-4 ${disabled ? "opacity-60" : ""}`}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="font-bold text-slate-900">{driver.label}</p>
@@ -119,6 +124,9 @@ function DriverSlider({
           {categoryLabels[driver.category]}
         </span>
       </div>
+      {disabled ? (
+        <p className="text-xs font-semibold text-slate-500">Доступно только в режиме SCENARIO</p>
+      ) : null}
       <div className="flex items-center gap-4">
         <input
           type="range"
@@ -126,8 +134,9 @@ function DriverSlider({
           max={max}
           step={step}
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(driver.id, clampDriverValue(driver, Number(e.target.value)))}
-          className="h-2 flex-1 cursor-pointer accent-blue-600"
+          className="h-2 flex-1 cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
         />
         <span className="min-w-[80px] text-right text-sm font-black text-slate-950">{formatMetricValue({ ...driver, actual: value })}</span>
       </div>
@@ -168,22 +177,45 @@ export function DigitalTwinApp() {
   const searchParams = useSearchParams();
   const showInspector = searchParams.get("dev") === "1";
   const [activeTab, setActiveTab] = useState<Tab>("CEO Dashboard");
+  const [planningMode, setPlanningMode] = useState<PlanningMode>("FACT");
   const [overrides, setOverrides] = useState<Partial<Record<string, number>>>({});
   const [activeScenario, setActiveScenario] = useState<ScenarioId>("baseline");
+  const [libraryScenarios, setLibraryScenarios] = useState<SavedScenario[]>(getSeedScenarioLibrary().scenarios);
+  const [activeLibraryScenarioId, setActiveLibraryScenarioId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/planning/scenarios", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload: { scenarios?: SavedScenario[] }) => {
+        if (Array.isArray(payload.scenarios) && payload.scenarios.length > 0) {
+          setLibraryScenarios(payload.scenarios);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   const scenarioOverrides = useMemo(() => {
-    const scenario = DEFAULT_SCENARIOS.find((s) => s.id === activeScenario);
-    return { ...scenario?.overrides, ...overrides };
-  }, [activeScenario, overrides]);
+    if (planningMode !== "SCENARIO") return {};
+    const preset = DEFAULT_SCENARIOS.find((s) => s.id === activeScenario);
+    return { ...preset?.overrides, ...overrides };
+  }, [activeScenario, overrides, planningMode]);
 
-  const twinBase = useMemo(() => computeTwin({ overrides: scenarioOverrides }), [scenarioOverrides]);
+  const twinBase = useMemo(
+    () => computeTwin({ overrides: planningMode === "SCENARIO" ? scenarioOverrides : {} }),
+    [planningMode, scenarioOverrides]
+  );
   const {
     report: financialReport,
     loading: financialLoading,
     error: financialError,
     refresh: refreshFinancialReport,
     isFallback
-  } = useFinancialReport({ driverOverrides: scenarioOverrides });
+  } = useFinancialReport({
+    mode: planningMode,
+    driverOverrides: planningMode === "SCENARIO" ? scenarioOverrides : undefined,
+    scenarioId: planningMode === "SCENARIO" ? activeLibraryScenarioId ?? undefined : undefined,
+    includeDelta: planningMode !== "FACT"
+  });
   const snapshot = useMemo(
     () => mergeTwinWithFinancialReport(twinBase, financialReport),
     [twinBase, financialReport]
@@ -195,15 +227,36 @@ export function DigitalTwinApp() {
   );
 
   const handleDriverChange = useCallback((id: string, value: number) => {
+    if (planningMode !== "SCENARIO") return;
     setActiveScenario("custom");
+    setActiveLibraryScenarioId(null);
     const driver = twinBase.drivers.find((d) => d.id === id);
     const nextValue = driver ? clampDriverValue(driver, value) : value;
     setOverrides((prev) => ({ ...prev, [id]: nextValue }));
-  }, [twinBase.drivers]);
+  }, [planningMode, twinBase.drivers]);
 
   const handleScenarioSelect = useCallback((id: ScenarioId) => {
+    if (planningMode !== "SCENARIO") {
+      setPlanningMode("SCENARIO");
+    }
     setActiveScenario(id);
+    setActiveLibraryScenarioId(null);
     if (id !== "custom") setOverrides({});
+  }, [planningMode]);
+
+  const handleLibraryScenarioSelect = useCallback((scenario: SavedScenario) => {
+    setPlanningMode("SCENARIO");
+    setActiveLibraryScenarioId(scenario.id);
+    setActiveScenario("custom");
+    setOverrides({});
+  }, []);
+
+  const handlePlanningModeChange = useCallback((mode: PlanningMode) => {
+    setPlanningMode(mode);
+    if (mode !== "SCENARIO") {
+      setOverrides({});
+      setActiveLibraryScenarioId(null);
+    }
   }, []);
 
   const bottleneck = snapshot.constraints.find((c) => c.isBottleneck);
@@ -219,7 +272,9 @@ export function DigitalTwinApp() {
           </Link>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Activity size={14} />
-            {financialLoading ? "Загрузка Financial Report…" : `Financial Report · ${snapshot.computeMs.toFixed(1)} мс`}
+            {financialLoading
+              ? "Загрузка Financial Report…"
+              : `${financialReport?.planning.mode ?? planningMode} · ${snapshot.computeMs.toFixed(1)} мс`}
             {isFallback ? " · fallback" : ""}
           </div>
         </div>
@@ -228,10 +283,10 @@ export function DigitalTwinApp() {
             <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-violet-600">Цифровой двойник</p>
             <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Decision Engine</h1>
             <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
-              Операционная система управления бизнесом. Собственник управляет драйверами — система рассчитывает финансовый результат,
-              находит ограничения и предлагает действия с максимальным влиянием на прибыль.
+              FACT — реальность. PLAN — цели. SCENARIO — лаборатория решений без изменения факта.
             </p>
           </div>
+          <PlanningModeSwitcher mode={planningMode} onChange={handlePlanningModeChange} />
           <div className={`card p-4 ${snapshot.strategicGoal.achievable ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
             <p className="text-xs font-bold uppercase text-slate-500">Стратегическая цель</p>
             <p className="mt-1 text-lg font-black text-slate-950">
@@ -270,6 +325,9 @@ export function DigitalTwinApp() {
                 Повторить
               </button>
             </div>
+          ) : null}
+          {financialReport?.delta && planningMode !== "FACT" ? (
+            <PlanningDeltaView rows={financialReport.delta} />
           ) : null}
           <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {snapshot.ceoMetrics.map((m) => (
@@ -321,7 +379,9 @@ export function DigitalTwinApp() {
       {activeTab === "Драйверы" ? (
         <div className="space-y-6">
           <p className="text-sm text-slate-600">
-            Изменяйте только операционные драйверы. P&L, маржа и прибыль пересчитываются автоматически.
+            {planningMode === "SCENARIO"
+              ? "Изменяйте драйверы в режиме SCENARIO. FACT и PLAN остаются неизменными."
+              : "Переключитесь в SCENARIO, чтобы моделировать изменения. FACT и PLAN доступны только для просмотра."}
           </p>
           {(Object.keys(categoryLabels) as DriverCategory[]).map((cat) => {
             const catDrivers = editableDrivers.filter((d) => d.category === cat);
@@ -331,7 +391,12 @@ export function DigitalTwinApp() {
                 <h2 className="mb-3 text-lg font-black text-slate-950">{categoryLabels[cat]}</h2>
                 <div className="grid gap-3 md:grid-cols-2">
                   {catDrivers.map((d) => (
-                    <DriverSlider key={d.id} driver={d} onChange={handleDriverChange} />
+                    <DriverSlider
+                      key={d.id}
+                      driver={d}
+                      onChange={handleDriverChange}
+                      disabled={planningMode !== "SCENARIO"}
+                    />
                   ))}
                 </div>
               </section>
@@ -353,15 +418,28 @@ export function DigitalTwinApp() {
 
       {activeTab === "Сценарии" ? (
         <div className="space-y-6">
-          <p className="text-sm text-slate-600">Сравнивайте сценарии. Любое изменение драйвера автоматически пересчитывает всю компанию.</p>
+          <p className="text-sm text-slate-600">Scenario Library — временные изменения поверх FACT. Не влияют на реальные данные.</p>
           <div className="grid gap-4 md:grid-cols-2">
-            {DEFAULT_SCENARIOS.map((scenario) => (
+            {libraryScenarios.map((scenario) => (
               <ScenarioFinancialCard
                 key={scenario.id}
                 scenario={scenario}
-                isActive={activeScenario === scenario.id}
-                onSelect={() => handleScenarioSelect(scenario.id)}
+                isActive={activeLibraryScenarioId === scenario.id}
+                onSelect={() => handleLibraryScenarioSelect(scenario)}
               />
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {DEFAULT_SCENARIOS.map((scenario) => (
+              <button
+                key={scenario.id}
+                type="button"
+                onClick={() => handleScenarioSelect(scenario.id)}
+                className={`card p-6 text-left transition ${activeScenario === scenario.id && !activeLibraryScenarioId ? "ring-2 ring-violet-500" : "hover:-translate-y-0.5 hover:shadow-lg"}`}
+              >
+                <h3 className="text-xl font-black text-slate-950">{scenario.name}</h3>
+                <p className="mt-2 text-sm text-slate-600">{scenario.description}</p>
+              </button>
             ))}
           </div>
         </div>
@@ -443,7 +521,7 @@ export function DigitalTwinApp() {
       <footer className="mt-8 rounded-xl border border-[var(--line)] bg-white p-4 text-xs text-slate-500">
         <p className="font-bold text-slate-700">Архитектура расчёта</p>
         <p className="mt-1">
-          Company Snapshot → Financial Engine → Financial Report API → useFinancialReport() → UI
+          Company Snapshot (FACT) → Planning Layer → Financial Engine → Financial Report API → UI
         </p>
         <p className="mt-1">
           Операционный слой: Drivers → Constraint Engine → Recommendations
