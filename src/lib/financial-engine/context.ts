@@ -137,6 +137,10 @@ export function applyDriverOverridesToSnapshot(
 
   if (overrides.cpl !== undefined) set(clone.marketing.cpl, overrides.cpl);
   if (overrides.adBudget !== undefined) set(clone.marketing.adSpend, overrides.adBudget);
+  if (overrides.paidLeads !== undefined) {
+    set(clone.marketing.paidLeads, overrides.paidLeads);
+    clone.canonical.paidLeads = Math.round(overrides.paidLeads);
+  }
   if (overrides.organicLeads !== undefined) set(clone.marketing.organicLeads, overrides.organicLeads);
   if (overrides.salesConversion !== undefined) set(clone.sales.salesConversion, overrides.salesConversion);
   if (overrides.avgCheck !== undefined) set(clone.sales.averagePaidCheck, overrides.avgCheck);

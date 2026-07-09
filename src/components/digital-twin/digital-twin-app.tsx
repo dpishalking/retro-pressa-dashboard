@@ -33,8 +33,10 @@ import { getSeedScenarioLibrary, type PlanningMode, type SavedScenario } from "@
 import type { ComputedMetric, DriverCategory, DriverState, DriverTreeNode, ScenarioId } from "@/lib/digital-twin/types";
 import { eur, number, pct } from "@/lib/format";
 
-const tabs = ["CEO Dashboard", "Драйверы", "Driver Tree", "Сценарии", "Ограничения", "Рекомендации", "Inspector"] as const;
+const tabs = ["CEO Dashboard", "Driver Tree", "Сценарии", "Ограничения", "Рекомендации", "Inspector"] as const;
 type Tab = (typeof tabs)[number];
+
+const driverCategoryOrder: DriverCategory[] = ["marketing", "sales", "production", "hr", "finance"];
 
 const categoryLabels: Record<DriverCategory, string> = {
   marketing: "Маркетинг",
@@ -104,11 +106,13 @@ function CeoMetricCard({ metric }: { metric: ComputedMetric }) {
 function DriverSlider({
   driver,
   onChange,
-  disabled = false
+  disabled = false,
+  compact = false
 }: {
   driver: DriverState;
   onChange: (id: string, value: number) => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const { min, max, step } = getDriverBounds(driver);
   const value = clampDriverValue(driver, driver.actual);
@@ -140,14 +144,16 @@ function DriverSlider({
 
   return (
     <div className={`rounded-xl border border-[var(--line)] bg-white p-4 ${disabled ? "opacity-60" : ""}`}>
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className={`mb-3 flex items-start justify-between gap-3 ${compact ? "mb-2" : ""}`}>
         <div>
-          <p className="font-bold text-slate-900">{driver.label}</p>
-          <p className="text-xs text-slate-500">{driver.owner} · План: {formatMetricValue({ ...driver, actual: driver.plan })}</p>
+          <p className={`font-bold text-slate-900 ${compact ? "text-sm" : ""}`}>{driver.label}</p>
+          <p className="text-xs text-slate-500">План: {formatMetricValue({ ...driver, actual: driver.plan })}</p>
         </div>
-        <span className={`rounded-lg px-2 py-1 text-xs font-bold ${categoryColors[driver.category]}`}>
-          {categoryLabels[driver.category]}
-        </span>
+        {!compact ? (
+          <span className={`rounded-lg px-2 py-1 text-xs font-bold ${categoryColors[driver.category]}`}>
+            {categoryLabels[driver.category]}
+          </span>
+        ) : null}
       </div>
       {disabled ? (
         <p className="text-xs font-semibold text-slate-500">Доступно только в режиме SCENARIO</p>
@@ -196,6 +202,109 @@ function DriverSlider({
       </div>
       {!disabled ? <p className="mt-2 text-xs text-slate-400">Диапазон: {rangeHint}</p> : null}
     </div>
+  );
+}
+
+function DriverCategorySection({
+  category,
+  drivers,
+  open,
+  onToggle,
+  onChange,
+  disabled
+}: {
+  category: DriverCategory;
+  drivers: DriverState[];
+  open: boolean;
+  onToggle: () => void;
+  onChange: (id: string, value: number) => void;
+  disabled: boolean;
+}) {
+  if (drivers.length === 0) return null;
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-slate-50"
+      >
+        <div className="flex items-center gap-3">
+          <ChevronRight size={18} className={`shrink-0 text-slate-500 transition ${open ? "rotate-90" : ""}`} />
+          <h3 className="text-base font-black text-slate-950">{categoryLabels[category]}</h3>
+          <span className={`rounded-lg px-2 py-0.5 text-xs font-bold ${categoryColors[category]}`}>
+            {drivers.length}
+          </span>
+        </div>
+        <span className="text-xs font-semibold text-slate-500">{open ? "Свернуть" : "Развернуть"}</span>
+      </button>
+      {open ? (
+        <div className="grid gap-3 border-t border-[var(--line)] bg-slate-50/60 p-4 md:grid-cols-2">
+          {drivers.map((driver) => (
+            <DriverSlider
+              key={driver.id}
+              driver={driver}
+              onChange={onChange}
+              disabled={disabled}
+              compact
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function DriversPanel({
+  drivers,
+  planningMode,
+  onChange
+}: {
+  drivers: DriverState[];
+  planningMode: PlanningMode;
+  onChange: (id: string, value: number) => void;
+}) {
+  const [openCategories, setOpenCategories] = useState<Partial<Record<DriverCategory, boolean>>>({
+    marketing: true,
+    sales: true,
+    production: false,
+    hr: false,
+    finance: false
+  });
+  const disabled = planningMode !== "SCENARIO";
+
+  return (
+    <section className="card p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={20} className="text-blue-600" />
+          <h2 className="text-xl font-black text-slate-950">Драйверы</h2>
+        </div>
+        <p className="text-sm text-slate-600">
+          {disabled
+            ? "Переключитесь в SCENARIO, чтобы менять значения и сразу видеть эффект выше."
+            : "Меняйте ползунки или вводите точные значения — метрики обновляются мгновенно."}
+        </p>
+      </div>
+      <div className="space-y-3">
+        {driverCategoryOrder.map((category) => (
+          <DriverCategorySection
+            key={category}
+            category={category}
+            drivers={drivers.filter((driver) => driver.category === category && driver.editable)}
+            open={openCategories[category] ?? false}
+            onToggle={() =>
+              setOpenCategories((prev) => ({
+                ...prev,
+                [category]: !prev[category]
+              }))
+            }
+            onChange={onChange}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -428,35 +537,12 @@ export function DigitalTwinApp() {
               ) : null}
             </section>
           </div>
-        </div>
-      ) : null}
 
-      {activeTab === "Драйверы" ? (
-        <div className="space-y-6">
-          <p className="text-sm text-slate-600">
-            {planningMode === "SCENARIO"
-              ? "Изменяйте драйверы в режиме SCENARIO. FACT и PLAN остаются неизменными."
-              : "Переключитесь в SCENARIO, чтобы моделировать изменения. FACT и PLAN доступны только для просмотра."}
-          </p>
-          {(Object.keys(categoryLabels) as DriverCategory[]).map((cat) => {
-            const catDrivers = editableDrivers.filter((d) => d.category === cat);
-            if (catDrivers.length === 0) return null;
-            return (
-              <section key={cat}>
-                <h2 className="mb-3 text-lg font-black text-slate-950">{categoryLabels[cat]}</h2>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {catDrivers.map((d) => (
-                    <DriverSlider
-                      key={d.id}
-                      driver={d}
-                      onChange={handleDriverChange}
-                      disabled={planningMode !== "SCENARIO"}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
+          <DriversPanel
+            drivers={editableDrivers}
+            planningMode={planningMode}
+            onChange={handleDriverChange}
+          />
         </div>
       ) : null}
 

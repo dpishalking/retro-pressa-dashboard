@@ -46,6 +46,10 @@ assert.ok(conversionScenario.sales.revenue.value > factSnapshot.sales.revenue.va
 const checkScenario = applyScenarioToSnapshot(factSnapshot, { avgCheck: factSnapshot.sales.averagePaidCheck.value * 1.2 });
 assert.ok(checkScenario.sales.revenue.value > factSnapshot.sales.revenue.value);
 
+const paidLeadsScenario = applyScenarioToSnapshot(factSnapshot, { paidLeads: 3000 });
+assert.equal(paidLeadsScenario.marketing.paidLeads.value, 3000);
+assert.ok(paidLeadsScenario.marketing.adSpend.value > factSnapshot.marketing.adSpend.value);
+
 const delta = buildDeltaView({
   fact: buildFinancialReportSummary(factReport),
   plan: buildFinancialReportSummary(computeFinancialReport(planResolved.computation)),

@@ -5,6 +5,7 @@ import { snapshotToDriverInputs } from "@/lib/company-snapshot/to-drivers";
 const REVENUE_DRIVER_IDS = new Set([
   "adBudget",
   "cpl",
+  "paidLeads",
   "organicLeads",
   "qualRate",
   "salesConversion",
@@ -31,10 +32,21 @@ function reconcileScenarioRevenue(
     return drivers.find((driver) => driver.id === id)?.actual ?? 0;
   };
 
-  const adBudget = valueOf("adBudget");
+  const adBudgetInput = valueOf("adBudget");
   const cpl = Math.max(0.01, valueOf("cpl"));
   const organicLeads = Math.round(valueOf("organicLeads"));
-  const paidLeads = Math.floor(adBudget / cpl);
+
+  let paidLeads: number;
+  let adBudget: number;
+
+  if (overrides.paidLeads !== undefined) {
+    paidLeads = Math.round(valueOf("paidLeads"));
+    adBudget = overrides.adBudget !== undefined ? adBudgetInput : paidLeads * cpl;
+  } else {
+    adBudget = adBudgetInput;
+    paidLeads = Math.floor(adBudget / cpl);
+  }
+
   const totalLeads = paidLeads + organicLeads;
 
   const qualRate = valueOf("qualRate");

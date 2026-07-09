@@ -15,18 +15,24 @@ export function buildBaselineDrivers(snapshot?: CompanySnapshot): DriverInput[] 
 
 type EngineInput = {
   drivers: DriverInput[];
+  overrides?: Partial<Record<string, number>>;
 };
 
-export function runMarketingEngine({ drivers }: EngineInput) {
+export function runMarketingEngine({ drivers, overrides }: EngineInput) {
   const adBudget = getDriverValue(drivers, "adBudget");
-  const cpl = getDriverValue(drivers, "cpl");
+  const cpl = Math.max(0.01, getDriverValue(drivers, "cpl"));
   const organicLeads = getDriverValue(drivers, "organicLeads");
-  const paidLeads = Math.floor(safeDiv(adBudget, cpl));
+  const paidLeads = overrides?.paidLeads !== undefined
+    ? Math.round(getDriverValue(drivers, "paidLeads"))
+    : Math.floor(safeDiv(adBudget, cpl));
+  const effectiveAdBudget = overrides?.paidLeads !== undefined && overrides.adBudget === undefined
+    ? paidLeads * cpl
+    : adBudget;
   const totalLeadsCount = paidLeads + organicLeads;
-  const cpa = safeDiv(adBudget, totalLeadsCount);
+  const cpa = safeDiv(effectiveAdBudget, totalLeadsCount);
   const romi = 0;
 
-  return { adBudget, cpl, paidLeads, organicLeads, totalLeads: totalLeadsCount, cpa, romi };
+  return { adBudget: effectiveAdBudget, cpl, paidLeads, organicLeads, totalLeads: totalLeadsCount, cpa, romi };
 }
 
 export function runSalesEngine(marketing: ReturnType<typeof runMarketingEngine>, { drivers }: EngineInput) {
@@ -100,7 +106,7 @@ export function runPipeline(options?: PipelineOptions | Partial<Record<string, n
   const snapshot = normalized.snapshot ?? buildFallbackCompanySnapshot();
   const base = buildBaselineDrivers(snapshot);
   const drivers = normalized.overrides ? applyOverrides(base, normalized.overrides) : base;
-  const input = { drivers };
+  const input = { drivers, overrides: normalized.overrides };
 
   const marketing = runMarketingEngine(input);
   const sales = runSalesEngine(marketing, input);

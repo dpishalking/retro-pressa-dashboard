@@ -17,6 +17,7 @@ export function snapshotToDriverInputs(snapshot: CompanySnapshot): DriverInput[]
     cpm: DRIVER_CATALOG.find((d) => d.id === "cpm")?.actual ?? 4.2,
     ctr: DRIVER_CATALOG.find((d) => d.id === "ctr")?.actual ?? 0.032,
     adBudget: marketing.adSpend.value,
+    paidLeads: marketing.paidLeads.value,
     organicLeads: marketing.organicLeads.value,
     qualRate: safeDiv(canonical.qualifiedLeads, leads),
     salesConversion: sales.salesConversion.value,
@@ -53,6 +54,8 @@ function planValue(driverId: string): number {
       return targetScenario.maxPaidCpl;
     case "adBudget":
       return targetScenario.monthlyAdSpendMax;
+    case "paidLeads":
+      return targetScenario.paidLeads;
     case "organicLeads":
       return targetScenario.organicLeads;
     case "qualRate":

@@ -10,6 +10,7 @@ export const DRIVER_CATALOG: DriverInput[] = [
   { id: "cpm", label: "CPM", category: "marketing", unit: "currency", actual: 4.2, plan: 5.0, owner: "Маркетинг", editable: true },
   { id: "ctr", label: "CTR", category: "marketing", unit: "percent", actual: 0.032, plan: 0.035, owner: "Маркетинг", editable: true },
   { id: "adBudget", label: "Рекламный бюджет", category: "marketing", unit: "currency", actual: 4548, plan: 10000, owner: "Маркетинг", editable: true },
+  { id: "paidLeads", label: "Платные лиды", category: "marketing", unit: "count", actual: 2260, plan: 3900, owner: "Маркетинг", editable: true, description: "Количество платных лидов за период" },
   { id: "organicLeads", label: "Органические лиды", category: "marketing", unit: "count", actual: 450, plan: 600, owner: "Маркетинг", editable: true },
 
   // Sales

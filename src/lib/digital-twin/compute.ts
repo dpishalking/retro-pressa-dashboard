@@ -24,7 +24,11 @@ export function computeTwin(options?: ComputeTwinOptions | Partial<Record<string
   const { marketing, sales, production, hr, financials, unitEconomics, financialReport } = pipeline;
   const baseDrivers = buildBaselineDrivers(snapshot);
   const drivers = enrichDrivers(
-    normalized.overrides ? applyOverrides(baseDrivers, normalized.overrides) : baseDrivers
+    syncDerivedDriverValues(
+      normalized.overrides ? applyOverrides(baseDrivers, normalized.overrides) : baseDrivers,
+      marketing,
+      normalized.overrides
+    )
   );
 
   const constraints = detectConstraints({ drivers: pipeline.drivers, marketing, sales, production });
@@ -56,6 +60,7 @@ export function computeTwin(options?: ComputeTwinOptions | Partial<Record<string
     metric("netMargin", "Рентабельность", financials.netMargin, STRATEGIC_GOAL.targetNetMargin, "percent", "Финансы", ["netProfit", "revenue"]),
     metric("ltv", "LTV", ltv, 150, "currency", "Маркетинг", ["avgCheck", "repeatSalesRate"]),
     metric("cac", "CAC", cac, 25, "currency", "Маркетинг", ["adBudget", "sales"]),
+    metric("paidLeads", "Платные лиды", marketing.paidLeads, snapshot.marketing.paidLeads.value || 3900, "count", "Маркетинг", ["adBudget", "cpl"]),
     metric("cpl", "CPL", marketing.cpl, snapshot.marketing.cpl.value || 3, "currency", "Маркетинг", ["adBudget", "paidLeads"]),
     metric("cpql", "CPQL", cpql, snapshot.marketing.cpql.value || 4, "currency", "Маркетинг", ["adBudget", "qualLeads"]),
     metric("avgCheck", "Средний чек", sales.effectiveCheck, snapshot.sales.averagePaidCheck.value || 80, "currency", "РОП", ["avgCheck", "upsellRate"]),
@@ -101,6 +106,22 @@ function metric(
   const delta = plan === 0 ? 0 : (value - plan) / plan;
   const trend = delta > 0.02 ? "up" : delta < -0.02 ? "down" : "flat";
   return { id, label, value, plan, forecast: value, delta, trend, unit, owner, lineage };
+}
+
+function syncDerivedDriverValues(
+  drivers: import("./types").DriverInput[],
+  marketing: ReturnType<typeof import("./engines").runMarketingEngine>,
+  overrides?: Partial<Record<string, number>>
+) {
+  return drivers.map((driver) => {
+    if (driver.id === "paidLeads" && overrides?.paidLeads === undefined) {
+      return { ...driver, actual: marketing.paidLeads };
+    }
+    if (driver.id === "adBudget" && overrides?.paidLeads !== undefined && overrides.adBudget === undefined) {
+      return { ...driver, actual: marketing.adBudget };
+    }
+    return driver;
+  });
 }
 
 export { suggestConstraintRelief } from "./constraints";
