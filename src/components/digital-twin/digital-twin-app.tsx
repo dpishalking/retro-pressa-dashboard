@@ -28,7 +28,7 @@ import { PlanningModeSwitcher } from "@/components/planning/planning-mode-switch
 import { useFinancialReport } from "@/hooks/use-financial-report";
 import { mergeTwinWithFinancialReport } from "@/lib/financial-report/twin-bridge";
 import { computeTwin, suggestConstraintRelief } from "@/lib/digital-twin/compute";
-import { DEFAULT_SCENARIOS, getDriverBounds, clampDriverValue } from "@/lib/digital-twin/drivers";
+import { DEFAULT_SCENARIOS, getDriverBounds, clampDriverValue, driverValueToInput, normalizeDriverInput } from "@/lib/digital-twin/drivers";
 import { getSeedScenarioLibrary, type PlanningMode, type SavedScenario } from "@/lib/planning-layer";
 import type { ComputedMetric, DriverCategory, DriverState, DriverTreeNode, ScenarioId } from "@/lib/digital-twin/types";
 import { eur, number, pct } from "@/lib/format";
@@ -112,6 +112,31 @@ function DriverSlider({
 }) {
   const { min, max, step } = getDriverBounds(driver);
   const value = clampDriverValue(driver, driver.actual);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
+
+  const formatInput = useCallback((raw: number) => driverValueToInput(driver, raw, number), [driver]);
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(null);
+    }
+  }, [value, focused]);
+
+  const commitDraft = useCallback(
+    (raw: string) => {
+      const normalized = normalizeDriverInput(driver, raw);
+      if (normalized !== null) {
+        onChange(driver.id, normalized);
+      }
+      setDraft(null);
+      setFocused(false);
+    },
+    [driver, onChange]
+  );
+
+  const inputValue = focused && draft !== null ? draft : formatInput(value);
+  const rangeHint = `${formatInput(min)} – ${formatInput(max)}`;
 
   return (
     <div className={`rounded-xl border border-[var(--line)] bg-white p-4 ${disabled ? "opacity-60" : ""}`}>
@@ -127,7 +152,7 @@ function DriverSlider({
       {disabled ? (
         <p className="text-xs font-semibold text-slate-500">Доступно только в режиме SCENARIO</p>
       ) : null}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <input
           type="range"
           min={min}
@@ -136,10 +161,40 @@ function DriverSlider({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(driver.id, clampDriverValue(driver, Number(e.target.value)))}
-          className="h-2 flex-1 cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
+          className="h-2 min-w-0 flex-1 cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
         />
-        <span className="min-w-[80px] text-right text-sm font-black text-slate-950">{formatMetricValue({ ...driver, actual: value })}</span>
+        <div className="flex shrink-0 items-center gap-1">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={inputValue}
+            disabled={disabled}
+            onFocus={() => {
+              setFocused(true);
+              setDraft(formatInput(value));
+            }}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => commitDraft(draft ?? formatInput(value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitDraft(draft ?? formatInput(value));
+              }
+              if (e.key === "Escape") {
+                setDraft(null);
+                setFocused(false);
+                e.currentTarget.blur();
+              }
+            }}
+            aria-label={`${driver.label}, введите значение`}
+            className="w-[5.5rem] rounded-lg border border-[var(--line)] bg-slate-50 px-2 py-1 text-right text-sm font-black text-slate-950 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed"
+          />
+          <span className="w-4 text-xs font-semibold text-slate-500">
+            {driver.unit === "percent" || driver.unit === "ratio" ? "%" : driver.unit === "currency" ? "€" : driver.unit === "hours" ? "ч" : ""}
+          </span>
+        </div>
       </div>
+      {!disabled ? <p className="mt-2 text-xs text-slate-400">Диапазон: {rangeHint}</p> : null}
     </div>
   );
 }

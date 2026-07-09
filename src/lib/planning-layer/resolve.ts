@@ -1,6 +1,6 @@
-import { applyDriverOverridesToSnapshot } from "@/lib/financial-engine/context";
-import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import { applyPlanTargetsToSnapshot } from "./apply-plan";
+import { applyScenarioToSnapshot } from "./apply-scenario";
+import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import { buildDefaultPlanDocument } from "./default-plan";
 import { mergeScenarioInputs } from "./scenario-builder";
 import type {
@@ -79,7 +79,7 @@ export function resolvePlanningContext(
         computation: {
           snapshot:
             Object.keys(overrides).length > 0
-              ? applyDriverOverridesToSnapshot(factSnapshot, overrides)
+              ? applyScenarioToSnapshot(factSnapshot, overrides)
               : factSnapshot
         },
         metadata: {

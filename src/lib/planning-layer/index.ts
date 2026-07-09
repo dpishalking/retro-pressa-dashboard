@@ -18,6 +18,7 @@ export {
   mergeScenarioInputs,
   describeScenarioChanges
 } from "./scenario-builder";
+export { applyScenarioToSnapshot } from "./apply-scenario";
 export { applyPlanTargetsToSnapshot } from "./apply-plan";
 export { defaultPlanTargets, buildDefaultPlanDocument } from "./default-plan";
 export { getSeedScenarioLibrary, getSeedScenarioById } from "./scenario-seed";

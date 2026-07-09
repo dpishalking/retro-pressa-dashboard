@@ -1,7 +1,7 @@
 import type { DriverInput, Scenario } from "./types";
 import { applyOverrides, clampDriverValue, enrichDrivers } from "./driver-bounds";
 
-export { applyOverrides, enrichDrivers, clampDriverValue, getDriverBounds } from "./driver-bounds";
+export { applyOverrides, enrichDrivers, clampDriverValue, getDriverBounds, getDriverInputPrecision, getDriverInputStep, roundDriverValue, driverValueToInput, driverValueFromInput, normalizeDriverInput } from "./driver-bounds";
 export { safeDiv } from "./math";
 
 export const DRIVER_CATALOG: DriverInput[] = [

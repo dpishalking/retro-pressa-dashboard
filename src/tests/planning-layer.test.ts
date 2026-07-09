@@ -4,6 +4,7 @@ import {
   buildDefaultPlanDocument,
   resolvePlanningContext,
   resolveScenarioChanges,
+  applyScenarioToSnapshot,
   buildDeltaView
 } from "@/lib/planning-layer";
 import { buildFinancialReportSummary } from "@/lib/financial-report/serialize";
@@ -38,6 +39,12 @@ assert.ok(scenarioReport.pnl.revenue.value !== factReport.pnl.revenue.value);
 
 const overrides = resolveScenarioChanges(factSnapshot, [{ driverId: "defectRate", value: 0 }]);
 assert.equal(overrides.defectRate, 0);
+
+const conversionScenario = applyScenarioToSnapshot(factSnapshot, { salesConversion: 0.3 });
+assert.ok(conversionScenario.sales.revenue.value > factSnapshot.sales.revenue.value);
+
+const checkScenario = applyScenarioToSnapshot(factSnapshot, { avgCheck: factSnapshot.sales.averagePaidCheck.value * 1.2 });
+assert.ok(checkScenario.sales.revenue.value > factSnapshot.sales.revenue.value);
 
 const delta = buildDeltaView({
   fact: buildFinancialReportSummary(factReport),
