@@ -48,8 +48,8 @@ export function computeTwin(options?: ComputeTwinOptions | Partial<Record<string
   });
 
   const ltv = sales.effectiveCheck * 1.8;
-  const cac = marketing.cpa;
-  const cpql = marketing.totalLeads > 0 ? marketing.adBudget / sales.qualLeads : 0;
+  const cac = sales.sales > 0 ? marketing.adBudget / sales.sales : 0;
+  const cpql = sales.qualLeads > 0 ? marketing.adBudget / sales.qualLeads : 0;
   const planRevenue = snapshot.sales.revenue.available ? snapshot.sales.revenue.value : 100_000;
 
   const ceoMetrics: ComputedMetric[] = [
