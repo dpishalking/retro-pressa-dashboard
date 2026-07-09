@@ -29,7 +29,11 @@ export function computeTwin(options?: ComputeTwinOptions | Partial<Record<string
 
   const constraints = detectConstraints({ drivers: pipeline.drivers, marketing, sales, production });
   const bottleneck = constraints.find((c) => c.isBottleneck) ?? constraints[1];
-  const recommendations = generateRecommendations(pipeline.drivers, snapshot);
+  const recommendations = generateRecommendations(
+    pipeline.drivers,
+    snapshot,
+    Object.fromEntries(pipeline.drivers.map((driver) => [driver.id, driver.actual]))
+  );
 
   const driverTree = buildDriverTree({
     marketing,

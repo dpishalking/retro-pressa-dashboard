@@ -65,6 +65,11 @@ function formatMetricValue(metric: ComputedMetric | DriverState): string {
   }
 }
 
+function formatImpact(value: number) {
+  const sign = value >= 0 ? "+" : "−";
+  return `${sign}${eur(Math.abs(value))}`;
+}
+
 function TrendBadge({ trend, delta }: { trend: "up" | "down" | "flat"; delta: number }) {
   const Icon = trend === "up" ? ArrowUp : trend === "down" ? ArrowDown : Minus;
   const color = trend === "up" ? "text-emerald-600 bg-emerald-50" : trend === "down" ? "text-red-600 bg-red-50" : "text-slate-500 bg-slate-100";
@@ -293,7 +298,9 @@ export function DigitalTwinApp() {
                   <div key={rec.rank} className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-bold text-slate-900">#{rec.rank} {rec.action}</p>
-                      <span className="whitespace-nowrap text-sm font-black text-emerald-600">+{eur(rec.profitImpact)}</span>
+                      <span className={`whitespace-nowrap text-sm font-black ${rec.profitImpact >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {formatImpact(rec.profitImpact)}
+                      </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">Выручка: {rec.revenueImpact >= 0 ? "+" : ""}{eur(rec.revenueImpact)}</p>
                   </div>
@@ -420,7 +427,9 @@ export function DigitalTwinApp() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-black text-emerald-600">+{eur(rec.profitImpact)}</p>
+                  <p className={`text-lg font-black ${rec.profitImpact >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {formatImpact(rec.profitImpact)}
+                  </p>
                   <p className="text-xs text-slate-500">Выручка {rec.revenueImpact >= 0 ? "+" : ""}{eur(rec.revenueImpact)}</p>
                 </div>
               </article>

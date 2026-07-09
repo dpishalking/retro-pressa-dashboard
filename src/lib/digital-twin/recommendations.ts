@@ -2,6 +2,7 @@ import { buildFallbackCompanySnapshot } from "@/lib/company-snapshot/fallback";
 import type { CompanySnapshot } from "@/lib/company-snapshot/types";
 import type { Recommendation, DriverInput } from "./types";
 import { DRIVER_CATALOG } from "./drivers";
+import { clampDriverValue } from "./driver-bounds";
 import { runPipeline } from "./engines";
 
 const SENSITIVITY_STEPS: Record<string, number> = {
@@ -18,26 +19,33 @@ const SENSITIVITY_STEPS: Record<string, number> = {
   repeatSalesRate: 0.05
 };
 
+function nextDriverValue(driver: DriverInput, step: number): number {
+  if (driver.unit === "percent" || (driver.unit === "count" && driver.id === "managerCount")) {
+    return clampDriverValue(driver, driver.actual + step);
+  }
+  return clampDriverValue(driver, driver.actual * (1 + step));
+}
+
 function simulateChange(
   drivers: DriverInput[],
   snapshot: CompanySnapshot,
+  currentOverrides: Partial<Record<string, number>>,
   driverId: string,
-  changePct: number
+  step: number
 ) {
-  const base = runPipeline({ snapshot });
+  const base = runPipeline({ snapshot, overrides: currentOverrides });
   const baseProfit = base.financials.netProfit;
 
   const driver = drivers.find((d) => d.id === driverId);
   if (!driver) return null;
 
-  let newValue: number;
-  if (driver.unit === "count" && (driverId === "managerCount" || changePct >= 1)) {
-    newValue = driver.actual + changePct;
-  } else {
-    newValue = driver.actual * (1 + changePct);
-  }
+  const newValue = nextDriverValue(driver, step);
+  if (Math.abs(newValue - driver.actual) < 0.0001) return null;
 
-  const result = runPipeline({ snapshot, overrides: { [driverId]: newValue } });
+  const result = runPipeline({
+    snapshot,
+    overrides: { ...currentOverrides, [driverId]: newValue }
+  });
   const profitImpact = result.financials.netProfit - baseProfit;
   const revenueImpact = result.financials.revenue - base.financials.revenue;
 
@@ -46,34 +54,38 @@ function simulateChange(
 
 export function generateRecommendations(
   drivers: DriverInput[],
-  snapshot: CompanySnapshot = buildFallbackCompanySnapshot()
+  snapshot: CompanySnapshot = buildFallbackCompanySnapshot(),
+  currentOverrides: Partial<Record<string, number>> = {}
 ): Recommendation[] {
+  const effectiveOverrides = Object.keys(currentOverrides).length > 0
+    ? currentOverrides
+    : Object.fromEntries(drivers.map((driver) => [driver.id, driver.actual]));
+
   const candidates: Recommendation[] = [];
 
   for (const driver of DRIVER_CATALOG.filter((d) => d.editable)) {
     const step = SENSITIVITY_STEPS[driver.id];
     if (step === undefined) continue;
 
-    const sim = simulateChange(drivers, snapshot, driver.id, step);
+    const current = drivers.find((d) => d.id === driver.id);
+    if (!current) continue;
+
+    const sim = simulateChange(drivers, snapshot, effectiveOverrides, driver.id, step);
     if (!sim || Math.abs(sim.profitImpact) < 50) continue;
 
-    const changePct = driver.unit === "count" && driver.id === "managerCount"
-      ? step
-      : step * 100;
-
-    const actionLabel = step > 0 || driver.id === "managerCount" ? "Увеличить" : "Снизить";
-
-    const unitLabel = driver.unit === "percent"
-      ? `${Math.abs(changePct).toFixed(0)} п.п.`
+    const changeLabel = driver.unit === "percent"
+      ? `${Math.abs(step * 100).toFixed(0)} п.п.`
       : driver.unit === "count" && driver.id === "managerCount"
         ? `на ${Math.abs(step)}`
-        : `${Math.abs(changePct).toFixed(0)}%`;
+        : `${Math.abs(step * 100).toFixed(0)}%`;
+
+    const actionLabel = step > 0 || driver.id === "managerCount" ? "Увеличить" : "Снизить";
 
     candidates.push({
       rank: 0,
       driverId: driver.id,
       driverLabel: driver.label,
-      action: `${actionLabel} «${driver.label}» ${unitLabel}`,
+      action: `${actionLabel} «${driver.label}» ${changeLabel}`,
       changePct: step,
       profitImpact: sim.profitImpact,
       revenueImpact: sim.revenueImpact,
