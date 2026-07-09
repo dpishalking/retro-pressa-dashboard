@@ -1,4 +1,4 @@
-import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
+import { syncBitrixOpenLinesViaCrm } from "@/lib/bitrix/openline-crm-connector";
 import { syncLiveStoreToExportFile } from "@/lib/conversation-live-export";
 import { syncManagerDialogsToSheet } from "@/lib/manager-dialogs-sheet-sync";
 import type { PeriodKey } from "@/types/metrics";
@@ -20,28 +20,37 @@ async function main() {
   const spreadsheetId = readArg("--sheet-id");
   const tabTitle = readArg("--tab");
   const dryRun = hasFlag("--dry-run");
-  const daysBack = Number(readArg("--days-back") ?? "10");
-  const dialogLimit = Number(readArg("--dialog-limit") ?? "300");
+  const sessionLimit = Number(readArg("--dialog-limit") ?? "300");
+  const skipSheet = hasFlag("--skip-sheet");
+  const startOffset = Number(readArg("--start-offset") ?? "0");
 
-  console.log(`Pulling Bitrix conversations for ${periodKey}, last ${daysBack} days...`);
-  const conversations = await syncBitrixConversationHistory({
+  console.log(`Pulling Bitrix open lines for ${periodKey}, ${dateFrom}..${dateTo}...`);
+  const conversations = await syncBitrixOpenLinesViaCrm({
     period: periodKey,
-    incremental: true,
-    daysBack,
-    maxDaysBack: daysBack,
-    dialogLimit,
-    maxDialogLimit: dialogLimit,
+    dateFrom,
+    dateTo,
+    sessionLimit,
+    startOffset,
   });
 
   console.log(JSON.stringify({
-    messagesAdded: conversations.summary.messagesAdded ?? 0,
-    dialogsAdded: conversations.summary.dialogsAdded ?? 0,
-    totalDialogs: conversations.summary.totalDialogs ?? conversations.summary.dialogsLoaded,
-    totalMessages: conversations.summary.totalMessages ?? conversations.summary.messagesLoaded,
+    activitiesScanned: conversations.summary.activitiesScanned,
+    sessionsImported: conversations.summary.sessionsImported,
+    messagesAdded: conversations.summary.messagesAdded,
+    dialogsAdded: conversations.summary.dialogsAdded,
+    totalDialogs: conversations.summary.totalDialogs,
+    totalMessages: conversations.summary.totalMessages,
+    nextOffset: conversations.summary.nextOffset,
+    hasMore: conversations.summary.hasMore,
   }, null, 2));
 
   const liveExport = await syncLiveStoreToExportFile(periodKey);
   console.log(JSON.stringify({ liveExport }, null, 2));
+
+  if (skipSheet) {
+    console.log("Skipping Google Sheets upload (--skip-sheet).");
+    return;
+  }
 
   const result = await syncManagerDialogsToSheet({
     periodKey,

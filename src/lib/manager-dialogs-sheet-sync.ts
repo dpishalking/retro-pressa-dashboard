@@ -128,9 +128,9 @@ export async function syncManagerDialogsToSheet(
 ): Promise<ManagerDialogsSheetSyncResult> {
   const periodKey = options.periodKey ?? currentPeriodKey();
   const managerQuery = options.managerQuery ?? "*";
-  const spreadsheetId = options.spreadsheetId
-    ?? process.env.GOOGLE_SHEET_ID
-    ?? DEFAULT_SHEET_ID;
+  const spreadsheetId = options.spreadsheetId?.trim()
+    || process.env.GOOGLE_SHEET_ID?.trim()
+    || DEFAULT_SHEET_ID;
   const tabTitle = options.tabTitle ?? DEFAULT_TAB_TITLE;
   const successSource = options.successSource ?? "text";
   const refreshBitrix = options.refreshBitrix === true;
@@ -206,7 +206,7 @@ export async function syncManagerDialogsToSheet(
   const dataRows = managerDialogDataRows(newRows);
   const hasExistingSheetData = exportedDialogIds.size > 0;
 
-  if (mode === "backfill" || mode === "full" || !hasExistingSheetData) {
+  if (!hasExistingSheetData && (mode === "backfill" || mode === "full")) {
     await writeSheetTab({
       spreadsheetId,
       tabTitle,

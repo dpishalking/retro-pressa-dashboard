@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
+import { syncBitrixOpenLinesViaCrm } from "@/lib/bitrix/openline-crm-connector";
 import { syncBitrixMetrics } from "@/lib/bitrix/connector";
 import { buildCompanySnapshot } from "@/lib/company-snapshot/build-snapshot";
 import { writeCompanySnapshot } from "@/lib/company-snapshot/snapshot-store";
@@ -28,17 +28,19 @@ export async function POST(request: Request) {
     };
 
     const period = body.period ?? currentPeriodKey();
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const exportDay = yesterday.toISOString().slice(0, 10);
 
     const [bitrix, google, conversations] = await Promise.all([
       syncBitrixMetrics({ refresh: body.refresh === true, period }),
       syncGoogleTraffic({ refresh: body.refresh === true, period }),
-      syncBitrixConversationHistory({
+      syncBitrixOpenLinesViaCrm({
         period,
-        daysBack: body.daysBack ?? 3,
-        dialogLimit: body.dialogLimit ?? 250,
-        maxDialogLimit: 250,
-        incremental: body.incremental !== false
-      })
+        dateFrom: exportDay,
+        dateTo: exportDay,
+        sessionLimit: body.dialogLimit ?? 250,
+      }),
     ]);
 
     const liveExport = await syncLiveStoreToExportFile(period);
@@ -82,13 +84,14 @@ export async function POST(request: Request) {
         ql: google.summary.ql
       },
       conversations: {
-        dialogsLoaded: conversations.summary.totalDialogs ?? conversations.summary.dialogsLoaded,
-        messagesLoaded: conversations.summary.totalMessages ?? conversations.summary.messagesLoaded,
-        messagesAdded: conversations.summary.messagesAdded ?? 0,
-        dialogsAdded: conversations.summary.dialogsAdded ?? 0,
+        dialogsLoaded: conversations.summary.totalDialogs,
+        messagesLoaded: conversations.summary.totalMessages,
+        messagesAdded: conversations.summary.messagesAdded,
+        dialogsAdded: conversations.summary.dialogsAdded,
+        sessionsImported: conversations.summary.sessionsImported,
+        exportDay,
         qualityScore: conversations.dashboard.qualityScore,
         potentialLostRevenue: conversations.dashboard.potentialLostRevenue,
-        incremental: conversations.summary.incremental === true
       },
       liveExport,
       sheetExport: sheetExport ? {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
+import { syncBitrixOpenLinesViaCrm } from "@/lib/bitrix/openline-crm-connector";
 import { syncLiveStoreToExportFile } from "@/lib/conversation-live-export";
 import { syncManagerDialogsToSheet } from "@/lib/manager-dialogs-sheet-sync";
 import { currentPeriodKey } from "@/lib/conversation-periods";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       period?: PeriodKey;
       dateFrom?: string;
       dateTo?: string;
-      daysBack?: number;
+      startOffset?: number;
       dialogLimit?: number;
       spreadsheetId?: string;
       tabTitle?: string;
@@ -29,13 +29,12 @@ export async function POST(request: Request) {
     const dateFrom = body.dateFrom ?? "2026-07-01";
     const dateTo = body.dateTo ?? "2026-07-08";
 
-    const conversations = await syncBitrixConversationHistory({
+    const conversations = await syncBitrixOpenLinesViaCrm({
       period: periodKey,
-      incremental: true,
-      daysBack: body.daysBack ?? 10,
-      maxDaysBack: 10,
-      dialogLimit: body.dialogLimit ?? 300,
-      maxDialogLimit: 300,
+      dateFrom,
+      dateTo,
+      sessionLimit: body.dialogLimit ?? 300,
+      startOffset: body.startOffset ?? 0,
     });
 
     const liveExport = await syncLiveStoreToExportFile(periodKey);
@@ -58,10 +57,14 @@ export async function POST(request: Request) {
       dateFrom,
       dateTo,
       conversations: {
-        messagesAdded: conversations.summary.messagesAdded ?? 0,
-        dialogsAdded: conversations.summary.dialogsAdded ?? 0,
-        totalDialogs: conversations.summary.totalDialogs ?? conversations.summary.dialogsLoaded,
-        totalMessages: conversations.summary.totalMessages ?? conversations.summary.messagesLoaded,
+        activitiesScanned: conversations.summary.activitiesScanned,
+        sessionsImported: conversations.summary.sessionsImported,
+        messagesAdded: conversations.summary.messagesAdded,
+        dialogsAdded: conversations.summary.dialogsAdded,
+        totalDialogs: conversations.summary.totalDialogs,
+        totalMessages: conversations.summary.totalMessages,
+        nextOffset: conversations.summary.nextOffset,
+        hasMore: conversations.summary.hasMore,
       },
       liveExport,
       sheetExport,

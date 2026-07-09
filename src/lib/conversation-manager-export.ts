@@ -96,7 +96,7 @@ export function isAllManagersQuery(query: string) {
 }
 
 export function managerMatchesQuery(managerName: string | null, query: string): boolean {
-  if (isAllManagersQuery(query)) return Boolean(managerName);
+  if (isAllManagersQuery(query)) return true;
   if (!managerName) return false;
   return namePartsMatchQuery(managerName, query);
 }
@@ -642,7 +642,9 @@ export function filterManagerDialogRowsByDate(
 
   return rows.filter((row) => {
     const startedAt = row.startedAt ? new Date(row.startedAt).getTime() : NaN;
-    if (!Number.isFinite(startedAt)) return false;
-    return startedAt >= fromTs && startedAt <= toTs;
+    const lastMessageAt = row.lastMessageAt ? new Date(row.lastMessageAt).getTime() : NaN;
+    const timestamp = Number.isFinite(startedAt) ? startedAt : lastMessageAt;
+    if (!Number.isFinite(timestamp)) return false;
+    return timestamp >= fromTs && timestamp <= toTs;
   });
 }
