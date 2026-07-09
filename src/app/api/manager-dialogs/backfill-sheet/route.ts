@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       spreadsheetId?: string;
       tabTitle?: string;
       dryRun?: boolean;
+      skipSheet?: boolean;
     };
 
     const periodKey = isPeriodKey(body.period) ? body.period : currentPeriodKey();
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
     });
 
     const liveExport = await syncLiveStoreToExportFile(periodKey);
-    const sheetExport = await syncManagerDialogsToSheet({
+    const sheetExport = body.skipSheet === true
+      ? null
+      : await syncManagerDialogsToSheet({
       periodKey,
       managerQuery: "*",
       spreadsheetId: body.spreadsheetId,
@@ -68,7 +71,9 @@ export async function POST(request: Request) {
       },
       liveExport,
       sheetExport,
-      sheetUrl: `https://docs.google.com/spreadsheets/d/${sheetExport.spreadsheetId}/edit`,
+      sheetUrl: sheetExport
+        ? `https://docs.google.com/spreadsheets/d/${sheetExport.spreadsheetId}/edit`
+        : null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось выполнить backfill диалогов";
