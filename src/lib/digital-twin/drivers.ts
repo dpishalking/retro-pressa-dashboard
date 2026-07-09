@@ -1,6 +1,8 @@
 import type { DriverInput, Scenario } from "./types";
+import { applyOverrides, clampDriverValue, enrichDrivers } from "./driver-bounds";
 
-const safeDiv = (num: number, den: number) => (den === 0 ? 0 : num / den);
+export { applyOverrides, enrichDrivers, clampDriverValue, getDriverBounds } from "./driver-bounds";
+export { safeDiv } from "./math";
 
 export const DRIVER_CATALOG: DriverInput[] = [
   // Marketing
@@ -67,25 +69,10 @@ export const DEFAULT_SCENARIOS: Scenario[] = [
 ];
 
 export function getDriverValue(drivers: DriverInput[], id: string, overrides?: Partial<Record<string, number>>): number {
-  if (overrides && overrides[id] !== undefined) return overrides[id]!;
+  if (overrides && overrides[id] !== undefined) {
+    const driver = drivers.find((d) => d.id === id);
+    return driver ? clampDriverValue(driver, overrides[id]!) : overrides[id]!;
+  }
   const driver = drivers.find((d) => d.id === id);
   return driver?.actual ?? 0;
 }
-
-export function applyOverrides(drivers: DriverInput[], overrides: Partial<Record<string, number>>): DriverInput[] {
-  return drivers.map((d) => ({
-    ...d,
-    actual: overrides[d.id] !== undefined ? overrides[d.id]! : d.actual
-  }));
-}
-
-export function enrichDrivers(drivers: DriverInput[]): import("./types").DriverState[] {
-  const now = new Date().toISOString();
-  return drivers.map((d) => {
-    const delta = safeDiv(d.actual - d.plan, d.plan);
-    const trend: import("./types").Trend = delta > 0.02 ? "up" : delta < -0.02 ? "down" : "flat";
-    return { ...d, forecast: d.actual, delta, trend, lastUpdated: now };
-  });
-}
-
-export { safeDiv };

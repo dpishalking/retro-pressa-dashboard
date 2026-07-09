@@ -26,7 +26,7 @@ import { ScenarioFinancialCard } from "@/components/financial-report/scenario-ca
 import { useFinancialReport } from "@/hooks/use-financial-report";
 import { mergeTwinWithFinancialReport } from "@/lib/financial-report/twin-bridge";
 import { computeTwin, suggestConstraintRelief } from "@/lib/digital-twin/compute";
-import { DEFAULT_SCENARIOS } from "@/lib/digital-twin/drivers";
+import { DEFAULT_SCENARIOS, getDriverBounds, clampDriverValue } from "@/lib/digital-twin/drivers";
 import type { ComputedMetric, DriverCategory, DriverState, DriverTreeNode, ScenarioId } from "@/lib/digital-twin/types";
 import { eur, number, pct } from "@/lib/format";
 
@@ -100,9 +100,8 @@ function DriverSlider({
   driver: DriverState;
   onChange: (id: string, value: number) => void;
 }) {
-  const min = driver.unit === "percent" ? 0 : driver.unit === "count" ? 1 : driver.actual * 0.3;
-  const max = driver.unit === "percent" ? (driver.id.includes("Rate") || driver.id.includes("Conversion") ? 1 : 0.5) : driver.actual * 2.5;
-  const step = driver.unit === "percent" ? 0.005 : driver.unit === "count" ? 1 : 0.5;
+  const { min, max, step } = getDriverBounds(driver);
+  const value = clampDriverValue(driver, driver.actual);
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-white p-4">
@@ -121,11 +120,11 @@ function DriverSlider({
           min={min}
           max={max}
           step={step}
-          value={driver.actual}
-          onChange={(e) => onChange(driver.id, Number(e.target.value))}
+          value={value}
+          onChange={(e) => onChange(driver.id, clampDriverValue(driver, Number(e.target.value)))}
           className="h-2 flex-1 cursor-pointer accent-blue-600"
         />
-        <span className="min-w-[80px] text-right text-sm font-black text-slate-950">{formatMetricValue(driver)}</span>
+        <span className="min-w-[80px] text-right text-sm font-black text-slate-950">{formatMetricValue({ ...driver, actual: value })}</span>
       </div>
     </div>
   );
@@ -192,8 +191,10 @@ export function DigitalTwinApp() {
 
   const handleDriverChange = useCallback((id: string, value: number) => {
     setActiveScenario("custom");
-    setOverrides((prev) => ({ ...prev, [id]: value }));
-  }, []);
+    const driver = twinBase.drivers.find((d) => d.id === id);
+    const nextValue = driver ? clampDriverValue(driver, value) : value;
+    setOverrides((prev) => ({ ...prev, [id]: nextValue }));
+  }, [twinBase.drivers]);
 
   const handleScenarioSelect = useCallback((id: ScenarioId) => {
     setActiveScenario(id);
