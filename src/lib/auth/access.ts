@@ -31,6 +31,10 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
     return accessLevel === "admin" || accessLevel === "rop";
   }
 
+  if (normalized.startsWith("/digital-twin")) {
+    return accessLevel === "admin";
+  }
+
   const allowed = ACCESS_ROUTE_PREFIXES[accessLevel];
   if (allowed === "*") return true;
 
@@ -55,7 +59,7 @@ export function accessLevelLabel(level: AccessLevel): string {
 export function accessLevelScope(level: AccessLevel): string {
   switch (level) {
     case "admin":
-      return "все разделы кабинета";
+      return "все разделы кабинета, включая цифровой двойник";
     case "rop":
       return "аналитика, инструменты РОП, обучение менеджеров";
     case "mop":

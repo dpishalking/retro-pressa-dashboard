@@ -11,6 +11,7 @@ import { buildSignals } from "@/lib/signal-rules";
 import { eur, number, pct, pp } from "@/lib/format";
 import type { ConversationDashboardMetrics, ConversationImportFileDiagnostic, CountryInvoiceMetrics, DailyMetrics, GeminiConversationSummary, ManagerInvoiceMetrics, ManagerMetrics, MarketMetrics, MonthlyMetrics, ProductInvoiceMetrics, Status } from "@/types/metrics";
 import { HUB_PATH } from "@/lib/auth/routes";
+import { FinancialReportLiveSummary } from "@/components/financial-report/live-summary";
 
 const tabs = ["Обзор", "Growth Intelligence", "План месяца", "План €100 000", "Воронка", "Маркетинг", "Продажи", "Качество переписок", "Рынки", "Менеджеры", "Данные и настройки"];
 type SourceFilter = "all" | "paid" | "organic";
@@ -728,6 +729,7 @@ function Overview({
 
   return (
     <div className="grid gap-4">
+      <FinancialReportLiveSummary period={current.month} />
       <div className="grid gap-4">
         <section className="card p-4">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">

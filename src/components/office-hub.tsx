@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -42,6 +42,14 @@ const offices: OfficeCard[] = [
     icon: BookOpen,
     status: "active",
     accent: "text-rose-600 bg-rose-50"
+  },
+  {
+    href: "/digital-twin",
+    title: "Цифровой двойник",
+    description: "Decision Engine: управление драйверами бизнеса, сценарии, ограничения и AI-рекомендации для собственника.",
+    icon: Brain,
+    status: "active",
+    accent: "text-violet-600 bg-violet-50"
   }
 ];
 
@@ -123,7 +131,7 @@ export function OfficeHub() {
         ) : null}
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4">
         {visibleOffices.map((office) => (
           <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
         ))}

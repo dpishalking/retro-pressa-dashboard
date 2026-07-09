@@ -1,0 +1,340 @@
+{
+  "version": 1,
+  "source": "gift-ai",
+  "importedAt": "2026-07-05T10:10:44.387Z",
+  "importedDay": "2026-07-05",
+  "periodKey": "june-2026",
+  "label": "Архив июня 2026 (bundled)",
+  "dashboard": {
+    "totalDialogs": 3864,
+    "sampleReliability": "reliable",
+    "minimumReliableDialogs": 50,
+    "orderConversion": 0.14285714285714285,
+    "conversionByChannel": [
+      {
+        "channel": "gift-ai",
+        "dialogs": 3864,
+        "orders": 552,
+        "conversion": 0.14285714285714285
+      }
+    ],
+    "topObjections": [
+      {
+        "name": "дорого",
+        "count": 70
+      },
+      {
+        "name": "другое возражение",
+        "count": 63
+      },
+      {
+        "name": "не успеваем по срокам",
+        "count": 21
+      },
+      {
+        "name": "сомнение по доставке",
+        "count": 3
+      }
+    ],
+    "topLossReasons": [
+      {
+        "name": "потеря интереса",
+        "count": 19
+      },
+      {
+        "name": "доставка",
+        "count": 9
+      },
+      {
+        "name": "сроки",
+        "count": 7
+      }
+    ],
+    "bestSalesScenarios": [
+      {
+        "name": "Быстрый ответ + переход к оплате",
+        "dialogs": 63,
+        "conversion": 0.8571428571428571,
+        "averageOrder": 53.74603174603175
+      },
+      {
+        "name": "Рекомендация + полный расчет",
+        "dialogs": 35,
+        "conversion": 0.7428571428571429,
+        "averageOrder": 68.37142857142857
+      },
+      {
+        "name": "Конкретный подарок + доставка",
+        "dialogs": 958,
+        "conversion": 0.49373695198329853,
+        "averageOrder": 49.60970772442589
+      },
+      {
+        "name": "Follow-up после паузы",
+        "dialogs": 17,
+        "conversion": 0.47058823529411764,
+        "averageOrder": 46.8235294117647
+      }
+    ],
+    "worstDialoguePoints": [
+      {
+        "name": "не назван полный расчет",
+        "count": 3823,
+        "lostRevenue": 59396
+      },
+      {
+        "name": "нет follow-up",
+        "count": 3303,
+        "lostRevenue": 51317
+      },
+      {
+        "name": "нет конкретной рекомендации",
+        "count": 2101,
+        "lostRevenue": 32642
+      },
+      {
+        "name": "вопрос о доставке без полного ответа",
+        "count": 103,
+        "lostRevenue": 1600
+      }
+    ],
+    "potentialLostRevenue": 144955,
+    "recommendationMissingShare": 0.5437370600414079,
+    "deliveryRiskShare": 0.02665631469979296,
+    "qualityScore": 56,
+    "factors": [
+      {
+        "factor": "полный расчет",
+        "segment": "да",
+        "dialogs": 41,
+        "conversion": 0.7073170731707317,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.5644599303135889,
+        "estimatedRevenueImpact": 1404
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "корпоративный подарок",
+        "dialogs": 44,
+        "conversion": 0.6590909090909091,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.5162337662337662,
+        "estimatedRevenueImpact": 1378
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "свадьба",
+        "dialogs": 14,
+        "conversion": 0.5,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.35714285714285715,
+        "estimatedRevenueImpact": 303
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "юбилей",
+        "dialogs": 51,
+        "conversion": 0.49019607843137253,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.3473389355742297,
+        "estimatedRevenueImpact": 1075
+      },
+      {
+        "factor": "follow-up",
+        "segment": "да",
+        "dialogs": 17,
+        "conversion": 0.47058823529411764,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.3277310924369748,
+        "estimatedRevenueImpact": 338
+      },
+      {
+        "factor": "названа доставка",
+        "segment": "да",
+        "dialogs": 1061,
+        "conversion": 0.45523091423185674,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.3123737713747139,
+        "estimatedRevenueImpact": 20109
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "день отца",
+        "dialogs": 89,
+        "conversion": 0.39325842696629215,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.2504012841091493,
+        "estimatedRevenueImpact": 1352
+      },
+      {
+        "factor": "ограничение по срокам",
+        "segment": "да",
+        "dialogs": 980,
+        "conversion": 0.38877551020408163,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.24591836734693878,
+        "estimatedRevenueImpact": 14622
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "день матери",
+        "dialogs": 48,
+        "conversion": 0.3541666666666667,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.21130952380952384,
+        "estimatedRevenueImpact": 615
+      },
+      {
+        "factor": "названа цена",
+        "segment": "да",
+        "dialogs": 1466,
+        "conversion": 0.33356070941336974,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.1907035665562269,
+        "estimatedRevenueImpact": 16963
+      },
+      {
+        "factor": "конкретный подарок",
+        "segment": "да",
+        "dialogs": 1763,
+        "conversion": 0.29154849688031764,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.1486913540231748,
+        "estimatedRevenueImpact": 15905
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "новый год",
+        "dialogs": 1,
+        "conversion": 0,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.14285714285714285,
+        "estimatedRevenueImpact": -9
+      },
+      {
+        "factor": "повод подарка",
+        "segment": "день рождения",
+        "dialogs": 352,
+        "conversion": 0.2840909090909091,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.14123376623376627,
+        "estimatedRevenueImpact": 3016
+      },
+      {
+        "factor": "конкретный подарок",
+        "segment": "нет",
+        "dialogs": 2101,
+        "conversion": 0.018086625416468348,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.1247705174406745,
+        "estimatedRevenueImpact": -15905
+      },
+      {
+        "factor": "названа доставка",
+        "segment": "нет",
+        "dialogs": 2803,
+        "conversion": 0.024616482340349626,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.11824066051679322,
+        "estimatedRevenueImpact": -20109
+      },
+      {
+        "factor": "названа цена",
+        "segment": "нет",
+        "dialogs": 2398,
+        "conversion": 0.02627189324437031,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.11658524961277254,
+        "estimatedRevenueImpact": -16963
+      },
+      {
+        "factor": "есть рекомендация",
+        "segment": "да",
+        "dialogs": 1619,
+        "conversion": 0.2384187770228536,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.09556163416571076,
+        "estimatedRevenueImpact": 9387
+      },
+      {
+        "factor": "ограничение по срокам",
+        "segment": "нет",
+        "dialogs": 2884,
+        "conversion": 0.05929264909847434,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.0835644937586685,
+        "estimatedRevenueImpact": -14622
+      },
+      {
+        "factor": "есть рекомендация",
+        "segment": "нет",
+        "dialogs": 2245,
+        "conversion": 0.07394209354120267,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.06891504931594018,
+        "estimatedRevenueImpact": -9387
+      },
+      {
+        "factor": "скорость ответа ≤5 минут",
+        "segment": "да",
+        "dialogs": 346,
+        "conversion": 0.15606936416184972,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0.013212221304706867,
+        "estimatedRevenueImpact": 277
+      },
+      {
+        "factor": "полный расчет",
+        "segment": "нет",
+        "dialogs": 3823,
+        "conversion": 0.13680355741564218,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.00605358544150067,
+        "estimatedRevenueImpact": -1404
+      },
+      {
+        "factor": "follow-up",
+        "segment": "нет",
+        "dialogs": 3847,
+        "conversion": 0.14140889004419027,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.0014482528129525774,
+        "estimatedRevenueImpact": -338
+      },
+      {
+        "factor": "скорость ответа ≤5 минут",
+        "segment": "нет",
+        "dialogs": 3518,
+        "conversion": 0.14155770324047753,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": -0.0012994396166653155,
+        "estimatedRevenueImpact": -277
+      },
+      {
+        "factor": "канал",
+        "segment": "gift-ai",
+        "dialogs": 3864,
+        "conversion": 0.14285714285714285,
+        "baselineConversion": 0.14285714285714285,
+        "influencePp": 0,
+        "estimatedRevenueImpact": 0
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "filename": "retro-pressa-conversations-2026-06.json",
+      "messages": 35507,
+      "dialogs": 3864,
+      "status": "ok",
+      "note": "Прочитан"
+    }
+  ],
+  "summary": {
+    "filesLoaded": 1,
+    "messagesLoaded": 35507,
+    "dialogsLoaded": 3864,
+    "filesParsed": 1,
+    "filesFailed": 0
+  }
+}

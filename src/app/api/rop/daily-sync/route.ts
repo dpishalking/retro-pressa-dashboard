@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { syncBitrixConversationHistory } from "@/lib/bitrix/conversation-connector";
 import { syncBitrixMetrics } from "@/lib/bitrix/connector";
+import { buildCompanySnapshot } from "@/lib/company-snapshot/build-snapshot";
+import { writeCompanySnapshot } from "@/lib/company-snapshot/snapshot-store";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
 import type { PeriodKey } from "@/types/metrics";
@@ -32,10 +34,20 @@ export async function POST(request: Request) {
       })
     ]);
 
+    const companySnapshot = await buildCompanySnapshot({ period, refresh: false });
+    await writeCompanySnapshot(companySnapshot);
+
     return NextResponse.json({
       ok: true,
       syncedAt: new Date().toISOString(),
       period,
+      companySnapshot: {
+        builtAt: companySnapshot.meta.builtAt,
+        dataMode: companySnapshot.meta.dataMode,
+        reconciliations: companySnapshot.meta.reconciliations.length,
+        revenue: companySnapshot.canonical.revenue,
+        paidLeads: companySnapshot.canonical.paidLeads
+      },
       bitrix: {
         revenue: bitrix.monthly.revenue,
         salesCount: bitrix.monthly.salesCount,

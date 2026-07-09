@@ -85,6 +85,13 @@ jobs:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_FINANCE_SHEET_ID: ${{ secrets.GOOGLE_FINANCE_SHEET_ID }}
+          GOOGLE_FINANCE_SHEET_GID: ${{ secrets.GOOGLE_FINANCE_SHEET_GID }}
+          GOOGLE_PAYROLL_SHEET_ID: ${{ secrets.GOOGLE_PAYROLL_SHEET_ID }}
+          GOOGLE_PAYROLL_SHEET_GID: ${{ secrets.GOOGLE_PAYROLL_SHEET_GID }}
+          GOOGLE_PRODUCTION_SHEET_ID: ${{ secrets.GOOGLE_PRODUCTION_SHEET_ID }}
+          GOOGLE_PRODUCTION_SHEET_GID: ${{ secrets.GOOGLE_PRODUCTION_SHEET_GID }}
+          BANK_BALANCE_FILE: ${{ secrets.BANK_BALANCE_FILE }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
@@ -137,6 +144,13 @@ jobs:
             "GOOGLE_GENERATIVE_AI_API_KEY",
             "GOOGLE_GEMINI_API_KEY",
             "GOOGLE_SHEET_ID",
+            "GOOGLE_FINANCE_SHEET_ID",
+            "GOOGLE_FINANCE_SHEET_GID",
+            "GOOGLE_PAYROLL_SHEET_ID",
+            "GOOGLE_PAYROLL_SHEET_GID",
+            "GOOGLE_PRODUCTION_SHEET_ID",
+            "GOOGLE_PRODUCTION_SHEET_GID",
+            "BANK_BALANCE_FILE",
             "GOOGLE_SERVICE_ACCOUNT_JSON",
             "GOOGLE_SERVICE_ACCOUNT_EMAIL",
             "GOOGLE_PRIVATE_KEY"
@@ -301,7 +315,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
