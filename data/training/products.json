@@ -974,6 +974,24 @@
           "embedUrl": "https://www.youtube.com/embed/MF7uEeiMsPg",
           "sectionKey": "reviews",
           "sortOrder": 6
+        },
+        {
+          "id": "img-retro-newspaper-gallery-1",
+          "type": "image",
+          "title": "Известия — поздравление с днём рождения",
+          "url": "/training/retro-newspaper/izvestiya-den-rozhdeniya.png",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 7
+        },
+        {
+          "id": "img-retro-newspaper-gallery-2",
+          "type": "image",
+          "title": "Правда — поздравительная газета с фото",
+          "url": "/training/retro-newspaper/pravda-rebenok.png",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 8
         }
       ],
       "questions": [

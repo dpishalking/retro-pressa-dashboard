@@ -1,10 +1,5 @@
-import { TrackQuizForm } from "@/components/training/track-quiz-form";
+import { redirect } from "next/navigation";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function TrainingPracticeQuizPage({ params }: PageProps) {
-  const { id } = await params;
-  return <TrackQuizForm stageId="practice" moduleId={id} />;
+export default function TrainingPracticeQuizPage() {
+  redirect("/training");
 }

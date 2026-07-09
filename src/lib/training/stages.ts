@@ -25,14 +25,6 @@ export const TRAINING_STAGES: TrainingStageConfig[] = [
     href: "/training/crm",
     order: 2,
     accent: "text-blue-600 bg-blue-50"
-  },
-  {
-    id: "practice",
-    title: "Этап 3. Практика",
-    description: "Тренировочный бот в Telegram: ролевые диалоги в разных сценариях. Плюс короткие тесты перед практикой.",
-    href: "/training/practice",
-    order: 3,
-    accent: "text-emerald-600 bg-emerald-50"
   }
 ];
 

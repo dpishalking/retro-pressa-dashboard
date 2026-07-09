@@ -1,5 +1,5 @@
-import { TrainingPracticeHub } from "@/components/training/training-practice-hub";
+import { redirect } from "next/navigation";
 
 export default function TrainingPracticePage() {
-  return <TrainingPracticeHub />;
+  redirect("/training");
 }

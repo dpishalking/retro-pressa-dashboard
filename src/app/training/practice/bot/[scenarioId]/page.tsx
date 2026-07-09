@@ -1,10 +1,5 @@
-import { TrainingPracticeBotChat } from "@/components/training/training-practice-bot-chat";
+import { redirect } from "next/navigation";
 
-type PageProps = {
-  params: Promise<{ scenarioId: string }>;
-};
-
-export default async function TrainingPracticeBotScenarioPage({ params }: PageProps) {
-  const { scenarioId } = await params;
-  return <TrainingPracticeBotChat scenarioId={scenarioId} />;
+export default function TrainingPracticeBotScenarioPage() {
+  redirect("/training");
 }

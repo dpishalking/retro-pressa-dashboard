@@ -69,7 +69,7 @@ function ModuleTable({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-slate-600">
-                  Нет данных. Стажёр должен открыть бота по персональной ссылке из этапа «Практика» (не через обычный /start).
+                  Нет данных.
                 </td>
               </tr>
             ) : (
@@ -94,33 +94,9 @@ function ModuleTable({
   );
 }
 
-function formatBotLinkHint(report: ManagerTrainingReport): string {
-  const status = report.botLinkStatus;
-  if (!status) {
-    return "Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на этапе «Практика» — иначе результаты не привяжутся к аккаунту.";
-  }
-  if (status.sessionsFetchError?.includes("TRAINER_ADMIN_API_KEY")) {
-    return "Кабинет не может запросить ролевки: на сервере не настроен TRAINER_ADMIN_API_KEY.";
-  }
-  if (status.sessionsFetchStatus === 401) {
-    return "Кабинет не может запросить ролевки: неверный ключ доступа к trainer-backend (TRAINER_ADMIN_API_KEY).";
-  }
-  if (status.sessionCount > 0 && report.botScenarios.length === 0) {
-    return `На trainer-backend найдено ${status.sessionCount} ролевок, но кабинет их не получил. Обновите страницу или сообщите администратору.`;
-  }
-  if (status.linkedTelegramUsers === 0) {
-    return "Telegram не привязан к этому аккаунту. Стажёр должен открыть бота по персональной ссылке с этапа «Практика» и дождаться сообщения «Аккаунт привязан».";
-  }
-  if (status.sessionCount === 0) {
-    return "Telegram привязан, но ролевок на сервере пока нет. Стажёр должен пройти ролевку в боте после привязки.";
-  }
-  return "Ролевок пока нет. Стажёр должен зайти в бота по персональной ссылке «Открыть тренажёр в Telegram» на этапе «Практика».";
-}
-
 function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
   const productsStage = report.overview.stages.find((stage) => stage.id === "products");
   const crmStage = report.overview.stages.find((stage) => stage.id === "crm");
-  const completedBotScenarios = report.botScenarios.filter((item) => item.status === "completed").length;
 
   return (
     <div className="space-y-6">
@@ -140,7 +116,7 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2">
         <StageSummaryCard
           title="Этап 1. Продукт"
           completed={productsStage?.completedModules ?? 0}
@@ -152,12 +128,6 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           completed={crmStage?.completedModules ?? 0}
           total={crmStage?.totalModules ?? 0}
           percent={crmStage?.percent ?? 0}
-        />
-        <StageSummaryCard
-          title="Тренировочный бот"
-          completed={completedBotScenarios}
-          total={report.botScenarios.length}
-          percent={report.botScenarios.length ? Math.round((completedBotScenarios / report.botScenarios.length) * 100) : 0}
         />
       </section>
 
@@ -182,22 +152,6 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           lastAttemptAt: item.lastAttemptAt
         }))}
       />
-
-      <ModuleTable
-        title="Тренировочный бот в Telegram"
-        rows={report.botScenarios.map((item) => ({
-          title: item.title,
-          status: item.status,
-          bestScorePercent: item.bestScorePercent,
-          attemptCount: item.attemptCount,
-          lastAttemptAt: item.lastAttemptAt ?? item.completedAt ?? item.startedAt
-        }))}
-      />
-      {report.botScenarios.length === 0 ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {formatBotLinkHint(report)}
-        </p>
-      ) : null}
     </div>
   );
 }

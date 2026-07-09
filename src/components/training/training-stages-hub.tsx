@@ -93,7 +93,7 @@ function MyTrainingContent() {
         </div>
       </section>
 
-      <section className="mb-6 grid gap-4 lg:grid-cols-3">
+      <section className="mb-6 grid gap-4 lg:grid-cols-2">
         {stages.map((stage, index) => (
           <StageCard key={stage.id} stage={stage} index={index} />
         ))}

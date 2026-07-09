@@ -128,7 +128,6 @@ function TrainingHubContent() {
       overview: buildTrainingOverview(
         fallbackProducts,
         createTrackModulesSeed("crm"),
-        createTrackModulesSeed("practice"),
         fallbackProgress
       )
     };

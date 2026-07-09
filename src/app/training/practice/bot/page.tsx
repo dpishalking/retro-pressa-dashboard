@@ -1,5 +1,5 @@
-import { TrainingPracticeBotHub } from "@/components/training/training-practice-bot-hub";
+import { redirect } from "next/navigation";
 
 export default function TrainingPracticeBotPage() {
-  return <TrainingPracticeBotHub />;
+  redirect("/training");
 }

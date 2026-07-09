@@ -5,7 +5,6 @@ import {
   resolveProductStatus
 } from "@/lib/training/store";
 import { listTrackModules } from "@/lib/training/track-modules";
-import { loadManagerBotScenarioRows } from "@/lib/training/trainer-sessions";
 import type { AppUserPublic } from "@/types/auth";
 import type { ManagerTrainingReport } from "@/types/training";
 
@@ -16,16 +15,13 @@ function pickLatestTimestamp(values: Array<string | undefined>): string | undefi
 }
 
 export async function buildManagerTrainingReport(user: AppUserPublic): Promise<ManagerTrainingReport> {
-  const [products, crmModules, practiceModules, progress, botData] = await Promise.all([
+  const [products, crmModules, progress] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
-    listTrackModules("practice"),
-    getOrCreateUserProgress(user.id, user.name),
-    loadManagerBotScenarioRows(user.id, user.name)
+    getOrCreateUserProgress(user.id, user.name)
   ]);
-  const botScenarios = botData.rows;
 
-  const overview = buildTrainingOverview(products, crmModules, practiceModules, progress);
+  const overview = buildTrainingOverview(products, crmModules, progress);
 
   const productRows = products.map((product) => {
     const item = progress.products.find((entry) => entry.productId === product.id);
@@ -51,22 +47,9 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     };
   });
 
-  const practiceRows = practiceModules.map((module) => {
-    const item = getTrackModuleProgress(progress, "practice", module.id);
-    return {
-      id: module.id,
-      title: module.title,
-      status: item?.status ?? "not_started",
-      bestScorePercent: item?.bestScorePercent,
-      attemptCount: item?.attemptCount ?? 0,
-      lastAttemptAt: item?.lastAttemptAt
-    };
-  });
-
   const lastActivityAt = pickLatestTimestamp([
     ...progress.products.map((item) => item.lastAttemptAt ?? item.completedAt ?? item.startedAt),
     ...progress.modules.map((item) => item.lastAttemptAt ?? item.completedAt ?? item.startedAt),
-    ...botScenarios.map((item) => item.completedAt ?? item.lastAttemptAt ?? item.startedAt),
     ...progress.attempts.map((item) => item.attemptedAt)
   ]);
 
@@ -80,9 +63,8 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
     overview,
     products: productRows,
     crmModules: crmRows,
-    practiceModules: practiceRows,
-    botScenarios,
-    botLinkStatus: botData.linkStatus,
+    practiceModules: [],
+    botScenarios: [],
     lastActivityAt
   };
 }
