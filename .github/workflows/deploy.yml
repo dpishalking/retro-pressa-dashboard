@@ -95,6 +95,7 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           TRAINER_API_URL: ${{ secrets.TRAINER_API_URL }}
           TRAINER_ADMIN_API_KEY: ${{ secrets.TRAINER_ADMIN_API_KEY }}
           TRAINER_SERVICE_TAG: ${{ secrets.TRAINER_SERVICE_TAG }}
@@ -153,7 +154,8 @@ jobs:
             "BANK_BALANCE_FILE",
             "GOOGLE_SERVICE_ACCOUNT_JSON",
             "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-            "GOOGLE_PRIVATE_KEY"
+            "GOOGLE_PRIVATE_KEY",
+            "GA4_PROPERTY_ID"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
           env.TRAINER_API_URL = trainerApiUrl;
@@ -315,7 +317,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"

@@ -5,7 +5,7 @@ import { USER_MANAGEMENT_PATH, canAccessUserManagement } from "@/lib/auth/admin-
 /** Route prefixes each access level may visit. Admin uses wildcard. */
 export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   admin: "*",
-  rop: [HUB_PATH, "/analytics", "/rop", "/training", USER_MANAGEMENT_PATH],
+  rop: [HUB_PATH, "/analytics", "/ad-analytics", "/rop", "/training", USER_MANAGEMENT_PATH],
   mop: [HUB_PATH, "/training"]
 };
 
@@ -61,7 +61,7 @@ export function accessLevelScope(level: AccessLevel): string {
     case "admin":
       return "все разделы кабинета, включая цифровой двойник";
     case "rop":
-      return "аналитика, инструменты РОП, обучение менеджеров";
+      return "аналитика, аналитика рекламы, инструменты РОП, обучение менеджеров";
     case "mop":
       return "обучение менеджеров";
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Settings, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Settings, Target, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -26,6 +26,14 @@ const offices: OfficeCard[] = [
     icon: BarChart3,
     status: "active",
     accent: "text-blue-600 bg-blue-50"
+  },
+  {
+    href: "/ad-analytics",
+    title: "Аналитика рекламы",
+    description: "GA4, каналы привлечения, сверка веб-трафика с CRM-лидами и ответы на вопросы через Gemini.",
+    icon: Megaphone,
+    status: "active",
+    accent: "text-emerald-600 bg-emerald-50"
   },
   {
     href: "/rop",
@@ -131,7 +139,7 @@ export function OfficeHub() {
         ) : null}
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
         {visibleOffices.map((office) => (
           <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
         ))}

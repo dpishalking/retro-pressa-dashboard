@@ -1061,6 +1061,12 @@ function MarketingTab({ current, previous }: { current: MonthlyMetrics; previous
   ];
   return (
     <div className="grid gap-4">
+      <section className="card border-l-4 border-l-emerald-500 p-4">
+        <SectionHead title="Аналитика рекламы" subtitle="GA4, каналы, сверка с CRM и вопросы к Gemini — в отдельном разделе" />
+        <Link href="/ad-analytics" className="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+          Открыть аналитику рекламы →
+        </Link>
+      </section>
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard title="Платные лиды" value={number(current.paidLeads)} hint={`Май: ${number(previous.paidLeads)}`} formula="paidLeads" deltaValue={delta(current.paidLeads, previous.paidLeads)} />
         <MetricCard title="Органика" value={number(current.organicLeads)} hint={`Май: ${number(previous.organicLeads)}`} formula="organicLeads" deltaValue={delta(current.organicLeads, previous.organicLeads)} />
