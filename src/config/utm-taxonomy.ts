@@ -10,8 +10,16 @@ export type UtmPresetOption = {
 export const utmBaseUrlPresets = [
   { value: "https://retro-pressa.com/", label: "Главная retro-pressa.com" },
   { value: "https://retro-pressa.com/lv", label: "Латвия /lv" },
-  { value: "https://retro-pressa.com/ideas", label: "Идеи подарков /ideas" },
+  { value: "https://retro-pressa.com/10ideas", label: "Идеи подарков /10ideas (реклама)" },
+  { value: "https://retro-pressa.com/ideas", label: "Идеи подарков /ideas (чат)" },
   { value: "https://retro-pressa.com/gifts", label: "Подарки /gifts" }
+] as const;
+
+export const utmTopicPresets = [
+  { value: "gift", label: "Подарок / основной оффер" },
+  { value: "ideas", label: "10 идей подарков" },
+  { value: "push", label: "Push-уведомление" },
+  { value: "main", label: "Главная страница" }
 ] as const;
 
 export const utmSourcePresets: UtmPresetOption[] = [
@@ -23,7 +31,9 @@ export const utmSourcePresets: UtmPresetOption[] = [
   { value: "telegram", label: "Telegram", ga4Channel: "Organic Social" },
   { value: "email", label: "Email", ga4Channel: "Email" },
   { value: "blogger", label: "Блогер", ga4Channel: "Referral" },
-  { value: "tiktok", label: "TikTok", ga4Channel: "Paid Social" }
+  { value: "tiktok", label: "TikTok", ga4Channel: "Paid Social" },
+  { value: "manager", label: "Менеджер в чате", ga4Channel: "Direct", hint: "WhatsApp / Telegram / Instagram DM" },
+  { value: "whatsapp", label: "WhatsApp", ga4Channel: "Direct" }
 ];
 
 export const utmMediumPresets: UtmPresetOption[] = [
@@ -33,7 +43,8 @@ export const utmMediumPresets: UtmPresetOption[] = [
   { value: "email", label: "Email-рассылка", ga4Channel: "Email" },
   { value: "organic_social", label: "Органика соцсетей", ga4Channel: "Organic Social" },
   { value: "referral", label: "Партнёр / блогер", ga4Channel: "Referral" },
-  { value: "banner", label: "Баннер / Paid Other", ga4Channel: "Paid Other" }
+  { value: "banner", label: "Баннер / Paid Other", ga4Channel: "Paid Other" },
+  { value: "chat", label: "Ссылка в чате", ga4Channel: "Direct", hint: "Для менеджеров" }
 ];
 
 export const utmMarketPresets = [
@@ -68,6 +79,16 @@ export const utmQuickTemplates: UtmTemplate[] = [
     utm_term: "lv"
   },
   {
+    id: "fb-10ideas",
+    label: "Facebook → 10 идей",
+    baseUrl: "https://retro-pressa.com/10ideas",
+    utm_source: "facebook",
+    utm_medium: "paid_social",
+    utm_campaign: "2026_07_ideas_lv",
+    utm_content: "ad_01",
+    utm_term: "lv"
+  },
+  {
     id: "fb-main-gift",
     label: "Facebook → главная → подарок",
     baseUrl: "https://retro-pressa.com/",
@@ -88,13 +109,44 @@ export const utmQuickTemplates: UtmTemplate[] = [
   },
   {
     id: "ig-ideas",
-    label: "Instagram → идеи подарков",
-    baseUrl: "https://retro-pressa.com/ideas",
+    label: "Instagram → 10 идей",
+    baseUrl: "https://retro-pressa.com/10ideas",
     utm_source: "instagram",
     utm_medium: "paid_social",
-    utm_campaign: "2026_07_ideas",
-    utm_content: "story_01"
+    utm_campaign: "2026_07_ideas_lv",
+    utm_content: "story_01",
+    utm_term: "lv"
+  },
+  {
+    id: "manager-ideas",
+    label: "Менеджер → идеи в чат",
+    baseUrl: "https://retro-pressa.com/ideas",
+    utm_source: "manager",
+    utm_medium: "chat",
+    utm_campaign: "2026_07_ideas_lv",
+    utm_content: "chat_link",
+    utm_term: "lv"
+  },
+  {
+    id: "manager-gifts",
+    label: "Менеджер → подарки в чат",
+    baseUrl: "https://retro-pressa.com/gifts",
+    utm_source: "manager",
+    utm_medium: "chat",
+    utm_campaign: "2026_07_gift_lv",
+    utm_content: "chat_link",
+    utm_term: "lv"
   }
 ];
 
 export const utmRequiredFields: UtmField[] = ["utm_source", "utm_medium", "utm_campaign"];
+
+export const utmNamingContract = {
+  campaign: "YYYY_MM_topic_market — пример: 2026_07_gift_lv",
+  source: "facebook | instagram | google | push | manager | whatsapp",
+  medium: "paid_social | cpc | mobile_push | chat | email | referral",
+  content: "ad_01 | video_02 | story_01 | chat_link",
+  term: "lv | lt | ee | de | pl | eu",
+  sheetsColumn: "campaign в Google Sheets = utm_campaign",
+  bitrixFields: ["UTM_SOURCE", "UTM_MEDIUM", "UTM_CAMPAIGN", "UTM_CONTENT", "UTM_TERM", "WEB"]
+} as const;

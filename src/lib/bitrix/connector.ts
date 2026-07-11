@@ -1,4 +1,5 @@
 import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
+import { extractBitrixWebValue } from "@/lib/utm-standards";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -32,6 +33,13 @@ type BitrixLead = {
   SOURCE_ID?: string;
   ASSIGNED_BY_ID?: string;
   UF_CRM_1737995147?: string | string[];
+  UTM_SOURCE?: string;
+  UTM_MEDIUM?: string;
+  UTM_CAMPAIGN?: string;
+  UTM_CONTENT?: string;
+  UTM_TERM?: string;
+  WEB?: unknown;
+  UF_CRM_FORMNAME?: string;
 };
 
 type BitrixDeal = {
@@ -46,6 +54,8 @@ type BitrixDeal = {
   SOURCE_ID?: string;
   ASSIGNED_BY_ID?: string;
   UF_CRM_6797B3DA00D16?: string | string[];
+  UTM_CAMPAIGN?: string;
+  WEB?: unknown;
 };
 
 type BitrixProductRow = {
@@ -114,8 +124,35 @@ export type BitrixSyncPayload = {
 
 const leadCountryField = "UF_CRM_1737995147";
 const dealCountryField = "UF_CRM_6797B3DA00D16";
-const selectLead = ["ID", "DATE_CREATE", "SOURCE_ID", "ASSIGNED_BY_ID", leadCountryField];
-const selectDeal = ["ID", "LEAD_ID", "DATE_CREATE", "CLOSEDATE", "OPPORTUNITY", "CATEGORY_ID", "STAGE_ID", "STAGE_SEMANTIC_ID", "SOURCE_ID", "ASSIGNED_BY_ID", dealCountryField];
+const selectLead = [
+  "ID",
+  "DATE_CREATE",
+  "SOURCE_ID",
+  "ASSIGNED_BY_ID",
+  leadCountryField,
+  "UTM_SOURCE",
+  "UTM_MEDIUM",
+  "UTM_CAMPAIGN",
+  "UTM_CONTENT",
+  "UTM_TERM",
+  "WEB",
+  "UF_CRM_FORMNAME"
+];
+const selectDeal = [
+  "ID",
+  "LEAD_ID",
+  "DATE_CREATE",
+  "CLOSEDATE",
+  "OPPORTUNITY",
+  "CATEGORY_ID",
+  "STAGE_ID",
+  "STAGE_SEMANTIC_ID",
+  "SOURCE_ID",
+  "ASSIGNED_BY_ID",
+  dealCountryField,
+  "UTM_CAMPAIGN",
+  "WEB"
+];
 const selectUser = ["ID", "NAME", "LAST_NAME"];
 const invoiceStageId = "1";
 const invoiceCategoryId = 0;
@@ -396,7 +433,14 @@ function normalizeSnapshotLead(lead: BitrixLead, userNames: Map<string, string>,
     sourceId: lead.SOURCE_ID ?? null,
     assignedById,
     managerName: userNames.get(assignedById) ?? `ID ${assignedById}`,
-    country: enumValueName(enumMaps.leadCountries, lead[leadCountryField])
+    country: enumValueName(enumMaps.leadCountries, lead[leadCountryField]),
+    utmSource: lead.UTM_SOURCE?.trim() || null,
+    utmMedium: lead.UTM_MEDIUM?.trim() || null,
+    utmCampaign: lead.UTM_CAMPAIGN?.trim() || null,
+    utmContent: lead.UTM_CONTENT?.trim() || null,
+    utmTerm: lead.UTM_TERM?.trim() || null,
+    landingPage: extractBitrixWebValue(lead.WEB) || null,
+    formName: lead.UF_CRM_FORMNAME?.trim() || null
   };
 }
 
@@ -435,6 +479,8 @@ function normalizeSnapshotDeal(
     assignedById,
     managerName: userNames.get(assignedById) ?? linkedLead?.managerName ?? `ID ${assignedById}`,
     country,
+    utmCampaign: deal.UTM_CAMPAIGN?.trim() || linkedLead?.utmCampaign || null,
+    landingPage: extractBitrixWebValue(deal.WEB) || linkedLead?.landingPage || null,
     products: products
       .map(normalizeProductRow)
       .filter((row) => row.productName)

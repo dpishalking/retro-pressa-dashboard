@@ -9,6 +9,13 @@ export type BitrixSnapshotLead = {
   assignedById: string;
   managerName: string;
   country: string;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  landingPage: string | null;
+  formName: string | null;
 };
 
 export type BitrixSnapshotProductRow = {
@@ -31,6 +38,8 @@ export type BitrixSnapshotDeal = {
   assignedById: string;
   managerName: string;
   country: string;
+  utmCampaign: string | null;
+  landingPage: string | null;
   products: BitrixSnapshotProductRow[];
 };
 

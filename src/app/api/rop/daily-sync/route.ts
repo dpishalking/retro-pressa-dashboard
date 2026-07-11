@@ -6,6 +6,8 @@ import { writeCompanySnapshot } from "@/lib/company-snapshot/snapshot-store";
 import { syncLiveStoreToExportFile } from "@/lib/conversation-live-export";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { syncManagerDialogsToSheet } from "@/lib/manager-dialogs-sheet-sync";
+import { syncClarityInsights } from "@/lib/clarity/clarity-connector";
+import { syncGa4Traffic } from "@/lib/google/ga4-connector";
 import { syncGoogleTraffic } from "@/lib/google/traffic-connector";
 import type { PeriodKey } from "@/types/metrics";
 
@@ -32,9 +34,11 @@ export async function POST(request: Request) {
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
     const exportDay = yesterday.toISOString().slice(0, 10);
 
-    const [bitrix, google, conversations] = await Promise.all([
+    const [bitrix, google, ga4, clarity, conversations] = await Promise.all([
       syncBitrixMetrics({ refresh: body.refresh === true, period }),
       syncGoogleTraffic({ refresh: body.refresh === true, period }),
+      syncGa4Traffic({ refresh: body.refresh === true, period }),
+      syncClarityInsights({ refresh: body.refresh === true }).catch(() => null),
       syncBitrixOpenLinesViaCrm({
         period,
         dateFrom: exportDay,
@@ -83,6 +87,16 @@ export async function POST(request: Request) {
         spend: google.summary.spend,
         ql: google.summary.ql
       },
+      ga4: {
+        sessions: ga4.summary.sessions,
+        unassignedShare: ga4.summary.unassignedShare,
+        compliantSessionShare: ga4.summary.compliantSessionShare
+      },
+      clarity: clarity ? {
+        sessions: clarity.summary.totalSessions,
+        rageClicks: clarity.summary.totalRageClicks,
+        deadClicks: clarity.summary.totalDeadClicks
+      } : null,
       conversations: {
         dialogsLoaded: conversations.summary.totalDialogs,
         messagesLoaded: conversations.summary.totalMessages,

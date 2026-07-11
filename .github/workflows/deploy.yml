@@ -36,6 +36,8 @@ jobs:
         run: npm test
 
       - name: Build
+        env:
+          NEXT_PUBLIC_APP_URL: https://rp-bi.site
         run: npm run build
 
       - name: Create deploy archive
@@ -96,6 +98,8 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+          CLARITY_DASHBOARD_URL: ${{ secrets.CLARITY_DASHBOARD_URL }}
           TRAINER_API_URL: ${{ secrets.TRAINER_API_URL }}
           TRAINER_ADMIN_API_KEY: ${{ secrets.TRAINER_ADMIN_API_KEY }}
           TRAINER_SERVICE_TAG: ${{ secrets.TRAINER_SERVICE_TAG }}
@@ -155,7 +159,9 @@ jobs:
             "GOOGLE_SERVICE_ACCOUNT_JSON",
             "GOOGLE_SERVICE_ACCOUNT_EMAIL",
             "GOOGLE_PRIVATE_KEY",
-            "GA4_PROPERTY_ID"
+            "GA4_PROPERTY_ID",
+            "CLARITY_API_TOKEN",
+            "CLARITY_DASHBOARD_URL"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
           env.TRAINER_API_URL = trainerApiUrl;

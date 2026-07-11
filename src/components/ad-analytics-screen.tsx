@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, RefreshCcw } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { monthlyMetrics } from "@/data/demo-data";
 import { cashRoas, delta, invoiceRoas, paidCpl, totalLeads } from "@/lib/metrics-engine";
 import { eur, number, pct } from "@/lib/format";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { HUB_PATH, UTM_GENERATOR_PUBLIC_PATH } from "@/lib/auth/routes";
 import { UtmGeneratorPanel } from "@/components/utm-generator-panel";
 import type { PeriodKey } from "@/types/metrics";
 
@@ -22,6 +22,8 @@ type Ga4SyncPayload = {
     unassignedUsers: number;
     unassignedShare: number;
     channels: string[];
+    compliantSessionShare?: number;
+    sessionsWithoutUtm?: number;
   };
   byChannel: Array<{
     channel: string;
@@ -29,12 +31,89 @@ type Ga4SyncPayload = {
     sessions: number;
     engagedSessions: number;
   }>;
+  byCampaign?: Array<{
+    campaign: string;
+    source: string;
+    medium: string;
+    sessions: number;
+    newUsers: number;
+    compliant: boolean;
+  }>;
+  byLanding?: Array<{
+    landingPage: string;
+    source: string;
+    medium: string;
+    sessions: number;
+  }>;
   daily: Array<{
     date: string;
     newUsers: number;
     sessions: number;
   }>;
   dataSource: "snapshot" | "live";
+};
+
+type ClaritySyncPayload = {
+  summary: {
+    totalSessions: number;
+    totalRageClicks: number;
+    totalDeadClicks: number;
+    totalQuickbackClicks: number;
+    mobileSessionShare: number;
+    topCampaign: string | null;
+    topUrl: string | null;
+  };
+  byUrl: Array<{
+    value: string;
+    sessions: number;
+    rageClicks?: number;
+    deadClicks?: number;
+    quickbackClicks?: number;
+  }>;
+  byCampaign: Array<{
+    value: string;
+    sessions: number;
+    rageClicks?: number;
+    deadClicks?: number;
+  }>;
+  numOfDays: number;
+  dataSource: "snapshot" | "live";
+  dashboardUrl: string | null;
+};
+
+type ClarityAskPayload = {
+  model: string;
+  answer: string;
+  highlights: string[];
+  caveats: string[];
+};
+
+type UtmAuditPayload = {
+  summary: {
+    compliantSessionShare: number;
+    sessionsWithoutUtm: number;
+    unassignedShare: number;
+    bitrixLeadsWithUtm: number;
+    bitrixLeadsTotal: number;
+    bitrixLeadsWithLanding: number;
+    issues: string[];
+  };
+  campaigns: Array<{
+    campaign: string;
+    ga4Sessions: number;
+    ga4Compliant: boolean;
+    sheetsLeads: number;
+    bitrixLeads: number;
+    bitrixWonDeals: number;
+    status: string;
+  }>;
+  landingPages: Array<{
+    landingPage: string;
+    ga4Sessions: number;
+    bitrixLeads: number;
+    source: string;
+    medium: string;
+  }>;
 };
 
 type Ga4AskPayload = {
@@ -92,10 +171,32 @@ export function AdAnalyticsScreen() {
   });
   const [ga4Summary, setGa4Summary] = useState<Ga4SyncPayload["summary"] | null>(null);
   const [ga4Channels, setGa4Channels] = useState<Ga4SyncPayload["byChannel"]>([]);
+  const [ga4Campaigns, setGa4Campaigns] = useState<NonNullable<Ga4SyncPayload["byCampaign"]>>([]);
+  const [ga4Landing, setGa4Landing] = useState<NonNullable<Ga4SyncPayload["byLanding"]>>([]);
   const [ga4Daily, setGa4Daily] = useState<Ga4SyncPayload["daily"]>([]);
+  const [utmAudit, setUtmAudit] = useState<UtmAuditPayload | null>(null);
+  const [clarityStatus, setClarityStatus] = useState<SyncStatus>({
+    state: "idle",
+    message: "Clarity ещё не синхронизировался."
+  });
+  const [claritySummary, setClaritySummary] = useState<ClaritySyncPayload["summary"] | null>(null);
+  const [clarityUrls, setClarityUrls] = useState<ClaritySyncPayload["byUrl"]>([]);
+  const [clarityDashboardUrl, setClarityDashboardUrl] = useState<string | null>(null);
+  const [clarityQuestion, setClarityQuestion] = useState("");
+  const [clarityAnswer, setClarityAnswer] = useState<ClarityAskPayload | null>(null);
   const [marketingSummary, setMarketingSummary] = useState<GoogleSyncPayload["summary"] | null>(null);
   const [ga4Question, setGa4Question] = useState("");
   const [ga4Answer, setGa4Answer] = useState<Ga4AskPayload | null>(null);
+  const [publicLinkCopied, setPublicLinkCopied] = useState(false);
+
+  const publicUtmUrl = useMemo(() => {
+    if (typeof window === "undefined") return UTM_GENERATOR_PUBLIC_PATH;
+    return `${window.location.origin}${UTM_GENERATOR_PUBLIC_PATH}`;
+  }, []);
+  const [askStatus, setAskStatus] = useState<SyncStatus>({
+    state: "idle",
+    message: ""
+  });
 
   const current = useMemo(
     () => monthlyMetrics.find((item) => item.month === period) ?? monthlyMetrics[2],
@@ -119,6 +220,8 @@ export function AdAnalyticsScreen() {
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить GA4");
       setGa4Summary(data.summary);
       setGa4Channels(data.byChannel);
+      setGa4Campaigns(data.byCampaign ?? []);
+      setGa4Landing(data.byLanding ?? []);
       setGa4Daily(data.daily);
       setGa4Status({
         state: "ok",
@@ -129,6 +232,73 @@ export function AdAnalyticsScreen() {
         state: "error",
         message: error instanceof Error ? error.message : "Не удалось загрузить GA4"
       });
+    }
+  }, [period]);
+
+  const loadClarity = useCallback(async (refresh = false) => {
+    setClarityStatus({ state: "loading", message: refresh ? "Обновляю Clarity..." : "Загружаю Clarity..." });
+    try {
+      const response = await fetch("/api/sync/clarity", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ refresh })
+      });
+      const data = await response.json() as ClaritySyncPayload & { error?: string };
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить Clarity");
+      setClaritySummary(data.summary);
+      setClarityUrls(data.byUrl ?? []);
+      setClarityDashboardUrl(data.dashboardUrl ?? null);
+      setClarityStatus({
+        state: "ok",
+        message: `${data.dataSource}: ${number(data.summary.totalSessions)} сессий за ${data.numOfDays} дн., rage ${number(data.summary.totalRageClicks)}, dead ${number(data.summary.totalDeadClicks)}.`
+      });
+    } catch (error) {
+      setClarityStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось загрузить Clarity"
+      });
+    }
+  }, []);
+
+  const askClarity = useCallback(async () => {
+    const question = clarityQuestion.trim();
+    if (!question) return;
+    setClarityStatus({ state: "loading", message: "Gemini анализирует поведение на сайте..." });
+    try {
+      const response = await fetch("/api/sync/clarity", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ question, period, refresh: false })
+      });
+      const data = await response.json() as ClarityAskPayload & { error?: string; model?: string };
+      if (!response.ok) throw new Error(data.error || "Не удалось получить ответ");
+      setClarityAnswer({
+        model: data.model ?? "gemini",
+        answer: data.answer,
+        highlights: data.highlights ?? [],
+        caveats: data.caveats ?? []
+      });
+      setClarityStatus({ state: "ok", message: "Ответ Clarity готов." });
+    } catch (error) {
+      setClarityStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось получить ответ"
+      });
+    }
+  }, [clarityQuestion, period]);
+
+  const loadUtmAudit = useCallback(async (refresh = false) => {
+    try {
+      const response = await fetch("/api/sync/utm-audit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ period, refresh })
+      });
+      const data = await response.json() as UtmAuditPayload & { error?: string };
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить UTM-аудит");
+      setUtmAudit(data);
+    } catch {
+      setUtmAudit(null);
     }
   }, [period]);
 
@@ -157,15 +327,24 @@ export function AdAnalyticsScreen() {
 
   const askGa4 = useCallback(async () => {
     const question = ga4Question.trim();
-    if (!question) return;
-    setGa4Status({ state: "loading", message: "Gemini отвечает на вопрос..." });
+    if (!question) {
+      setAskStatus({ state: "error", message: "Введите вопрос." });
+      return;
+    }
+    setAskStatus({ state: "loading", message: "Gemini отвечает на вопрос..." });
+    setGa4Answer(null);
     try {
       const response = await fetch("/api/analytics/ask", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ question, period })
       });
-      const data = await response.json() as Ga4AskPayload & Ga4SyncPayload & { error?: string; model?: string };
+      const data = await response.json() as Ga4AskPayload & Ga4SyncPayload & {
+        error?: string;
+        model?: string;
+        ga4Summary?: Ga4SyncPayload["summary"];
+        ga4ByChannel?: Ga4SyncPayload["byChannel"];
+      };
       if (!response.ok) throw new Error(data.error || "Не удалось получить ответ");
       setGa4Answer({
         model: data.model ?? "gemini",
@@ -173,11 +352,13 @@ export function AdAnalyticsScreen() {
         highlights: data.highlights ?? [],
         caveats: data.caveats ?? []
       });
-      if (data.summary) setGa4Summary(data.summary);
-      if (data.byChannel) setGa4Channels(data.byChannel);
-      setGa4Status({ state: "ok", message: "Ответ готов." });
+      const summary = data.summary ?? data.ga4Summary;
+      const byChannel = data.byChannel ?? data.ga4ByChannel;
+      if (summary) setGa4Summary(summary);
+      if (byChannel) setGa4Channels(byChannel);
+      setAskStatus({ state: "ok", message: "Ответ готов." });
     } catch (error) {
-      setGa4Status({
+      setAskStatus({
         state: "error",
         message: error instanceof Error ? error.message : "Не удалось получить ответ"
       });
@@ -187,7 +368,9 @@ export function AdAnalyticsScreen() {
   useEffect(() => {
     void loadGa4(false);
     void loadMarketing();
-  }, [loadGa4, loadMarketing]);
+    void loadUtmAudit(false);
+    void loadClarity(false);
+  }, [loadGa4, loadMarketing, loadUtmAudit, loadClarity]);
 
   const crmLeads = marketingSummary
     ? marketingSummary.paidLeads + marketingSummary.organicLeads
@@ -224,6 +407,8 @@ export function AdAnalyticsScreen() {
             onClick={() => {
               void loadGa4(true);
               void loadMarketing();
+              void loadUtmAudit(true);
+              void loadClarity(true);
             }}
             disabled={ga4Status.state === "loading"}
           >
@@ -234,6 +419,39 @@ export function AdAnalyticsScreen() {
       </header>
 
       <div className="mb-4">
+        <section className="card mb-4 border-l-4 border-l-emerald-500 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">Публичная ссылка для подрядчиков</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Передайте эту ссылку рекламным подрядчикам — доступ к дашборду не нужен.
+              </p>
+              <p className="mt-2 text-sm font-semibold text-emerald-700">{publicUtmUrl}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
+                onClick={() => {
+                  void navigator.clipboard.writeText(publicUtmUrl);
+                  setPublicLinkCopied(true);
+                  window.setTimeout(() => setPublicLinkCopied(false), 1800);
+                }}
+              >
+                <Copy size={16} />
+                {publicLinkCopied ? "Скопировано" : "Скопировать ссылку"}
+              </button>
+              <Link
+                href={UTM_GENERATOR_PUBLIC_PATH}
+                target="_blank"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white"
+              >
+                <ExternalLink size={16} />
+                Открыть генератор
+              </Link>
+            </div>
+          </div>
+        </section>
         <UtmGeneratorPanel />
       </div>
 
@@ -246,14 +464,204 @@ export function AdAnalyticsScreen() {
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Unassigned" value={pct(ga4Summary?.unassignedShare ?? 0)} hint={`${number(ga4Summary?.unassignedUsers ?? 0)} пользователей без канала`} />
+        <MetricCard title="UTM OK" value={pct(ga4Summary?.compliantSessionShare ?? utmAudit?.summary.compliantSessionShare ?? 0)} hint="Сессии с правильной парой source/medium" />
+        <MetricCard title="Без UTM" value={number(ga4Summary?.sessionsWithoutUtm ?? utmAudit?.summary.sessionsWithoutUtm ?? 0)} hint="Сессии Direct / без campaign" />
+        <MetricCard title="Bitrix UTM" value={`${number(utmAudit?.summary.bitrixLeadsWithUtm ?? 0)} / ${number(utmAudit?.summary.bitrixLeadsTotal ?? 0)}`} hint={`Landing: ${number(utmAudit?.summary.bitrixLeadsWithLanding ?? 0)} лидов`} />
+      </div>
+
+      <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Бюджет" value={eur(marketingSummary?.spend ?? current.adSpend)} hint={`CPL ${eur(marketingSummary?.averageCpl ?? paidCpl(current))}`} />
         <MetricCard title="Cash ROAS" value={pct(cashRoas(current))} hint="Выручка / бюджет" />
         <MetricCard title="Invoice ROAS" value={pct(invoiceRoas(current))} hint="Счета / бюджет" />
+        <MetricCard title="CRM лиды" value={number(crmLeads)} hint={`Платные ${number(marketingSummary?.paidLeads ?? current.paidLeads)} • Органика ${number(marketingSummary?.organicLeads ?? current.organicLeads)}`} />
       </div>
 
-      <p className={`mb-4 text-sm font-semibold ${ga4Status.state === "error" || marketingStatus.state === "error" ? "text-red-700" : "text-slate-600"}`}>
-        GA4: {ga4Status.message} • CRM: {marketingStatus.message}
+      <p className={`mb-4 text-sm font-semibold ${ga4Status.state === "error" || marketingStatus.state === "error" || clarityStatus.state === "error" ? "text-red-700" : "text-slate-600"}`}>
+        GA4: {ga4Status.message} • CRM: {marketingStatus.message} • Clarity: {clarityStatus.message}
       </p>
+
+      <section className="card mb-4 p-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <SectionHead
+            title="Microsoft Clarity"
+            subtitle="Поведение на сайте за последние 1–3 дня: клики, фрустрация, лендинги"
+          />
+          {clarityDashboardUrl ? (
+            <a
+              href={clarityDashboardUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
+            >
+              <ExternalLink size={16} />
+              Открыть записи в Clarity
+            </a>
+          ) : null}
+        </div>
+
+        <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard title="Сессии Clarity" value={number(claritySummary?.totalSessions ?? 0)} hint="Последние 72 часа" />
+          <MetricCard title="Rage clicks" value={number(claritySummary?.totalRageClicks ?? 0)} hint="Раздражённые клики" />
+          <MetricCard title="Dead clicks" value={number(claritySummary?.totalDeadClicks ?? 0)} hint="Клики без ответа" />
+          <MetricCard title="Mobile" value={pct(claritySummary?.mobileSessionShare ?? 0)} hint="Доля мобильных сессий" />
+        </div>
+
+        {clarityUrls.length ? (
+          <div className="table-scroll mb-4">
+            <table>
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th>Сессии</th>
+                  <th>Rage</th>
+                  <th>Dead</th>
+                  <th>Quickback</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clarityUrls.slice(0, 12).map((row) => (
+                  <tr key={row.value}>
+                    <td className="max-w-sm truncate" title={row.value}>{row.value}</td>
+                    <td>{number(row.sessions)}</td>
+                    <td>{number(row.rageClicks ?? 0)}</td>
+                    <td>{number(row.deadClicks ?? 0)}</td>
+                    <td>{number(row.quickbackClicks ?? 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mb-4 text-sm text-slate-500">
+            Подключите CLARITY_API_TOKEN в настройках сервера, чтобы видеть поведенческие метрики в BI.
+          </p>
+        )}
+
+        <div className="flex flex-col gap-3 md:flex-row">
+          <input
+            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none"
+            placeholder="Например: почему на /es/new много кликов по кнопке, но мало лидов?"
+            value={clarityQuestion}
+            onChange={(event) => setClarityQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void askClarity();
+            }}
+          />
+          <button
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            onClick={() => void askClarity()}
+            disabled={clarityStatus.state === "loading" || !clarityQuestion.trim()}
+          >
+            Спросить про UX
+          </button>
+        </div>
+        {clarityAnswer ? (
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+            <p className="text-sm leading-6 text-slate-800">{clarityAnswer.answer}</p>
+            {clarityAnswer.highlights.length ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                {clarityAnswer.highlights.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            ) : null}
+            {clarityAnswer.caveats.length ? (
+              <p className="mt-3 text-xs text-slate-500">Ограничения: {clarityAnswer.caveats.join(" ")}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      {utmAudit?.summary.issues.length ? (
+        <section className="card mb-4 border-l-4 border-l-amber-500 p-4">
+          <SectionHead title="Проблемы UTM" subtitle="Что мешает сквозной атрибуции" />
+          <ul className="list-disc space-y-1 pl-5 text-sm text-amber-900">
+            {utmAudit.summary.issues.map((issue) => <li key={issue}>{issue}</li>)}
+          </ul>
+          <p className="mt-3 text-sm text-slate-600">
+            На сайт <code className="rounded bg-slate-100 px-1">retro-pressa.com</code> добавьте перед закрывающим <code className="rounded bg-slate-100 px-1">&lt;/body&gt;</code>:
+            {" "}<code className="rounded bg-slate-100 px-1">&lt;script src="https://rp-bi.site/retro-pressa-utm.js" defer&gt;&lt;/script&gt;</code>
+          </p>
+        </section>
+      ) : null}
+
+      <section className="card mb-4 p-4">
+        <SectionHead title="Кампании и UTM" subtitle="GA4 сессии vs лиды Sheets/Bitrix по utm_campaign" />
+        {(utmAudit?.campaigns.length || ga4Campaigns.length) ? (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Кампания</th>
+                  <th>GA4 сессии</th>
+                  <th>UTM OK</th>
+                  <th>Sheets лиды</th>
+                  <th>Bitrix лиды</th>
+                  <th>Продажи</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(utmAudit?.campaigns.length ? utmAudit.campaigns : ga4Campaigns.map((row) => ({
+                  campaign: row.campaign,
+                  ga4Sessions: row.sessions,
+                  ga4Compliant: row.compliant,
+                  sheetsLeads: 0,
+                  bitrixLeads: 0,
+                  bitrixWonDeals: 0,
+                  status: row.compliant ? "ok" : "mismatch"
+                }))).map((row) => (
+                  <tr key={row.campaign}>
+                    <td className="max-w-xs truncate" title={row.campaign}>{row.campaign}</td>
+                    <td>{number(row.ga4Sessions)}</td>
+                    <td>{row.ga4Compliant ? "✓" : "—"}</td>
+                    <td>{number(row.sheetsLeads)}</td>
+                    <td>{number(row.bitrixLeads)}</td>
+                    <td>{number(row.bitrixWonDeals)}</td>
+                    <td>{row.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Нажмите «Обновить данные» для загрузки кампаний.</p>
+        )}
+      </section>
+
+      <section className="card mb-4 p-4">
+        <SectionHead title="Лендинги" subtitle="Какие страницы получают трафик и лиды" />
+        {(utmAudit?.landingPages.length || ga4Landing.length) ? (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Страница</th>
+                  <th>GA4 сессии</th>
+                  <th>Bitrix лиды</th>
+                  <th>source / medium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(utmAudit?.landingPages.length ? utmAudit.landingPages : ga4Landing.map((row) => ({
+                  landingPage: row.landingPage,
+                  ga4Sessions: row.sessions,
+                  bitrixLeads: 0,
+                  source: row.source,
+                  medium: row.medium
+                }))).map((row) => (
+                  <tr key={row.landingPage}>
+                    <td>{row.landingPage}</td>
+                    <td>{number(row.ga4Sessions)}</td>
+                    <td>{number(row.bitrixLeads)}</td>
+                    <td>{row.source} / {row.medium}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Данные по лендингам появятся после синхронизации.</p>
+        )}
+      </section>
 
       <section className="card mb-4 p-4">
         <SectionHead title="Каналы GA4" subtitle="Откуда приходят пользователи на сайт" />
@@ -319,13 +727,19 @@ export function AdAnalyticsScreen() {
             }}
           />
           <button
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+            type="button"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
             onClick={() => void askGa4()}
-            disabled={ga4Status.state === "loading" || !ga4Question.trim()}
+            disabled={askStatus.state === "loading" || !ga4Question.trim()}
           >
-            Спросить
+            {askStatus.state === "loading" ? "Думаю..." : "Спросить"}
           </button>
         </div>
+        {askStatus.message ? (
+          <p className={`mt-3 text-sm font-semibold ${askStatus.state === "error" ? "text-red-700" : askStatus.state === "ok" ? "text-emerald-700" : "text-slate-600"}`}>
+            {askStatus.message}
+          </p>
+        ) : null}
         {ga4Answer ? (
           <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
             <p className="text-sm leading-6 text-slate-800">{ga4Answer.answer}</p>

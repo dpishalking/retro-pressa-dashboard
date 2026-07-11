@@ -15,4 +15,7 @@ ecosystem.config.cjs
 data/bitrix-snapshots/
 data/google-snapshots/
 data/auth/
+data/conversation-exports/
+data/conversation-snapshots/
+data/manager-dialogs-sheet-state/
 tsconfig.tsbuildinfo

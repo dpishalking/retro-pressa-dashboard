@@ -9,6 +9,22 @@ export type Ga4ChannelRow = {
   engagedSessions: number;
 };
 
+export type Ga4CampaignRow = {
+  campaign: string;
+  source: string;
+  medium: string;
+  sessions: number;
+  newUsers: number;
+  compliant: boolean;
+};
+
+export type Ga4LandingRow = {
+  landingPage: string;
+  source: string;
+  medium: string;
+  sessions: number;
+};
+
 export type Ga4DailyRow = {
   date: string;
   newUsers: number;
@@ -32,8 +48,12 @@ export type Ga4Snapshot = {
     unassignedUsers: number;
     unassignedShare: number;
     channels: string[];
+    compliantSessionShare: number;
+    sessionsWithoutUtm: number;
   };
   byChannel: Ga4ChannelRow[];
+  byCampaign: Ga4CampaignRow[];
+  byLanding: Ga4LandingRow[];
   daily: Ga4DailyRow[];
 };
 
@@ -54,7 +74,16 @@ export async function readGa4Snapshot(period: PeriodKey): Promise<Ga4Snapshot | 
     if (parsed?.version !== 1 || parsed.period !== period || !parsed.summary || !Array.isArray(parsed.byChannel) || !Array.isArray(parsed.daily)) {
       return null;
     }
-    return parsed as Ga4Snapshot;
+    return {
+      ...parsed,
+      byCampaign: Array.isArray(parsed.byCampaign) ? parsed.byCampaign : [],
+      byLanding: Array.isArray(parsed.byLanding) ? parsed.byLanding : [],
+      summary: {
+        ...parsed.summary,
+        compliantSessionShare: parsed.summary.compliantSessionShare ?? 0,
+        sessionsWithoutUtm: parsed.summary.sessionsWithoutUtm ?? 0
+      }
+    } as Ga4Snapshot;
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("ENOENT")) return null;

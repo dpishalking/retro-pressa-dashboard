@@ -8,6 +8,8 @@ import {
   utmMediumPresets,
   utmQuickTemplates,
   utmSourcePresets,
+  utmTopicPresets,
+  utmNamingContract,
   type UtmTemplate
 } from "@/config/utm-taxonomy";
 import {
@@ -50,7 +52,7 @@ const emptyParams: UtmParams = {
   utm_term: ""
 };
 
-export function UtmGeneratorPanel() {
+export function UtmGeneratorPanel({ variant = "internal" }: { variant?: "internal" | "public" }) {
   const [baseUrl, setBaseUrl] = useState<string>(utmBaseUrlPresets[1].value);
   const [customBaseUrl, setCustomBaseUrl] = useState("");
   const [params, setParams] = useState<UtmParams>({
@@ -59,6 +61,7 @@ export function UtmGeneratorPanel() {
   });
   const [contentLabel, setContentLabel] = useState("ad_01");
   const [market, setMarket] = useState("lv");
+  const [topic, setTopic] = useState("gift");
   const [copyState, setCopyState] = useState<"idle" | "ok">("idle");
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -96,8 +99,8 @@ export function UtmGeneratorPanel() {
   }, []);
 
   const suggestCampaign = useCallback(() => {
-    updateParam("utm_campaign", campaignNameSuggestion(market, "gift"));
-  }, [market, updateParam]);
+    updateParam("utm_campaign", campaignNameSuggestion(market, topic));
+  }, [market, topic, updateParam]);
 
   const copyUrl = useCallback(async () => {
     if (!generatedUrl || hasErrors) return;
@@ -120,7 +123,9 @@ export function UtmGeneratorPanel() {
         <div>
           <h2 className="text-xl font-bold text-slate-950">UTM-генератор ссылок</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Соберите правильную ссылку для рекламы. Метки попадут в GA4 и помогут убрать Unassigned.
+            {variant === "public"
+              ? "Соберите финальный URL и вставьте его в рекламный кабинет."
+              : "Соберите правильную ссылку для рекламы. Метки попадут в GA4 и помогут убрать Unassigned."}
           </p>
         </div>
         <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm">
@@ -165,6 +170,22 @@ export function UtmGeneratorPanel() {
               />
             </label>
           ) : null}
+
+          <label className="grid gap-1 text-sm">
+            <span className="font-semibold text-slate-700">Тема кампании</span>
+            <select
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+              value={topic}
+              onChange={(event) => {
+                setTopic(event.target.value);
+                updateParam("utm_campaign", campaignNameSuggestion(market, event.target.value));
+              }}
+            >
+              {utmTopicPresets.map((preset) => (
+                <option key={preset.value} value={preset.value}>{preset.label}</option>
+              ))}
+            </select>
+          </label>
 
           <label className="grid gap-1 text-sm">
             <span className="font-semibold text-slate-700">utm_source *</span>
@@ -271,8 +292,13 @@ export function UtmGeneratorPanel() {
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Всегда заполняйте source, medium, campaign.</li>
               <li>Только латиница и нижнее подчёркивание: `{slugifyUtmValue("July Gift LV")}`.</li>
-              <li>Одна кампания = одно имя `utm_campaign` в GA4 и в Google Sheets.</li>
-              <li>Не запускайте рекламу без UTM — иначе канал уйдёт в Unassigned.</li>
+              <li>Формат кампании: {utmNamingContract.campaign}</li>
+              <li>Google Sheets `campaign` = `utm_campaign` в ссылке.</li>
+              {variant === "internal" ? (
+                <li>На сайт добавьте: <code className="rounded bg-slate-100 px-1">/retro-pressa-utm.js</code> — UTM попадут в формы и Bitrix.</li>
+              ) : (
+                <li>Не меняйте параметры вручную после генерации — только копируйте готовую ссылку.</li>
+              )}
             </ul>
           </div>
 

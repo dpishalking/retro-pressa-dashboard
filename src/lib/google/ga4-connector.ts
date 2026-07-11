@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 
 import type { PeriodKey } from "@/types/metrics";
-import { readGa4Snapshot, writeGa4Snapshot, type Ga4ChannelRow, type Ga4DailyRow, type Ga4Snapshot } from "@/lib/google/ga4-snapshot-store";
+import { isCompliantUtmPair } from "@/lib/utm-standards";
+import { readGa4Snapshot, writeGa4Snapshot, type Ga4CampaignRow, type Ga4ChannelRow, type Ga4DailyRow, type Ga4LandingRow, type Ga4Snapshot } from "@/lib/google/ga4-snapshot-store";
 
 export type Ga4TrafficPayload = Ga4Snapshot & {
   dataSource: "snapshot" | "live";
@@ -157,6 +158,57 @@ async function fetchChannelBreakdown(propertyId: string, accessToken: string, st
   })) as Ga4ChannelRow[];
 }
 
+async function fetchCampaignBreakdown(propertyId: string, accessToken: string, startDate: string, endDate: string) {
+  const data = await runGa4Report(propertyId, accessToken, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [
+      { name: "sessionCampaignName" },
+      { name: "sessionSource" },
+      { name: "sessionMedium" }
+    ],
+    metrics: [
+      { name: "sessions" },
+      { name: "newUsers" }
+    ],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 50
+  });
+
+  return (data.rows ?? []).map((row) => {
+    const source = row.dimensionValues?.[1]?.value || "";
+    const medium = row.dimensionValues?.[2]?.value || "";
+    return {
+      campaign: row.dimensionValues?.[0]?.value || "(not set)",
+      source,
+      medium,
+      sessions: toNumber(row.metricValues?.[0]?.value),
+      newUsers: toNumber(row.metricValues?.[1]?.value),
+      compliant: isCompliantUtmPair(source, medium)
+    };
+  }) as Ga4CampaignRow[];
+}
+
+async function fetchLandingBreakdown(propertyId: string, accessToken: string, startDate: string, endDate: string) {
+  const data = await runGa4Report(propertyId, accessToken, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [
+      { name: "landingPage" },
+      { name: "sessionSource" },
+      { name: "sessionMedium" }
+    ],
+    metrics: [{ name: "sessions" }],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 30
+  });
+
+  return (data.rows ?? []).map((row) => ({
+    landingPage: row.dimensionValues?.[0]?.value || "/",
+    source: row.dimensionValues?.[1]?.value || "",
+    medium: row.dimensionValues?.[2]?.value || "",
+    sessions: toNumber(row.metricValues?.[0]?.value)
+  })) as Ga4LandingRow[];
+}
+
 async function fetchDailyBreakdown(propertyId: string, accessToken: string, startDate: string, endDate: string) {
   const data = await runGa4Report(propertyId, accessToken, {
     dateRanges: [{ startDate, endDate }],
@@ -208,8 +260,10 @@ async function buildGa4Snapshot(period: PeriodKey): Promise<Ga4Snapshot> {
 
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/analytics.readonly");
   const { startDate, endDate } = monthRangeForPeriod(period);
-  const [byChannel, daily, totals] = await Promise.all([
+  const [byChannel, byCampaign, byLanding, daily, totals] = await Promise.all([
     fetchChannelBreakdown(propertyId, accessToken, startDate, endDate),
+    fetchCampaignBreakdown(propertyId, accessToken, startDate, endDate),
+    fetchLandingBreakdown(propertyId, accessToken, startDate, endDate),
     fetchDailyBreakdown(propertyId, accessToken, startDate, endDate),
     fetchTotals(propertyId, accessToken, startDate, endDate)
   ]);
@@ -217,6 +271,13 @@ async function buildGa4Snapshot(period: PeriodKey): Promise<Ga4Snapshot> {
   const unassignedUsers = byChannel
     .filter((row) => row.channel.toLowerCase() === "unassigned")
     .reduce((sum, row) => sum + row.newUsers, 0);
+
+  const compliantSessions = byCampaign
+    .filter((row) => row.compliant)
+    .reduce((sum, row) => sum + row.sessions, 0);
+  const sessionsWithoutUtm = byCampaign
+    .filter((row) => row.campaign === "(not set)" || row.campaign === "(direct)" || row.source === "(direct)")
+    .reduce((sum, row) => sum + row.sessions, 0);
 
   return {
     version: 1,
@@ -228,9 +289,13 @@ async function buildGa4Snapshot(period: PeriodKey): Promise<Ga4Snapshot> {
       ...totals,
       unassignedUsers,
       unassignedShare: totals.newUsers > 0 ? unassignedUsers / totals.newUsers : 0,
-      channels: byChannel.map((row) => row.channel)
+      channels: byChannel.map((row) => row.channel),
+      compliantSessionShare: totals.sessions > 0 ? compliantSessions / totals.sessions : 0,
+      sessionsWithoutUtm
     },
     byChannel,
+    byCampaign,
+    byLanding,
     daily
   };
 }
@@ -278,6 +343,8 @@ export function ga4ContextForAsk(snapshot: Ga4Snapshot, marketing?: {
     dateRange: snapshot.dateRange,
     summary: snapshot.summary,
     byChannel: snapshot.byChannel,
+    byCampaign: snapshot.byCampaign.slice(0, 20),
+    byLanding: snapshot.byLanding.slice(0, 15),
     daily: snapshot.daily.slice(-14),
     marketingComparison: marketing ?? null
   };

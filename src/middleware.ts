@@ -1,13 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { canAccessRoute } from "@/lib/auth/access";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { HUB_PATH, UTM_GENERATOR_PUBLIC_PATH } from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
 const PUBLIC_API_PREFIXES = ["/api/auth/login"];
+const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH];
 const LOGIN_PATH = "/";
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function isPublicPage(pathname: string): boolean {
+  return PUBLIC_PAGE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 function isStaticAsset(pathname: string): boolean {
@@ -56,6 +61,10 @@ export async function middleware(request: NextRequest) {
     if (session) {
       return NextResponse.redirect(new URL(HUB_PATH, request.url));
     }
+    return NextResponse.next();
+  }
+
+  if (isPublicPage(pathname)) {
     return NextResponse.next();
   }
 

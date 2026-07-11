@@ -38,8 +38,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ...result,
-      ga4Summary: ga4.summary,
-      ga4ByChannel: ga4.byChannel,
+      summary: ga4.summary,
+      byChannel: ga4.byChannel,
       period
     });
   } catch (error) {

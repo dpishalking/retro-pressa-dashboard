@@ -4,6 +4,7 @@ import {
   utmSourcePresets,
   type UtmField
 } from "@/config/utm-taxonomy";
+import { campaignNameFromParts, isCompliantUtmPair, predictChannelFromUtm } from "@/lib/utm-standards";
 
 export type UtmParams = {
   utm_source: string;
@@ -59,6 +60,8 @@ export function buildUtmUrl(baseUrl: string, params: Partial<UtmParams>) {
 }
 
 export function predictGa4Channel(source: string, medium: string) {
+  const channel = predictChannelFromUtm(source, medium);
+  if (channel !== "Unassigned") return channel;
   const normalizedSource = slugifyUtmValue(source);
   const normalizedMedium = slugifyUtmValue(medium);
   const sourcePreset = utmSourcePresets.find((item) => item.value === normalizedSource);
@@ -92,23 +95,16 @@ export function validateUtmParams(baseUrl: string, params: Partial<UtmParams>): 
     }
   });
 
-  if (params.utm_source && params.utm_medium) {
-    const channel = predictGa4Channel(params.utm_source, params.utm_medium);
-    if (channel.includes("Unassigned")) {
-      issues.push({
-        level: "warning",
-        message: "Такая пара source/medium может попасть в Unassigned. Выберите значения из списка."
-      });
-    }
+  if (params.utm_source && params.utm_medium && !isCompliantUtmPair(params.utm_source, params.utm_medium)) {
+    issues.push({
+      level: "warning",
+      message: "Такая пара source/medium может попасть в Unassigned. Выберите значения из списка."
+    });
   }
 
   return issues;
 }
 
 export function campaignNameSuggestion(market?: string, topic = "gift") {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const marketSuffix = market ? `_${slugifyUtmValue(market)}` : "";
-  return `${year}_${month}_${slugifyUtmValue(topic)}${marketSuffix}`;
+  return campaignNameFromParts(topic, market);
 }
