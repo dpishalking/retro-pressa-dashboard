@@ -8,6 +8,7 @@ import { monthlyMetrics } from "@/data/demo-data";
 import { cashRoas, delta, invoiceRoas, paidCpl, totalLeads } from "@/lib/metrics-engine";
 import { eur, number, pct } from "@/lib/format";
 import { HUB_PATH } from "@/lib/auth/routes";
+import { UtmGeneratorPanel } from "@/components/utm-generator-panel";
 import type { PeriodKey } from "@/types/metrics";
 
 type SyncStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
@@ -231,6 +232,10 @@ export function AdAnalyticsScreen() {
           </button>
         </div>
       </header>
+
+      <div className="mb-4">
+        <UtmGeneratorPanel />
+      </div>
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Новые пользователи GA4" value={number(ga4Summary?.newUsers ?? 0)} hint="Посетители сайта" />
