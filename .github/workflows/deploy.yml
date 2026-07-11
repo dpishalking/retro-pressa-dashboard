@@ -109,6 +109,10 @@ jobs:
           TRAINER_BACKEND_PUBLIC_URL: ${{ secrets.TRAINER_BACKEND_PUBLIC_URL }}
           ADMIN_TELEGRAM_IDS: ${{ secrets.ADMIN_TELEGRAM_IDS }}
           ROP_ALERTS_TELEGRAM_CHAT_IDS: ${{ secrets.ROP_ALERTS_TELEGRAM_CHAT_IDS }}
+          MANAGER_QUESTIONS_BOT_TOKEN: ${{ secrets.MANAGER_QUESTIONS_BOT_TOKEN }}
+          TELEGRAM_MANAGER_QUESTIONS_BOT_TOKEN: ${{ secrets.TELEGRAM_MANAGER_QUESTIONS_BOT_TOKEN }}
+          TELEGRAM_MANAGER_QUESTIONS_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_MANAGER_QUESTIONS_WEBHOOK_SECRET }}
+          TELEGRAM_MANAGER_QUESTIONS_CHAT_IDS: ${{ secrets.TELEGRAM_MANAGER_QUESTIONS_CHAT_IDS }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -141,6 +145,10 @@ jobs:
             "BITRIX_WEBHOOK_URL",
             "GEMINI_API_KEY",
             "GEMINI_MODEL",
+            "GEMINI_PROVIDER",
+            "GEMINI_VERTEX_PROJECT",
+            "GEMINI_VERTEX_LOCATION",
+            "GEMINI_API_BASE_URL",
             "GOOGLE_TRAFFIC_CSV_URL",
             "GOOGLE_TRAFFIC_SHEET_ID",
             "GOOGLE_TRAFFIC_SHEET_NAME",
@@ -161,7 +169,11 @@ jobs:
             "GOOGLE_PRIVATE_KEY",
             "GA4_PROPERTY_ID",
             "CLARITY_API_TOKEN",
-            "CLARITY_DASHBOARD_URL"
+            "CLARITY_DASHBOARD_URL",
+            "MANAGER_QUESTIONS_BOT_TOKEN",
+            "TELEGRAM_MANAGER_QUESTIONS_BOT_TOKEN",
+            "TELEGRAM_MANAGER_QUESTIONS_WEBHOOK_SECRET",
+            "TELEGRAM_MANAGER_QUESTIONS_CHAT_IDS"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
           env.TRAINER_API_URL = trainerApiUrl;

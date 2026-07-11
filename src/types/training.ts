@@ -93,6 +93,52 @@ export type KnowledgeBaseCatalog = {
   entries: KnowledgeBaseEntry[];
 };
 
+export type ManagerQuestionSource = "telegram" | "manual";
+
+export type ManagerQuestionStatus = "new" | "clustered" | "answered" | "ignored";
+
+export type ManagerQuestion = {
+  id: string;
+  source: ManagerQuestionSource;
+  text: string;
+  authorName?: string;
+  authorId?: string;
+  chatId?: string;
+  messageId?: string;
+  category?: string;
+  status: ManagerQuestionStatus;
+  occurrences: number;
+  createdAt: string;
+  lastSeenAt: string;
+};
+
+export type ManagerQuestionsStore = {
+  version: 1;
+  questions: ManagerQuestion[];
+};
+
+export type ManagerQuestionsSummary = {
+  total: number;
+  totalOccurrences: number;
+  newThisWeek: number;
+  unanswered: number;
+  answeredByKnowledgeBase: number;
+  byStatus: Record<ManagerQuestionStatus, number>;
+  topQuestions: {
+    id: string;
+    text: string;
+    occurrences: number;
+    status: ManagerQuestionStatus;
+    category?: string;
+    lastSeenAt: string;
+  }[];
+  categories: {
+    category: string;
+    count: number;
+    occurrences: number;
+  }[];
+};
+
 /** CRM или практика — отдельный модуль внутри этапа обучения */
 export type TrainingTrackModule = {
   id: string;
