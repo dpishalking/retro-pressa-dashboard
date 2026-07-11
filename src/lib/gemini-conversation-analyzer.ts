@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { callGeminiGenerateContent, extractGeminiText, getGeminiModel } from "@/lib/gemini/client";
 import type { ConversationMessage, GeminiConversationSummary, GeminiDialogueAnalysis } from "@/types/metrics";
 
 type GeminiCache = {
@@ -13,18 +14,7 @@ type GeminiBatchResult = {
 };
 
 const cachePath = ".cache/gemini-conversation-analysis.json";
-const defaultModel = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 const cacheVersion = 1;
-
-function apiKey() {
-  return process.env.GEMINI_API_KEY?.trim()
-    || process.env.GOOGLE_API_KEY?.trim()
-    || process.env.GOOGLE_AI_API_KEY?.trim()
-    || process.env.GOOGLE_GEMINI_API_KEY?.trim()
-    || process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()
-    || process.env.GEMINI_KEY?.trim()
-    || "";
-}
 
 function countBy(items: string[]) {
   const counts = new Map<string, number>();
@@ -95,78 +85,63 @@ function normalizeAnalysis(value: unknown): GeminiDialogueAnalysis | null {
 }
 
 async function analyzeBatch(dialogs: ReturnType<typeof compactDialog>[], model: string) {
-  const key = apiKey();
-  if (!key) {
-    throw new Error("Gemini API key не найден. Добавьте GEMINI_API_KEY или GOOGLE_API_KEY в .env.local текущего проекта.");
-  }
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{
-          text: [
-            "Ты senior sales quality analyst для Retro Pressa.",
-            "Анализируй клиентские переписки строго по смыслу, без выдумывания фактов.",
-            "Оценивай, помог ли менеджер выбрать подарок, назвал ли полную сумму/доставку, закрыл ли на следующий шаг.",
-            "Верни только валидный JSON по схеме."
-          ].join(" ")
-        }]
-      },
-      contents: [{
-        role: "user",
-        parts: [{
-          text: JSON.stringify({
-            task: "Проанализируй каждый диалог и верни dialogs.",
-            dialogs
-          })
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            dialogs: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  dialogId: { type: "string" },
-                  qualityScore: { type: "number" },
-                  outcome: { type: "string", enum: ["order", "invoice", "lost", "in_progress", "unknown"] },
-                  summary: { type: "string" },
-                  managerStrengths: { type: "array", items: { type: "string" } },
-                  missedOpportunities: { type: "array", items: { type: "string" } },
-                  lossReason: { type: "string" },
-                  recommendedNextAction: { type: "string" },
-                  needsHumanReview: { type: "boolean" }
-                },
-                required: ["dialogId", "qualityScore", "outcome", "summary", "managerStrengths", "missedOpportunities", "recommendedNextAction", "needsHumanReview"]
-              }
+  const payload = await callGeminiGenerateContent({
+    systemInstruction: {
+      parts: [{
+        text: [
+          "Ты senior sales quality analyst для Retro Pressa.",
+          "Анализируй клиентские переписки строго по смыслу, без выдумывания фактов.",
+          "Оценивай, помог ли менеджер выбрать подарок, назвал ли полную сумму/доставку, закрыл ли на следующий шаг.",
+          "Верни только валидный JSON по схеме."
+        ].join(" ")
+      }]
+    },
+    contents: [{
+      role: "user",
+      parts: [{
+        text: JSON.stringify({
+          task: "Проанализируй каждый диалог и верни dialogs.",
+          dialogs
+        })
+      }]
+    }],
+    generationConfig: {
+      temperature: 0.2,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "object",
+        properties: {
+          dialogs: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                dialogId: { type: "string" },
+                qualityScore: { type: "number" },
+                outcome: { type: "string", enum: ["order", "invoice", "lost", "in_progress", "unknown"] },
+                summary: { type: "string" },
+                managerStrengths: { type: "array", items: { type: "string" } },
+                missedOpportunities: { type: "array", items: { type: "string" } },
+                lossReason: { type: "string" },
+                recommendedNextAction: { type: "string" },
+                needsHumanReview: { type: "boolean" }
+              },
+              required: ["dialogId", "qualityScore", "outcome", "summary", "managerStrengths", "missedOpportunities", "recommendedNextAction", "needsHumanReview"]
             }
-          },
-          required: ["dialogs"]
-        }
+          }
+        },
+        required: ["dialogs"]
       }
-    })
-  });
+    }
+  }, model);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini вернул ошибку ${response.status}: ${errorText.slice(0, 500)}`);
-  }
-
-  const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-  const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
+  const text = extractGeminiText(payload);
   const parsed = JSON.parse(text) as GeminiBatchResult;
   return (parsed.dialogs ?? []).map(normalizeAnalysis).filter(Boolean) as GeminiDialogueAnalysis[];
 }
 
 export async function analyzeConversationsWithGemini(messages: ConversationMessage[], options: { limit?: number; batchSize?: number; model?: string } = {}): Promise<GeminiConversationSummary> {
-  const model = options.model || defaultModel;
+  const model = options.model || getGeminiModel();
   const limit = Math.max(1, Math.min(options.limit ?? 80, 500));
   const batchSize = Math.max(1, Math.min(options.batchSize ?? 8, 20));
   const dialogs = groupMessages(messages).slice(0, limit);

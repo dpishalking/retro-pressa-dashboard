@@ -59,13 +59,13 @@ function EntryCard({ entry }: { entry: KnowledgeBaseEntry }) {
   return (
     <section className="card p-6">
       {entry.category ? (
-        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-slate-600">
+        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-bold uppercase tracking-wide text-slate-600">
           {entry.category}
         </span>
       ) : null}
-      <h3 className="mt-2 text-lg font-black text-slate-950">{entry.question}</h3>
+      <h3 className="mt-3 text-2xl font-black text-slate-950">{entry.question}</h3>
       {entry.answer ? (
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{entry.answer}</p>
+        <p className="mt-3 whitespace-pre-wrap text-lg leading-relaxed text-slate-700">{entry.answer}</p>
       ) : null}
       <EntryMedia entry={entry} />
     </section>
@@ -353,7 +353,7 @@ export function KnowledgeBase() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Поиск по вопросам и ответам..."
-            className="w-full rounded-xl border border-[var(--line)] py-3 pl-11 pr-4 text-sm"
+            className="w-full rounded-xl border border-[var(--line)] py-3 pl-11 pr-4 text-base"
           />
         </div>
 

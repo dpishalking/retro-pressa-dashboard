@@ -16,7 +16,8 @@ const SHEET_HEADERS = [
   "source"
 ];
 
-const QUESTION_WORDS = [
+// Вопросительные слова: считаются вопросом, только если стоят в начале фразы.
+const QUESTION_LEAD_WORDS = new Set([
   "как",
   "что",
   "где",
@@ -27,12 +28,25 @@ const QUESTION_WORDS = [
   "какой",
   "какая",
   "какие",
+  "какое",
+  "куда",
+  "откуда",
+  "кто",
+  "чей",
+  "можно"
+]);
+
+// Явные маркеры вопроса: срабатывают в любом месте сообщения.
+const STRONG_QUESTION_MARKERS = [
   "можно ли",
   "подскажите",
   "подскажет",
   "не понимаю",
   "не понятно",
-  "непонятно"
+  "непонятно",
+  "что делать",
+  "как быть",
+  "кто знает"
 ];
 
 function required(name) {
@@ -122,11 +136,55 @@ async function appendRow(row) {
   );
 }
 
+// Находит строку вопроса по chat_id + message_id. Возвращает номер строки и текущий ответ.
+async function findQuestionRow(chatId, messageId) {
+  const tab = quoteTab(config.sheetName);
+  const range = encodeURIComponent(`${tab}!A:L`);
+  const data = await sheetsRequest("GET", `/values/${range}`);
+  const values = data.values ?? [];
+
+  for (let index = 1; index < values.length; index += 1) {
+    const row = values[index];
+    if (row?.[1] === chatId && row?.[3] === messageId) {
+      return { rowNumber: index + 1, existingAnswer: row?.[10] ?? "" };
+    }
+  }
+  return null;
+}
+
+// Записывает ответ (реплай) в колонки status/answer найденного вопроса.
+async function storeAnswer(chatId, repliedMessageId, answerText) {
+  const found = await findQuestionRow(chatId, repliedMessageId);
+  if (!found) return false;
+
+  const combined = found.existingAnswer
+    ? `${found.existingAnswer} | ${answerText}`
+    : answerText;
+  const tab = quoteTab(config.sheetName);
+  const range = encodeURIComponent(`${tab}!J${found.rowNumber}:K${found.rowNumber}`);
+  await sheetsRequest(
+    "PUT",
+    `/values/${range}?valueInputOption=RAW`,
+    { values: [["answered", combined]] }
+  );
+  return true;
+}
+
 function looksLikeQuestion(text) {
   const normalized = text.trim().toLowerCase();
   if (!normalized) return false;
   if (normalized.includes("?")) return true;
-  return QUESTION_WORDS.some((word) => normalized.includes(word));
+
+  // Явные маркеры-фразы в любом месте.
+  if (STRONG_QUESTION_MARKERS.some((marker) => normalized.includes(marker))) return true;
+
+  // Вопросительное слово в начале фразы (первые 3 слова).
+  const leadWords = normalized
+    .replace(/[^\p{L}\s]/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 3);
+  return leadWords.some((word) => QUESTION_LEAD_WORDS.has(word));
 }
 
 function authorName(from) {
@@ -155,11 +213,20 @@ bot.on("message", async (ctx) => {
     const message = ctx.message;
     const from = message.from;
     if (from?.is_bot) return;
-    if (isExcluded(from)) return;
     if (!isAllowedChat(message.chat.id)) return;
 
     const text = (message.text ?? message.caption ?? "").trim();
     if (!text || text.startsWith("/")) return;
+
+    // Реплай на уже собранный вопрос — это ответ. Пишем его в тот же вопрос,
+    // даже если отвечающий в списке исключённых (они как раз отвечают).
+    const repliedMessageId = message.reply_to_message?.message_id;
+    if (repliedMessageId != null) {
+      const handled = await storeAnswer(String(message.chat.id), String(repliedMessageId), text);
+      if (handled) return;
+    }
+
+    if (isExcluded(from)) return;
 
     const question = looksLikeQuestion(text);
     if (config.onlyQuestions && !question) return;
