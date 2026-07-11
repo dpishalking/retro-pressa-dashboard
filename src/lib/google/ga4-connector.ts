@@ -188,15 +188,17 @@ async function fetchTotals(propertyId: string, accessToken: string, startDate: s
       { name: "newUsers" },
       { name: "sessions" },
       { name: "engagedSessions" },
-      { name: "returningUsers" }
+      { name: "activeUsers" }
     ]
   });
   const row = data.rows?.[0];
+  const newUsers = toNumber(row?.metricValues?.[0]?.value);
+  const activeUsers = toNumber(row?.metricValues?.[3]?.value);
   return {
-    newUsers: toNumber(row?.metricValues?.[0]?.value),
+    newUsers,
     sessions: toNumber(row?.metricValues?.[1]?.value),
     engagedSessions: toNumber(row?.metricValues?.[2]?.value),
-    returningUsers: toNumber(row?.metricValues?.[3]?.value)
+    returningUsers: Math.max(0, activeUsers - newUsers)
   };
 }
 
