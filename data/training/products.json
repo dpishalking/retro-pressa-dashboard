@@ -545,6 +545,15 @@
           "url": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
           "sectionKey": "purchaseReasons",
           "sortOrder": 4
+        },
+        {
+          "id": "video-personal-magazine-review-1",
+          "type": "video",
+          "title": "Отзыв клиента",
+          "url": "https://www.youtube.com/shorts/BG4A7Gs6YjE",
+          "embedUrl": "https://www.youtube.com/embed/BG4A7Gs6YjE",
+          "sectionKey": "reviews",
+          "sortOrder": 5
         }
       ],
       "questions": [
