@@ -51,7 +51,7 @@ const emptyParams: UtmParams = {
 };
 
 export function UtmGeneratorPanel() {
-  const [baseUrl, setBaseUrl] = useState(utmBaseUrlPresets[1].value);
+  const [baseUrl, setBaseUrl] = useState<string>(utmBaseUrlPresets[1].value);
   const [customBaseUrl, setCustomBaseUrl] = useState("");
   const [params, setParams] = useState<UtmParams>({
     ...emptyParams,
