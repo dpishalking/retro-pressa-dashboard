@@ -1,5 +1,6 @@
 import { readClaritySnapshot, writeClaritySnapshot, type ClarityDimensionRow, type ClaritySnapshot } from "@/lib/clarity/clarity-snapshot-store";
-import { isCompliantUtmPair, slugifyUtmValue } from "@/lib/utm-standards";
+import { isCompliantUtmPair } from "@/lib/utm-standards";
+import { slugifyUtmValue } from "@/lib/utm-generator";
 
 type ClarityMetricBlock = {
   metricName?: string;

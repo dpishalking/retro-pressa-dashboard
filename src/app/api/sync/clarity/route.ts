@@ -41,7 +41,8 @@ export async function POST(request: Request) {
         marketing ? {
           paidLeads: marketing.summary.paidLeads,
           organicLeads: marketing.summary.organicLeads,
-          adSpend: marketing.summary.spend
+          adSpend: marketing.summary.spend,
+          ql: marketing.summary.ql
         } : undefined
       );
 

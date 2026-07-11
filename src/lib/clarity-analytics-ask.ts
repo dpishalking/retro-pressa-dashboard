@@ -31,6 +31,7 @@ export async function askClarityAnalytics(
     paidLeads: number;
     organicLeads: number;
     adSpend: number;
+    ql: number;
   }
 ): Promise<ClarityAskResult> {
   const key = apiKey();
