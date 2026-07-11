@@ -7,11 +7,12 @@ import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
+import { KnowledgeBase } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
 
-type HubTab = "my" | "trainees";
+type HubTab = "my" | "knowledge" | "trainees";
 
 function StageCard({ stage, index }: { stage: TrainingStageOverview; index: number }) {
   const config = TRAINING_STAGES.find((item) => item.id === stage.id);
@@ -126,30 +127,35 @@ function StagesContent() {
   const { isAdmin, isSupervisor } = useTrainingUser();
   const [tab, setTab] = useState<HubTab>("my");
 
-  if (!isSupervisor) {
-    return <MyTrainingContent />;
-  }
-
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setTab("my")}
-          className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "my" ? "bg-rose-600 text-white" : "bg-white text-slate-700"}`}
-        >
-          Моё обучение
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("trainees")}
-          className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "trainees" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
-        >
-          Стажёры
-        </button>
+          <button
+            type="button"
+            onClick={() => setTab("my")}
+            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "my" ? "bg-rose-600 text-white" : "bg-white text-slate-700"}`}
+          >
+            Моё обучение
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("knowledge")}
+            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "knowledge" ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}
+          >
+            База знаний
+          </button>
+          {isSupervisor ? (
+            <button
+              type="button"
+              onClick={() => setTab("trainees")}
+              className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "trainees" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
+            >
+              Стажёры
+            </button>
+          ) : null}
         </div>
-        {!isAdmin ? (
+        {isSupervisor && !isAdmin ? (
           <Link
             href="/admin/users"
             className="inline-flex rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-700 hover:bg-violet-100"
@@ -159,7 +165,9 @@ function StagesContent() {
         ) : null}
       </div>
 
-      {tab === "my" ? <MyTrainingContent /> : <TrainingSupervisorsPanel />}
+      {tab === "my" ? <MyTrainingContent /> : null}
+      {tab === "knowledge" ? <KnowledgeBase /> : null}
+      {tab === "trainees" && isSupervisor ? <TrainingSupervisorsPanel /> : null}
     </>
   );
 }

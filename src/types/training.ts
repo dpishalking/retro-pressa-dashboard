@@ -75,6 +75,24 @@ export type TrainingClientReviewCatalog = {
   videos: TrainingClientReviewVideo[];
 };
 
+export type KnowledgeBaseMediaType = "none" | "video" | "image";
+
+export type KnowledgeBaseEntry = {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string;
+  mediaType: KnowledgeBaseMediaType;
+  mediaUrl?: string;
+  embedUrl?: string;
+  sortOrder: number;
+};
+
+export type KnowledgeBaseCatalog = {
+  version: 1;
+  entries: KnowledgeBaseEntry[];
+};
+
 /** CRM или практика — отдельный модуль внутри этапа обучения */
 export type TrainingTrackModule = {
   id: string;
