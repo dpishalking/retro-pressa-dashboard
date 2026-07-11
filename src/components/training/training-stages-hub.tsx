@@ -7,13 +7,12 @@ import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
-import { ManagerQuestionsPanel } from "@/components/training/manager-questions-panel";
 import { KnowledgeBase } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
 
-type HubTab = "my" | "knowledge" | "questions" | "trainees";
+type HubTab = "my" | "knowledge" | "trainees";
 
 function StageCard({ stage, index }: { stage: TrainingStageOverview; index: number }) {
   const config = TRAINING_STAGES.find((item) => item.id === stage.id);
@@ -149,15 +148,6 @@ function StagesContent() {
           {isSupervisor ? (
             <button
               type="button"
-              onClick={() => setTab("questions")}
-              className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "questions" ? "bg-amber-600 text-white" : "bg-white text-slate-700"}`}
-            >
-              Вопросы
-            </button>
-          ) : null}
-          {isSupervisor ? (
-            <button
-              type="button"
               onClick={() => setTab("trainees")}
               className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "trainees" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
             >
@@ -177,7 +167,6 @@ function StagesContent() {
 
       {tab === "my" ? <MyTrainingContent /> : null}
       {tab === "knowledge" ? <KnowledgeBase /> : null}
-      {tab === "questions" && isSupervisor ? <ManagerQuestionsPanel /> : null}
       {tab === "trainees" && isSupervisor ? <TrainingSupervisorsPanel /> : null}
     </>
   );
