@@ -26,7 +26,7 @@ function emptyEntry(sortOrder: number): KnowledgeBaseEntry {
 
 const LIVE_LINKS = [
   {
-    label: "Интернет-магазин",
+    label: "Интернет-магазин (Европа)",
     description: "retropressa.com",
     href: "https://retropressa.com/ru/",
     Icon: ShoppingBag
