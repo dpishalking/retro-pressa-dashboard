@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
@@ -125,7 +126,17 @@ function MyTrainingContent() {
 
 function StagesContent() {
   const { isAdmin, isSupervisor } = useTrainingUser();
-  const [tab, setTab] = useState<HubTab>("my");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const tabParam = searchParams.get("tab");
+  const tab: HubTab = tabParam === "knowledge" || tabParam === "trainees" ? tabParam : "my";
+
+  const selectTab = (next: HubTab) => {
+    const query = next === "my" ? "" : `?tab=${next}`;
+    router.replace(`${pathname}${query}`, { scroll: false });
+  };
 
   return (
     <>
@@ -133,14 +144,14 @@ function StagesContent() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setTab("my")}
+            onClick={() => selectTab("my")}
             className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "my" ? "bg-rose-600 text-white" : "bg-white text-slate-700"}`}
           >
             Моё обучение
           </button>
           <button
             type="button"
-            onClick={() => setTab("knowledge")}
+            onClick={() => selectTab("knowledge")}
             className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "knowledge" ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}
           >
             База знаний
@@ -148,7 +159,7 @@ function StagesContent() {
           {isSupervisor ? (
             <button
               type="button"
-              onClick={() => setTab("trainees")}
+              onClick={() => selectTab("trainees")}
               className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "trainees" ? "bg-violet-600 text-white" : "bg-white text-slate-700"}`}
             >
               Стажёры
@@ -179,7 +190,9 @@ export function TrainingStagesHub() {
       backHref={HUB_PATH}
       backLabel="К рабочему кабинету"
     >
-      <StagesContent />
+      <Suspense fallback={<div className="card p-8 text-sm text-slate-600">Загрузка...</div>}>
+        <StagesContent />
+      </Suspense>
     </TrainingLayout>
   );
 }
