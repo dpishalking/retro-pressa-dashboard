@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -22,6 +22,66 @@ function emptyEntry(sortOrder: number): KnowledgeBaseEntry {
     embedUrl: "",
     sortOrder
   };
+}
+
+const LIVE_LINKS = [
+  {
+    label: "Интернет-магазин",
+    description: "retropressa.com",
+    href: "https://retropressa.com/ru/",
+    Icon: ShoppingBag
+  },
+  {
+    label: "Интернет-магазин (Беларусь)",
+    description: "retropressa.net",
+    href: "https://retropressa.net/ru/",
+    Icon: ShoppingBag
+  },
+  {
+    label: "Сервис написания статей",
+    description: "retropressa.online",
+    href: "https://retropressa.online/",
+    Icon: PenLine
+  },
+  {
+    label: "Бот для написания статей",
+    description: "t.me/retro_writer_bot",
+    href: "https://t.me/retro_writer_bot",
+    Icon: Send
+  }
+] as const;
+
+function LiveLinksSection() {
+  return (
+    <section className="card border-rose-200 bg-rose-50/60 p-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">Боевые ссылки</h2>
+          <p className="mt-1 text-sm text-slate-600">Сервисы, которыми менеджеры пользуются каждый день.</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {LIVE_LINKS.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 rounded-xl border border-rose-200 bg-white px-4 py-3 transition hover:border-rose-300 hover:bg-rose-50"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+              <link.Icon size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-black text-slate-950">{link.label}</span>
+              <span className="block truncate text-xs text-slate-500">{link.description}</span>
+            </span>
+            <ExternalLink size={16} className="shrink-0 text-slate-400 group-hover:text-rose-600" />
+          </a>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function EntryMedia({ entry }: { entry: KnowledgeBaseEntry }) {
@@ -359,6 +419,8 @@ export function KnowledgeBase() {
 
         {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
       </section>
+
+      <LiveLinksSection />
 
       {filtered.length === 0 ? (
         <div className="card p-8 text-center text-sm text-slate-600">
