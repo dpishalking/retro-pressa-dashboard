@@ -208,8 +208,10 @@ function WhatsappArchiveSection() {
             <MessageCircle size={20} />
           </span>
           <span>
-            <span className="block text-xl font-black text-slate-950">WhatsApp «Архив» — фото и вопросы</span>
-            <span className="block text-sm text-slate-600">Фото оригиналов и консультации по изданиям из архива.</span>
+            <span className="block text-xl font-black text-slate-950">
+              Запросы клиентов по оригиналам и репродукциям
+            </span>
+            <span className="block text-sm text-slate-600">Куда писать по фото оригиналов и репродукциям.</span>
           </span>
         </span>
         <ChevronDown
@@ -220,23 +222,53 @@ function WhatsappArchiveSection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
-          <p className="text-sm leading-relaxed text-slate-700">
-            Если клиенту нужна <strong>фотография оригинального издания</strong>, пишем в WhatsApp-группу{" "}
-            <strong>«Архив»</strong>. <strong>Женя</strong> находит издание на складе, делает фото и отправляет
-            менеджеру — дальше пересылаем клиенту.
-          </p>
-          <p className="text-sm leading-relaxed text-slate-700">
-            В эту же группу можно задавать вопросы по <strong>оригинальным изданиям</strong> из интернет-магазина:
-          </p>
-          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-            <li>как часто выходил конкретный журнал</li>
-            <li>
-              о чём писали в «Крокодиле», «Моделисте-конструкторе», «Искусстве кино» и других изданиях
-            </li>
-          </ul>
-          <p className="text-sm leading-relaxed text-slate-700">
-            Это помогает увереннее консультировать клиента и быстрее подбирать подарок.
-          </p>
+          <div>
+            <p className="text-sm font-bold text-slate-900">Сначала определите, к какому офису относится заказ:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+              <li>
+                заказ с retropressa.com — рижский офис; запросы по оригиналам отправляем в WhatsApp-группу
+                «Архив»;
+              </li>
+              <li>
+                заказ с retropressa.net — минский офис; запросы по оригиналам отправляем в Telegram-группу
+                «Минск».
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black text-slate-900">Если клиент просит фото оригинала</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Например, клиент хочет увидеть, как выглядела газета или что было напечатано в журнале в
+              конкретную дату.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Отправьте запрос в нужную группу и отметьте ответственного:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+              <li>Рига — Женя;</li>
+              <li>Минск — Екатерина.</li>
+            </ul>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">В сообщении обязательно укажите:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+              <li>дату;</li>
+              <li>название газеты или журнала;</li>
+              <li>что именно клиент просит найти или сфотографировать.</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black text-slate-900">
+              Если клиент просит репродукцию, которой нет в интернет-магазине
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Напишите Саше и уточните, выходила ли такая газета за нужную дату.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Не обещайте клиенту наличие репродукции, пока не получите подтверждение. После ответа Саши
+              сообщите клиенту, возможна ли репродукция, и согласуйте дальнейшие шаги.
+            </p>
+          </div>
         </div>
       ) : null}
     </section>
