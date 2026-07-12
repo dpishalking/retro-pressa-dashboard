@@ -38,7 +38,7 @@ const LIVE_LINKS = [
     Icon: ShoppingBag
   },
   {
-    label: "Сервис написания статей",
+    label: "Сервис для написания статей",
     description: "retropressa.online",
     href: "https://retropressa.online/",
     Icon: PenLine
@@ -53,6 +53,12 @@ const LIVE_LINKS = [
     label: "Номера заказов (Европа)",
     description: "admin5.profita.biz",
     href: "https://admin5.profita.biz/",
+    Icon: ClipboardList
+  },
+  {
+    label: "Заказы (Беларусь)",
+    description: "crm5.profita.biz",
+    href: "https://crm5.profita.biz/",
     Icon: ClipboardList
   }
 ] as const;
