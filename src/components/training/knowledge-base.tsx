@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, CreditCard, ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
+import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -102,6 +102,94 @@ function PaymentField({ label, value }: { label: string; value: string }) {
       <span className="font-bold text-slate-900">{label}: </span>
       <span className="break-all font-mono">{value}</span>
     </p>
+  );
+}
+
+const CITY_ROUTING_ROWS = [
+  {
+    orderType: "Репродукции и поздравительные газеты",
+    city: "Рига",
+    watchers: "Галина Кулиш, Ольга Козлова",
+    designer: "Татьяна"
+  },
+  {
+    orderType: "Репродукции и поздравительные газеты",
+    city: "Минск",
+    watchers: "Екатерина, Ольга",
+    designer: "Татьяна"
+  },
+  {
+    orderType: "Оригиналы",
+    city: "Рига",
+    watchers: "Галина",
+    designer: "—"
+  },
+  {
+    orderType: "Оригиналы",
+    city: "Минск",
+    watchers: "Екатерина",
+    designer: "—"
+  }
+] as const;
+
+function CityRoutingSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+            <MapPin size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">
+              Инструкция по коммуникации: распределение по городам
+            </span>
+            <span className="block text-sm text-slate-600">Кого подключать к заказу в зависимости от типа и города.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="border-t border-[var(--line)] px-6 py-5">
+          <p className="text-sm leading-relaxed text-slate-700">
+            При оформлении заказа определите тип изделия и город производства — от этого зависит, кого
+            подключать к работе.
+          </p>
+          <div className="table-scroll mt-4">
+            <table>
+              <thead>
+                <tr>
+                  <th>Тип заказа</th>
+                  <th>Город</th>
+                  <th>Наблюдатели / ответственные</th>
+                  <th>Дизайнер</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CITY_ROUTING_ROWS.map((row, index) => (
+                  <tr key={`${row.orderType}-${row.city}-${index}`}>
+                    <td className="whitespace-normal font-semibold text-slate-900">{row.orderType}</td>
+                    <td className="whitespace-normal">{row.city}</td>
+                    <td className="whitespace-normal">{row.watchers}</td>
+                    <td className="whitespace-normal">{row.designer}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -597,6 +685,8 @@ export function KnowledgeBase() {
       </section>
 
       <LiveLinksSection />
+
+      <CityRoutingSection />
 
       <PaymentMethodsSection />
 
