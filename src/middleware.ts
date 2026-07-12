@@ -19,6 +19,7 @@ function isStaticAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
+    pathname === "/retro-pressa-utm.js" ||
     pathname.endsWith(".ico") ||
     pathname.endsWith(".png") ||
     pathname.endsWith(".jpg") ||
