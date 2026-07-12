@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
+import { ClipboardList, ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -48,6 +48,12 @@ const LIVE_LINKS = [
     description: "t.me/retro_writer_bot",
     href: "https://t.me/retro_writer_bot",
     Icon: Send
+  },
+  {
+    label: "Номера заказов (Европа)",
+    description: "admin5.profita.biz",
+    href: "https://admin5.profita.biz/",
+    Icon: ClipboardList
   }
 ] as const;
 
