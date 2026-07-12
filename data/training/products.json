@@ -1001,6 +1001,41 @@
           "content": "wide",
           "sectionKey": "gallery",
           "sortOrder": 8
+        },
+        {
+          "id": "img-retro-newspaper-gallery-3",
+          "type": "image",
+          "title": "The Love Times — поздравительная газета о любви",
+          "url": "/training/retro-newspaper/love-times.png",
+          "content": "landscape",
+          "sectionKey": "gallery",
+          "sortOrder": 9
+        },
+        {
+          "id": "img-retro-newspaper-gallery-4",
+          "type": "image",
+          "title": "Ģimenes sirds — поздравительная газета для мамы",
+          "url": "/training/retro-newspaper/gimenes-sirds-1.png",
+          "sectionKey": "gallery",
+          "sortOrder": 10
+        },
+        {
+          "id": "img-retro-newspaper-gallery-5",
+          "type": "image",
+          "title": "Ģimenes sirds — поздравительная газета для мамы",
+          "url": "/training/retro-newspaper/gimenes-sirds-2.png",
+          "content": "landscape",
+          "sectionKey": "gallery",
+          "sortOrder": 11
+        },
+        {
+          "id": "img-retro-newspaper-gallery-6",
+          "type": "image",
+          "title": "Мужская правда — поздравительная газета",
+          "url": "/training/retro-newspaper/muzhskaya-pravda.png",
+          "content": "landscape",
+          "sectionKey": "gallery",
+          "sortOrder": 12
         }
       ],
       "questions": [
