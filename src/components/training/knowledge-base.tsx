@@ -232,8 +232,8 @@ function WhatsappArchiveSection() {
           </figure>
 
           <div>
-            <p className="text-sm font-bold text-slate-900">Сначала определите, к какому офису относится заказ:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+            <p className="text-lg font-bold text-slate-900">Сначала определите, к какому офису относится заказ:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-lg leading-relaxed text-slate-700">
               <li>
                 заказ с retropressa.com — рижский офис; запросы по оригиналам отправляем в WhatsApp-группу
                 «Архив»;
@@ -246,20 +246,20 @@ function WhatsappArchiveSection() {
           </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-            <h3 className="text-sm font-black text-slate-900">Если клиент просит фото оригинала</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <h3 className="text-lg font-black text-slate-900">Если клиент просит фото оригинала</h3>
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
               Например, клиент хочет увидеть, как выглядела газета или что было напечатано в журнале в
               конкретную дату.
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
               Отправьте запрос в нужную группу и отметьте ответственного:
             </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-lg leading-relaxed text-slate-700">
               <li>Рига — Женя;</li>
               <li>Минск — Екатерина.</li>
             </ul>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">В сообщении обязательно укажите:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">В сообщении обязательно укажите:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-lg leading-relaxed text-slate-700">
               <li>дату;</li>
               <li>название газеты или журнала;</li>
               <li>что именно клиент просит найти или сфотографировать.</li>
@@ -267,13 +267,13 @@ function WhatsappArchiveSection() {
           </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-            <h3 className="text-sm font-black text-slate-900">
+            <h3 className="text-lg font-black text-slate-900">
               Если клиент просит репродукцию, которой нет в интернет-магазине
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
               Напишите Саше и уточните, выходила ли такая газета за нужную дату.
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
               Не обещайте клиенту наличие репродукции, пока не получите подтверждение. После ответа Саши
               сообщите клиенту, возможна ли репродукция, и согласуйте дальнейшие шаги.
             </p>
