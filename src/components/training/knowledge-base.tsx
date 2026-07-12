@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
+import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -193,6 +193,56 @@ function CityRoutingSection() {
   );
 }
 
+function WhatsappArchiveSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-600">
+            <MessageCircle size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">WhatsApp «Архив» — фото и вопросы</span>
+            <span className="block text-sm text-slate-600">Фото оригиналов и консультации по изданиям из архива.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <p className="text-sm leading-relaxed text-slate-700">
+            Если клиенту нужна <strong>фотография оригинального издания</strong>, пишем в WhatsApp-группу{" "}
+            <strong>«Архив»</strong>. <strong>Женя</strong> находит издание на складе, делает фото и отправляет
+            менеджеру — дальше пересылаем клиенту.
+          </p>
+          <p className="text-sm leading-relaxed text-slate-700">
+            В эту же группу можно задавать вопросы по <strong>оригинальным изданиям</strong> из интернет-магазина:
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
+            <li>как часто выходил конкретный журнал</li>
+            <li>
+              о чём писали в «Крокодиле», «Моделисте-конструкторе», «Искусстве кино» и других изданиях
+            </li>
+          </ul>
+          <p className="text-sm leading-relaxed text-slate-700">
+            Это помогает увереннее консультировать клиента и быстрее подбирать подарок.
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function PaymentMethodsSection() {
   const [open, setOpen] = useState(false);
 
@@ -220,6 +270,11 @@ function PaymentMethodsSection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Часы работы офиса</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">Пн – пт с 9:00 до 18:00</p>
+          </div>
+
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
               Реквизиты — Рига (Европа и Молдова)
@@ -687,6 +742,8 @@ export function KnowledgeBase() {
       <LiveLinksSection />
 
       <CityRoutingSection />
+
+      <WhatsappArchiveSection />
 
       <PaymentMethodsSection />
 
