@@ -37,10 +37,26 @@ export type UtmAuditPayload = {
     landingPage: string;
     ga4Sessions: number;
     bitrixLeads: number;
+    bitrixWonDeals: number;
+    bitrixRevenue: number;
     source: string;
     medium: string;
   }>;
 };
+
+function normalizeLandingPath(value: string | null | undefined): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.includes("retro-pressa.com")) {
+    try {
+      return new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`).pathname;
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
 
 function addCampaignBucket(
   buckets: Map<string, UtmCampaignAttributionRow>,
@@ -139,24 +155,37 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
     })
     .sort((a, b) => b.ga4Sessions - a.ga4Sessions || b.sheetsLeads - a.sheetsLeads || b.bitrixLeads - a.bitrixLeads);
 
-  const landingMap = new Map<string, { ga4Sessions: number; bitrixLeads: number; source: string; medium: string }>();
+  const leadsById = new Map(leads.map((lead) => [lead.id, lead] as const));
+
+  type LandingStats = { ga4Sessions: number; bitrixLeads: number; bitrixWonDeals: number; bitrixRevenue: number; source: string; medium: string };
+  const emptyLanding = (source = "", medium = ""): LandingStats => ({ ga4Sessions: 0, bitrixLeads: 0, bitrixWonDeals: 0, bitrixRevenue: 0, source, medium });
+  const landingMap = new Map<string, LandingStats>();
   for (const row of ga4?.byLanding ?? []) {
     const key = row.landingPage;
-    const current = landingMap.get(key) ?? { ga4Sessions: 0, bitrixLeads: 0, source: row.source, medium: row.medium };
+    const current = landingMap.get(key) ?? emptyLanding(row.source, row.medium);
     landingMap.set(key, { ...current, ga4Sessions: current.ga4Sessions + row.sessions });
   }
   for (const lead of leads) {
-    if (!lead.landingPage) continue;
-    const path = lead.landingPage.includes("retro-pressa.com")
-      ? new URL(lead.landingPage).pathname
-      : lead.landingPage;
-    const current = landingMap.get(path) ?? { ga4Sessions: 0, bitrixLeads: 0, source: lead.utmSource ?? "", medium: lead.utmMedium ?? "" };
+    const path = normalizeLandingPath(lead.landingPage);
+    if (!path) continue;
+    const current = landingMap.get(path) ?? emptyLanding(lead.utmSource ?? "", lead.utmMedium ?? "");
     landingMap.set(path, { ...current, bitrixLeads: current.bitrixLeads + 1 });
+  }
+  for (const deal of wonDeals) {
+    const path = normalizeLandingPath(deal.landingPage)
+      || normalizeLandingPath(deal.leadId ? leadsById.get(deal.leadId)?.landingPage ?? null : null);
+    if (!path) continue;
+    const current = landingMap.get(path) ?? emptyLanding();
+    landingMap.set(path, {
+      ...current,
+      bitrixWonDeals: current.bitrixWonDeals + 1,
+      bitrixRevenue: current.bitrixRevenue + deal.opportunity
+    });
   }
 
   const landingPages = Array.from(landingMap.entries())
     .map(([landingPage, stats]) => ({ landingPage, ...stats }))
-    .sort((a, b) => b.ga4Sessions - a.ga4Sessions)
+    .sort((a, b) => b.bitrixRevenue - a.bitrixRevenue || b.ga4Sessions - a.ga4Sessions)
     .slice(0, 20);
 
   const bitrixLeadsWithUtm = leads.filter((lead) => lead.utmCampaign || lead.utmSource || lead.utmMedium).length;

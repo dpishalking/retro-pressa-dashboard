@@ -103,14 +103,18 @@ type UtmAuditPayload = {
     ga4Sessions: number;
     ga4Compliant: boolean;
     sheetsLeads: number;
+    sheetsSpend: number;
     bitrixLeads: number;
     bitrixWonDeals: number;
+    bitrixRevenue: number;
     status: string;
   }>;
   landingPages: Array<{
     landingPage: string;
     ga4Sessions: number;
     bitrixLeads: number;
+    bitrixWonDeals: number;
+    bitrixRevenue: number;
     source: string;
     medium: string;
   }>;
@@ -584,7 +588,7 @@ export function AdAnalyticsScreen() {
       ) : null}
 
       <section className="card mb-4 p-4">
-        <SectionHead title="Кампании и UTM" subtitle="GA4 сессии vs лиды Sheets/Bitrix по utm_campaign" />
+        <SectionHead title="Кампании и UTM" subtitle="Сквозная воронка: GA4 сессии → лиды → продажи → выручка и ROMI" />
         {(utmAudit?.campaigns.length || ga4Campaigns.length) ? (
           <div className="table-scroll">
             <table>
@@ -593,9 +597,11 @@ export function AdAnalyticsScreen() {
                   <th>Кампания</th>
                   <th>GA4 сессии</th>
                   <th>UTM OK</th>
-                  <th>Sheets лиды</th>
                   <th>Bitrix лиды</th>
                   <th>Продажи</th>
+                  <th>Расход</th>
+                  <th>Выручка</th>
+                  <th>ROMI</th>
                   <th>Статус</th>
                 </tr>
               </thead>
@@ -605,17 +611,21 @@ export function AdAnalyticsScreen() {
                   ga4Sessions: row.sessions,
                   ga4Compliant: row.compliant,
                   sheetsLeads: 0,
+                  sheetsSpend: 0,
                   bitrixLeads: 0,
                   bitrixWonDeals: 0,
+                  bitrixRevenue: 0,
                   status: row.compliant ? "ok" : "mismatch"
                 }))).map((row) => (
                   <tr key={row.campaign}>
                     <td className="max-w-xs truncate" title={row.campaign}>{row.campaign}</td>
                     <td>{number(row.ga4Sessions)}</td>
                     <td>{row.ga4Compliant ? "✓" : "—"}</td>
-                    <td>{number(row.sheetsLeads)}</td>
                     <td>{number(row.bitrixLeads)}</td>
                     <td>{number(row.bitrixWonDeals)}</td>
+                    <td>{row.sheetsSpend > 0 ? eur(row.sheetsSpend) : "—"}</td>
+                    <td>{row.bitrixRevenue > 0 ? eur(row.bitrixRevenue) : "—"}</td>
+                    <td>{row.sheetsSpend > 0 ? pct((row.bitrixRevenue - row.sheetsSpend) / row.sheetsSpend) : "—"}</td>
                     <td>{row.status}</td>
                   </tr>
                 ))}
@@ -628,7 +638,7 @@ export function AdAnalyticsScreen() {
       </section>
 
       <section className="card mb-4 p-4">
-        <SectionHead title="Лендинги" subtitle="Какие страницы получают трафик и лиды" />
+        <SectionHead title="Деньги по лендингам" subtitle="Какие страницы приносят выручку: сессии → лиды → продажи → деньги" />
         {(utmAudit?.landingPages.length || ga4Landing.length) ? (
           <div className="table-scroll">
             <table>
@@ -637,6 +647,9 @@ export function AdAnalyticsScreen() {
                   <th>Страница</th>
                   <th>GA4 сессии</th>
                   <th>Bitrix лиды</th>
+                  <th>Продажи</th>
+                  <th>Выручка</th>
+                  <th>€ / сессия</th>
                   <th>source / medium</th>
                 </tr>
               </thead>
@@ -645,6 +658,8 @@ export function AdAnalyticsScreen() {
                   landingPage: row.landingPage,
                   ga4Sessions: row.sessions,
                   bitrixLeads: 0,
+                  bitrixWonDeals: 0,
+                  bitrixRevenue: 0,
                   source: row.source,
                   medium: row.medium
                 }))).map((row) => (
@@ -652,6 +667,9 @@ export function AdAnalyticsScreen() {
                     <td>{row.landingPage}</td>
                     <td>{number(row.ga4Sessions)}</td>
                     <td>{number(row.bitrixLeads)}</td>
+                    <td>{number(row.bitrixWonDeals)}</td>
+                    <td>{row.bitrixRevenue > 0 ? eur(row.bitrixRevenue) : "—"}</td>
+                    <td>{row.ga4Sessions > 0 && row.bitrixRevenue > 0 ? eur(row.bitrixRevenue / row.ga4Sessions) : "—"}</td>
                     <td>{row.source} / {row.medium}</td>
                   </tr>
                 ))}
