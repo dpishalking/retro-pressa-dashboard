@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
+import { ChevronDown, ClipboardList, CreditCard, ExternalLink, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -86,6 +86,142 @@ function LiveLinksSection() {
           </a>
         ))}
       </div>
+    </section>
+  );
+}
+
+function PaymentField({ label, value }: { label: string; value: string }) {
+  return (
+    <p className="text-sm leading-relaxed text-slate-700">
+      <span className="font-bold text-slate-900">{label}: </span>
+      <span className="break-all font-mono">{value}</span>
+    </p>
+  );
+}
+
+function PaymentMethodsSection() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+            <CreditCard size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">Способы оплаты</span>
+            <span className="block text-sm text-slate-600">Реквизиты и ссылки для приёма оплаты.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <p className="text-sm leading-relaxed text-slate-700">
+            Оплатить заказ можно: переводом на банковский счёт (ТОЛЬКО для стран ЕС), Kaspi, с карты на
+            карту, PayPal, Wise, Revolut, на криптокошелёк или по сгенерированной банковской ссылке
+            (подходит для оплаты картой или Google Pay / Apple Pay).
+          </p>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">PayPal</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Писать Анастасии — сделает запрос.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Wise</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Отсылаем ссылку:{" "}
+              <a
+                href="https://wise.com/pay/me/annal5395"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-blue-600 hover:text-blue-800"
+              >
+                wise.com/pay/me/annal5395
+              </a>
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Revolut (картой или Apple Pay)
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Пример ссылки на оплату 12 евро:{" "}
+              <a
+                href="https://checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-bold text-blue-600 hover:text-blue-800"
+              >
+                checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f
+              </a>
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              В описании нужно написать номер заказа (например: 1234).
+            </p>
+            <div className="mt-3 space-y-1">
+              <PaymentField label="Перевод на карту" value="4116340088403137 — Anna Lastovska" />
+              <PaymentField label="Грузинская карта" value="GE18BG0000000544555285" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Казахстан — Kaspi Bank (в тенге)
+            </h3>
+            <div className="mt-2 space-y-1">
+              <PaymentField label="Получатель" value="Lastovska Anna, АО Kaspi Bank" />
+              <PaymentField label="SWIFT" value="CASPKZKA" />
+              <PaymentField label="IBAN" value="KZ58722C000108179139" />
+              <PaymentField label="Номер карты" value="4400430370483874 — ANNA LASTOVSKA" />
+              <PaymentField label="Перевод по номеру телефона" value="+7 747 607 49 65 (Kaspi)" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Россия — Т-банк (в рублях)
+            </h3>
+            <div className="mt-2 space-y-1">
+              <PaymentField label="Телефон" value="+7 993 897 50 60" />
+              <PaymentField label="Получатель" value="Анна Ластовска" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Беларусь — ЕРИП (в бел. рублях)
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Дерево оплаты в ЕРИП: Платежи → Платежи ЕРИП → Интернет-магазины/сервисы → A-Z Латинские
+              домены → Retropressa.by.
+            </p>
+            <div className="mt-3 space-y-1">
+              <PaymentField label="Получатель" value="ООО «ДУШЕВНЫЕ ПОДАРКИ»" />
+              <PaymentField label="Адрес" value="Беларусь, г. Минск, ул. Якуба Коласа, дом 37, пом. 52" />
+              <PaymentField label="УНП" value="193870866" />
+              <PaymentField
+                label="Расчётный счёт (BYN)"
+                value="BY46ALFA30122G94740010270000, ЗАО «Альфа-Банк»"
+              />
+              <PaymentField label="БИК" value="ALFABY2X" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -427,6 +563,8 @@ export function KnowledgeBase() {
       </section>
 
       <LiveLinksSection />
+
+      <PaymentMethodsSection />
 
       {filtered.length === 0 ? (
         <div className="card p-8 text-center text-sm text-slate-600">
