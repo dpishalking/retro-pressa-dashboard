@@ -132,68 +132,76 @@ function PaymentMethodsSection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
-          <p className="text-sm leading-relaxed text-slate-700">
-            Оплатить заказ можно: переводом на банковский счёт (ТОЛЬКО для стран ЕС), Kaspi, с карты на
-            карту, PayPal, Wise, Revolut, на криптокошелёк или по сгенерированной банковской ссылке
-            (подходит для оплаты картой или Google Pay / Apple Pay).
-          </p>
-
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">PayPal</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Писать Анастасии — сделает запрос.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Wise</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Отсылаем ссылку:{" "}
-              <a
-                href="https://wise.com/pay/me/annal5395"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-blue-600 hover:text-blue-800"
-              >
-                wise.com/pay/me/annal5395
-              </a>
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Реквизиты — Рига (Европа и Молдова)
+            </h3>
+            <div className="mt-2 space-y-1">
+              <PaymentField label="Получатель" value="BB-Wood SIA" />
+              <PaymentField label="Адрес офиса" value="Riga, Braslas 24" />
+              <PaymentField label="Банк" value="Citadele Banka" />
+              <PaymentField label="SWIFT" value="PARXLV22" />
+              <PaymentField label="Счёт" value="LV60PARX0020928050001" />
+            </div>
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-900">
+              Платить могут клиенты из Европы и Молдовы. Другие страны СНГ не должны платить на этот счёт —
+              входящий платёж стоит для нас 100 евро.
             </p>
           </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Revolut (картой или Apple Pay)
+              Реквизиты — Минск (Беларусь)
+            </h3>
+            <div className="mt-2 space-y-1">
+              <PaymentField label="Получатель" value="ООО «ДУШЕВНЫЕ ПОДАРКИ»" />
+              <PaymentField label="Адрес офиса" value="г. Минск, ул. Якуба Коласа, д. 37, пом. 52" />
+              <PaymentField label="УНП" value="193870866" />
+              <PaymentField
+                label="Расчётный счёт (BYN)"
+                value="BY46ALFA30122G94740010270000, ЗАО «Альфа-Банк»"
+              />
+              <PaymentField label="БИК" value="ALFABY2X" />
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-slate-700">
+              <span className="font-bold text-slate-900">Оплата по ЕРИП — дерево ЕРИП: </span>
+              Платежи → Платежи ЕРИП → Интернет-магазины/сервисы → A-Z Латинские домены → Retropressa.by.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
+              Банковская сгенерированная ссылка (карта, Google Pay / Apple Pay)
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Пример ссылки на оплату 12 евро:{" "}
-              <a
-                href="https://checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-all font-bold text-blue-600 hover:text-blue-800"
-              >
-                checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f
-              </a>
+              Можно оплачивать из любой страны, банки которой не под санкциями. Revolut-ссылка:
             </p>
+            <a
+              href="https://checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block break-all text-sm font-bold text-blue-600 hover:text-blue-800"
+            >
+              checkout.revolut.com/pay/43575188-111a-44c0-be70-8b4cab8a6f5f
+            </a>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              В описании нужно написать номер заказа (например: 1234).
+              Клиент сам ставит сумму к оплате и вводит номер заказа.
             </p>
-            <div className="mt-3 space-y-1">
-              <PaymentField label="Перевод на карту" value="4116340088403137 — Anna Lastovska" />
-              <PaymentField label="Грузинская карта" value="GE18BG0000000544555285" />
-            </div>
           </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
               Казахстан — Kaspi Bank (в тенге)
             </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Перед переводом переводим валюту в тенге.
+            </p>
             <div className="mt-2 space-y-1">
               <PaymentField label="Получатель" value="Lastovska Anna, АО Kaspi Bank" />
               <PaymentField label="SWIFT" value="CASPKZKA" />
               <PaymentField label="IBAN" value="KZ58722C000108179139" />
               <PaymentField label="Номер карты" value="4400430370483874 — ANNA LASTOVSKA" />
-              <PaymentField label="Перевод по номеру телефона" value="+7 747 607 49 65 (Kaspi)" />
+              <PaymentField label="Перевод по номеру телефона" value="+7 747 607 49 65" />
             </div>
           </div>
 
@@ -209,22 +217,42 @@ function PaymentMethodsSection() {
 
           <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Беларусь — ЕРИП (в бел. рублях)
+              Грузия / с карты на карту
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Дерево оплаты в ЕРИП: Платежи → Платежи ЕРИП → Интернет-магазины/сервисы → A-Z Латинские
-              домены → Retropressa.by.
+              Если клиент из Грузии или хочет оплатить с карты на карту — предлагаем грузинскую карту или
+              расчётный счёт в Грузии.
             </p>
-            <div className="mt-3 space-y-1">
-              <PaymentField label="Получатель" value="ООО «ДУШЕВНЫЕ ПОДАРКИ»" />
-              <PaymentField label="Адрес" value="Беларусь, г. Минск, ул. Якуба Коласа, дом 37, пом. 52" />
-              <PaymentField label="УНП" value="193870866" />
-              <PaymentField
-                label="Расчётный счёт (BYN)"
-                value="BY46ALFA30122G94740010270000, ЗАО «Альфа-Банк»"
-              />
-              <PaymentField label="БИК" value="ALFABY2X" />
+            <div className="mt-2 space-y-1">
+              <PaymentField label="Счёт (евро и лари)" value="GE18BG0000000544555285 — Anna Lastovska" />
+              <PaymentField label="Номер карты" value="4116 3400 8840 3137 — Anna Lastovska" />
             </div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">Wise</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Если клиент хочет оплатить через Wise — посылаем ссылку:
+            </p>
+            <a
+              href="https://wise.com/pay/me/annal5395"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block font-bold text-blue-600 hover:text-blue-800"
+            >
+              wise.com/pay/me/annal5395
+            </a>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Клиент сам ставит сумму к оплате и вводит номер заказа.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">PayPal</h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Ссылка запрашивается у РОПа или руководителя. Для запроса нужно знать email клиента (на
+              который зарегистрирован PayPal) и сумму к оплате.
+            </p>
           </div>
         </div>
       ) : null}
