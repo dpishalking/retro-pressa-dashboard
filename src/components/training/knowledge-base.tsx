@@ -222,7 +222,7 @@ function WhatsappArchiveSection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
-          <figure className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+          <figure className="mx-auto w-full max-w-xs overflow-hidden rounded-xl border border-[var(--line)] bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/training/knowledge-base/original-reproduction-flow.png"
