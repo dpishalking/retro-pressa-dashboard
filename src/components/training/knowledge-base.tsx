@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -277,6 +277,85 @@ function WhatsappArchiveSection() {
               Не обещайте клиенту наличие репродукции, пока не получите подтверждение. После ответа Саши
               сообщите клиенту, возможна ли репродукция, и согласуйте дальнейшие шаги.
             </p>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function InvoiceInstructionSection() {
+  const [open, setOpen] = useState(false);
+
+  const headingClass = "text-lg font-black text-slate-950";
+  const textClass = "text-base leading-relaxed text-slate-700";
+  const listClass = "mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-700";
+  const cardClass = "rounded-xl border border-[var(--line)] bg-slate-50 p-4";
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+            <Receipt size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">
+              Инструкция: выставление и закрытие счетов
+            </span>
+            <span className="block text-sm text-slate-600">Как выставить счёт, вести подкарточку и закрыть оплату.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <div className={cardClass}>
+            <h3 className={headingClass}>Счёт клиенту можно выставить двумя способами</h3>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-base leading-relaxed text-slate-700">
+              <li>Через интернет-магазин — для оригинальных изданий.</li>
+              <li>Через Битрикс — для изданий, которых нет в интернет-магазине.</li>
+            </ol>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>После отправки счёта клиенту</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Независимо от того, где был выставлен счёт, в сделке необходимо создать подкарточку счёта.
+            </p>
+            <p className={`mt-2 ${textClass}`}>В подкарточке указываются:</p>
+            <ul className={listClass}>
+              <li>сумма заказа;</li>
+              <li>данные клиента.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              После создания переведите подкарточку счёта на этап «Отправлено клиенту».
+            </p>
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-base leading-relaxed text-amber-900">
+              🚨 Этот счёт не нужно дополнительно отправлять клиенту. Подкарточка нужна только для
+              внутреннего учёта: чтобы видеть, сколько счетов выставлено, оплачено, не оплачено или
+              аннулировано.
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>Когда клиент оплатил счёт</h3>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-base leading-relaxed text-slate-700">
+              <li>Дождитесь подтверждения оплаты от Анны.</li>
+              <li>Откройте подкарточку счёта в сделке.</li>
+              <li>Перед завершением проверьте, что дата завершения установлена на сегодняшний день.</li>
+              <li>Выберите способ оплаты, которым клиент оплатил заказ.</li>
+              <li>Нажмите «Завершить».</li>
+            </ol>
+            <p className={`mt-2 ${textClass}`}>После этого счёт будет отмечен в системе как оплаченный. 💰</p>
           </div>
         </div>
       ) : null}
@@ -835,6 +914,8 @@ export function KnowledgeBase() {
       <CityRoutingSection />
 
       <WhatsappArchiveSection />
+
+      <InvoiceInstructionSection />
 
       <ProductionTimingSection />
 
