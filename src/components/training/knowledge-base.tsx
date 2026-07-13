@@ -288,7 +288,6 @@ function DeliverySection() {
   const [open, setOpen] = useState(false);
 
   const headingClass = "text-lg font-black text-slate-950";
-  const subheadingClass = "text-sm font-black uppercase tracking-wide text-slate-600";
   const textClass = "text-base leading-relaxed text-slate-700";
   const listClass = "mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-700";
   const cardClass = "rounded-xl border border-[var(--line)] bg-slate-50 p-4";
@@ -317,20 +316,19 @@ function DeliverySection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
-          <div className={cardClass}>
-            <h3 className={subheadingClass}>Перед оформлением доставки уточните у клиента</h3>
-            <ul className={listClass}>
-              <li>страну и город;</li>
-              <li>нужен ли адрес или пункт выдачи;</li>
-              <li>насколько срочно нужен заказ;</li>
-              <li>сможет ли получатель принять курьера, если выбирает доставку DPD на дом.</li>
-            </ul>
-          </div>
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-base leading-relaxed text-amber-900">
+            🚨 Перед оформлением уточните у клиента страну, город, нужен ли пункт выдачи или доставка на
+            адрес, а также дату, к которой нужен заказ.
+          </p>
 
           <div className={cardClass}>
-            <h3 className={headingClass}>1. Европа: DPD</h3>
+            <h3 className={headingClass}>DPD: Германия и большинство стран ЕС</h3>
+            <ul className={listClass}>
+              <li>Пункт выдачи / пакомат DPD — 11 EUR, срок 3–6 дней.</li>
+              <li>Доставка DPD на дом — 21 EUR, срок 3–6 дней.</li>
+            </ul>
             <p className={`mt-2 ${textClass}`}>
-              Ссылка для поиска пункта выдачи или пакомата DPD:{" "}
+              Ссылка для поиска пункта выдачи или пакомата:{" "}
               <a
                 href="https://www.dpdgroup.com/be/mydpd/parcel-shops"
                 target="_blank"
@@ -341,17 +339,11 @@ function DeliverySection() {
               </a>
             </p>
 
-            <p className="mt-4 text-base font-bold text-slate-900">Германия и большинство стран ЕС</p>
-            <ul className={listClass}>
-              <li>DPD в пункт выдачи — 11 EUR, срок 3–6 дней.</li>
-              <li>DPD на дом — 21 EUR, срок 3–6 дней.</li>
-            </ul>
-
             <p className="mt-4 text-base font-bold text-slate-900">Италия, Болгария и Норвегия</p>
             <p className={`mt-1 ${textClass}`}>В эти страны DPD доступен только с доставкой на дом:</p>
             <ul className={listClass}>
-              <li>DPD на дом — 21 EUR.</li>
-              <li>Альтернатива: PUMITY — 13 EUR, срок 7–14 дней.</li>
+              <li>DPD на дом — 21 EUR;</li>
+              <li>либо PUMITY — 13 EUR, срок 7–14 дней.</li>
             </ul>
 
             <p className="mt-4 text-base font-bold text-slate-900">Эстония и Литва</p>
@@ -361,16 +353,14 @@ function DeliverySection() {
 
             <p className="mt-4 text-base font-bold text-slate-900">Латвия</p>
             <ul className={listClass}>
-              <li>DPD в пункт выдачи — 4 EUR.</li>
-              <li>DPD на дом — 6 EUR.</li>
-              <li>Срок доставки — 1–2 дня.</li>
+              <li>DPD в пункт выдачи — 4 EUR;</li>
+              <li>DPD на дом — 6 EUR;</li>
+              <li>срок доставки — 1–2 дня.</li>
             </ul>
 
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-              <p className="text-base font-bold text-amber-900">Важно: доставка DPD на дом</p>
-              <p className="mt-1 text-base leading-relaxed text-amber-900">
-                Если клиент выбирает доставку DPD на дом, обязательно отправьте ему сообщение:
-              </p>
+              <p className="text-base font-bold text-amber-900">Важно: если клиент выбирает DPD на дом</p>
+              <p className="mt-1 text-base leading-relaxed text-amber-900">Отправьте клиенту сообщение:</p>
               <p className="mt-2 border-l-4 border-amber-300 pl-3 text-base italic leading-relaxed text-amber-900">
                 Спасибо за покупку! Обращаем ваше внимание, что доставка осуществляется курьером DPD до
                 двери, при этом курьер совершает только одну попытку вручения. Если в момент доставки
@@ -381,62 +371,40 @@ function DeliverySection() {
           </div>
 
           <div className={cardClass}>
-            <h3 className={headingClass}>2. PUMITY</h3>
+            <h3 className={headingClass}>PUMITY</h3>
             <ul className={listClass}>
               <li>Стоимость — 13 EUR.</li>
-              <li>Срок — 7–14 дней.</li>
+              <li>Срок доставки — 7–14 дней.</li>
             </ul>
             <p className={`mt-2 ${textClass}`}>
-              Доступно для доставки в Казахстан, Азербайджан, Грузию, Турцию, Италию, Болгарию и другие
-              дальние страны.
+              Страны: Казахстан, Азербайджан, Грузия, Турция, Италия, Болгария и другие дальние страны.
             </p>
-            <p className="mt-4 text-base font-bold text-slate-900">Израиль, Англия и Норвегия</p>
+            <p className="mt-4 text-base font-bold text-slate-900">Для Израиля, Англии и Норвегии</p>
             <ul className={listClass}>
-              <li>PUMITY — 19 EUR.</li>
-              <li>Срок — 7–14 дней.</li>
+              <li>PUMITY — 19 EUR;</li>
+              <li>срок — 7–14 дней.</li>
             </ul>
           </div>
 
           <div className={cardClass}>
-            <h3 className={headingClass}>3. Молдова</h3>
+            <h3 className={headingClass}>Молдова</h3>
             <p className={`mt-2 ${textClass}`}>Предложите клиенту два варианта:</p>
-            <div className="table-scroll mt-3">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Способ доставки</th>
-                    <th>Стоимость</th>
-                    <th>Срок</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="whitespace-normal">Novapost</td>
-                    <td>20 EUR</td>
-                    <td className="whitespace-normal">6–7 дней</td>
-                  </tr>
-                  <tr>
-                    <td className="whitespace-normal">PUMITY: курьером на адрес или в пункт выдачи</td>
-                    <td>13 EUR</td>
-                    <td className="whitespace-normal">около 10 рабочих дней</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className={`mt-3 ${textClass}`}>
-              В обоих случаях посылка отправляется с трек-номером для отслеживания.
-            </p>
+            <ul className={listClass}>
+              <li>Novapost — 20 EUR, срок 6–7 дней;</li>
+              <li>PUMITY: курьером на адрес или в пункт выдачи — 13 EUR, срок около 10 рабочих дней.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>В обоих случаях посылка отправляется с трек-номером.</p>
           </div>
 
           <div className={cardClass}>
-            <h3 className={headingClass}>4. Россия и Ашхабад: СДЭК через Минск</h3>
+            <h3 className={headingClass}>Россия и Ашхабад: СДЭК через Минск</h3>
             <ul className={listClass}>
-              <li>Стандартная стоимость — 13 EUR.</li>
+              <li>стандартная стоимость — 13 EUR;</li>
               <li>
-                Для удалённых городов на востоке России стоимость может быть 15 EUR — обязательно уточните
-                перед тем, как назвать цену клиенту.
+                для удалённых городов на востоке России может быть 15 EUR — обязательно уточните стоимость до
+                того, как назовёте её клиенту;
               </li>
-              <li>Иногда возможна доставка в Ашхабад.</li>
+              <li>иногда возможна доставка в Ашхабад.</li>
             </ul>
             <p className={`mt-2 ${textClass}`}>
               Доставка в Минск отправляется раз в неделю, обычно в понедельник. К пятнице заказы должны быть
@@ -445,7 +413,7 @@ function DeliverySection() {
           </div>
 
           <div className={cardClass}>
-            <h3 className={headingClass}>5. Экспресс-доставка DHL</h3>
+            <h3 className={headingClass}>Экспресс-доставка DHL</h3>
             <ul className={listClass}>
               <li>Стоимость — от 50 EUR.</li>
               <li>Срок — 1–5 дней.</li>
@@ -456,21 +424,16 @@ function DeliverySection() {
           <div className={cardClass}>
             <h3 className={headingClass}>Минский офис — доставка по Минску</h3>
             <ul className={listClass}>
-              <li>Стоимость — 15 BYN.</li>
-              <li>Срок — 1–4 дня.</li>
+              <li>стоимость — 15 BYN;</li>
+              <li>срок — 1–4 дня.</li>
             </ul>
-            <p className={`mt-2 ${textClass}`}>
-              Также в базе может использоваться ориентир: 13 EUR / 45 BYN — при необходимости уточняйте
-              актуальную стоимость у ответственного.
-            </p>
             <p className="mt-4 text-base font-bold text-slate-900">Самовывоз</p>
-            <p className={`mt-1 ${textClass}`}>Клиент может самостоятельно забрать заказ по адресу:</p>
             <p className="mt-1 text-base font-bold text-slate-900">
               г. Минск, ул. Якуба Коласа, 37, офис 52
             </p>
-            <p className={`mt-1 ${textClass}`}>Будние дни: с 9:00 до 19:00</p>
+            <p className={`mt-1 ${textClass}`}>По будням с 9:00 до 19:00.</p>
             <p className={`mt-2 ${textClass}`}>
-              Яндекс.Карты с фотографиями входа:{" "}
+              Ссылка на Яндекс.Карты с фотографиями входа:{" "}
               <a
                 href="https://yandex.by/maps/-/CLgVu8jq"
                 target="_blank"
