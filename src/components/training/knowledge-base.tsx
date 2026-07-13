@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -278,6 +278,74 @@ function WhatsappArchiveSection() {
               сообщите клиенту, возможна ли репродукция, и согласуйте дальнейшие шаги.
             </p>
           </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ProductionTimingSection() {
+  const [open, setOpen] = useState(false);
+
+  const headingClass = "text-lg font-black text-slate-950";
+  const listClass = "mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-700";
+  const cardClass = "rounded-xl border border-[var(--line)] bg-slate-50 p-4";
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+            <Clock size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">Сроки изготовления и доставки</span>
+            <span className="block text-sm text-slate-600">Общий срок = изготовление + доставка в страну клиента.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-base leading-relaxed text-amber-900">
+            🚨 Клиенту всегда называем общий срок: срок изготовления + срок доставки в его страну.
+          </p>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>Сроки изготовления</h3>
+            <ul className={listClass}>
+              <li>Оригинал — сбор и отправка в течение 1 рабочего дня.</li>
+              <li>Репродукция — 1–7 дней, зависит от качества и вида скана газеты.</li>
+              <li>Персонализированный журнал (глянцевый) — от 2 недель.</li>
+              <li>Персонализированный выпуск журнала — 7–10 дней.</li>
+              <li>Персонализированная газета — 1–3 дня.</li>
+              <li>Поздравительная газета — 1–7 дней, зависит от наличия в архиве и качества скана.</li>
+              <li>Книга жизни в заголовках газет — от 14 дней.</li>
+              <li>Дигитальная версия — 1–7 дней, зависит от наличия издания в архиве.</li>
+              <li>Оживление фото — 1–2 рабочих дня.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>Сроки доставки</h3>
+            <ul className={listClass}>
+              <li>Страны Балтии — 1–3 дня.</li>
+              <li>Европа — 3–10 дней.</li>
+              <li>Страны СНГ — 7–14 дней.</li>
+            </ul>
+          </div>
+
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-base leading-relaxed text-amber-900">
+            ⚠️ По странам СНГ возможны задержки, поэтому не обещайте клиенту срок впритык к дате вручения.
+          </p>
         </div>
       ) : null}
     </section>
@@ -951,6 +1019,8 @@ export function KnowledgeBase() {
       <CityRoutingSection />
 
       <WhatsappArchiveSection />
+
+      <ProductionTimingSection />
 
       <DeliverySection />
 
