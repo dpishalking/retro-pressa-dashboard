@@ -820,6 +820,32 @@ function EntryEditor({
 }
 
 export function KnowledgeBase() {
+  return (
+    <div className="space-y-4">
+      <section className="card p-6">
+        <h2 className="text-2xl font-black text-slate-950">База знаний</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Рабочие сервисы, инструкции, сроки, доставка и оплата. Ответы на частые вопросы — во вкладке
+          «Ответы на вопросы».
+        </p>
+      </section>
+
+      <LiveLinksSection />
+
+      <CityRoutingSection />
+
+      <WhatsappArchiveSection />
+
+      <ProductionTimingSection />
+
+      <DeliverySection />
+
+      <PaymentMethodsSection />
+    </div>
+  );
+}
+
+export function KnowledgeFaq() {
   const { isAdmin } = useTrainingUser();
   const [catalog, setCatalog] = useState<KnowledgeBaseCatalog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -982,7 +1008,7 @@ export function KnowledgeBase() {
       <section className="card p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-slate-950">База знаний</h2>
+            <h2 className="text-2xl font-black text-slate-950">Ответы на вопросы</h2>
             <p className="mt-1 text-sm text-slate-600">Ответы на частые вопросы: текст, видео и фото.</p>
           </div>
           {isAdmin ? (
@@ -1014,21 +1040,9 @@ export function KnowledgeBase() {
         {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
       </section>
 
-      <LiveLinksSection />
-
-      <CityRoutingSection />
-
-      <WhatsappArchiveSection />
-
-      <ProductionTimingSection />
-
-      <DeliverySection />
-
-      <PaymentMethodsSection />
-
       {filtered.length === 0 ? (
         <div className="card p-8 text-center text-sm text-slate-600">
-          {query.trim() ? "Ничего не найдено. Попробуйте изменить запрос." : "База знаний пока пуста."}
+          {query.trim() ? "Ничего не найдено. Попробуйте изменить запрос." : "Пока нет ответов на вопросы."}
         </div>
       ) : (
         filtered.map((entry) => <EntryCard key={entry.id} entry={entry} />)

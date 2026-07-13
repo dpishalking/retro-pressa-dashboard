@@ -8,12 +8,12 @@ import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
-import { KnowledgeBase } from "@/components/training/knowledge-base";
+import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
 
-type HubTab = "my" | "knowledge" | "trainees";
+type HubTab = "my" | "knowledge" | "faq" | "trainees";
 
 function StageCard({ stage, index }: { stage: TrainingStageOverview; index: number }) {
   const config = TRAINING_STAGES.find((item) => item.id === stage.id);
@@ -131,7 +131,8 @@ function StagesContent() {
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get("tab");
-  const tab: HubTab = tabParam === "knowledge" || tabParam === "trainees" ? tabParam : "my";
+  const tab: HubTab =
+    tabParam === "knowledge" || tabParam === "faq" || tabParam === "trainees" ? tabParam : "my";
 
   const selectTab = (next: HubTab) => {
     const query = next === "my" ? "" : `?tab=${next}`;
@@ -156,6 +157,13 @@ function StagesContent() {
           >
             База знаний
           </button>
+          <button
+            type="button"
+            onClick={() => selectTab("faq")}
+            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "faq" ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}
+          >
+            Ответы на вопросы
+          </button>
           {isSupervisor ? (
             <button
               type="button"
@@ -178,6 +186,7 @@ function StagesContent() {
 
       {tab === "my" ? <MyTrainingContent /> : null}
       {tab === "knowledge" ? <KnowledgeBase /> : null}
+      {tab === "faq" ? <KnowledgeFaq /> : null}
       {tab === "trainees" && isSupervisor ? <TrainingSupervisorsPanel /> : null}
     </>
   );
