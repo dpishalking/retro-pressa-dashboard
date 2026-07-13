@@ -39,8 +39,8 @@ const LIVE_LINKS = [
   },
   {
     label: "Сервис для написания статей",
-    description: "retropressa.online",
-    href: "https://retropressa.online/",
+    description: "pressa-scribe.lovable.app",
+    href: "https://pressa-scribe.lovable.app/",
     Icon: PenLine
   },
   {
