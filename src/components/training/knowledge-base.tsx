@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, X } from "lucide-react";
+import { ChevronDown, ClipboardList, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -276,6 +276,209 @@ function WhatsappArchiveSection() {
             <p className="mt-2 text-lg leading-relaxed text-slate-700">
               Не обещайте клиенту наличие репродукции, пока не получите подтверждение. После ответа Саши
               сообщите клиенту, возможна ли репродукция, и согласуйте дальнейшие шаги.
+            </p>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function DeliverySection() {
+  const [open, setOpen] = useState(false);
+
+  const headingClass = "text-lg font-black text-slate-950";
+  const subheadingClass = "text-sm font-black uppercase tracking-wide text-slate-600";
+  const textClass = "text-base leading-relaxed text-slate-700";
+  const listClass = "mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-700";
+  const cardClass = "rounded-xl border border-[var(--line)] bg-slate-50 p-4";
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <Truck size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">Доставка</span>
+            <span className="block text-sm text-slate-600">Способы, сроки и стоимость доставки по странам.</span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <div className={cardClass}>
+            <h3 className={subheadingClass}>Перед оформлением доставки уточните у клиента</h3>
+            <ul className={listClass}>
+              <li>страну и город;</li>
+              <li>нужен ли адрес или пункт выдачи;</li>
+              <li>насколько срочно нужен заказ;</li>
+              <li>сможет ли получатель принять курьера, если выбирает доставку DPD на дом.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>1. Европа: DPD</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Ссылка для поиска пункта выдачи или пакомата DPD:{" "}
+              <a
+                href="https://www.dpdgroup.com/be/mydpd/parcel-shops"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-bold text-blue-600 hover:text-blue-800"
+              >
+                dpdgroup.com/be/mydpd/parcel-shops
+              </a>
+            </p>
+
+            <p className="mt-4 text-base font-bold text-slate-900">Германия и большинство стран ЕС</p>
+            <ul className={listClass}>
+              <li>DPD в пункт выдачи — 11 EUR, срок 3–6 дней.</li>
+              <li>DPD на дом — 21 EUR, срок 3–6 дней.</li>
+            </ul>
+
+            <p className="mt-4 text-base font-bold text-slate-900">Италия, Болгария и Норвегия</p>
+            <p className={`mt-1 ${textClass}`}>В эти страны DPD доступен только с доставкой на дом:</p>
+            <ul className={listClass}>
+              <li>DPD на дом — 21 EUR.</li>
+              <li>Альтернатива: PUMITY — 13 EUR, срок 7–14 дней.</li>
+            </ul>
+
+            <p className="mt-4 text-base font-bold text-slate-900">Эстония и Литва</p>
+            <ul className={listClass}>
+              <li>DPD — 6 EUR, срок 1–3 дня.</li>
+            </ul>
+
+            <p className="mt-4 text-base font-bold text-slate-900">Латвия</p>
+            <ul className={listClass}>
+              <li>DPD в пункт выдачи — 4 EUR.</li>
+              <li>DPD на дом — 6 EUR.</li>
+              <li>Срок доставки — 1–2 дня.</li>
+            </ul>
+
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <p className="text-base font-bold text-amber-900">Важно: доставка DPD на дом</p>
+              <p className="mt-1 text-base leading-relaxed text-amber-900">
+                Если клиент выбирает доставку DPD на дом, обязательно отправьте ему сообщение:
+              </p>
+              <p className="mt-2 border-l-4 border-amber-300 pl-3 text-base italic leading-relaxed text-amber-900">
+                Спасибо за покупку! Обращаем ваше внимание, что доставка осуществляется курьером DPD до
+                двери, при этом курьер совершает только одну попытку вручения. Если в момент доставки
+                получателя не окажется дома, посылка будет возвращена отправителю. Просим отнестись к этому
+                с пониманием и обеспечить возможность получения заказа в указанный день.
+              </p>
+            </div>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>2. PUMITY</h3>
+            <ul className={listClass}>
+              <li>Стоимость — 13 EUR.</li>
+              <li>Срок — 7–14 дней.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              Доступно для доставки в Казахстан, Азербайджан, Грузию, Турцию, Италию, Болгарию и другие
+              дальние страны.
+            </p>
+            <p className="mt-4 text-base font-bold text-slate-900">Израиль, Англия и Норвегия</p>
+            <ul className={listClass}>
+              <li>PUMITY — 19 EUR.</li>
+              <li>Срок — 7–14 дней.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>3. Молдова</h3>
+            <p className={`mt-2 ${textClass}`}>Предложите клиенту два варианта:</p>
+            <div className="table-scroll mt-3">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Способ доставки</th>
+                    <th>Стоимость</th>
+                    <th>Срок</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="whitespace-normal">Novapost</td>
+                    <td>20 EUR</td>
+                    <td className="whitespace-normal">6–7 дней</td>
+                  </tr>
+                  <tr>
+                    <td className="whitespace-normal">PUMITY: курьером на адрес или в пункт выдачи</td>
+                    <td>13 EUR</td>
+                    <td className="whitespace-normal">около 10 рабочих дней</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className={`mt-3 ${textClass}`}>
+              В обоих случаях посылка отправляется с трек-номером для отслеживания.
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>4. Россия и Ашхабад: СДЭК через Минск</h3>
+            <ul className={listClass}>
+              <li>Стандартная стоимость — 13 EUR.</li>
+              <li>
+                Для удалённых городов на востоке России стоимость может быть 15 EUR — обязательно уточните
+                перед тем, как назвать цену клиенту.
+              </li>
+              <li>Иногда возможна доставка в Ашхабад.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              Доставка в Минск отправляется раз в неделю, обычно в понедельник. К пятнице заказы должны быть
+              в офисе. Ближайшую дату отправки уточняйте у Анны.
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>5. Экспресс-доставка DHL</h3>
+            <ul className={listClass}>
+              <li>Стоимость — от 50 EUR.</li>
+              <li>Срок — 1–5 дней.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>Предлагайте DHL, если клиенту нужен заказ максимально быстро.</p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>Минский офис — доставка по Минску</h3>
+            <ul className={listClass}>
+              <li>Стоимость — 15 BYN.</li>
+              <li>Срок — 1–4 дня.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              Также в базе может использоваться ориентир: 13 EUR / 45 BYN — при необходимости уточняйте
+              актуальную стоимость у ответственного.
+            </p>
+            <p className="mt-4 text-base font-bold text-slate-900">Самовывоз</p>
+            <p className={`mt-1 ${textClass}`}>Клиент может самостоятельно забрать заказ по адресу:</p>
+            <p className="mt-1 text-base font-bold text-slate-900">
+              г. Минск, ул. Якуба Коласа, 37, офис 52
+            </p>
+            <p className={`mt-1 ${textClass}`}>Будние дни: с 9:00 до 19:00</p>
+            <p className={`mt-2 ${textClass}`}>
+              Яндекс.Карты с фотографиями входа:{" "}
+              <a
+                href="https://yandex.by/maps/-/CLgVu8jq"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-bold text-blue-600 hover:text-blue-800"
+              >
+                yandex.by/maps/-/CLgVu8jq
+              </a>
             </p>
           </div>
         </div>
@@ -785,6 +988,8 @@ export function KnowledgeBase() {
       <CityRoutingSection />
 
       <WhatsappArchiveSection />
+
+      <DeliverySection />
 
       <PaymentMethodsSection />
 
