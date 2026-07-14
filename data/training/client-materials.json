@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "materials": [
+    {
+      "id": "retro-newspaper-izvestiya-birthday",
+      "title": "Поздравительная газета: пример разворота",
+      "description": "Можно отправлять клиенту, когда нужно быстро показать, как выглядит поздравительная газета.",
+      "category": "Поздравительные газеты",
+      "type": "image",
+      "url": "/training/retro-newspaper/izvestiya-den-rozhdeniya.png",
+      "sortOrder": 1
+    },
+    {
+      "id": "retro-newspaper-pravda-child",
+      "title": "Газета на дату рождения: пример",
+      "description": "Визуал для объяснения формата подарка с газетой на конкретную дату.",
+      "category": "Оригиналы и репродукции",
+      "type": "image",
+      "url": "/training/retro-newspaper/pravda-rebenok.png",
+      "sortOrder": 2
+    },
+    {
+      "id": "gift-edition-forbes",
+      "title": "Персональный выпуск журнала Forbes",
+      "description": "Пример персонализированного журнального подарка для клиента.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/forbes-maksim.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "gift-edition-glamour",
+      "title": "Персональный выпуск журнала Glamour",
+      "description": "Визуал для клиентов, которые выбирают персонализированный журнал.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/glamour-tatyana.png",
+      "sortOrder": 4
+    },
+    {
+      "id": "personal-newspaper-formats",
+      "title": "Форматы персональной газеты",
+      "description": "Показывает варианты оформления и помогает объяснить клиенту, что он получит.",
+      "category": "Персональные газеты",
+      "type": "image",
+      "url": "/training/personal-newspaper/catalog-formats.webp",
+      "sortOrder": 5
+    },
+    {
+      "id": "client-review-video",
+      "title": "Видеоотзыв клиента",
+      "description": "Короткое видео, которое можно отправить как социальное доказательство.",
+      "category": "Видео",
+      "type": "video",
+      "url": "https://www.youtube.com/watch?v=kUQP5Dxz8gg",
+      "sortOrder": 6
+    }
+  ]
+}

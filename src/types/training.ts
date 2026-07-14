@@ -93,6 +93,25 @@ export type KnowledgeBaseCatalog = {
   entries: KnowledgeBaseEntry[];
 };
 
+export type ClientMaterialType = "image" | "video" | "document";
+
+export type ClientMaterial = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  type: ClientMaterialType;
+  url: string;
+  thumbnailUrl?: string;
+  downloadUrl?: string;
+  sortOrder: number;
+};
+
+export type ClientMaterialsCatalog = {
+  version: 1;
+  materials: ClientMaterial[];
+};
+
 /** CRM или практика — отдельный модуль внутри этапа обучения */
 export type TrainingTrackModule = {
   id: string;

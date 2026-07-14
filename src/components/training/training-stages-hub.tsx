@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
+import { ClientMaterials } from "@/components/training/client-materials";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
@@ -13,7 +14,7 @@ import { useTrainingUser } from "@/components/training/training-context";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
 
-type HubTab = "my" | "knowledge" | "faq" | "trainees";
+type HubTab = "my" | "knowledge" | "materials" | "faq" | "trainees";
 
 function StageCard({ stage, index }: { stage: TrainingStageOverview; index: number }) {
   const config = TRAINING_STAGES.find((item) => item.id === stage.id);
@@ -132,7 +133,9 @@ function StagesContent() {
 
   const tabParam = searchParams.get("tab");
   const tab: HubTab =
-    tabParam === "knowledge" || tabParam === "faq" || tabParam === "trainees" ? tabParam : "my";
+    tabParam === "knowledge" || tabParam === "materials" || tabParam === "faq" || tabParam === "trainees"
+      ? tabParam
+      : "my";
 
   const selectTab = (next: HubTab) => {
     const query = next === "my" ? "" : `?tab=${next}`;
@@ -164,6 +167,13 @@ function StagesContent() {
           >
             Ответы на вопросы
           </button>
+          <button
+            type="button"
+            onClick={() => selectTab("materials")}
+            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === "materials" ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}
+          >
+            Материалы для клиентов
+          </button>
           {isSupervisor ? (
             <button
               type="button"
@@ -186,6 +196,7 @@ function StagesContent() {
 
       {tab === "my" ? <MyTrainingContent /> : null}
       {tab === "knowledge" ? <KnowledgeBase /> : null}
+      {tab === "materials" ? <ClientMaterials /> : null}
       {tab === "faq" ? <KnowledgeFaq /> : null}
       {tab === "trainees" && isSupervisor ? <TrainingSupervisorsPanel /> : null}
     </>

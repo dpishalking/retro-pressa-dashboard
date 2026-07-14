@@ -23,6 +23,10 @@ function isStaticAsset(pathname: string): boolean {
     pathname.endsWith(".ico") ||
     pathname.endsWith(".png") ||
     pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".webp") ||
+    pathname.endsWith(".mp4") ||
+    pathname.endsWith(".pdf") ||
     pathname.endsWith(".svg")
   );
 }
