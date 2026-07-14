@@ -595,10 +595,22 @@ function GlobalFilters({
 }
 
 function elapsedDaysForPeriod(period: string) {
-  if (period === "july-2026") return 2;
-  if (period === "june-2026") return 30;
-  if (period === "may-2026") return 31;
-  return 2;
+  const months: Record<string, { year: number; monthIndex: number; days: number }> = {
+    "may-2026": { year: 2026, monthIndex: 4, days: 31 },
+    "june-2026": { year: 2026, monthIndex: 5, days: 30 },
+    "july-2026": { year: 2026, monthIndex: 6, days: 31 }
+  };
+  const selected = months[period] ?? months["july-2026"];
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodStart = new Date(selected.year, selected.monthIndex, 1);
+  const periodEnd = new Date(selected.year, selected.monthIndex, selected.days);
+
+  if (currentMonthStart > periodStart) return selected.days;
+  if (now < periodStart) return 1;
+  if (now > periodEnd) return selected.days;
+
+  return Math.min(Math.max(now.getDate(), 1), selected.days);
 }
 
 function monthPrefixForPeriod(period: string) {
