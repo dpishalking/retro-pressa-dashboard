@@ -1,5 +1,16 @@
 import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
 import { extractBitrixWebValue } from "@/lib/utm-standards";
+import {
+  BITRIX_INVOICE_AMOUNT_FIELD,
+  BITRIX_INVOICE_DATE_FIELD,
+  BITRIX_INVOICE_STAGE_ID,
+  BITRIX_METRIC_DEFINITIONS,
+  BITRIX_SALES_CATEGORY_ID,
+  EXCLUDED_LEAD_STATUS_IDS,
+  PAID_LEAD_SOURCE_IDS,
+  buildKnownGaps,
+  type BitrixKnownGap
+} from "@/lib/bitrix/metric-definitions";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -30,6 +41,7 @@ type BitrixBatchResponse<T> = {
 type BitrixLead = {
   ID: string;
   DATE_CREATE?: string;
+  STATUS_ID?: string;
   SOURCE_ID?: string;
   ASSIGNED_BY_ID?: string;
   UF_CRM_1737995147?: string | string[];
@@ -56,6 +68,8 @@ type BitrixDeal = {
   UF_CRM_6797B3DA00D16?: string | string[];
   UTM_CAMPAIGN?: string;
   WEB?: unknown;
+  UF_CRM_1758618010118?: string;
+  UF_CRM_1739982211?: string | number | null;
 };
 
 type BitrixProductRow = {
@@ -111,14 +125,21 @@ export type BitrixSyncPayload = {
   productOptions: string[];
   summary: {
     leadsLoaded: number;
+    leadsRawLoaded: number;
+    leadsExcludedSpamReviews: number;
     recentClientsLoaded: number;
     dealsLoaded: number;
+    paidDealsLoaded: number;
+    invoicesFromDateField: number;
+    invoicesFromStageHistory: number;
     usersLoaded: number;
     periodStart: string;
     periodEnd: string;
     dataSource: "snapshot" | "live";
     snapshotUpdatedAt: string | null;
     snapshotPath: string;
+    definitions: typeof BITRIX_METRIC_DEFINITIONS;
+    knownGaps: BitrixKnownGap[];
   };
 };
 
@@ -127,6 +148,7 @@ const dealCountryField = "UF_CRM_6797B3DA00D16";
 const selectLead = [
   "ID",
   "DATE_CREATE",
+  "STATUS_ID",
   "SOURCE_ID",
   "ASSIGNED_BY_ID",
   leadCountryField,
@@ -151,11 +173,13 @@ const selectDeal = [
   "ASSIGNED_BY_ID",
   dealCountryField,
   "UTM_CAMPAIGN",
-  "WEB"
+  "WEB",
+  BITRIX_INVOICE_DATE_FIELD,
+  BITRIX_INVOICE_AMOUNT_FIELD
 ];
 const selectUser = ["ID", "NAME", "LAST_NAME"];
-const invoiceStageId = "1";
-const invoiceCategoryId = 0;
+const excludedLeadStatusSet = new Set<string>(EXCLUDED_LEAD_STATUS_IDS);
+const paidLeadSourceSet = new Set<string>(PAID_LEAD_SOURCE_IDS);
 const requestedCountryOrder = [
   "Латвия",
   "Беларусь",
@@ -430,6 +454,7 @@ function normalizeSnapshotLead(lead: BitrixLead, userNames: Map<string, string>,
   return {
     id: String(lead.ID),
     dateCreate: lead.DATE_CREATE ?? null,
+    statusId: lead.STATUS_ID ?? null,
     sourceId: lead.SOURCE_ID ?? null,
     assignedById,
     managerName: userNames.get(assignedById) ?? `ID ${assignedById}`,
@@ -442,6 +467,19 @@ function normalizeSnapshotLead(lead: BitrixLead, userNames: Map<string, string>,
     landingPage: extractBitrixWebValue(lead.WEB) || null,
     formName: lead.UF_CRM_FORMNAME?.trim() || null
   };
+}
+
+function isOperationalLead(lead: BitrixSnapshotLead) {
+  return !lead.statusId || !excludedLeadStatusSet.has(lead.statusId);
+}
+
+function isPaidLeadSource(sourceId: string | null) {
+  return Boolean(sourceId && paidLeadSourceSet.has(sourceId));
+}
+
+function dealInvoiceAmount(deal: BitrixDeal) {
+  const labeled = numberValue(deal[BITRIX_INVOICE_AMOUNT_FIELD as keyof BitrixDeal] as string | number | null | undefined);
+  return labeled > 0 ? labeled : numberValue(deal.OPPORTUNITY);
 }
 
 function normalizeProductRow(row: BitrixProductRow): BitrixSnapshotProductRow {
@@ -459,12 +497,14 @@ function normalizeSnapshotDeal(
   userNames: Map<string, string>,
   enumMaps: BitrixEnumMaps,
   products: BitrixProductRow[],
-  leadLookup: Map<string, BitrixSnapshotLead>
+  leadLookup: Map<string, BitrixSnapshotLead>,
+  invoiceSource?: BitrixSnapshotDeal["invoiceSource"]
 ): BitrixSnapshotDeal {
   const assignedById = deal.ASSIGNED_BY_ID || "unknown";
   const leadId = deal.LEAD_ID ? String(deal.LEAD_ID) : null;
   const linkedLead = leadId ? leadLookup.get(leadId) : undefined;
   const country = enumValueName(enumMaps.dealCountries, deal[dealCountryField]) || linkedLead?.country || "";
+  const opportunity = numberValue(deal.OPPORTUNITY);
 
   return {
     id: String(deal.ID),
@@ -472,7 +512,8 @@ function normalizeSnapshotDeal(
     dateCreate: deal.DATE_CREATE ?? null,
     closeDate: deal.CLOSEDATE ?? null,
     invoiceDate,
-    opportunity: numberValue(deal.OPPORTUNITY),
+    opportunity,
+    invoiceAmount: dealInvoiceAmount(deal),
     stageId: deal.STAGE_ID ?? null,
     stageSemanticId: deal.STAGE_SEMANTIC_ID ?? null,
     sourceId: deal.SOURCE_ID ?? linkedLead?.sourceId ?? null,
@@ -483,7 +524,8 @@ function normalizeSnapshotDeal(
     landingPage: extractBitrixWebValue(deal.WEB) || linkedLead?.landingPage || null,
     products: products
       .map(normalizeProductRow)
-      .filter((row) => row.productName)
+      .filter((row) => row.productName),
+    invoiceSource
   };
 }
 
@@ -512,8 +554,10 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
   const periodEnd = isoDate(end);
   const factualEndIso = isoDate(factualEnd);
   const recentStart = isoDate(daysAgo(factualEnd, 10));
+  const periodStartDate = dayKey(periodStart);
+  const factualEndDate = dayKey(factualEndIso);
 
-  const [periodLeadsRaw, recentLeadsRaw, invoiceStageHistory, users, countryMetadata] = await Promise.all([
+  const [periodLeadsRaw, recentLeadsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, users, countryMetadata] = await Promise.all([
     listAll<BitrixLead>("crm.lead.list", {
       order: { DATE_CREATE: "ASC" },
       filter: { ">=DATE_CREATE": periodStart, "<=DATE_CREATE": factualEndIso },
@@ -524,17 +568,35 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
       filter: { ">=DATE_CREATE": recentStart, "<=DATE_CREATE": factualEndIso },
       select: selectLead
     }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        [`>=${BITRIX_INVOICE_DATE_FIELD}`]: periodStartDate,
+        [`<=${BITRIX_INVOICE_DATE_FIELD}`]: factualEndDate,
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
+      },
+      select: selectDeal
+    }),
     listAll<BitrixStageHistory>("crm.stagehistory.list", {
       entityTypeId: 2,
       order: { CREATED_TIME: "ASC" },
       filter: {
         ">=CREATED_TIME": periodStart,
         "<=CREATED_TIME": factualEndIso,
-        "=CATEGORY_ID": invoiceCategoryId,
-        "=STAGE_ID": invoiceStageId,
-        "=TYPE_ID": 2
+        "=CATEGORY_ID": BITRIX_SALES_CATEGORY_ID,
+        "=STAGE_ID": BITRIX_INVOICE_STAGE_ID
       },
       select: ["OWNER_ID", "CREATED_TIME", "STAGE_ID", "CATEGORY_ID", "TYPE_ID"]
+    }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        ">=CLOSEDATE": periodStartDate,
+        "<=CLOSEDATE": factualEndDate,
+        STAGE_SEMANTIC_ID: "S",
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
+      },
+      select: selectDeal
     }),
     listAll<BitrixUser>("user.get", {
       sort: "ID",
@@ -551,36 +613,71 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
   const recentLeads = recentLeadsRaw.map((lead) => normalizeSnapshotLead(lead, userNames, enumMaps));
   const leadLookup = new Map(leads.map((lead) => [lead.id, lead]));
 
-  const invoiceEntries = new Map<string, BitrixStageHistory>();
+  const invoiceByDateIds = new Set(invoiceByDateRaw.map((deal) => String(deal.ID)));
+  const invoiceStageEntries = new Map<string, BitrixStageHistory>();
   for (const entry of invoiceStageHistory) {
     const id = String(entry.OWNER_ID);
-    if (!invoiceEntries.has(id)) invoiceEntries.set(id, entry);
+    if (!invoiceStageEntries.has(id)) invoiceStageEntries.set(id, entry);
   }
 
-  const dealIds = Array.from(invoiceEntries.keys());
-  const [rawDeals, productRows] = await Promise.all([
-    listDealsByIds(dealIds),
-    listDealProductRows(dealIds)
-  ]);
+  const stageOnlyIds = Array.from(invoiceStageEntries.keys()).filter((id) => !invoiceByDateIds.has(id));
+  const stageOnlyDealsRaw = stageOnlyIds.length ? await listDealsByIds(stageOnlyIds) : [];
+  const invoiceRawById = new Map<string, BitrixDeal>();
+  for (const deal of [...invoiceByDateRaw, ...stageOnlyDealsRaw]) {
+    invoiceRawById.set(String(deal.ID), deal);
+  }
 
-  const deals = rawDeals.map((deal) => normalizeSnapshotDeal(
-    deal,
-    invoiceEntries.get(String(deal.ID))?.CREATED_TIME ?? null,
-    userNames,
-    enumMaps,
-    productRows.get(String(deal.ID)) ?? [],
-    leadLookup
-  ));
+  const paidRawById = new Map(paidDealsRaw.map((deal) => [String(deal.ID), deal]));
+  const allDealIds = Array.from(new Set([
+    ...invoiceRawById.keys(),
+    ...paidRawById.keys()
+  ]));
+  const productRows = await listDealProductRows(allDealIds);
+
+  const deals: BitrixSnapshotDeal[] = Array.from(invoiceRawById.values()).map((deal) => {
+    const id = String(deal.ID);
+    const fromDateField = invoiceByDateIds.has(id);
+    const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
+    const invoiceDate = fromDateField
+      ? (fieldDate ?? null)
+      : (invoiceStageEntries.get(id)?.CREATED_TIME ?? fieldDate ?? null);
+    return normalizeSnapshotDeal(
+      deal,
+      invoiceDate,
+      userNames,
+      enumMaps,
+      productRows.get(id) ?? [],
+      leadLookup,
+      fromDateField ? "invoice_date_field" : "stage_history"
+    );
+  });
+
+  const paidDeals: BitrixSnapshotDeal[] = Array.from(paidRawById.values()).map((deal) => {
+    const id = String(deal.ID);
+    const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
+    return normalizeSnapshotDeal(
+      deal,
+      fieldDate ?? null,
+      userNames,
+      enumMaps,
+      productRows.get(id) ?? [],
+      leadLookup
+    );
+  });
 
   const derivedCountries = [
     ...leads.map((lead) => lead.country),
     ...recentLeads.map((lead) => lead.country),
-    ...deals.map((deal) => deal.country)
+    ...deals.map((deal) => deal.country),
+    ...paidDeals.map((deal) => deal.country)
   ];
-  const productOptions = uniqueSorted(deals.flatMap((deal) => deal.products.map((product) => product.productName)));
+  const productOptions = uniqueSorted([
+    ...deals.flatMap((deal) => deal.products.map((product) => product.productName)),
+    ...paidDeals.flatMap((deal) => deal.products.map((product) => product.productName))
+  ]);
 
   return {
-    version: 1,
+    version: 2,
     period,
     periodStart,
     periodEnd,
@@ -590,7 +687,8 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     productOptions,
     leads,
     recentLeads,
-    deals
+    deals,
+    paidDeals
   };
 }
 
@@ -686,20 +784,41 @@ function dominantProductName(deal: BitrixSnapshotDeal) {
   return topProduct?.productName || "Без продукта";
 }
 
+function filterDeal(deal: BitrixSnapshotDeal, options: BitrixSyncOptions) {
+  return matchesCountry(deal.country, options.country)
+    && matchesManager(deal.assignedById, deal.managerName, options.manager)
+    && matchesProduct(deal, options.product);
+}
+
+function addInvoiceBucket<T extends { invoicesCount: number; invoicesAmount: number; salesCount: number; revenue: number }>(
+  bucket: T,
+  kind: "invoice" | "paid",
+  amount: number
+) {
+  if (kind === "invoice") {
+    bucket.invoicesCount += 1;
+    bucket.invoicesAmount += amount;
+  } else {
+    bucket.salesCount += 1;
+    bucket.revenue += amount;
+  }
+  return bucket;
+}
+
 function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOptions, dataSource: "snapshot" | "live"): BitrixSyncPayload {
   const start = new Date(snapshot.periodStart);
   const end = new Date(snapshot.periodEnd);
   const calendarDays = end.getUTCDate();
   const workingDays = workingDaysByPeriod[snapshot.period];
 
-  const filteredDeals = snapshot.deals.filter((deal) =>
-    matchesCountry(deal.country, options.country)
-    && matchesManager(deal.assignedById, deal.managerName, options.manager)
-    && matchesProduct(deal, options.product)
-  );
+  const filteredInvoiceDeals = snapshot.deals.filter((deal) => filterDeal(deal, options));
+  const filteredPaidDeals = (snapshot.paidDeals ?? []).filter((deal) => filterDeal(deal, options));
 
   const productLeadIds = options.product && options.product !== "all"
-    ? new Set(filteredDeals.map((deal) => deal.leadId).filter((leadId): leadId is string => Boolean(leadId)))
+    ? new Set([
+      ...filteredInvoiceDeals.map((deal) => deal.leadId),
+      ...filteredPaidDeals.map((deal) => deal.leadId)
+    ].filter((leadId): leadId is string => Boolean(leadId)))
     : null;
 
   const filterLead = (lead: BitrixSnapshotLead) => (
@@ -708,15 +827,15 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     && (!productLeadIds || productLeadIds.has(lead.id))
   );
 
-  const leads = snapshot.leads.filter(filterLead);
-  const recentLeads = snapshot.recentLeads.filter(filterLead);
-  const lostDeals = filteredDeals.filter((deal) => deal.stageSemanticId === "F");
-  const paidDeals = filteredDeals.filter((deal) => deal.stageSemanticId === "S");
-  const paidLeads = leads.filter((lead) => lead.sourceId && lead.sourceId !== "ORGANIC").length;
+  const leadsRaw = snapshot.leads.filter(filterLead);
+  const leads = leadsRaw.filter(isOperationalLead);
+  const recentLeads = snapshot.recentLeads.filter(filterLead).filter(isOperationalLead);
+  const lostDeals = filteredInvoiceDeals.filter((deal) => deal.stageSemanticId === "F");
+  const paidLeads = leads.filter((lead) => isPaidLeadSource(lead.sourceId)).length;
   const organicLeads = leads.length - paidLeads;
-  const invoicesAmount = filteredDeals.reduce((sum, deal) => sum + deal.opportunity, 0);
-  const revenue = paidDeals.reduce((sum, deal) => sum + deal.opportunity, 0);
-  const cancelledAmount = lostDeals.reduce((sum, deal) => sum + deal.opportunity, 0);
+  const invoicesAmount = filteredInvoiceDeals.reduce((sum, deal) => sum + (deal.invoiceAmount || deal.opportunity), 0);
+  const revenue = filteredPaidDeals.reduce((sum, deal) => sum + deal.opportunity, 0);
+  const cancelledAmount = lostDeals.reduce((sum, deal) => sum + (deal.invoiceAmount || deal.opportunity), 0);
 
   const days = new Map<string, DailyMetrics>();
   for (let day = 1; day <= calendarDays; day += 1) {
@@ -727,31 +846,34 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   for (const lead of leads) {
     const row = days.get(dayKey(lead.dateCreate));
     if (!row) continue;
-    if (lead.sourceId && lead.sourceId !== "ORGANIC") row.paidLeads += 1;
+    if (isPaidLeadSource(lead.sourceId)) row.paidLeads += 1;
     else row.organicLeads += 1;
   }
 
-  for (const deal of filteredDeals) {
+  for (const deal of filteredInvoiceDeals) {
     const row = days.get(dayKey(deal.invoiceDate));
     if (!row) continue;
     row.invoicesCount += 1;
-    row.invoicesAmount += deal.opportunity;
-    if (deal.stageSemanticId === "S") {
-      row.salesCount += 1;
-      row.revenue += deal.opportunity;
-    }
+    row.invoicesAmount += deal.invoiceAmount || deal.opportunity;
+  }
+
+  for (const deal of filteredPaidDeals) {
+    const row = days.get(dayKey(deal.closeDate));
+    if (!row) continue;
+    row.salesCount += 1;
+    row.revenue += deal.opportunity;
   }
 
   const activeByDay = new Map<string, Set<string>>();
-  for (const deal of filteredDeals) {
-    const key = dayKey(deal.invoiceDate);
+  for (const deal of [...filteredInvoiceDeals, ...filteredPaidDeals]) {
+    const key = dayKey(deal.invoiceDate || deal.closeDate);
     if (!key) continue;
     activeByDay.set(key, activeByDay.get(key) ?? new Set<string>());
     activeByDay.get(key)?.add(deal.assignedById);
   }
 
-  for (const [key, row] of days) {
-    row.activeManagers = activeByDay.get(key)?.size ?? 0;
+  for (const [, row] of days) {
+    row.activeManagers = activeByDay.get(row.date)?.size ?? 0;
     row.averagePaidCheck = row.salesCount ? row.revenue / row.salesCount : 0;
   }
 
@@ -770,12 +892,12 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     }
   }
 
-  for (const deal of filteredDeals) {
+  for (const deal of filteredInvoiceDeals) {
     byManager.set(deal.assignedById, byManager.get(deal.assignedById) ?? emptyManager(snapshot.period, deal.assignedById, deal.managerName));
     byManager.get(deal.assignedById)!.invoicesCount += 1;
   }
 
-  for (const deal of paidDeals) {
+  for (const deal of filteredPaidDeals) {
     byManager.set(deal.assignedById, byManager.get(deal.assignedById) ?? emptyManager(snapshot.period, deal.assignedById, deal.managerName));
     const manager = byManager.get(deal.assignedById)!;
     manager.sales += 1;
@@ -783,69 +905,52 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   }
 
   const countryInvoices = new Map<string, CountryInvoiceMetrics>();
-  for (const deal of filteredDeals) {
+  for (const deal of filteredInvoiceDeals) {
     const country = deal.country || "Не указано";
-    const bucket = countryInvoices.get(country) ?? {
-      country,
-      invoicesCount: 0,
-      invoicesAmount: 0,
-      salesCount: 0,
-      revenue: 0
-    };
-    bucket.invoicesCount += 1;
-    bucket.invoicesAmount += deal.opportunity;
-    if (deal.stageSemanticId === "S") {
-      bucket.salesCount += 1;
-      bucket.revenue += deal.opportunity;
-    }
-    countryInvoices.set(country, bucket);
+    const bucket = countryInvoices.get(country) ?? { country, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    countryInvoices.set(country, addInvoiceBucket(bucket, "invoice", deal.invoiceAmount || deal.opportunity));
+  }
+  for (const deal of filteredPaidDeals) {
+    const country = deal.country || "Не указано";
+    const bucket = countryInvoices.get(country) ?? { country, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    countryInvoices.set(country, addInvoiceBucket(bucket, "paid", deal.opportunity));
   }
 
   const managerInvoices = new Map<string, ManagerInvoiceMetrics>();
-  for (const deal of filteredDeals) {
+  for (const deal of filteredInvoiceDeals) {
     const managerId = deal.assignedById || "unknown";
     const manager = deal.managerName || `ID ${managerId}`;
-    const bucket = managerInvoices.get(managerId) ?? {
-      managerId,
-      manager,
-      invoicesCount: 0,
-      invoicesAmount: 0,
-      salesCount: 0,
-      revenue: 0
-    };
-    bucket.invoicesCount += 1;
-    bucket.invoicesAmount += deal.opportunity;
-    if (deal.stageSemanticId === "S") {
-      bucket.salesCount += 1;
-      bucket.revenue += deal.opportunity;
-    }
-    managerInvoices.set(managerId, bucket);
+    const bucket = managerInvoices.get(managerId) ?? { managerId, manager, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    managerInvoices.set(managerId, addInvoiceBucket(bucket, "invoice", deal.invoiceAmount || deal.opportunity));
+  }
+  for (const deal of filteredPaidDeals) {
+    const managerId = deal.assignedById || "unknown";
+    const manager = deal.managerName || `ID ${managerId}`;
+    const bucket = managerInvoices.get(managerId) ?? { managerId, manager, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    managerInvoices.set(managerId, addInvoiceBucket(bucket, "paid", deal.opportunity));
   }
 
   const productInvoices = new Map<string, ProductInvoiceMetrics>();
-  for (const deal of filteredDeals) {
+  for (const deal of filteredInvoiceDeals) {
     const product = dominantProductName(deal);
-    const bucket = productInvoices.get(product) ?? {
-      product,
-      invoicesCount: 0,
-      invoicesAmount: 0,
-      salesCount: 0,
-      revenue: 0
-    };
-    bucket.invoicesCount += 1;
-    bucket.invoicesAmount += deal.opportunity;
-    if (deal.stageSemanticId === "S") {
-      bucket.salesCount += 1;
-      bucket.revenue += deal.opportunity;
-    }
-    productInvoices.set(product, bucket);
+    const bucket = productInvoices.get(product) ?? { product, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    productInvoices.set(product, addInvoiceBucket(bucket, "invoice", deal.invoiceAmount || deal.opportunity));
+  }
+  for (const deal of filteredPaidDeals) {
+    const product = dominantProductName(deal);
+    const bucket = productInvoices.get(product) ?? { product, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
+    productInvoices.set(product, addInvoiceBucket(bucket, "paid", deal.opportunity));
   }
 
   const usersLoaded = new Set([
     ...snapshot.leads.map((lead) => lead.assignedById),
     ...snapshot.recentLeads.map((lead) => lead.assignedById),
-    ...snapshot.deals.map((deal) => deal.assignedById)
+    ...snapshot.deals.map((deal) => deal.assignedById),
+    ...(snapshot.paidDeals ?? []).map((deal) => deal.assignedById)
   ]).size;
+
+  const invoicesFromDateField = filteredInvoiceDeals.filter((deal) => deal.invoiceSource === "invoice_date_field").length;
+  const invoicesFromStageHistory = filteredInvoiceDeals.filter((deal) => deal.invoiceSource === "stage_history").length;
 
   return {
     monthly: {
@@ -853,11 +958,11 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
       paidLeads,
       organicLeads,
       qualifiedLeads: 0,
-      invoicesCount: filteredDeals.length,
+      invoicesCount: filteredInvoiceDeals.length,
       invoicesAmount,
       cancelledInvoicesCount: lostDeals.length,
       cancelledInvoicesAmount: cancelledAmount,
-      salesCount: paidDeals.length,
+      salesCount: filteredPaidDeals.length,
       revenue,
       adSpend: 0,
       paidSalesCount: null,
@@ -873,14 +978,29 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     productOptions: snapshot.productOptions,
     summary: {
       leadsLoaded: leads.length,
+      leadsRawLoaded: leadsRaw.length,
+      leadsExcludedSpamReviews: leadsRaw.length - leads.length,
       recentClientsLoaded: recentLeads.length,
-      dealsLoaded: filteredDeals.length,
+      dealsLoaded: filteredInvoiceDeals.length,
+      paidDealsLoaded: filteredPaidDeals.length,
+      invoicesFromDateField,
+      invoicesFromStageHistory,
       usersLoaded,
       periodStart: snapshot.periodStart,
       periodEnd: snapshot.factualEnd,
       dataSource,
       snapshotUpdatedAt: snapshot.createdAt,
-      snapshotPath: snapshotFilePath(snapshot.period)
+      snapshotPath: snapshotFilePath(snapshot.period),
+      definitions: BITRIX_METRIC_DEFINITIONS,
+      knownGaps: buildKnownGaps({
+        invoicesCount: filteredInvoiceDeals.length,
+        invoicesAmount,
+        salesCount: filteredPaidDeals.length,
+        revenue,
+        leadsCount: leads.length,
+        leadsRaw: leadsRaw.length,
+        adSpend: 0
+      })
     }
   };
 }

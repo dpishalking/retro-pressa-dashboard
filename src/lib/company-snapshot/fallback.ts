@@ -62,10 +62,9 @@ export function mergeDailySeries(bitrixDaily: DailyMetrics[], googleDaily: Daily
   for (const day of googleDaily) {
     const existing = byDate.get(day.date);
     if (existing) {
+      // Bitrix owns lead counts; Sheets owns QL + ad spend.
       byDate.set(day.date, {
         ...existing,
-        paidLeads: day.paidLeads,
-        organicLeads: day.organicLeads,
         qualifiedLeads: day.qualifiedLeads,
         paidQualifiedLeads: day.paidQualifiedLeads,
         organicQualifiedLeads: day.organicQualifiedLeads,
@@ -90,8 +89,8 @@ export function buildCanonicalMonthly(input: {
   const google = input.google;
   const demo = demoMonthly(input.period);
 
-  const paidLeads = google?.paidLeads ?? bitrix?.paidLeads ?? demo.paidLeads;
-  const organicLeads = google?.organicLeads ?? bitrix?.organicLeads ?? demo.organicLeads;
+  const paidLeads = bitrix?.paidLeads ?? google?.paidLeads ?? demo.paidLeads;
+  const organicLeads = bitrix?.organicLeads ?? google?.organicLeads ?? demo.organicLeads;
   const qualifiedLeads = google?.qualifiedLeads ?? bitrix?.qualifiedLeads ?? demo.qualifiedLeads;
   const adSpend = google?.adSpend ?? bitrix?.adSpend ?? demo.adSpend;
 

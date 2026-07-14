@@ -171,8 +171,8 @@ export async function buildCompanySnapshot(options: BuildSnapshotOptions): Promi
   const sheetMap = sheetMetricMap(sheetSources.entries);
 
   const reconciliations = collectReconciliations([
-    reconcileMetric(ssotRule("paidLeads")!, canonical.paidLeads, bitrixMonthly?.paidLeads ?? null, "bitrix"),
-    reconcileMetric(ssotRule("organicLeads")!, canonical.organicLeads, bitrixMonthly?.organicLeads ?? null, "bitrix"),
+    reconcileMetric(ssotRule("paidLeads")!, canonical.paidLeads, googleMonthly?.paidLeads ?? null, "google_marketing"),
+    reconcileMetric(ssotRule("organicLeads")!, canonical.organicLeads, googleMonthly?.organicLeads ?? null, "google_marketing"),
     reconcileMetric(ssotRule("qualifiedLeads")!, canonical.qualifiedLeads, bitrixMonthly?.qualifiedLeads ?? null, "bitrix")
   ]);
 
@@ -229,12 +229,12 @@ export async function buildCompanySnapshot(options: BuildSnapshotOptions): Promi
       reconciliations
     },
     marketing: {
-      paidLeads: metric(canonical.paidLeads, "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
-      organicLeads: metric(canonical.organicLeads, "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
+      paidLeads: metric(canonical.paidLeads, "bitrix", bitrixSnapshot?.createdAt ?? null, Boolean(bitrixSnapshot)),
+      organicLeads: metric(canonical.organicLeads, "bitrix", bitrixSnapshot?.createdAt ?? null, Boolean(bitrixSnapshot)),
       qualifiedLeads: metric(canonical.qualifiedLeads, "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
       adSpend: metric(canonical.adSpend, "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
-      cpl: metric(paidCpl(canonical), "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
-      cpql: metric(safeDiv(canonical.adSpend, Math.max(1, canonical.qualifiedLeads)), "google_marketing", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
+      cpl: metric(paidCpl(canonical), "computed", googleSnapshot?.createdAt ?? bitrixSnapshot?.createdAt ?? null, Boolean(bitrixSnapshot || googleSnapshot)),
+      cpql: metric(safeDiv(canonical.adSpend, Math.max(1, canonical.qualifiedLeads)), "computed", googleSnapshot?.createdAt ?? null, Boolean(googleSnapshot)),
       daily: googleSnapshot?.daily ?? daily,
       markets: googleSnapshot?.summary.markets ?? [],
       channels: googleSnapshot?.summary.channels ?? []

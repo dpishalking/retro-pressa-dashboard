@@ -12,6 +12,8 @@ export type UtmCampaignAttributionRow = {
   sheetsLeads: number;
   sheetsSpend: number;
   bitrixLeads: number;
+  bitrixInvoices: number;
+  bitrixInvoicesAmount: number;
   bitrixWonDeals: number;
   bitrixRevenue: number;
   status: "ok" | "ga4_only" | "sheets_only" | "bitrix_only" | "mismatch";
@@ -37,10 +39,16 @@ export type UtmAuditPayload = {
     landingPage: string;
     ga4Sessions: number;
     bitrixLeads: number;
-    bitrixWonDeals: number;
-    bitrixRevenue: number;
     source: string;
     medium: string;
+  }>;
+  salesSources: Array<{
+    source: string;
+    bitrixLeads: number;
+    bitrixInvoices: number;
+    bitrixInvoicesAmount: number;
+    bitrixWonDeals: number;
+    bitrixRevenue: number;
   }>;
 };
 
@@ -58,6 +66,20 @@ function normalizeLandingPath(value: string | null | undefined): string {
   return trimmed;
 }
 
+function isOnSiteLanding(normalizedPath: string): boolean {
+  return normalizedPath.startsWith("/");
+}
+
+function salesSourceLabel(landing: string | null | undefined, utmSource: string | null | undefined): string {
+  const normalized = normalizeLandingPath(landing);
+  if (normalized && !isOnSiteLanding(normalized)) {
+    return normalized.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  }
+  const source = (utmSource ?? "").trim();
+  if (source) return source;
+  return "(не указан)";
+}
+
 function addCampaignBucket(
   buckets: Map<string, UtmCampaignAttributionRow>,
   campaign: string,
@@ -73,6 +95,8 @@ function addCampaignBucket(
     sheetsLeads: 0,
     sheetsSpend: 0,
     bitrixLeads: 0,
+    bitrixInvoices: 0,
+    bitrixInvoicesAmount: 0,
     bitrixWonDeals: 0,
     bitrixRevenue: 0,
     status: "mismatch"
@@ -114,9 +138,10 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
     });
   }
 
-  const leads = bitrix?.leads ?? [];
+  const leads = (bitrix?.leads ?? []).filter((lead) => lead.statusId !== "1" && lead.statusId !== "3");
+  // Invoice deals = дата «Выставлен счет» / стадия выставления. Paid = календарные WON по CLOSEDATE.
   const deals = bitrix?.deals ?? [];
-  const wonDeals = deals.filter((deal) => deal.stageSemanticId === "S");
+  const paidDeals = bitrix?.paidDeals ?? [];
 
   for (const lead of leads) {
     if (!lead.utmCampaign) continue;
@@ -128,7 +153,18 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
     });
   }
 
-  for (const deal of wonDeals) {
+  for (const deal of deals) {
+    if (!deal.utmCampaign) continue;
+    const existing = Array.from(buckets.values()).find((item) => campaignsMatch(item.campaign, deal.utmCampaign));
+    const keyCampaign = existing?.campaign ?? deal.utmCampaign;
+    const bucket = buckets.get(normalizeCampaignSlug(keyCampaign) || keyCampaign.trim().toLowerCase());
+    addCampaignBucket(buckets, keyCampaign, {
+      bitrixInvoices: (bucket?.bitrixInvoices ?? 0) + 1,
+      bitrixInvoicesAmount: (bucket?.bitrixInvoicesAmount ?? 0) + (deal.invoiceAmount || deal.opportunity)
+    });
+  }
+
+  for (const deal of paidDeals) {
     if (!deal.utmCampaign) continue;
     const existing = Array.from(buckets.values()).find((item) => campaignsMatch(item.campaign, deal.utmCampaign));
     const keyCampaign = existing?.campaign ?? deal.utmCampaign;
@@ -157,8 +193,11 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
 
   const leadsById = new Map(leads.map((lead) => [lead.id, lead] as const));
 
-  type LandingStats = { ga4Sessions: number; bitrixLeads: number; bitrixWonDeals: number; bitrixRevenue: number; source: string; medium: string };
-  const emptyLanding = (source = "", medium = ""): LandingStats => ({ ga4Sessions: 0, bitrixLeads: 0, bitrixWonDeals: 0, bitrixRevenue: 0, source, medium });
+  // On-site landings come from GA4 (real pages like /10ideas). Bitrix WEB usually
+  // stores a referrer (instagram.com/..., facebook.com), so only join Bitrix rows
+  // whose landing is an actual on-site path; referrers go to salesSources instead.
+  type LandingStats = { ga4Sessions: number; bitrixLeads: number; source: string; medium: string };
+  const emptyLanding = (source = "", medium = ""): LandingStats => ({ ga4Sessions: 0, bitrixLeads: 0, source, medium });
   const landingMap = new Map<string, LandingStats>();
   for (const row of ga4?.byLanding ?? []) {
     const key = row.landingPage;
@@ -167,25 +206,49 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
   }
   for (const lead of leads) {
     const path = normalizeLandingPath(lead.landingPage);
-    if (!path) continue;
+    if (!path || !isOnSiteLanding(path)) continue;
     const current = landingMap.get(path) ?? emptyLanding(lead.utmSource ?? "", lead.utmMedium ?? "");
     landingMap.set(path, { ...current, bitrixLeads: current.bitrixLeads + 1 });
   }
-  for (const deal of wonDeals) {
-    const path = normalizeLandingPath(deal.landingPage)
-      || normalizeLandingPath(deal.leadId ? leadsById.get(deal.leadId)?.landingPage ?? null : null);
-    if (!path) continue;
-    const current = landingMap.get(path) ?? emptyLanding();
-    landingMap.set(path, {
+
+  const landingPages = Array.from(landingMap.entries())
+    .map(([landingPage, stats]) => ({ landingPage, ...stats }))
+    .sort((a, b) => b.ga4Sessions - a.ga4Sessions)
+    .slice(0, 20);
+
+  // Real money dimension available in Bitrix: referrer / utm_source, not on-site landing.
+  type SalesSourceStats = { bitrixLeads: number; bitrixInvoices: number; bitrixInvoicesAmount: number; bitrixWonDeals: number; bitrixRevenue: number };
+  const salesSourceMap = new Map<string, SalesSourceStats>();
+  const emptySalesSource = (): SalesSourceStats => ({ bitrixLeads: 0, bitrixInvoices: 0, bitrixInvoicesAmount: 0, bitrixWonDeals: 0, bitrixRevenue: 0 });
+  for (const lead of leads) {
+    const label = salesSourceLabel(lead.landingPage, lead.utmSource);
+    const current = salesSourceMap.get(label) ?? emptySalesSource();
+    salesSourceMap.set(label, { ...current, bitrixLeads: current.bitrixLeads + 1 });
+  }
+  for (const deal of deals) {
+    const linkedLead = deal.leadId ? leadsById.get(deal.leadId) : undefined;
+    const label = salesSourceLabel(deal.landingPage ?? linkedLead?.landingPage, linkedLead?.utmSource);
+    const current = salesSourceMap.get(label) ?? emptySalesSource();
+    salesSourceMap.set(label, {
+      ...current,
+      bitrixInvoices: current.bitrixInvoices + 1,
+      bitrixInvoicesAmount: current.bitrixInvoicesAmount + (deal.invoiceAmount || deal.opportunity)
+    });
+  }
+  for (const deal of paidDeals) {
+    const linkedLead = deal.leadId ? leadsById.get(deal.leadId) : undefined;
+    const label = salesSourceLabel(deal.landingPage ?? linkedLead?.landingPage, linkedLead?.utmSource);
+    const current = salesSourceMap.get(label) ?? emptySalesSource();
+    salesSourceMap.set(label, {
       ...current,
       bitrixWonDeals: current.bitrixWonDeals + 1,
       bitrixRevenue: current.bitrixRevenue + deal.opportunity
     });
   }
 
-  const landingPages = Array.from(landingMap.entries())
-    .map(([landingPage, stats]) => ({ landingPage, ...stats }))
-    .sort((a, b) => b.bitrixRevenue - a.bitrixRevenue || b.ga4Sessions - a.ga4Sessions)
+  const salesSources = Array.from(salesSourceMap.entries())
+    .map(([source, stats]) => ({ source, ...stats }))
+    .sort((a, b) => b.bitrixInvoicesAmount - a.bitrixInvoicesAmount || b.bitrixInvoices - a.bitrixInvoices || b.bitrixLeads - a.bitrixLeads)
     .slice(0, 20);
 
   const bitrixLeadsWithUtm = leads.filter((lead) => lead.utmCampaign || lead.utmSource || lead.utmMedium).length;
@@ -218,6 +281,7 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
       issues
     },
     campaigns: campaigns.slice(0, 30),
-    landingPages
+    landingPages,
+    salesSources
   };
 }

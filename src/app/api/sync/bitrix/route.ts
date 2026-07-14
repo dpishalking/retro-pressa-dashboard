@@ -3,6 +3,7 @@ import { syncBitrixMetrics } from "@/lib/bitrix/connector";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
 

@@ -5,6 +5,7 @@ import type { PeriodKey } from "@/types/metrics";
 export type BitrixSnapshotLead = {
   id: string;
   dateCreate: string | null;
+  statusId: string | null;
   sourceId: string | null;
   assignedById: string;
   managerName: string;
@@ -30,8 +31,11 @@ export type BitrixSnapshotDeal = {
   leadId: string | null;
   dateCreate: string | null;
   closeDate: string | null;
+  /** Invoice event date used for period attribution. */
   invoiceDate: string | null;
   opportunity: number;
+  /** Prefer «Сумма для счета», fallback to opportunity. */
+  invoiceAmount: number;
   stageId: string | null;
   stageSemanticId: string | null;
   sourceId: string | null;
@@ -41,10 +45,12 @@ export type BitrixSnapshotDeal = {
   utmCampaign: string | null;
   landingPage: string | null;
   products: BitrixSnapshotProductRow[];
+  /** How this deal entered the invoice set. */
+  invoiceSource?: "invoice_date_field" | "stage_history";
 };
 
 export type BitrixSnapshot = {
-  version: 1;
+  version: 2;
   period: PeriodKey;
   periodStart: string;
   periodEnd: string;
@@ -54,7 +60,10 @@ export type BitrixSnapshot = {
   productOptions: string[];
   leads: BitrixSnapshotLead[];
   recentLeads: BitrixSnapshotLead[];
+  /** Deals counted as invoices issued in the period. */
   deals: BitrixSnapshotDeal[];
+  /** Calendar paid deals (CLOSEDATE in period, won). */
+  paidDeals: BitrixSnapshotDeal[];
 };
 
 const snapshotDir = path.join(process.cwd(), "data", "bitrix-snapshots");
@@ -71,7 +80,13 @@ export async function readBitrixSnapshot(period: PeriodKey): Promise<BitrixSnaps
   try {
     const raw = await readFile(snapshotFilePath(period), "utf8");
     const parsed = JSON.parse(raw) as Partial<BitrixSnapshot>;
-    if (parsed?.version !== 1 || parsed.period !== period || !Array.isArray(parsed.deals) || !Array.isArray(parsed.leads)) {
+    if (
+      parsed?.version !== 2
+      || parsed.period !== period
+      || !Array.isArray(parsed.deals)
+      || !Array.isArray(parsed.paidDeals)
+      || !Array.isArray(parsed.leads)
+    ) {
       return null;
     }
     return parsed as BitrixSnapshot;

@@ -436,7 +436,11 @@ async function loadManagerDialogExportsFromBitrix(input: {
     grouped.set(message.dialogId, [...(grouped.get(message.dialogId) ?? []), message]);
   });
   const summaries = new Map(summarizeDialogs(messages).map((summary) => [summary.dialogId, summary]));
-  const managerDeals = snapshot.deals.filter((deal) => managerMatchesBitrixDeal(deal, input.managerQuery));
+  const dealsById = new Map<string, BitrixSnapshotDeal>();
+  for (const deal of [...snapshot.deals, ...(snapshot.paidDeals ?? [])]) {
+    dealsById.set(deal.id, deal);
+  }
+  const managerDeals = Array.from(dealsById.values()).filter((deal) => managerMatchesBitrixDeal(deal, input.managerQuery));
 
   const successfulRows: ManagerDialogExportRow[] = [];
   const handledDialogIds = new Set<string>();

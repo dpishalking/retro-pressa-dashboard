@@ -15,12 +15,12 @@ export type MetricSsotRule = {
  * Each metric has exactly one authoritative source.
  */
 export const SSOT_RULES: MetricSsotRule[] = [
-  { metricId: "paidLeads", label: "Платные лиды", primarySource: "google_marketing", reconcileWith: "bitrix", warningDeltaPct: 0.08, criticalDeltaPct: 0.15 },
-  { metricId: "organicLeads", label: "Органические лиды", primarySource: "google_marketing", reconcileWith: "bitrix", warningDeltaPct: 0.1, criticalDeltaPct: 0.2 },
+  { metricId: "paidLeads", label: "Платные лиды", primarySource: "bitrix", reconcileWith: "google_marketing", warningDeltaPct: 0.08, criticalDeltaPct: 0.15 },
+  { metricId: "organicLeads", label: "Органические лиды", primarySource: "bitrix", reconcileWith: "google_marketing", warningDeltaPct: 0.1, criticalDeltaPct: 0.2 },
   { metricId: "qualifiedLeads", label: "Квал-лиды", primarySource: "google_marketing", reconcileWith: "bitrix", warningDeltaPct: 0.1, criticalDeltaPct: 0.2 },
   { metricId: "adSpend", label: "Рекламный бюджет", primarySource: "google_marketing" },
-  { metricId: "cpl", label: "CPL", primarySource: "google_marketing" },
-  { metricId: "cpql", label: "CPQL", primarySource: "google_marketing" },
+  { metricId: "cpl", label: "CPL", primarySource: "computed" },
+  { metricId: "cpql", label: "CPQL", primarySource: "computed" },
 
   { metricId: "revenue", label: "Выручка", primarySource: "bitrix" },
   { metricId: "salesCount", label: "Продажи", primarySource: "bitrix" },

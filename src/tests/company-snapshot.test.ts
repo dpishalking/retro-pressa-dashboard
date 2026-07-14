@@ -16,14 +16,14 @@ const canonical = buildCanonicalMonthly({
   calendarDays: 30
 });
 
-assert.equal(canonical.paidLeads, 2260);
+assert.equal(canonical.paidLeads, 1000);
 assert.equal(canonical.revenue, monthlyMetrics[1]!.revenue);
 assert.equal(canonical.adSpend, 4548);
 
-const entry = reconcileMetric(ssotRule("paidLeads")!, 2260, 2100, "bitrix");
+const entry = reconcileMetric(ssotRule("paidLeads")!, 1000, 2260, "google_marketing");
 const reconciliations = collectReconciliations([entry]);
 assert.equal(reconciliations.length, 1);
-assert.equal(reconciliations[0]?.primaryValue, 2260);
+assert.equal(reconciliations[0]?.primaryValue, 1000);
 assert.equal(reconciliations[0]?.resolution, "primary_wins");
 
 const snapshot = buildFallbackCompanySnapshot("june-2026");

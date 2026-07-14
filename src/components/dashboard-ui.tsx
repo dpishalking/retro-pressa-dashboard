@@ -667,6 +667,63 @@ function dailyFactAt(items: DailyMetrics[], elapsedDays: number) {
   };
 }
 
+function SourceOfTruthPanel({
+  truth,
+  adSpend,
+  sheetsLeads
+}: {
+  truth: BitrixTruthSummary | null;
+  adSpend: number;
+  sheetsLeads?: { paid: number; organic: number; ql: number } | null;
+}) {
+  if (!truth) {
+    return (
+      <section className="card p-4">
+        <SectionHead title="Источник правды" subtitle="После синхронизации Bitrix здесь появятся определения метрик и причины расхождений" />
+      </section>
+    );
+  }
+
+  const gaps = truth.knownGaps.map((gap) => (
+    gap.metric === "Бюджет трафика"
+      ? { ...gap, pullable: `${Math.round(adSpend)} € (Google Sheets)` }
+      : gap
+  ));
+
+  return (
+    <section className="card p-4">
+      <SectionHead
+        title="Источник правды"
+        subtitle={`${truth.dataSource === "snapshot" ? "snapshot" : "live"} · ${truth.periodStart.slice(0, 10)} → ${truth.periodEnd.slice(0, 10)} · без подгонки чисел`}
+      />
+      <div className="grid gap-3 lg:grid-cols-2">
+        {Object.values(truth.definitions).map((item) => (
+          <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="text-sm font-black text-slate-950">{item.label}</div>
+            <div className="mt-1 text-xs font-bold uppercase tracking-wide text-blue-700">{item.source}</div>
+            <p className="mt-2 text-sm leading-5 text-slate-600">{item.definition}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        Bitrix сейчас: счета {number(truth.dealsLoaded)} (дата поля {number(truth.invoicesFromDateField)} + стадия {number(truth.invoicesFromStageHistory)}),
+        оплаты {number(truth.paidDealsLoaded)}, лиды {number(truth.leadsLoaded)} из {number(truth.leadsRawLoaded)} сырых (−{number(truth.leadsExcludedSpamReviews)} спам/отзывы).
+        {sheetsLeads ? ` Sheets (справочно, не KPI): лиды ${number(sheetsLeads.paid + sheetsLeads.organic)}, QL ${number(sheetsLeads.ql)}.` : ""}
+      </div>
+      <div className="mt-4 space-y-3">
+        <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Если расходится с ручным отчётом</h3>
+        {gaps.map((gap) => (
+          <div key={gap.metric} className="rounded-xl border border-slate-200 p-3">
+            <div className="font-bold text-slate-950">{gap.metric}</div>
+            <div className="mt-1 text-sm text-slate-600">Тянем: <b className="text-slate-950">{gap.pullable}</b>{gap.reported ? <> · ручной ориентир: <b className="text-slate-950">{gap.reported}</b></> : null}</div>
+            <p className="mt-2 text-sm leading-5 text-slate-600">{gap.cause}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Overview({
   current,
   monthlyPlan,
@@ -674,7 +731,9 @@ function Overview({
   showPlan,
   invoiceCountries,
   invoiceManagers,
-  invoiceProducts
+  invoiceProducts,
+  bitrixTruth,
+  sheetsLeadCompare
 }: {
   current: MonthlyMetrics;
   previous: MonthlyMetrics;
@@ -684,6 +743,8 @@ function Overview({
   invoiceCountries: CountryInvoiceMetrics[];
   invoiceManagers: ManagerInvoiceMetrics[];
   invoiceProducts: ProductInvoiceMetrics[];
+  bitrixTruth: BitrixTruthSummary | null;
+  sheetsLeadCompare: { paid: number; organic: number; ql: number } | null;
 }) {
   const elapsedDays = elapsedDaysForPeriod(current.month);
   const monthPlan = deriveMonthlyPlan(monthlyPlan);
@@ -780,8 +841,10 @@ function Overview({
           </div>
         </section> : null}
 
+        <SourceOfTruthPanel truth={bitrixTruth} adSpend={current.adSpend} sheetsLeads={sheetsLeadCompare} />
+
         <section className="card p-4">
-          <SectionHead title={showPlan ? "План-факт оплат" : "Факт оплат по дням"} subtitle={hasFacts ? "Оплаты внутри когорты выставленных счетов" : `Факты за ${periodLabel(current.month).toLowerCase()} ещё не загружены из Битрикса`} />
+          <SectionHead title={showPlan ? "План-факт оплат" : "Факт оплат по дням"} subtitle={hasFacts ? "Оплаты по CLOSEDATE (календарь, воронка Продажа)" : `Факты за ${periodLabel(current.month).toLowerCase()} ещё не загружены из Битрикса`} />
           {hasFacts ? (
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -1978,6 +2041,31 @@ type GoogleSyncPayload = {
   };
 };
 
+type BitrixTruthSummary = {
+  leadsLoaded: number;
+  leadsRawLoaded: number;
+  leadsExcludedSpamReviews: number;
+  recentClientsLoaded: number;
+  dealsLoaded: number;
+  paidDealsLoaded: number;
+  invoicesFromDateField: number;
+  invoicesFromStageHistory: number;
+  usersLoaded: number;
+  periodStart: string;
+  periodEnd: string;
+  dataSource: "snapshot" | "live";
+  snapshotUpdatedAt: string | null;
+  snapshotPath: string;
+  definitions: {
+    invoices: { label: string; source: string; definition: string };
+    paid: { label: string; source: string; definition: string };
+    leads: { label: string; source: string; definition: string };
+    qualifiedLeads: { label: string; source: string; definition: string };
+    adSpend: { label: string; source: string; definition: string };
+  };
+  knownGaps: Array<{ metric: string; pullable: string; reported?: string; cause: string }>;
+};
+
 type BitrixSyncPayload = {
   monthly: MonthlyMetrics;
   daily: DailyMetrics[];
@@ -1987,17 +2075,7 @@ type BitrixSyncPayload = {
   invoiceProducts: ProductInvoiceMetrics[];
   countryOptions?: string[];
   productOptions?: string[];
-  summary: {
-    leadsLoaded: number;
-    recentClientsLoaded: number;
-    dealsLoaded: number;
-    usersLoaded: number;
-    periodStart: string;
-    periodEnd: string;
-    dataSource: "snapshot" | "live";
-    snapshotUpdatedAt: string | null;
-    snapshotPath: string;
-  };
+  summary: BitrixTruthSummary;
 };
 
 type ConversationImportPayload = {
@@ -2468,6 +2546,8 @@ export function DashboardApp({
     state: "idle",
     message: "Bitrix ещё не синхронизировался."
   });
+  const [bitrixTruth, setBitrixTruth] = useState<BitrixTruthSummary | null>(null);
+  const [sheetsLeadCompare, setSheetsLeadCompare] = useState<{ paid: number; organic: number; ql: number } | null>(null);
   const bitrixRequestId = useRef(0);
   const lastGooglePeriod = useRef<string | null>(null);
   const conversationImportLoaded = useRef(false);
@@ -2566,43 +2646,43 @@ export function DashboardApp({
     if (hasCohortFilter) {
       setGoogleStatus({
         state: "idle",
-        message: "Google Sheets не применяются к срезу по стране, менеджеру или продукту."
+        message: "Google Sheets не применяются к срезу по стране, менеджеру или продукту. Бюджет/QL скрыты в срезе."
       });
       return;
     }
+    // SSOT: Google only owns ad spend + QL. Leads come from Bitrix.
     const adSpend = payload.summary.spend;
     setLiveMonthly((items) => items.map((item) => {
       if (item.month !== period) return item;
       return {
         ...item,
-        paidLeads: payload.summary.paidLeads,
-        organicLeads: payload.summary.organicLeads,
         qualifiedLeads: payload.summary.ql,
         adSpend
       };
     }));
     setLiveDaily((items) => mergeDailyByDate(items, payload.daily, (base, incoming) => ({
       ...base,
-      paidLeads: incoming.paidLeads,
-      organicLeads: incoming.organicLeads,
       qualifiedLeads: incoming.qualifiedLeads,
       paidQualifiedLeads: incoming.paidQualifiedLeads,
       organicQualifiedLeads: incoming.organicQualifiedLeads,
       adSpend: incoming.adSpend
     })));
-    setSyncStatus(`Google Sheets обновлены: лиды ${number(payload.summary.paidLeads + payload.summary.organicLeads)}, QL ${number(payload.summary.ql)}, бюджет ${eur(adSpend)}`);
+    setSheetsLeadCompare({
+      paid: payload.summary.paidLeads,
+      organic: payload.summary.organicLeads,
+      ql: payload.summary.ql
+    });
+    setSyncStatus(`Google Sheets: QL ${number(payload.summary.ql)}, бюджет ${eur(adSpend)} (лиды не перезаписываются — SoT Bitrix)`);
   }, [hasCohortFilter, period]);
 
   const applyBitrixSync = useCallback((payload: BitrixSyncPayload) => {
-    const useBitrixLeadTotals = hasCohortFilter;
     setLiveMonthly((items) => {
       const existing = items.find((item) => item.month === payload.monthly.month) ?? payload.monthly;
       return mergeMonthly(items, {
         ...payload.monthly,
-        paidLeads: useBitrixLeadTotals ? payload.monthly.paidLeads : existing.paidLeads || payload.monthly.paidLeads,
-        organicLeads: useBitrixLeadTotals ? payload.monthly.organicLeads : existing.organicLeads || payload.monthly.organicLeads,
-        qualifiedLeads: useBitrixLeadTotals ? payload.monthly.qualifiedLeads : existing.qualifiedLeads || payload.monthly.qualifiedLeads,
-        adSpend: useBitrixLeadTotals ? 0 : existing.adSpend
+        // Keep Sheets-owned metrics when present; Bitrix has no ad spend / QL.
+        qualifiedLeads: hasCohortFilter ? 0 : (existing.qualifiedLeads || 0),
+        adSpend: hasCohortFilter ? 0 : (existing.adSpend || 0)
       });
     });
     setLiveDaily((items) => mergeDailyByDate(items, payload.daily, (base, incoming) => ({
@@ -2613,22 +2693,23 @@ export function DashboardApp({
       revenue: incoming.revenue,
       averagePaidCheck: incoming.averagePaidCheck,
       activeManagers: incoming.activeManagers,
-      adSpend: useBitrixLeadTotals ? 0 : base.adSpend,
-      paidLeads: useBitrixLeadTotals ? incoming.paidLeads : base.paidLeads || incoming.paidLeads,
-      organicLeads: useBitrixLeadTotals ? incoming.organicLeads : base.organicLeads || incoming.organicLeads,
-      qualifiedLeads: useBitrixLeadTotals ? incoming.qualifiedLeads : base.qualifiedLeads || incoming.qualifiedLeads,
-      paidQualifiedLeads: useBitrixLeadTotals ? incoming.paidQualifiedLeads : base.paidQualifiedLeads || incoming.paidQualifiedLeads,
-      organicQualifiedLeads: useBitrixLeadTotals ? incoming.organicQualifiedLeads : base.organicQualifiedLeads || incoming.organicQualifiedLeads
+      paidLeads: incoming.paidLeads,
+      organicLeads: incoming.organicLeads,
+      adSpend: hasCohortFilter ? 0 : base.adSpend,
+      qualifiedLeads: hasCohortFilter ? 0 : base.qualifiedLeads,
+      paidQualifiedLeads: hasCohortFilter ? 0 : base.paidQualifiedLeads,
+      organicQualifiedLeads: hasCohortFilter ? 0 : base.organicQualifiedLeads
     })));
     setLiveManagers(payload.managers);
     setLiveInvoiceCountries(payload.invoiceCountries);
     setLiveInvoiceManagers(payload.invoiceManagers);
     setLiveInvoiceProducts(payload.invoiceProducts);
+    setBitrixTruth(payload.summary);
     if (payload.countryOptions?.length) {
       setCountryOptions(payload.countryOptions);
     }
     setProductOptions(payload.productOptions ?? []);
-    setSyncStatus(`Bitrix обновлён: счета ${number(payload.summary.dealsLoaded)}, оплачено ${eur(payload.monthly.revenue)}, продаж ${number(payload.monthly.salesCount)}`);
+    setSyncStatus(`Bitrix SoT: счета ${number(payload.summary.dealsLoaded)}, оплачено ${number(payload.summary.paidDealsLoaded)} / ${eur(payload.monthly.revenue)}, лиды ${number(payload.summary.leadsLoaded)}`);
   }, [hasCohortFilter]);
 
   const syncGoogleTraffic = useCallback(async (syncOptions?: { refresh?: boolean }) => {
@@ -2656,7 +2737,7 @@ export function DashboardApp({
       const sourceText = data.summary.dataSource === "snapshot" ? "snapshot" : "Google live";
       setGoogleStatus({
         state: "ok",
-        message: `${sourceText}: загружено строк ${data.summary.rowsLoaded}. Платные лиды ${number(data.summary.paidLeads)}, органика ${number(data.summary.organicLeads)}, QL ${number(data.summary.ql)}, бюджет ${eur(data.summary.spend)}, CPL ${eur(data.summary.averageCpl)}.${sources}`
+        message: `${sourceText}: загружено строк ${data.summary.rowsLoaded}. Бюджет ${eur(data.summary.spend)}, QL ${number(data.summary.ql)} (лиды KPI из Bitrix; Sheets справочно: ${number(data.summary.paidLeads + data.summary.organicLeads)}).${sources}`
       });
     } catch (error) {
       setGoogleStatus({
@@ -2704,7 +2785,7 @@ export function DashboardApp({
       const sourceText = data.summary.dataSource === "snapshot" ? "snapshot" : "Bitrix live";
       setBitrixStatus({
         state: "ok",
-        message: `${sourceText}: ${countryText}, ${managerText}, ${productText}. Лиды ${number(data.summary.leadsLoaded)}, клиенты 10 дней ${number(data.summary.recentClientsLoaded)}, счета ${number(data.summary.dealsLoaded)}, продажи ${number(data.monthly.salesCount)}, выручка ${eur(data.monthly.revenue)}.`
+        message: `${sourceText}: ${countryText}, ${managerText}, ${productText}. Лиды ${number(data.summary.leadsLoaded)} (−${number(data.summary.leadsExcludedSpamReviews)} спам/отзывы), счета ${number(data.summary.dealsLoaded)}, оплаты ${number(data.summary.paidDealsLoaded)} / ${eur(data.monthly.revenue)}.`
       });
       return true;
     } catch (error) {
@@ -2777,7 +2858,7 @@ export function DashboardApp({
         productOptions={productOptions}
       />
       {activeTab !== "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} compact /> : null}
-      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} invoiceManagers={liveInvoiceManagers} invoiceProducts={liveInvoiceProducts} /> : null}
+      {activeTab === "Обзор" ? <Overview current={current} previous={previous} monthlyPlan={monthlyPlan} daily={currentDaily} showPlan={showCurrentPlan} invoiceCountries={liveInvoiceCountries} invoiceManagers={liveInvoiceManagers} invoiceProducts={liveInvoiceProducts} bitrixTruth={bitrixTruth} sheetsLeadCompare={sheetsLeadCompare} /> : null}
       {activeTab === "Обзор" ? <DetailNavigation activeTab={activeTab} setActiveTab={setActiveTab} /> : null}
       {activeTab === "Growth Intelligence" ? <GrowthIntelligenceTab current={current} previous={previous} quality={quality} daily={currentDaily} monthlyPlan={monthlyPlan} conversationDashboard={conversationDashboard} /> : null}
       {activeTab === "План месяца" ? <MonthPlanningTab current={current} monthlyPlan={monthlyPlan} setMonthlyPlan={setMonthlyPlan} daily={currentDaily} /> : null}
