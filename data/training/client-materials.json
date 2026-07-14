@@ -2,58 +2,256 @@
   "version": 1,
   "materials": [
     {
-      "id": "retro-newspaper-izvestiya-birthday",
-      "title": "Поздравительная газета: пример разворота",
-      "description": "Можно отправлять клиенту, когда нужно быстро показать, как выглядит поздравительная газета.",
-      "category": "Поздравительные газеты",
+      "id": "personal-newspaper-site-photo",
+      "title": "Газета из важной даты — фото с сайта",
+      "description": "Визуал для объяснения продукта: настоящее издание из дня рождения или другой важной даты.",
+      "category": "Газета из даты",
       "type": "image",
-      "url": "/training/retro-newspaper/izvestiya-den-rozhdeniya.png",
+      "url": "https://static.tildacdn.net/tild6335-3161-4537-b433-353738363539/1_.webp",
       "sortOrder": 1
-    },
-    {
-      "id": "retro-newspaper-pravda-child",
-      "title": "Газета на дату рождения: пример",
-      "description": "Визуал для объяснения формата подарка с газетой на конкретную дату.",
-      "category": "Оригиналы и репродукции",
-      "type": "image",
-      "url": "/training/retro-newspaper/pravda-rebenok.png",
-      "sortOrder": 2
-    },
-    {
-      "id": "gift-edition-forbes",
-      "title": "Персональный выпуск журнала Forbes",
-      "description": "Пример персонализированного журнального подарка для клиента.",
-      "category": "Персональные журналы",
-      "type": "image",
-      "url": "/training/gift-edition/forbes-maksim.png",
-      "sortOrder": 3
-    },
-    {
-      "id": "gift-edition-glamour",
-      "title": "Персональный выпуск журнала Glamour",
-      "description": "Визуал для клиентов, которые выбирают персонализированный журнал.",
-      "category": "Персональные журналы",
-      "type": "image",
-      "url": "/training/gift-edition/glamour-tatyana.png",
-      "sortOrder": 4
     },
     {
       "id": "personal-newspaper-formats",
       "title": "Форматы персональной газеты",
       "description": "Показывает варианты оформления и помогает объяснить клиенту, что он получит.",
-      "category": "Персональные газеты",
+      "category": "Газета из даты",
       "type": "image",
       "url": "/training/personal-newspaper/catalog-formats.webp",
+      "sortOrder": 2
+    },
+    {
+      "id": "life-book-site-photo",
+      "title": "Книга жизни — фото с сайта",
+      "description": "Визуал для объяснения книги жизни в заголовках газет.",
+      "category": "Книга жизни",
+      "type": "image",
+      "url": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
+      "sortOrder": 3
+    },
+    {
+      "id": "retro-newspaper-site-photo",
+      "title": "Поздравительная газета — фото с сайта",
+      "description": "Визуал для объяснения ретро-газеты с личными фото и поздравлением.",
+      "category": "Поздравительные газеты",
+      "type": "image",
+      "url": "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
+      "sortOrder": 4
+    },
+    {
+      "id": "retro-newspaper-izvestiya-birthday",
+      "title": "Известия — поздравление с днём рождения",
+      "description": "Пример поздравительной газеты, который можно отправлять клиенту как визуал подарка.",
+      "category": "Поздравительные газеты",
+      "type": "image",
+      "url": "/training/retro-newspaper/izvestiya-den-rozhdeniya.png",
       "sortOrder": 5
     },
     {
-      "id": "client-review-video",
+      "id": "retro-newspaper-pravda-child",
+      "title": "Правда — поздравительная газета с фото",
+      "description": "Пример ретро-газеты с персональным поздравлением и фотографиями.",
+      "category": "Поздравительные газеты",
+      "type": "image",
+      "url": "/training/retro-newspaper/pravda-rebenok.png",
+      "sortOrder": 6
+    },
+    {
+      "id": "gift-edition-site-photo",
+      "title": "Персонализированное издание — фото с сайта",
+      "description": "Общий визуал для персонализированной газеты Party Page и глянцевого журнала.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
+      "sortOrder": 7
+    },
+    {
+      "id": "gift-edition-zhenschina-goda-marina",
+      "title": "Женщина года — персональный журнал",
+      "description": "Пример персонального журнала для клиентской презентации.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/zhenschina-goda-marina.png",
+      "sortOrder": 8
+    },
+    {
+      "id": "gift-edition-forbes-vitaliy",
+      "title": "Forbes — персональный журнал",
+      "description": "Пример премиального персонализированного журнального подарка.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/forbes-vitaliy.png",
+      "sortOrder": 9
+    },
+    {
+      "id": "gift-edition-zhl-elena",
+      "title": "ЖЗЛ — персональный журнал",
+      "description": "Пример обложки персонального журнала для клиента.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/zhl-elena.png",
+      "sortOrder": 10
+    },
+    {
+      "id": "gift-edition-muzhchina-goda-igor",
+      "title": "Мужчина года — персональный журнал",
+      "description": "Пример персонализированного журнального подарка.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/muzhchina-goda-igor.png",
+      "sortOrder": 11
+    },
+    {
+      "id": "gift-edition-forbes-adlet",
+      "title": "Forbes — персональный журнал",
+      "description": "Визуал для клиентов, которые выбирают персональный журнал.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/forbes-adlet.png",
+      "sortOrder": 12
+    },
+    {
+      "id": "gift-edition-glamour-tatyana",
+      "title": "Glamour — персональный журнал",
+      "description": "Пример глянцевого персонального журнала.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/glamour-tatyana.png",
+      "sortOrder": 13
+    },
+    {
+      "id": "gift-edition-forbes-maksim",
+      "title": "Forbes — персональный журнал",
+      "description": "Пример персонализированного журнального подарка для клиента.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/forbes-maksim.png",
+      "sortOrder": 14
+    },
+    {
+      "id": "gift-edition-malenkiy-rasskaz",
+      "title": "Маленький рассказ — персональная книга",
+      "description": "Пример персональной книги или журнального формата.",
+      "category": "Персональные журналы",
+      "type": "image",
+      "url": "/training/gift-edition/malenkiy-rasskaz.png",
+      "sortOrder": 15
+    },
+    {
+      "id": "review-personal-newspaper-mf7",
+      "title": "Видеоотзыв клиента — газета из даты",
+      "description": "Короткий отзыв, который можно отправить клиенту как социальное доказательство.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/MF7uEeiMsPg",
+      "sortOrder": 16
+    },
+    {
+      "id": "review-personal-newspaper-fl1",
+      "title": "Видеоотзыв клиента — газета из даты",
+      "description": "Отзыв клиента по продукту с газетой из важной даты.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://youtu.be/FL1n9bKhNWc",
+      "sortOrder": 17
+    },
+    {
+      "id": "review-personal-newspaper-crys",
+      "title": "Видеоотзыв клиента — газета из даты",
+      "description": "Короткий видеоотзыв для отправки клиенту.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/crysSL57yWY",
+      "sortOrder": 18
+    },
+    {
+      "id": "review-personal-newspaper-uua",
+      "title": "Видеоотзыв клиента",
+      "description": "Клиентский видеоотзыв из раздела отзывов.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/UUAeIw7td_o",
+      "sortOrder": 19
+    },
+    {
+      "id": "review-personal-newspaper-kuq",
       "title": "Видеоотзыв клиента",
       "description": "Короткое видео, которое можно отправить как социальное доказательство.",
-      "category": "Видео",
+      "category": "Видеоотзывы",
       "type": "video",
-      "url": "https://www.youtube.com/watch?v=kUQP5Dxz8gg",
-      "sortOrder": 6
+      "url": "https://www.youtube.com/shorts/kUQP5Dxz8gg",
+      "sortOrder": 20
+    },
+    {
+      "id": "review-personal-newspaper-xpw",
+      "title": "Видеоотзыв клиента",
+      "description": "Клиентский видеоотзыв для отправки в переписке.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/xPw3Wj2GLA4",
+      "sortOrder": 21
+    },
+    {
+      "id": "review-personal-newspaper-lvq",
+      "title": "Видеоотзыв клиента",
+      "description": "Видеоотзыв из продуктового раздела.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/lvq2Io-tqRI",
+      "sortOrder": 22
+    },
+    {
+      "id": "review-life-book-vyx",
+      "title": "Видеоотзыв клиента — книга жизни",
+      "description": "Отзыв по книге жизни в заголовках газет.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/VyXhRMkL-zw",
+      "sortOrder": 23
+    },
+    {
+      "id": "review-retro-newspaper-jup",
+      "title": "Видеоотзыв клиента — поздравительная газета",
+      "description": "Отзыв по поздравительной газете с фото и текстом.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/jUp4II9pxsI",
+      "sortOrder": 24
+    },
+    {
+      "id": "review-gift-edition-20j",
+      "title": "Видеоотзыв клиента — персональный журнал",
+      "description": "Клиентский отзыв по персонализированному изданию.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/20JAY71AM6I",
+      "sortOrder": 25
+    },
+    {
+      "id": "review-gift-edition-ycc",
+      "title": "Видеоотзыв клиента — персональный журнал",
+      "description": "Короткий видеоотзыв по персональному журналу.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/YCCq1nm-NLQ",
+      "sortOrder": 26
+    },
+    {
+      "id": "review-common-vob",
+      "title": "Видеоотзыв клиента",
+      "description": "Видеоотзыв из общей подборки клиентских отзывов.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/watch?v=voB0xgY9STM&t=4s",
+      "sortOrder": 27
+    },
+    {
+      "id": "review-common-7wyg",
+      "title": "Видеоотзыв клиента",
+      "description": "Видеоотзыв из общей подборки клиентских отзывов.",
+      "category": "Видеоотзывы",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/7wygdVyplo8",
+      "sortOrder": 28
     }
   ]
 }
