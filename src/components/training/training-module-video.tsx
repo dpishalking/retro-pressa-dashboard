@@ -35,6 +35,7 @@ function ModuleVideoContent({
   const currentIndex = videos.findIndex((item) => item.id === videoId);
   const prevVideo = currentIndex > 0 ? videos[currentIndex - 1] : null;
   const nextVideo = currentIndex >= 0 && currentIndex < videos.length - 1 ? videos[currentIndex + 1] : null;
+  const hasQuiz = module.questions.length > 0;
 
   if (!video) {
     return (
@@ -89,12 +90,20 @@ function ModuleVideoContent({
             {nextVideo.title}
             <ArrowRight size={16} />
           </Link>
-        ) : (
+        ) : hasQuiz ? (
           <Link
             href={`/training/${stageId}/${moduleId}/quiz`}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
           >
             К тесту модуля
+            <ArrowRight size={16} />
+          </Link>
+        ) : (
+          <Link
+            href={`/training/${stageId}/${moduleId}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+          >
+            К материалам модуля
             <ArrowRight size={16} />
           </Link>
         )}

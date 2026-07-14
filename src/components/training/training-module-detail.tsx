@@ -110,8 +110,8 @@ function ModuleDetailContent({ stageId, moduleId }: { stageId: TrackStageId; mod
         </section>
       ) : null}
 
-      <section className="card p-6">
-        {hasQuiz ? (
+      {hasQuiz ? (
+        <section className="card p-6">
           <Link
             href={`/training/${stageId}/${module.id}/quiz`}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700"
@@ -119,11 +119,9 @@ function ModuleDetailContent({ stageId, moduleId }: { stageId: TrackStageId; mod
             <PlayCircle size={18} />
             Перейти к тесту
           </Link>
-        ) : (
-          <p className="text-sm text-slate-600">Тест для этого модуля ещё не добавлен.</p>
-        )}
-        <p className="mt-3 text-xs text-slate-500">Проходной балл: {module.passingScore}%</p>
-      </section>
+          <p className="mt-3 text-xs text-slate-500">Проходной балл: {module.passingScore}%</p>
+        </section>
+      ) : null}
     </div>
   );
 }
