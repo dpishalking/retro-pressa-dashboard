@@ -290,6 +290,13 @@
           "goal": "Показать, зачем нажимать «Ответить», закреплять диалог за собой и следить за уведомлениями в контакт-центре.",
           "embedUrl": "https://www.youtube.com/embed/xUuwlmATtLs",
           "sortOrder": 2
+        },
+        {
+          "id": "bitrix-leads-workflow-video-3",
+          "title": "Дополнение по работе с лидами",
+          "goal": "Закрепить порядок действий при взятии лида и диалога в работу.",
+          "embedUrl": "https://www.youtube.com/embed/0Cqn9NkkvLM",
+          "sortOrder": 3
         }
       ],
       "questions": []

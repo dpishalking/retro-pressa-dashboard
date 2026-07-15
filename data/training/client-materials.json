@@ -137,6 +137,15 @@
       "sortOrder": 15
     },
     {
+      "id": "packaging-options",
+      "title": "Варианты упаковки",
+      "description": "Визуал с вариантами упаковки для газет, латвийской прессы и оригинальных журналов.",
+      "category": "Упаковка",
+      "type": "image",
+      "url": "/training/packaging/packaging-options.png",
+      "sortOrder": 16
+    },
+    {
       "id": "review-personal-newspaper-mf7",
       "title": "Видеоотзыв клиента — газета из даты",
       "description": "Короткий отзыв, который можно отправить клиенту как социальное доказательство.",
