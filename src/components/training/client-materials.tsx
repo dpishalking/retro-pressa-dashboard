@@ -70,8 +70,8 @@ function MaterialCard({
   onCopy: (material: ClientMaterial) => void;
   onShare: (material: ClientMaterial) => void;
 }) {
-  const fileUrl = material.downloadUrl ?? material.url;
   const canDownload = material.type !== "video" || Boolean(material.downloadUrl);
+  const downloadUrl = `/api/training/client-materials/download?id=${encodeURIComponent(material.id)}`;
 
   return (
     <article className="card flex h-full flex-col p-5">
@@ -88,8 +88,7 @@ function MaterialCard({
       <div className="mt-5 flex flex-wrap gap-2">
         {canDownload ? (
           <a
-            href={fileUrl}
-            download
+            href={downloadUrl}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700"
           >
             <Download size={16} />
