@@ -20,6 +20,15 @@
       "sortOrder": 3
     },
     {
+      "id": "life-book-video-preview",
+      "title": "Как выглядит книга жизни",
+      "description": "Видео показывает внешний вид книги жизни в заголовках газет вживую.",
+      "category": "Книга жизни в заголовках газет",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/0Cqn9NkkvLM",
+      "sortOrder": 4
+    },
+    {
       "id": "retro-newspaper-site-photo",
       "title": "Поздравительная газета — фото с сайта",
       "description": "Визуал для объяснения ретро-газеты с личными фото и поздравлением.",
@@ -117,6 +126,15 @@
       "type": "image",
       "url": "/training/gift-edition/forbes-maksim.png",
       "sortOrder": 14
+    },
+    {
+      "id": "gift-edition-gloss-video-preview",
+      "title": "Как выглядит персональный журнал",
+      "description": "Видео показывает внешний вид персонального глянцевого журнала вживую.",
+      "category": "Персональный журнал (глянец)",
+      "type": "video",
+      "url": "https://youtube.com/shorts/Av_eFuPX42Q?feature=share",
+      "sortOrder": 15
     },
     {
       "id": "gift-edition-malenkiy-rasskaz",
