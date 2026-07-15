@@ -11,15 +11,6 @@
       "sortOrder": 1
     },
     {
-      "id": "personal-newspaper-formats",
-      "title": "Форматы персональной газеты",
-      "description": "Показывает варианты оформления и помогает объяснить клиенту, что он получит.",
-      "category": "Газета из даты",
-      "type": "image",
-      "url": "/training/personal-newspaper/catalog-formats.webp",
-      "sortOrder": 2
-    },
-    {
       "id": "life-book-site-photo",
       "title": "Книга жизни — фото с сайта",
       "description": "Визуал для объяснения книги жизни в заголовках газет.",
