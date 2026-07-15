@@ -8,6 +8,19 @@ import type { ClientMaterial, ClientMaterialsCatalog } from "@/types/training";
 
 const catalog = clientMaterialsCatalog as ClientMaterialsCatalog;
 
+const CLIENT_MATERIAL_CATEGORY_ORDER = [
+  "Газета из даты",
+  "Журнал из даты",
+  "Поздравительный журнал",
+  "Поздравительная газета",
+  "Персональный журнал (глянец)",
+  "Персональная газета",
+  "Книга жизни в заголовках газет",
+  "Персональная книга",
+  "Упаковка",
+  "Видеоотзывы"
+];
+
 function publicUrl(url: string) {
   if (/^https?:\/\//.test(url)) return url;
   if (typeof window === "undefined") return url;
@@ -136,10 +149,13 @@ export function ClientMaterials() {
     () => [...catalog.materials].sort((a, b) => a.sortOrder - b.sortOrder),
     []
   );
-  const categories = useMemo(
-    () => ["Все", ...Array.from(new Set(materials.map((material) => material.category)))],
-    [materials]
-  );
+  const categories = useMemo(() => {
+    const materialCategories = new Set(materials.map((material) => material.category));
+    const extraCategories = Array.from(materialCategories).filter(
+      (category) => !CLIENT_MATERIAL_CATEGORY_ORDER.includes(category)
+    );
+    return ["Все", ...CLIENT_MATERIAL_CATEGORY_ORDER, ...extraCategories];
+  }, [materials]);
   const filteredMaterials = useMemo(
     () =>
       activeCategory === "Все"

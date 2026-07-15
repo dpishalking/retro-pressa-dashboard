@@ -14,7 +14,7 @@
       "id": "life-book-site-photo",
       "title": "Книга жизни — фото с сайта",
       "description": "Визуал для объяснения книги жизни в заголовках газет.",
-      "category": "Книга жизни",
+      "category": "Книга жизни в заголовках газет",
       "type": "image",
       "url": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
       "sortOrder": 3
@@ -23,7 +23,7 @@
       "id": "retro-newspaper-site-photo",
       "title": "Поздравительная газета — фото с сайта",
       "description": "Визуал для объяснения ретро-газеты с личными фото и поздравлением.",
-      "category": "Поздравительные газеты",
+      "category": "Поздравительная газета",
       "type": "image",
       "url": "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
       "sortOrder": 4
@@ -32,7 +32,7 @@
       "id": "retro-newspaper-izvestiya-birthday",
       "title": "Известия — поздравление с днём рождения",
       "description": "Пример поздравительной газеты, который можно отправлять клиенту как визуал подарка.",
-      "category": "Поздравительные газеты",
+      "category": "Поздравительная газета",
       "type": "image",
       "url": "/training/retro-newspaper/izvestiya-den-rozhdeniya.png",
       "sortOrder": 5
@@ -41,7 +41,7 @@
       "id": "retro-newspaper-pravda-child",
       "title": "Правда — поздравительная газета с фото",
       "description": "Пример ретро-газеты с персональным поздравлением и фотографиями.",
-      "category": "Поздравительные газеты",
+      "category": "Поздравительная газета",
       "type": "image",
       "url": "/training/retro-newspaper/pravda-rebenok.png",
       "sortOrder": 6
@@ -50,7 +50,7 @@
       "id": "gift-edition-site-photo",
       "title": "Персонализированное издание — фото с сайта",
       "description": "Общий визуал для персонализированной газеты Party Page и глянцевого журнала.",
-      "category": "Персональные журналы",
+      "category": "Персональная газета",
       "type": "image",
       "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
       "sortOrder": 7
@@ -59,7 +59,7 @@
       "id": "gift-edition-zhenschina-goda-marina",
       "title": "Женщина года — персональный журнал",
       "description": "Пример персонального журнала для клиентской презентации.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/zhenschina-goda-marina.png",
       "sortOrder": 8
@@ -68,7 +68,7 @@
       "id": "gift-edition-forbes-vitaliy",
       "title": "Forbes — персональный журнал",
       "description": "Пример премиального персонализированного журнального подарка.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/forbes-vitaliy.png",
       "sortOrder": 9
@@ -77,7 +77,7 @@
       "id": "gift-edition-zhl-elena",
       "title": "ЖЗЛ — персональный журнал",
       "description": "Пример обложки персонального журнала для клиента.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/zhl-elena.png",
       "sortOrder": 10
@@ -86,7 +86,7 @@
       "id": "gift-edition-muzhchina-goda-igor",
       "title": "Мужчина года — персональный журнал",
       "description": "Пример персонализированного журнального подарка.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/muzhchina-goda-igor.png",
       "sortOrder": 11
@@ -95,7 +95,7 @@
       "id": "gift-edition-forbes-adlet",
       "title": "Forbes — персональный журнал",
       "description": "Визуал для клиентов, которые выбирают персональный журнал.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/forbes-adlet.png",
       "sortOrder": 12
@@ -104,7 +104,7 @@
       "id": "gift-edition-glamour-tatyana",
       "title": "Glamour — персональный журнал",
       "description": "Пример глянцевого персонального журнала.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/glamour-tatyana.png",
       "sortOrder": 13
@@ -113,7 +113,7 @@
       "id": "gift-edition-forbes-maksim",
       "title": "Forbes — персональный журнал",
       "description": "Пример персонализированного журнального подарка для клиента.",
-      "category": "Персональные журналы",
+      "category": "Персональный журнал (глянец)",
       "type": "image",
       "url": "/training/gift-edition/forbes-maksim.png",
       "sortOrder": 14
@@ -122,7 +122,7 @@
       "id": "gift-edition-malenkiy-rasskaz",
       "title": "Маленький рассказ — персональная книга",
       "description": "Пример персональной книги или журнального формата.",
-      "category": "Персональные журналы",
+      "category": "Персональная книга",
       "type": "image",
       "url": "/training/gift-edition/malenkiy-rasskaz.png",
       "sortOrder": 15
