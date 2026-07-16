@@ -200,6 +200,51 @@
       "sortOrder": 7
     },
     {
+      "id": "personal-newspaper-love-times-semya",
+      "title": "Love Times и Семейная газета",
+      "description": "Примеры персональных газет: «Love Times» и «Семейная газета» с фото и поздравлением.",
+      "category": "Персональная газета",
+      "type": "image",
+      "url": "/training/personal-newspaper/love-times-semya-gazeta.png",
+      "sortOrder": 8
+    },
+    {
+      "id": "personal-newspaper-muzhskaya-pravda-spread",
+      "title": "Мужская правда — разворот",
+      "description": "Пример персональной газеты «Мужская правда» с историей и фото героя.",
+      "category": "Персональная газета",
+      "type": "image",
+      "url": "/training/personal-newspaper/muzhskaya-pravda-spread-2024.png",
+      "sortOrder": 9
+    },
+    {
+      "id": "personal-newspaper-muzhskaya-pravda-cover",
+      "title": "Мужская правда — обложка",
+      "description": "Пример обложки персональной газеты «Мужская правда».",
+      "category": "Персональная газета",
+      "type": "image",
+      "url": "/training/personal-newspaper/muzhskaya-pravda-cover-2026.png",
+      "sortOrder": 10
+    },
+    {
+      "id": "personal-newspaper-muzhskaya-pravda-open",
+      "title": "Мужская правда — открытый разворот",
+      "description": "Пример персональной газеты «Мужская правда» с интервью и семейными фото.",
+      "category": "Персональная газета",
+      "type": "image",
+      "url": "/training/personal-newspaper/muzhskaya-pravda-open-spread.png",
+      "sortOrder": 11
+    },
+    {
+      "id": "personal-newspaper-video-preview",
+      "title": "Как выглядит персональная газета",
+      "description": "Видео показывает внешний вид персональной газеты вживую.",
+      "category": "Персональная газета",
+      "type": "video",
+      "url": "https://youtu.be/MMkfWGi4M9A",
+      "sortOrder": 12
+    },
+    {
       "id": "gift-edition-zhenschina-goda-marina",
       "title": "Женщина года — персональный журнал",
       "description": "Пример персонального журнала для клиентской презентации.",
