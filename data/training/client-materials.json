@@ -191,6 +191,42 @@
       "sortOrder": 6
     },
     {
+      "id": "retro-newspaper-kalininskaya-pravda-1975",
+      "title": "Калининская правда — поздравление с рождением",
+      "description": "Пример поздравительной газеты «Калининская правда» от 7 июля 1975 года с поздравлением с рождением дочери.",
+      "category": "Поздравительная газета",
+      "type": "image",
+      "url": "/training/retro-newspaper/kalininskaya-pravda-1975-07-07.png",
+      "sortOrder": 7
+    },
+    {
+      "id": "retro-newspaper-pravda-arvit-1965",
+      "title": "Правда — поздравление с 60-летием",
+      "description": "Пример поздравительной газеты «Правда» от 2 марта 1965 года с персональным поздравлением.",
+      "category": "Поздравительная газета",
+      "type": "image",
+      "url": "/training/retro-newspaper/pravda-arvit-1965.png",
+      "sortOrder": 8
+    },
+    {
+      "id": "retro-newspaper-izvestiya-ali-kerimov-1975",
+      "title": "Известия — поздравление с 50-летием",
+      "description": "Пример поздравительной газеты «Известия» от 18 мая 1975 года с историей и фото героя.",
+      "category": "Поздравительная газета",
+      "type": "image",
+      "url": "/training/retro-newspaper/izvestiya-ali-kerimov-1975.png",
+      "sortOrder": 9
+    },
+    {
+      "id": "retro-newspaper-karaganda-1955",
+      "title": "Социалистическая Караганда — поздравление с днём рождения",
+      "description": "Пример поздравительной газеты «Социалистическая Караганда» от 10 марта 1955 года с семейными фото.",
+      "category": "Поздравительная газета",
+      "type": "image",
+      "url": "/training/retro-newspaper/sotsialisticheskaya-karaganda-1955.png",
+      "sortOrder": 10
+    },
+    {
       "id": "gift-edition-site-photo",
       "title": "Персонализированное издание — фото с сайта",
       "description": "Общий визуал для персонализированной газеты Party Page и глянцевого журнала.",
