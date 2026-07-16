@@ -11,6 +11,60 @@
       "sortOrder": 1
     },
     {
+      "id": "newspaper-from-date-pravda-izvestiya-stack",
+      "title": "Правда и Известия — веер оригинальных газет",
+      "description": "Пример оригинальных газет из даты: «Правда» от 20 мая 1950 и «Известия» от 31 декабря 1946.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/pravda-izvestiya-stack.png",
+      "sortOrder": 2
+    },
+    {
+      "id": "newspaper-from-date-cina-latvia",
+      "title": "Cīņa — латвийская газета",
+      "description": "Пример оригинальной латвийской газеты «Cīņa» из архива.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/cina-latvia.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "newspaper-from-date-moscow-news-1986",
+      "title": "Московские новости — 6 июля 1986",
+      "description": "Пример оригинальной газеты «Московские новости» от 6 июля 1986 года.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/moscow-news-1986-07-06.png",
+      "sortOrder": 4
+    },
+    {
+      "id": "newspaper-from-date-lithuanian-stack",
+      "title": "Литовские газеты — подборка",
+      "description": "Примеры оригинальных литовских газет: «Lietuvos rytas», «Komjaunimo tiesa» и другие.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/lithuanian-newspapers-stack.png",
+      "sortOrder": 5
+    },
+    {
+      "id": "newspaper-from-date-krasny-sport-1938",
+      "title": "Красный спорт — 9 января 1938",
+      "description": "Пример оригинальной газеты «Красный спорт» от 9 января 1938 года.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/krasny-sport-1938-01-09.png",
+      "sortOrder": 6
+    },
+    {
+      "id": "newspaper-from-date-lietuvos-rytas-1990",
+      "title": "Lietuvos rytas — 5 января 1990",
+      "description": "Пример оригинальной литовской газеты «Lietuvos rytas» от 5 января 1990 года.",
+      "category": "Газета из даты",
+      "type": "image",
+      "url": "/training/newspaper-from-date/lietuvos-rytas-1990-01-05.png",
+      "sortOrder": 7
+    },
+    {
       "id": "magazine-from-date-semya-i-shkola-1987",
       "title": "Семья и школа — февраль 1987",
       "description": "Пример оригинального журнала из даты: «Семья и школа», №2, 1987.",
