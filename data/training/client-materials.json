@@ -11,6 +11,87 @@
       "sortOrder": 1
     },
     {
+      "id": "magazine-from-date-semya-i-shkola-1987",
+      "title": "Семья и школа — февраль 1987",
+      "description": "Пример оригинального журнала из даты: «Семья и школа», №2, 1987.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/semya-i-shkola-1987-02.png",
+      "sortOrder": 2
+    },
+    {
+      "id": "magazine-from-date-krokodil-1987-04",
+      "title": "Крокодил — февраль 1987, №4",
+      "description": "Пример оригинального журнала из даты: «Крокодил», февраль 1987.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/krokodil-1987-02-04.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "magazine-from-date-krokodil-1987-05",
+      "title": "Крокодил — февраль 1987, №5",
+      "description": "Пример оригинального журнала из даты: «Крокодил», февраль 1987.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/krokodil-1987-02-05.png",
+      "sortOrder": 4
+    },
+    {
+      "id": "magazine-from-date-krestyanka-1993",
+      "title": "Крестьянка — март 1993",
+      "description": "Пример оригинального журнала из даты: «Крестьянка», №3, 1993.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/krestyanka-1993-03.png",
+      "sortOrder": 5
+    },
+    {
+      "id": "magazine-from-date-iskatel-1978",
+      "title": "Искатель — 1978, №4",
+      "description": "Пример оригинального журнала из даты: «Искатель», №4, 1978.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/iskatel-1978-04.png",
+      "sortOrder": 6
+    },
+    {
+      "id": "magazine-from-date-rabotnitsa-1993",
+      "title": "Работница — март 1993",
+      "description": "Пример оригинального журнала из даты: «Работница», март 1993.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/rabotnitsa-1993-03.png",
+      "sortOrder": 7
+    },
+    {
+      "id": "magazine-from-date-za-rulem-1993",
+      "title": "За рулем — март 1993",
+      "description": "Пример оригинального журнала из даты: «За рулем», март 1993.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/za-rulem-1993-03.png",
+      "sortOrder": 8
+    },
+    {
+      "id": "magazine-from-date-dadzis-1979",
+      "title": "Dadzis — 1979, №9",
+      "description": "Пример оригинального журнала из даты: латвийский «Dadzis», №9, 1979.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/dadzis-1979-09.png",
+      "sortOrder": 9
+    },
+    {
+      "id": "magazine-from-date-zilite-1979",
+      "title": "Zīlīte — май 1979",
+      "description": "Пример оригинального журнала из даты: латвийский «Zīlīte», №5, май 1979.",
+      "category": "Журнал из даты",
+      "type": "image",
+      "url": "/training/magazine-from-date/zilite-1979-05.png",
+      "sortOrder": 10
+    },
+    {
       "id": "life-book-site-photo",
       "title": "Книга жизни — фото с сайта",
       "description": "Визуал для объяснения книги жизни в заголовках газет.",
