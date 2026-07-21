@@ -164,6 +164,24 @@
       "sortOrder": 4
     },
     {
+      "id": "life-book-diana-kanberg-cover",
+      "title": "Книга жизни — обложка Дианы Канберг",
+      "description": "Пример обложки книги жизни в заголовках газет: «Дианы Канберг, или 30 лет через прессу».",
+      "category": "Книга жизни в заголовках газет",
+      "type": "image",
+      "url": "/training/life-book/diana-kanberg-cover.png",
+      "sortOrder": 5
+    },
+    {
+      "id": "life-book-video-preview-2",
+      "title": "Как выглядит книга жизни — видео",
+      "description": "Видео показывает внешний вид книги жизни в заголовках газет вживую.",
+      "category": "Книга жизни в заголовках газет",
+      "type": "video",
+      "url": "https://youtu.be/Vefxpzf0b5M",
+      "sortOrder": 6
+    },
+    {
       "id": "retro-newspaper-site-photo",
       "title": "Поздравительная газета — фото с сайта",
       "description": "Визуал для объяснения ретро-газеты с личными фото и поздравлением.",
