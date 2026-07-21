@@ -1,8 +1,9 @@
-name: Daily ROP Sync
+name: OS Daily Sheets Sync
 
+# 12:00 Europe/Moscow = 09:00 UTC (MSK is UTC+3 year-round)
 on:
   schedule:
-    - cron: "15 6 * * *"
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -17,7 +18,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Run daily sync on server
+      - name: Refresh OS Orders + Traffic for yesterday (Moscow)
         env:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
@@ -31,8 +32,8 @@ jobs:
             echo "CRON_SYNC_SECRET/AUTH_SECRET is empty"
             exit 1
           fi
-          curl -f -sS -X POST http://127.0.0.1:4174/api/rop/daily-sync \
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/os-daily \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
-            -d '{"refresh":true,"daysBack":3,"dialogLimit":250,"incremental":true,"exportToSheet":true,"manager":"*","sheetMode":"incremental"}'
+            -d '{"refresh":true}'
           EOF

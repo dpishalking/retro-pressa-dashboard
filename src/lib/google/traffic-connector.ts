@@ -16,6 +16,9 @@ export type TrafficRow = {
   ql: number;
   spend: number;
   cpl: number;
+  clicks: number;
+  revenue: number;
+  salesCount: number;
   notes: string;
 };
 
@@ -44,11 +47,14 @@ const headerAliases: Record<keyof TrafficRow, string[]> = {
   channel: ["channel", "канал"],
   campaign: ["campaign", "кампания"],
   market: ["market", "рынок", "geo", "страна"],
-  paidLeads: ["paidLeads", "paid_leads", "платные", "платные лиды", "лиды crm", "crm leads", "leads crm", "лиды"],
-  organicLeads: ["organicLeads", "organic_leads", "органика", "органические лиды", "лиды crm", "лиды"],
+  paidLeads: ["paidLeads", "paid_leads", "платные", "платные лиды", "лиды crm", "crm leads", "leads crm"],
+  organicLeads: ["organicLeads", "organic_leads", "органика", "органические лиды", "лиды crm", "crm leads", "leads crm"],
   ql: ["ql", "qualifiedLeads", "qualified_leads", "квал лиды", "квал. лиды", "квалифицированные лиды"],
   spend: ["spend", "budget", "cost", "расход", "бюджет"],
   cpl: ["cpl", "цена лида", "стоимость лида"],
+  clicks: ["clicks", "клики"],
+  revenue: ["revenue", "выручка"],
+  salesCount: ["sales", "salesCount", "кол-во продаж", "количество продаж", "продажи", "orders"],
   notes: ["notes", "комментарий", "заметки"]
 };
 
@@ -201,8 +207,9 @@ function normalized(value: string) {
 
 function numberValue(value: string | undefined) {
   const cleaned = String(value ?? "")
-    .replace(/\s/g, "")
+    .replace(/[\s\u00a0]/g, "")
     .replace("€", "")
+    .replace("%", "")
     .replace(",", ".");
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -320,21 +327,34 @@ function rowsFromTable(parsed: string[][], source?: GoogleSheetSource) {
   if (!headers?.length) throw new Error("Google traffic sheet is empty");
 
   const indexes = resolveHeaderIndexes(headers);
-  return body.map((row) => ({
-    date: normalizeDateValue(textValue(get(row, indexes.date))),
-    source: textValue(get(row, indexes.source)) || source?.title || "",
-    channel: textValue(get(row, indexes.channel)),
-    campaign: textValue(get(row, indexes.campaign)),
-    market: textValue(get(row, indexes.market)),
-    paidLeads: source?.leadKind === "organic" ? 0 : numberValue(get(row, indexes.paidLeads)),
-    organicLeads: source?.leadKind === "organic"
+  return body.map((row) => {
+    const paidLeads = source?.leadKind === "organic" ? 0 : numberValue(get(row, indexes.paidLeads));
+    const organicLeads = source?.leadKind === "organic"
       ? numberValue(get(row, indexes.organicLeads >= 0 ? indexes.organicLeads : indexes.paidLeads))
-      : 0,
-    ql: numberValue(get(row, indexes.ql)),
-    spend: numberValue(get(row, indexes.spend)),
-    cpl: numberValue(get(row, indexes.cpl)),
-    notes: textValue(get(row, indexes.notes))
-  })).filter((row) => row.date || row.paidLeads || row.organicLeads || row.spend);
+      : 0;
+    const spend = numberValue(get(row, indexes.spend));
+    const leads = paidLeads + organicLeads;
+    const cplRaw = numberValue(get(row, indexes.cpl));
+    return {
+      date: normalizeDateValue(textValue(get(row, indexes.date))),
+      source: textValue(get(row, indexes.source)) || source?.title || "",
+      channel: textValue(get(row, indexes.channel)) || (source?.leadKind === "organic" ? "organic" : "paid_social"),
+      campaign: textValue(get(row, indexes.campaign)),
+      market: textValue(get(row, indexes.market)),
+      paidLeads,
+      organicLeads,
+      ql: numberValue(get(row, indexes.ql)),
+      spend,
+      cpl: cplRaw > 0 ? cplRaw : (leads > 0 && spend > 0 ? spend / leads : 0),
+      clicks: numberValue(get(row, indexes.clicks)),
+      revenue: numberValue(get(row, indexes.revenue)),
+      salesCount: numberValue(get(row, indexes.salesCount)),
+      notes: textValue(get(row, indexes.notes))
+    };
+  }).filter((row) => {
+    if (!row.date || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) return false;
+    return row.paidLeads > 0 || row.organicLeads > 0 || row.spend > 0 || row.ql > 0 || row.revenue > 0 || row.salesCount > 0;
+  });
 }
 
 async function readCsvRows() {

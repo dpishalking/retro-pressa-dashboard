@@ -74,6 +74,7 @@ jobs:
       - name: Create runtime env
         env:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
           DEFAULT_ADMIN_LOGIN: ${{ secrets.DEFAULT_ADMIN_LOGIN }}
           DEFAULT_ADMIN_PASSWORD: ${{ secrets.DEFAULT_ADMIN_PASSWORD }}
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
@@ -136,6 +137,7 @@ jobs:
 
           const keys = [
             "AUTH_SECRET",
+            "CRON_SYNC_SECRET",
             "DEFAULT_ADMIN_LOGIN",
             "DEFAULT_ADMIN_PASSWORD",
             "BITRIX_WEBHOOK_URL",

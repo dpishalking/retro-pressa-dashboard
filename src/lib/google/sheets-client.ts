@@ -91,8 +91,9 @@ export async function readSheetValues(input: {
 export async function writeSheetValues(input: {
   spreadsheetId: string;
   range: string;
-  rows: string[][];
+  rows: Array<Array<string | number | boolean | null>>;
   clearRange?: string;
+  valueInputOption?: "RAW" | "USER_ENTERED";
 }) {
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
 
@@ -108,7 +109,8 @@ export async function writeSheetValues(input: {
     }
   }
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}/values/${encodeURIComponent(input.range)}?valueInputOption=RAW`;
+  const valueInputOption = input.valueInputOption ?? "RAW";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}/values/${encodeURIComponent(input.range)}?valueInputOption=${valueInputOption}`;
   const response = await fetch(url, {
     method: "PUT",
     headers: {
@@ -125,6 +127,65 @@ export async function writeSheetValues(input: {
   }
 
   return data;
+}
+
+export async function getSheetIdByTitle(spreadsheetId: string, title: string): Promise<number | null> {
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title)`,
+    { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" },
+  );
+  const data = (await response.json()) as {
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+    error?: { message?: string };
+  };
+  if (!response.ok) {
+    throw new Error(`Google Sheets metadata failed: ${data.error?.message || response.status}`);
+  }
+  const match = data.sheets?.find((sheet) => sheet.properties?.title === title);
+  return match?.properties?.sheetId ?? null;
+}
+
+export async function formatSheetNumberColumns(input: {
+  spreadsheetId: string;
+  sheetId: number;
+  columnIndexes: number[];
+  pattern?: string;
+}) {
+  if (!input.columnIndexes.length) return;
+
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const pattern = input.pattern ?? "0.##";
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: input.columnIndexes.map((columnIndex) => ({
+        repeatCell: {
+          range: {
+            sheetId: input.sheetId,
+            startRowIndex: 1,
+            startColumnIndex: columnIndex,
+            endColumnIndex: columnIndex + 1,
+          },
+          cell: {
+            userEnteredFormat: {
+              numberFormat: { type: "NUMBER", pattern },
+            },
+          },
+          fields: "userEnteredFormat.numberFormat",
+        },
+      })),
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const message = (data as { error?: { message?: string } }).error?.message || response.status;
+    throw new Error(`Google Sheets number format failed: ${message}`);
+  }
 }
 
 export async function listSheetTitles(spreadsheetId: string): Promise<string[]> {

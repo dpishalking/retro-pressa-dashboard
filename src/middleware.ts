@@ -6,9 +6,21 @@ import { readSessionCookie } from "@/lib/auth/session-edge";
 const PUBLIC_API_PREFIXES = ["/api/auth/login"];
 const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH];
 const LOGIN_PATH = "/";
+const CRON_API_PREFIXES = ["/api/rop/daily-sync", "/api/sync/os-daily"];
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function isCronApi(pathname: string): boolean {
+  return CRON_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function hasValidCronSecret(request: NextRequest): boolean {
+  const expected = process.env.CRON_SYNC_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  if (!expected) return false;
+  const provided = request.headers.get("x-cron-secret")?.trim();
+  return Boolean(provided && provided === expected);
 }
 
 function isPublicPage(pathname: string): boolean {
@@ -42,6 +54,10 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/api/")) {
     if (isPublicApi(pathname)) {
+      return NextResponse.next();
+    }
+
+    if (isCronApi(pathname) && hasValidCronSecret(request)) {
       return NextResponse.next();
     }
 
