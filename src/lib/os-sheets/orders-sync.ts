@@ -1,8 +1,7 @@
 import { ORDERS_COLUMNS, ORDERS_NUMERIC_COLUMNS, OS_SPREADSHEET_ID, OS_TABS } from "@/config/os-sheets";
-import { syncBitrixMetrics } from "@/lib/bitrix/connector";
-import { readBitrixSnapshot } from "@/lib/bitrix/snapshot-store";
+import { loadOsBitrixDealUniverse, syncBitrixMetrics } from "@/lib/bitrix/connector";
 import {
-  buildOrdersRowsFromSnapshot,
+  buildOrdersRowsFromDeals,
   mergeSheetAndBitrixOrders,
   ordersRowFromSheetLine,
   ordersRowToSheetLine,
@@ -34,7 +33,7 @@ export type SyncOsOrdersResult = {
   existingRows: number;
   writtenRows: number;
   preservedManualRows: number;
-  dataSource: "snapshot" | "live";
+  dataSource: "live";
   dryRun: boolean;
   sheetUrl: string;
   syncedAt: string;
@@ -47,7 +46,7 @@ function quoteTab(title: string) {
 async function readExistingOrders(spreadsheetId: string, tabTitle: string): Promise<OrdersRow[]> {
   const values = await readSheetValues({
     spreadsheetId,
-    range: `${quoteTab(tabTitle)}!A1:AH`
+    range: `${quoteTab(tabTitle)}!A1:AJ`
   });
   if (!values.length) return [];
 
@@ -67,13 +66,12 @@ export async function syncOsOrdersToSheet(options: SyncOsOrdersOptions = {}): Pr
   const tabTitle = OS_TABS.orders;
   const syncedAt = new Date().toISOString();
 
-  const bitrix = await syncBitrixMetrics({ period, refresh: options.refreshBitrix === true });
-  const snapshot = await readBitrixSnapshot(period);
-  if (!snapshot) {
-    throw new Error(`Bitrix snapshot for ${period} is missing after sync`);
+  // Keep metrics snapshot warm, then pull a broader deal universe for Orders.
+  if (options.refreshBitrix !== false) {
+    await syncBitrixMetrics({ period, refresh: true });
   }
-
-  const bitrixRows = buildOrdersRowsFromSnapshot(snapshot, syncedAt);
+  const universe = await loadOsBitrixDealUniverse(period);
+  const bitrixRows = buildOrdersRowsFromDeals(universe.deals, universe.leads, syncedAt);
   const existingRows = await readExistingOrders(spreadsheetId, tabTitle);
   const merged = mergeSheetAndBitrixOrders(existingRows, bitrixRows);
   const preservedManualRows = merged.filter((row) => !bitrixRows.some((item) => item.order_id === row.order_id)).length;
@@ -82,7 +80,7 @@ export async function syncOsOrdersToSheet(options: SyncOsOrdersOptions = {}): Pr
     await writeSheetValues({
       spreadsheetId,
       range: `${quoteTab(tabTitle)}!A1`,
-      clearRange: `${quoteTab(tabTitle)}!A:AH`,
+      clearRange: `${quoteTab(tabTitle)}!A:AJ`,
       valueInputOption: "USER_ENTERED",
       rows: [[...ORDERS_COLUMNS], ...merged.map(ordersRowToSheetLine)]
     });
@@ -105,7 +103,7 @@ export async function syncOsOrdersToSheet(options: SyncOsOrdersOptions = {}): Pr
     existingRows: existingRows.length,
     writtenRows: merged.length,
     preservedManualRows,
-    dataSource: bitrix.summary.dataSource,
+    dataSource: "live",
     dryRun: options.dryRun === true,
     sheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=0`,
     syncedAt

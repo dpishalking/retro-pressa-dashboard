@@ -69,6 +69,10 @@ export const FINANCE_COLUMNS = [
   "margin",
   "plan_revenue",
   "plan_cash_in",
+  "mtd_revenue",
+  "run_rate_revenue",
+  "rr_pct",
+  "plan_completion_pct",
   "forecast_revenue",
   "cash_balance",
   "paid_orders",
@@ -91,6 +95,10 @@ export const FINANCE_NUMERIC_COLUMNS = [
   "margin",
   "plan_revenue",
   "plan_cash_in",
+  "mtd_revenue",
+  "run_rate_revenue",
+  "rr_pct",
+  "plan_completion_pct",
   "forecast_revenue",
   "cash_balance",
   "paid_orders"
@@ -114,6 +122,7 @@ export const ORDERS_COLUMNS = [
   "created_at",
   "lead_id",
   "deal_id",
+  "deal_title",
   "bitrix_url",
   "customer_key",
   "manager_id",
@@ -122,6 +131,7 @@ export const ORDERS_COLUMNS = [
   "product_sku",
   "product_name",
   "amount",
+  "opportunity",
   "currency",
   "invoice_amount",
   "invoice_at",
@@ -161,7 +171,7 @@ export const ORDERS_MANUAL_COLUMNS = [
 export type OrdersManualColumn = (typeof ORDERS_MANUAL_COLUMNS)[number];
 
 /** Must be real numbers in Sheets (SUM/AVERAGE), never text with apostrophe. */
-export const ORDERS_NUMERIC_COLUMNS = ["amount", "invoice_amount"] as const satisfies ReadonlyArray<OrdersColumn>;
+export const ORDERS_NUMERIC_COLUMNS = ["amount", "opportunity", "invoice_amount"] as const satisfies ReadonlyArray<OrdersColumn>;
 
 export type OrdersNumericColumn = (typeof ORDERS_NUMERIC_COLUMNS)[number];
 

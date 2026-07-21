@@ -152,3 +152,38 @@ export function mergeFinanceRows(existingRows: FinanceRow[], computedRows: Finan
 
   return merged.sort((a, b) => a.date.localeCompare(b.date));
 }
+
+export function resolveMonthlyRevenuePlan(existingRows: FinanceRow[]): number {
+  const fromSheet = existingRows
+    .map((row) => numberOrZero(row.plan_revenue))
+    .find((value) => value > 0);
+  if (fromSheet) return fromSheet;
+
+  const fromEnv = Number(process.env.OS_PLAN_REVENUE_MONTH?.trim() || "");
+  if (Number.isFinite(fromEnv) && fromEnv > 0) return fromEnv;
+
+  // Fallback close to current ops plan (~€30k / month).
+  return 30_000;
+}
+
+export function applyFinanceRunRate(
+  rows: FinanceRow[],
+  input: { monthlyPlan: number; calendarDays: number }
+): FinanceRow[] {
+  let mtd = 0;
+  const plan = input.monthlyPlan;
+
+  return rows.map((row) => {
+    mtd += numberOrZero(row.fact_revenue);
+    const dayOfMonth = Number(row.date.slice(8, 10)) || 1;
+    const elapsedDays = Math.max(1, Math.min(dayOfMonth, input.calendarDays));
+    const runRate = (mtd / elapsedDays) * input.calendarDays;
+    const next = { ...row };
+    if (!next.plan_revenue?.trim()) next.plan_revenue = String(plan);
+    next.mtd_revenue = String(Number(mtd.toFixed(2)));
+    next.run_rate_revenue = String(Number(runRate.toFixed(2)));
+    next.rr_pct = plan > 0 ? String(Number(((runRate / plan) * 100).toFixed(2))) : "";
+    next.plan_completion_pct = plan > 0 ? String(Number(((mtd / plan) * 100).toFixed(2))) : "";
+    return next;
+  });
+}

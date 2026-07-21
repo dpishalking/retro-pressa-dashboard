@@ -10,6 +10,8 @@ import {
   financeRowFromSheetLine,
   financeRowToSheetLine,
   mergeFinanceRows,
+  resolveMonthlyRevenuePlan,
+  applyFinanceRunRate,
   type FinanceRow
 } from "@/lib/os-sheets/finance-mapper";
 import { ordersRowFromSheetLine, type OrdersRow } from "@/lib/os-sheets/orders-mapper";
@@ -54,6 +56,11 @@ function periodPrefix(period: PeriodKey) {
   return "2026-07";
 }
 
+function calendarDays(period: PeriodKey) {
+  if (period === "june-2026") return 30;
+  return 31;
+}
+
 async function readOrders(spreadsheetId: string): Promise<OrdersRow[]> {
   const values = await readSheetValues({
     spreadsheetId,
@@ -87,7 +94,7 @@ async function readTraffic(spreadsheetId: string): Promise<TrafficSheetRow[]> {
 async function readExistingFinance(spreadsheetId: string): Promise<FinanceRow[]> {
   const values = await readSheetValues({
     spreadsheetId,
-    range: `${quoteTab(OS_TABS.financeDaily)}!A1:R`
+    range: `${quoteTab(OS_TABS.financeDaily)}!A1:V`
   });
   if (!values.length) return [];
   const [header, ...lines] = values;
@@ -122,13 +129,17 @@ export async function syncOsFinanceToSheet(options: SyncOsFinanceOptions = {}): 
     periodPrefix: periodPrefix(period),
     syncedAt
   });
-  const merged = mergeFinanceRows(existing, computed);
+  const monthlyPlan = resolveMonthlyRevenuePlan(existing);
+  const merged = applyFinanceRunRate(mergeFinanceRows(existing, computed), {
+    monthlyPlan,
+    calendarDays: calendarDays(period)
+  });
 
   if (!options.dryRun) {
     await writeSheetValues({
       spreadsheetId,
       range: `${quoteTab(tabTitle)}!A1`,
-      clearRange: `${quoteTab(tabTitle)}!A:R`,
+      clearRange: `${quoteTab(tabTitle)}!A:V`,
       valueInputOption: "USER_ENTERED",
       rows: [[...FINANCE_COLUMNS], ...merged.map(financeRowToSheetLine)]
     });

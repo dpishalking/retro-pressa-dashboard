@@ -1,7 +1,8 @@
 import {
   buildFinanceFactsFromSources,
   mergeFinanceRows,
-  emptyFinanceRow
+  emptyFinanceRow,
+  applyFinanceRunRate
 } from "@/lib/os-sheets/finance-mapper";
 import { emptyOrdersRow } from "@/lib/os-sheets/orders-mapper";
 import { emptyTrafficRow } from "@/lib/os-sheets/traffic-mapper";
@@ -41,6 +42,13 @@ existing.notes = "ручной ФОТ";
 const merged = mergeFinanceRows([existing], rows);
 assert(merged[0].payroll === "30", "payroll preserved");
 assert(merged[0].net_cash_flow === "50", "net after payroll");
-assert(merged[0].source_of_truth === "hybrid", "hybrid");
+assert(merged[0].source_of_truth === "hybrid");
+
+const withRr = applyFinanceRunRate(merged, {
+  monthlyPlan: 30000,
+  calendarDays: 31
+});
+assert(Number(withRr[0].rr_pct) > 0, "rr pct");
+assert(Number(withRr[0].mtd_revenue) === 100, "mtd");
 
 console.log("os-finance mapper ok");

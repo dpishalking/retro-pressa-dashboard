@@ -28,12 +28,14 @@ export type BitrixSnapshotProductRow = {
 
 export type BitrixSnapshotDeal = {
   id: string;
+  title: string | null;
   leadId: string | null;
   dateCreate: string | null;
   closeDate: string | null;
   /** Invoice event date used for period attribution. */
   invoiceDate: string | null;
   opportunity: number;
+  currencyId: string | null;
   /** Prefer «Сумма для счета», fallback to opportunity. */
   invoiceAmount: number;
   stageId: string | null;

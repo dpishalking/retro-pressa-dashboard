@@ -97,6 +97,7 @@ export function mapDealToOrdersRow(
   row.created_at = deal.dateCreate ?? "";
   row.lead_id = deal.leadId ?? "";
   row.deal_id = deal.id;
+  row.deal_title = deal.title ?? "";
   row.bitrix_url = bitrixDealUrl(deal.id);
   row.customer_key = "";
   row.manager_id = deal.assignedById;
@@ -105,7 +106,8 @@ export function mapDealToOrdersRow(
   row.product_sku = product.sku;
   row.product_name = product.name;
   row.amount = amount ? String(amount) : "";
-  row.currency = "EUR";
+  row.opportunity = deal.opportunity ? String(deal.opportunity) : "";
+  row.currency = deal.currencyId || "EUR";
   row.invoice_amount = deal.invoiceAmount ? String(deal.invoiceAmount) : "";
   row.invoice_at = deal.invoiceDate ?? "";
   row.payment_status = payment;
@@ -147,9 +149,17 @@ export function collectDealsFromSnapshot(snapshot: BitrixSnapshot): BitrixSnapsh
   return Array.from(byId.values()).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
 }
 
+export function buildOrdersRowsFromDeals(
+  deals: BitrixSnapshotDeal[],
+  leads: BitrixSnapshotLead[],
+  syncedAt = new Date().toISOString()
+): OrdersRow[] {
+  const leadMap = new Map(leads.map((lead) => [lead.id, lead]));
+  return deals.map((deal) => mapDealToOrdersRow(deal, leadForDeal(deal, leadMap), syncedAt));
+}
+
 export function buildOrdersRowsFromSnapshot(snapshot: BitrixSnapshot, syncedAt = new Date().toISOString()): OrdersRow[] {
-  const leads = new Map(snapshot.leads.map((lead) => [lead.id, lead]));
-  return collectDealsFromSnapshot(snapshot).map((deal) => mapDealToOrdersRow(deal, leadForDeal(deal, leads), syncedAt));
+  return buildOrdersRowsFromDeals(collectDealsFromSnapshot(snapshot), snapshot.leads, syncedAt);
 }
 
 export function mergeSheetAndBitrixOrders(existingRows: OrdersRow[], bitrixRows: OrdersRow[]): OrdersRow[] {

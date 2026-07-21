@@ -56,10 +56,12 @@ type BitrixLead = {
 
 type BitrixDeal = {
   ID: string;
+  TITLE?: string;
   LEAD_ID?: string;
   DATE_CREATE?: string;
   CLOSEDATE?: string;
   OPPORTUNITY?: string;
+  CURRENCY_ID?: string;
   CATEGORY_ID?: string;
   STAGE_ID?: string;
   STAGE_SEMANTIC_ID?: string;
@@ -162,10 +164,12 @@ const selectLead = [
 ];
 const selectDeal = [
   "ID",
+  "TITLE",
   "LEAD_ID",
   "DATE_CREATE",
   "CLOSEDATE",
   "OPPORTUNITY",
+  "CURRENCY_ID",
   "CATEGORY_ID",
   "STAGE_ID",
   "STAGE_SEMANTIC_ID",
@@ -508,11 +512,13 @@ function normalizeSnapshotDeal(
 
   return {
     id: String(deal.ID),
+    title: deal.TITLE?.trim() || null,
     leadId,
     dateCreate: deal.DATE_CREATE ?? null,
     closeDate: deal.CLOSEDATE ?? null,
     invoiceDate,
     opportunity,
+    currencyId: deal.CURRENCY_ID?.trim() || null,
     invoiceAmount: dealInvoiceAmount(deal),
     stageId: deal.STAGE_ID ?? null,
     stageSemanticId: deal.STAGE_SEMANTIC_ID ?? null,
@@ -1010,3 +1016,137 @@ export async function syncBitrixMetrics(options: BitrixSyncOptions = {}): Promis
   const { snapshot, dataSource } = await loadBitrixSnapshot(period, options.refresh);
   return aggregateBitrixSnapshot(snapshot, options, dataSource);
 }
+
+/**
+ * Broader Bitrix deal universe for OS Orders:
+ * created in period + invoiced in period + paid in period (sales funnel).
+ */
+export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
+  deals: BitrixSnapshotDeal[];
+  leads: BitrixSnapshotLead[];
+  loadedAt: string;
+}> {
+  const now = new Date();
+  const { start, factualEnd } = monthRangeForPeriod(period, now);
+  const periodStart = isoDate(start);
+  const factualEndIso = isoDate(factualEnd);
+  const periodStartDate = dayKey(periodStart);
+  const factualEndDate = dayKey(factualEndIso);
+
+  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, periodLeadsRaw, users, countryMetadata] = await Promise.all([
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        ">=DATE_CREATE": periodStart,
+        "<=DATE_CREATE": factualEndIso,
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
+      },
+      select: selectDeal
+    }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        [`>=${BITRIX_INVOICE_DATE_FIELD}`]: periodStartDate,
+        [`<=${BITRIX_INVOICE_DATE_FIELD}`]: factualEndDate,
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
+      },
+      select: selectDeal
+    }),
+    listAll<BitrixStageHistory>("crm.stagehistory.list", {
+      entityTypeId: 2,
+      order: { CREATED_TIME: "ASC" },
+      filter: {
+        ">=CREATED_TIME": periodStart,
+        "<=CREATED_TIME": factualEndIso,
+        "=CATEGORY_ID": BITRIX_SALES_CATEGORY_ID,
+        "=STAGE_ID": BITRIX_INVOICE_STAGE_ID
+      },
+      select: ["OWNER_ID", "CREATED_TIME", "STAGE_ID", "CATEGORY_ID", "TYPE_ID"]
+    }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        ">=CLOSEDATE": periodStartDate,
+        "<=CLOSEDATE": factualEndDate,
+        STAGE_SEMANTIC_ID: "S",
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
+      },
+      select: selectDeal
+    }),
+    listAll<BitrixLead>("crm.lead.list", {
+      order: { DATE_CREATE: "ASC" },
+      filter: { ">=DATE_CREATE": periodStart, "<=DATE_CREATE": factualEndIso },
+      select: selectLead
+    }),
+    listAll<BitrixUser>("user.get", {
+      sort: "ID",
+      order: "ASC",
+      FILTER: { ACTIVE: true },
+      SELECT: selectUser
+    }, 500),
+    loadCountryMetadata()
+  ]);
+
+  const { enumMaps } = countryMetadata;
+  const userNames = buildUserNameMap(users);
+  const leads = periodLeadsRaw.map((lead) => normalizeSnapshotLead(lead, userNames, enumMaps));
+  const leadLookup = new Map(leads.map((lead) => [lead.id, lead]));
+
+  const invoiceByDateIds = new Set(invoiceByDateRaw.map((deal) => String(deal.ID)));
+  const invoiceStageEntries = new Map<string, BitrixStageHistory>();
+  for (const entry of invoiceStageHistory) {
+    const id = String(entry.OWNER_ID);
+    if (!invoiceStageEntries.has(id)) invoiceStageEntries.set(id, entry);
+  }
+  const stageOnlyIds = Array.from(invoiceStageEntries.keys()).filter((id) => !invoiceByDateIds.has(id));
+  const stageOnlyDealsRaw = stageOnlyIds.length ? await listDealsByIds(stageOnlyIds) : [];
+
+  const rawById = new Map<string, BitrixDeal>();
+  for (const deal of [...createdDealsRaw, ...invoiceByDateRaw, ...stageOnlyDealsRaw, ...paidDealsRaw]) {
+    rawById.set(String(deal.ID), deal);
+  }
+
+  const paidIds = new Set(paidDealsRaw.map((deal) => String(deal.ID)));
+  const productRows = await listDealProductRows(Array.from(rawById.keys()));
+
+  const deals = Array.from(rawById.values()).map((deal) => {
+    const id = String(deal.ID);
+    const fromDateField = invoiceByDateIds.has(id);
+    const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
+    const invoiceDate = fromDateField
+      ? (fieldDate ?? null)
+      : (invoiceStageEntries.get(id)?.CREATED_TIME ?? fieldDate ?? null);
+    const normalized = normalizeSnapshotDeal(
+      deal,
+      invoiceDate,
+      userNames,
+      enumMaps,
+      productRows.get(id) ?? [],
+      leadLookup,
+      fromDateField ? "invoice_date_field" : (invoiceStageEntries.has(id) ? "stage_history" : undefined)
+    );
+    // Prefer paid deal CLOSEDATE / semantic when available.
+    if (paidIds.has(id)) {
+      const paid = paidDealsRaw.find((item) => String(item.ID) === id);
+      if (paid) {
+        return normalizeSnapshotDeal(
+          paid,
+          fieldDate ?? invoiceDate,
+          userNames,
+          enumMaps,
+          productRows.get(id) ?? [],
+          leadLookup,
+          normalized.invoiceSource
+        );
+      }
+    }
+    return normalized;
+  }).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
+
+  return {
+    deals,
+    leads,
+    loadedAt: new Date().toISOString()
+  };
+}
+
