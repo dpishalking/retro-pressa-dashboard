@@ -53,6 +53,61 @@ export const TRAFFIC_NUMERIC_COLUMNS = [
   "revenue"
 ] as const satisfies ReadonlyArray<TrafficColumn>;
 
+/**
+ * Grain: one row = one calendar date (management P&L / cash day).
+ * Auto from Orders+Traffic; manual fields are preserved on sync.
+ */
+export const FINANCE_COLUMNS = [
+  "date",
+  "fact_revenue",
+  "cash_in",
+  "cash_out",
+  "ad_spend",
+  "payroll",
+  "opex",
+  "net_cash_flow",
+  "margin",
+  "plan_revenue",
+  "plan_cash_in",
+  "forecast_revenue",
+  "cash_balance",
+  "paid_orders",
+  "data_status",
+  "source_of_truth",
+  "last_sync_at",
+  "notes"
+] as const;
+
+export type FinanceColumn = (typeof FINANCE_COLUMNS)[number];
+
+export const FINANCE_NUMERIC_COLUMNS = [
+  "fact_revenue",
+  "cash_in",
+  "cash_out",
+  "ad_spend",
+  "payroll",
+  "opex",
+  "net_cash_flow",
+  "margin",
+  "plan_revenue",
+  "plan_cash_in",
+  "forecast_revenue",
+  "cash_balance",
+  "paid_orders"
+] as const satisfies ReadonlyArray<FinanceColumn>;
+
+/** Manual / plan fields — never overwritten by auto sync. */
+export const FINANCE_MANUAL_COLUMNS = [
+  "cash_out",
+  "payroll",
+  "opex",
+  "plan_revenue",
+  "plan_cash_in",
+  "forecast_revenue",
+  "cash_balance",
+  "notes"
+] as const satisfies ReadonlyArray<FinanceColumn>;
+
 /** Grain: one row = one order_id. v1 order_id = Bitrix deal.ID */
 export const ORDERS_COLUMNS = [
   "order_id",

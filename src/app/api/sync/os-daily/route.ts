@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { moscowPeriodKey, moscowYesterdayIso } from "@/lib/moscow-time";
 import { syncOsOrdersToSheet } from "@/lib/os-sheets/orders-sync";
 import { syncOsTrafficToSheet } from "@/lib/os-sheets/traffic-sync";
+import { syncOsFinanceToSheet } from "@/lib/os-sheets/finance-sync";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const maxDuration = 300;
 const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
 
 /**
- * Morning OS sheet refresh (Orders + Traffic + Органика).
+ * Morning OS sheet refresh (Orders + Traffic + Органика + Finance).
  * Intended for cron at 12:00 Europe/Moscow with x-cron-secret header.
  */
 export async function POST(request: Request) {
@@ -31,6 +32,8 @@ export async function POST(request: Request) {
       syncOsTrafficToSheet({ period, refreshGoogle: refresh })
     ]);
 
+    const finance = await syncOsFinanceToSheet({ period });
+
     return NextResponse.json({
       ok: true,
       timezone: "Europe/Moscow",
@@ -38,7 +41,8 @@ export async function POST(request: Request) {
       period,
       syncedAt: new Date().toISOString(),
       orders,
-      traffic
+      traffic,
+      finance
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось выполнить ежедневный OS sync";

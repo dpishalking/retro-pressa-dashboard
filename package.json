@@ -11,6 +11,7 @@
     "sync:training-sheet": "tsx src/scripts/sync-training-sheet.ts",
     "sync:os-orders": "tsx --env-file=.env.local src/scripts/sync-os-orders.ts",
     "sync:os-traffic": "tsx --env-file=.env.local src/scripts/sync-os-traffic.ts",
+    "sync:os-finance": "tsx --env-file=.env.local src/scripts/sync-os-finance.ts",
     "export:manager-dialogs": "tsx src/scripts/export-manager-dialogs-to-sheet.ts",
     "sync:manager-dialogs": "tsx src/scripts/export-manager-dialogs-to-sheet.ts",
     "backfill:manager-dialogs": "tsx src/scripts/backfill-manager-dialogs-to-sheet.ts",
