@@ -96,33 +96,88 @@ export const PREDICTIVE_WEEK_BLOCKS = buildWeekBlocks(4);
 export const PREDICTIVE_MONTH_COL = monthColForWeekCount(4);
 
 /**
- * Row map (1-based) — sales + micro-conversions + SLA.
+ * Row map (1-based) — plan / fact / PTF% (run-rate) per metric.
  * Funnel: Lead → Deal → Invoice → Sale → Revenue.
- * SLA: dialogs / no-reply / stale / no-next / unpaid invoices.
+ *
+ * polarity: higher_better → green when fact≥plan; lower_better → green when fact≤plan.
+ * PTF% = at current pace, projected % of plan for the period (day/week/month).
  */
 export const PREDICTIVE_METRICS = {
-  revenue: { planRow: 4, factRow: 5, label: "Revenue", kind: "lag", style: "currency", rpName: "Выручка €" },
-  sale: { planRow: 6, factRow: 7, label: "Sale", kind: "lag", style: "count", rpName: "Продажи" },
-  aov: { planRow: 8, factRow: 9, label: "AOV", kind: "lag", style: "currency", rpName: "Ср. чек €" },
-  leads: { planRow: 11, factRow: 12, label: "Leads", kind: "lead", style: "count", rpName: "Лиды" },
-  deals: { planRow: 13, factRow: 14, label: "Deals", kind: "lead", style: "count", rpName: "Сделки" },
-  invoices: { planRow: 15, factRow: 16, label: "Invoices", kind: "lead", style: "count", rpName: "Счета" },
-  cr_l_deal: { planRow: 17, factRow: 18, label: "CR L → Deal", kind: "lead", style: "percent", rpName: "CR Лид→Сделка" },
-  cr_deal_invoice: { planRow: 19, factRow: 20, label: "CR Deal → Inv", kind: "lead", style: "percent", rpName: "CR Сделка→Счёт" },
-  cr_invoice_sale: { planRow: 21, factRow: 22, label: "CR Inv → Sale", kind: "lead", style: "percent", rpName: "CR Счёт→Продажа" },
-  cr_l_sale: { planRow: 23, factRow: 24, label: "CR L → Sale", kind: "lead", style: "percent", rpName: "CR Лид→Продажа" },
-  dialogs: { planRow: 26, factRow: 27, label: "Dialogs", kind: "sla", style: "count", rpName: "Диалоги" },
-  no_reply_24h: { planRow: 28, factRow: 29, label: "No reply 24h", kind: "sla", style: "count", rpName: "Диалог без ответа" },
-  stale_deals: { planRow: 30, factRow: 31, label: "Stale deals", kind: "sla", style: "count", rpName: "Зависшие сделки" },
-  no_next_activity: { planRow: 32, factRow: 33, label: "No next act.", kind: "sla", style: "count", rpName: "Без след. активности" },
-  unpaid_invoices: { planRow: 34, factRow: 35, label: "Unpaid inv.", kind: "sla", style: "count", rpName: "Счета без оплаты" }
+  revenue: { planRow: 4, factRow: 5, ptfRow: 6, label: "Revenue", kind: "lag", style: "currency", polarity: "higher_better", rpName: "Выручка €" },
+  sale: { planRow: 7, factRow: 8, ptfRow: 9, label: "Sale", kind: "lag", style: "count", polarity: "higher_better", rpName: "Продажи" },
+  aov: { planRow: 10, factRow: 11, ptfRow: 12, label: "AOV", kind: "lag", style: "currency", polarity: "higher_better", rpName: "Ср. чек €" },
+  leads: { planRow: 14, factRow: 15, ptfRow: 16, label: "Leads", kind: "lead", style: "count", polarity: "higher_better", rpName: "Лиды" },
+  deals: { planRow: 17, factRow: 18, ptfRow: 19, label: "Deals", kind: "lead", style: "count", polarity: "higher_better", rpName: "Сделки" },
+  invoices: { planRow: 20, factRow: 21, ptfRow: 22, label: "Invoices", kind: "lead", style: "count", polarity: "higher_better", rpName: "Счета" },
+  cr_l_deal: { planRow: 23, factRow: 24, ptfRow: 25, label: "CR L → Deal", kind: "lead", style: "percent", polarity: "higher_better", rpName: "CR Лид→Сделка" },
+  cr_deal_invoice: { planRow: 26, factRow: 27, ptfRow: 28, label: "CR Deal → Inv", kind: "lead", style: "percent", polarity: "higher_better", rpName: "CR Сделка→Счёт" },
+  cr_invoice_sale: { planRow: 29, factRow: 30, ptfRow: 31, label: "CR Inv → Sale", kind: "lead", style: "percent", polarity: "higher_better", rpName: "CR Счёт→Продажа" },
+  cr_l_sale: { planRow: 32, factRow: 33, ptfRow: 34, label: "CR L → Sale", kind: "lead", style: "percent", polarity: "higher_better", rpName: "CR Лид→Продажа" }
 } as const;
 
 export type PredictiveMetricKey = keyof typeof PREDICTIVE_METRICS;
+export type PredictivePolarity = "higher_better" | "lower_better";
+export type TrafficLight = "green" | "yellow" | "red" | "none";
 
-export const PREDICTIVE_SECTION_MICRO_ROW = 10;
-export const PREDICTIVE_SECTION_SLA_ROW = 25;
-export const PREDICTIVE_GRID_LAST_ROW = 35;
+/** Pace vs plan: green ≥100%, yellow 90–99%, red <90% (inverted for lower_better). */
+export const TRAFFIC_YELLOW_MIN_RATIO = 0.9;
+export const TRAFFIC_YELLOW_MAX_RATIO_LOWER = 1.1;
+
+export function classifyTrafficLight(input: {
+  fact: number | null | undefined;
+  plan: number | null | undefined;
+  polarity: PredictivePolarity;
+}): TrafficLight {
+  const fact = input.fact;
+  const plan = input.plan;
+  if (fact == null || plan == null || !Number.isFinite(fact) || !Number.isFinite(plan) || plan === 0) {
+    return "none";
+  }
+  const ratio = fact / plan;
+  if (input.polarity === "higher_better") {
+    if (ratio >= 1) return "green";
+    if (ratio >= TRAFFIC_YELLOW_MIN_RATIO) return "yellow";
+    return "red";
+  }
+  if (ratio <= 1) return "green";
+  if (ratio <= TRAFFIC_YELLOW_MAX_RATIO_LOWER) return "yellow";
+  return "red";
+}
+
+/**
+ * Projected % of plan at current pace.
+ * counts: (fact/plan)*(periodDays/elapsedDays)*100
+ * rates (CR/AOV): fact/plan*100 (no time scale)
+ */
+export function runRatePct(input: {
+  fact: number | null | undefined;
+  plan: number | null | undefined;
+  elapsedDays: number;
+  periodDays: number;
+  timeScale: boolean;
+}): number | null {
+  const fact = input.fact;
+  const plan = input.plan;
+  if (fact == null || plan == null || !Number.isFinite(fact) || !Number.isFinite(plan) || plan === 0) {
+    return null;
+  }
+  if (!input.timeScale) {
+    return Number(((fact / plan) * 100).toFixed(1));
+  }
+  if (!(input.elapsedDays > 0) || !(input.periodDays > 0)) return null;
+  return Number(((fact / plan) * (input.periodDays / input.elapsedDays) * 100).toFixed(1));
+}
+
+export function daysInCalendarMonth(month: string): number {
+  const y = Number(month.slice(0, 4));
+  const m = Number(month.slice(5, 7));
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+export const PREDICTIVE_SECTION_MICRO_ROW = 13;
+export const PREDICTIVE_GRID_LAST_ROW = 34;
+/** Day-of-month used by PTF run-rate formulas (written each sync). */
+export const PREDICTIVE_ASOF_DAY_ROW = 35;
 
 /** Written by sync into fact day cells. CR stay as sheet formulas. */
 export const PREDICTIVE_AUTO_FACT_METRICS = [
@@ -131,12 +186,7 @@ export const PREDICTIVE_AUTO_FACT_METRICS = [
   "aov",
   "leads",
   "deals",
-  "invoices",
-  "dialogs",
-  "no_reply_24h",
-  "stale_deals",
-  "no_next_activity",
-  "unpaid_invoices"
+  "invoices"
 ] as const;
 export type PredictiveAutoFactMetric = (typeof PREDICTIVE_AUTO_FACT_METRICS)[number];
 
@@ -147,16 +197,6 @@ export const PREDICTIVE_LAG_KEYS = (Object.keys(PREDICTIVE_METRICS) as Predictiv
 export const PREDICTIVE_LEAD_KEYS = (Object.keys(PREDICTIVE_METRICS) as PredictiveMetricKey[]).filter(
   (key) => PREDICTIVE_METRICS[key].kind === "lead"
 );
-
-export const PREDICTIVE_SLA_KEYS = (Object.keys(PREDICTIVE_METRICS) as PredictiveMetricKey[]).filter(
-  (key) => PREDICTIVE_METRICS[key].kind === "sla"
-);
-
-/** Alert queue tabs in the same ROP workbook (snapshot counts → as-of day). */
-export const PREDICTIVE_ALERT_TABS = {
-  noReply24h: "В диалоге без ответа сутки",
-  unpaidInvoices: "Счета без оплаты"
-} as const;
 
 export function colLetter(index0: number): string {
   let n = index0 + 1;
@@ -195,8 +235,21 @@ export function formatDisplayDate(iso: string): string {
   return `${day}.${m}`;
 }
 
+/** Week total column label: Mon–Sun range, e.g. `29.06–05.07`. */
+export function formatWeekDateRangeLabel(weekIsos: string[]): string {
+  if (!weekIsos.length) return "";
+  const first = formatDisplayDate(weekIsos[0]);
+  const last = formatDisplayDate(weekIsos[weekIsos.length - 1]);
+  return first === last ? first : `${first}–${last}`;
+}
+
+/** Text for Sheets so USER_ENTERED does not turn 01.07 into a date serial. */
+export function formatSheetDateLabel(iso: string): string {
+  return `'${formatDisplayDate(iso)}`;
+}
+
 export function parseDisplayDate(raw: string, monthHint: string): string | null {
-  const text = String(raw || "").trim();
+  const text = String(raw || "").trim().replace(/^'/, "");
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
   const serial = Number(text.replace(",", "."));
   if (Number.isFinite(serial) && serial > 20000 && serial < 80000 && !text.includes(".")) {
@@ -253,8 +306,13 @@ export function parsePredictiveDateColumns(values: string[][], monthHint: string
 
 export function isPredictiveGridBootstrapped(values: string[][]): boolean {
   const label = String(values[PREDICTIVE_METRICS.revenue.planRow - 1]?.[0] || "").trim().toLowerCase();
-  const dialogs = String(values[PREDICTIVE_METRICS.dialogs.planRow - 1]?.[0] || "").trim().toLowerCase();
-  return (label.startsWith("revenue") || label.startsWith("выручка")) && dialogs.startsWith("dialog");
+  const leads = String(values[PREDICTIVE_METRICS.leads.planRow - 1]?.[0] || "").trim().toLowerCase();
+  const ptf = String(values[PREDICTIVE_METRICS.revenue.ptfRow - 1]?.[1] || "").trim().toLowerCase();
+  return (
+    (label.startsWith("revenue") || label.startsWith("выручка")) &&
+    leads.startsWith("lead") &&
+    (ptf.startsWith("прогноз") || ptf.startsWith("ptf") || ptf.startsWith("run"))
+  );
 }
 
 /** True when week count / МЕС column match the calendar for this month. */
@@ -284,16 +342,110 @@ export function monthNameRu(month: string): string {
  * Sales predictive template: Lag (выручка/продажи) + микроконверсии воронки.
  * Без маркетинга (Budget/Klicks/CPL/ROAS/CAC).
  */
+export function buildPtfWeekFormula(input: {
+  factRef: string;
+  planRef: string;
+  periodDays: number;
+  startDay: number;
+  endDay: number;
+  asOfCell?: string;
+  timeScale: boolean;
+}): string {
+  const asOf = input.asOfCell || `$A$${PREDICTIVE_ASOF_DAY_ROW}`;
+  const onlyCurrent = `AND(${asOf}>=${input.startDay};${asOf}<=${input.endDay})`;
+  const body = input.timeScale
+    ? `${input.factRef}/${input.planRef}*${input.periodDays}/MAX(1;MIN(${input.periodDays};${asOf}-${input.startDay}+1))`
+    : `${input.factRef}/${input.planRef}`;
+  return `=IFERROR(IF(${onlyCurrent};${body};"");"")`;
+}
+
+export function buildPtfMonthFormula(input: {
+  factRef: string;
+  planRef: string;
+  daysInMonth: number;
+  asOfCell?: string;
+  timeScale: boolean;
+}): string {
+  const asOf = input.asOfCell || `$A$${PREDICTIVE_ASOF_DAY_ROW}`;
+  if (input.timeScale) {
+    return `=IFERROR(${input.factRef}/${input.planRef}*${input.daysInMonth}/MAX(1;MIN(${input.daysInMonth};${asOf}));"")`;
+  }
+  return `=IFERROR(${input.factRef}/${input.planRef};"")`;
+}
+
+/** One row of PTF formulas (index = sheet column). Days empty; only current week + МЕС. */
+export function buildPtfFormulasForMetric(input: {
+  month: string;
+  key: PredictiveMetricKey;
+}): string[] {
+  const layout = layoutForMonth(input.month);
+  const { weekBlocks, monthCol } = layout;
+  const meta = PREDICTIVE_METRICS[input.key];
+  const days = buildMonthDayColumns(input.month);
+  const monthL = colLetter(monthCol);
+  const timeScale = meta.style !== "percent" && input.key !== "aov";
+  const dim = daysInCalendarMonth(input.month);
+  const out = Array.from({ length: monthCol + 1 }, () => "");
+  out[1] = "прогноз";
+
+  for (let w = 0; w < weekBlocks.length; w += 1) {
+    const block = weekBlocks[w];
+    const weekIsos = days.slice(w * 7, w * 7 + 7).filter((day) => day.iso.startsWith(input.month));
+    if (!weekIsos.length) continue;
+    const period = weekIsos.length;
+    const startDay = Number(weekIsos[0].iso.slice(8, 10));
+    const endDay = Number(weekIsos[weekIsos.length - 1].iso.slice(8, 10));
+    const wL = colLetter(block.totalCol);
+    out[block.totalCol] = buildPtfWeekFormula({
+      factRef: `${wL}${meta.factRow}`,
+      planRef: `${wL}${meta.planRow}`,
+      periodDays: period,
+      startDay,
+      endDay,
+      timeScale
+    });
+  }
+
+  out[monthCol] = buildPtfMonthFormula({
+    factRef: `${monthL}${meta.factRow}`,
+    planRef: `${monthL}${meta.planRow}`,
+    daysInMonth: dim,
+    timeScale
+  });
+  return out;
+}
+
+/** Sparse updates to refresh прогноз formulas without full bootstrap. */
+export function buildPtfCellUpdates(input: {
+  tabTitle: string;
+  month: string;
+}): SheetCellUpdate[] {
+  const { monthCol } = layoutForMonth(input.month);
+  const updates: SheetCellUpdate[] = [];
+  for (const key of Object.keys(PREDICTIVE_METRICS) as PredictiveMetricKey[]) {
+    const meta = PREDICTIVE_METRICS[key];
+    const formulas = buildPtfFormulasForMetric({ month: input.month, key });
+    updates.push({
+      range: `${quoteTab(input.tabTitle)}!A${meta.ptfRow}:${colLetter(monthCol)}${meta.ptfRow}`,
+      values: [formulas]
+    });
+  }
+  return updates;
+}
+
 export function buildTemplatePredictiveGrid(input: {
   month: string;
   planRevenue?: number | null;
   planSales?: number | null;
+  planLeads?: number | null;
+  planDeals?: number | null;
+  planInvoices?: number | null;
 }): string[][] {
   const layout = layoutForMonth(input.month);
   const { weekBlocks, monthCol, weekCount } = layout;
   const width = monthCol + 1;
   const blank = () => Array.from({ length: width }, () => "");
-  const rows: string[][] = Array.from({ length: PREDICTIVE_GRID_LAST_ROW }, () => blank());
+  const rows: string[][] = Array.from({ length: PREDICTIVE_ASOF_DAY_ROW }, () => blank());
   const days = buildMonthDayColumns(input.month);
   const weekdays = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
   const monthL = colLetter(monthCol);
@@ -305,33 +457,33 @@ export function buildTemplatePredictiveGrid(input: {
   for (let w = 0; w < weekBlocks.length; w += 1) {
     const block = weekBlocks[w];
     rows[1][block.totalCol] = `Неделя ${w + 1}`;
-    rows[2][block.totalCol] = `Даты недели ${w + 1}`;
+    const weekIsos = days.slice(w * 7, w * 7 + 7).map((d) => d.iso);
+    rows[2][block.totalCol] = formatWeekDateRangeLabel(weekIsos);
     for (let d = 0; d < 7; d += 1) {
       rows[1][block.dayCols[d]] = weekdays[d];
-      rows[2][block.dayCols[d]] = formatDisplayDate(days[w * 7 + d].iso);
+      rows[2][block.dayCols[d]] = formatSheetDateLabel(days[w * 7 + d].iso);
     }
   }
   rows[1][monthCol] = "МЕС";
 
   rows[PREDICTIVE_SECTION_MICRO_ROW - 1][0] = "Микроконверсии (воронка)";
-  rows[PREDICTIVE_SECTION_SLA_ROW - 1][0] = "SLA / качество";
 
   const place = (key: PredictiveMetricKey) => {
     const meta = PREDICTIVE_METRICS[key];
     rows[meta.planRow - 1][0] = meta.label;
     rows[meta.planRow - 1][1] = "план";
     rows[meta.factRow - 1][1] = "факт";
+    rows[meta.ptfRow - 1][1] = "прогноз";
   };
 
+  /** Always install week/day split formulas; month value optional. */
   const splitPlan = (planRow: number, monthValue: string) => {
     const plan = rows[planRow - 1];
     if (monthValue) plan[monthCol] = monthValue;
     for (const block of weekBlocks) {
       const weekL = colLetter(block.totalCol);
-      if (monthValue) {
-        plan[block.totalCol] = `=${monthL}${planRow}/${weekCount}`;
-        for (const col of block.dayCols) plan[col] = `=${weekL}${planRow}/7`;
-      }
+      plan[block.totalCol] = `=${monthL}${planRow}/${weekCount}`;
+      for (const col of block.dayCols) plan[col] = `=${weekL}${planRow}/7`;
     }
   };
 
@@ -356,29 +508,30 @@ export function buildTemplatePredictiveGrid(input: {
     row[monthCol] = `=IFERROR(${monthL}${numRow}/${monthL}${denRow};"")`;
   };
 
+  /** PTF%: only current week + МЕС. Closed weeks / day cells stay empty (no fake run-rate). */
+  const installPtf = (key: PredictiveMetricKey) => {
+    const meta = PREDICTIVE_METRICS[key];
+    const ptf = rows[meta.ptfRow - 1];
+    const formulas = buildPtfFormulasForMetric({ month: input.month, key });
+    for (let col = 0; col < formulas.length; col += 1) ptf[col] = formulas[col] || "";
+  };
+
   for (const key of Object.keys(PREDICTIVE_METRICS) as PredictiveMetricKey[]) place(key);
 
-  const rev = input.planRevenue != null && Number.isFinite(input.planRevenue) ? String(input.planRevenue) : "";
-  const sales = input.planSales != null && Number.isFinite(input.planSales) ? String(input.planSales) : "";
-  splitPlan(PREDICTIVE_METRICS.revenue.planRow, rev);
-  splitPlan(PREDICTIVE_METRICS.sale.planRow, sales);
-  splitPlan(PREDICTIVE_METRICS.leads.planRow, "");
-  splitPlan(PREDICTIVE_METRICS.deals.planRow, "");
-  splitPlan(PREDICTIVE_METRICS.invoices.planRow, "");
-  for (const key of PREDICTIVE_SLA_KEYS) {
-    if (PREDICTIVE_METRICS[key].style === "count") splitPlan(PREDICTIVE_METRICS[key].planRow, "");
-  }
+  const asPlan = (n: number | null | undefined) =>
+    n != null && Number.isFinite(n) ? String(n) : "";
+
+  splitPlan(PREDICTIVE_METRICS.revenue.planRow, asPlan(input.planRevenue));
+  splitPlan(PREDICTIVE_METRICS.sale.planRow, asPlan(input.planSales));
+  splitPlan(PREDICTIVE_METRICS.leads.planRow, asPlan(input.planLeads));
+  splitPlan(PREDICTIVE_METRICS.deals.planRow, asPlan(input.planDeals));
+  splitPlan(PREDICTIVE_METRICS.invoices.planRow, asPlan(input.planInvoices));
 
   sumFact(PREDICTIVE_METRICS.revenue.factRow);
   sumFact(PREDICTIVE_METRICS.sale.factRow);
   sumFact(PREDICTIVE_METRICS.leads.factRow);
   sumFact(PREDICTIVE_METRICS.deals.factRow);
   sumFact(PREDICTIVE_METRICS.invoices.factRow);
-  sumFact(PREDICTIVE_METRICS.dialogs.factRow);
-  sumFact(PREDICTIVE_METRICS.no_reply_24h.factRow);
-  sumFact(PREDICTIVE_METRICS.stale_deals.factRow);
-  sumFact(PREDICTIVE_METRICS.no_next_activity.factRow);
-  sumFact(PREDICTIVE_METRICS.unpaid_invoices.factRow);
 
   ratioAll(PREDICTIVE_METRICS.aov.planRow, PREDICTIVE_METRICS.revenue.planRow, PREDICTIVE_METRICS.sale.planRow);
   {
@@ -387,6 +540,10 @@ export function buildTemplatePredictiveGrid(input: {
     for (const block of weekBlocks) {
       const L = colLetter(block.totalCol);
       fact[block.totalCol] = `=IFERROR(${L}${PREDICTIVE_METRICS.revenue.factRow}/${L}${PREDICTIVE_METRICS.sale.factRow};"")`;
+      for (const col of block.dayCols) {
+        const dL = colLetter(col);
+        fact[col] = `=IFERROR(${dL}${PREDICTIVE_METRICS.revenue.factRow}/${dL}${PREDICTIVE_METRICS.sale.factRow};"")`;
+      }
     }
     fact[monthCol] = `=IFERROR(${monthL}${PREDICTIVE_METRICS.revenue.factRow}/${monthL}${PREDICTIVE_METRICS.sale.factRow};"")`;
   }
@@ -400,7 +557,67 @@ export function buildTemplatePredictiveGrid(input: {
   ratioAll(PREDICTIVE_METRICS.cr_l_sale.planRow, PREDICTIVE_METRICS.sale.planRow, PREDICTIVE_METRICS.leads.planRow);
   ratioAll(PREDICTIVE_METRICS.cr_l_sale.factRow, PREDICTIVE_METRICS.sale.factRow, PREDICTIVE_METRICS.leads.factRow);
 
+  for (const key of Object.keys(PREDICTIVE_METRICS) as PredictiveMetricKey[]) installPtf(key);
+
+  rows[PREDICTIVE_ASOF_DAY_ROW - 1][0] = "1";
+  rows[PREDICTIVE_ASOF_DAY_ROW - 1][1] = "as_of_day";
+
   return rows;
+}
+
+/** Metrics whose МЕС plan is overwritten on every sync (СВОД + derived Deals). */
+export const PREDICTIVE_SVOD_PLAN_METRICS = ["revenue", "sale", "leads", "deals", "invoices"] as const;
+export type PredictiveSvodPlanMetric = (typeof PREDICTIVE_SVOD_PLAN_METRICS)[number];
+
+/**
+ * Deals plan needed to hit invoice plan at current Deal→Invoice CR.
+ * deals = ceil(planInvoices / (invoicesFact / dealsFact))
+ */
+export function deriveDealsPlanForInvoices(input: {
+  planInvoices: number | null | undefined;
+  dealsFact: number;
+  invoicesFact: number;
+}): number | null {
+  const planInv = input.planInvoices;
+  if (planInv == null || !(planInv > 0)) return null;
+  if (!(input.dealsFact > 0 && input.invoicesFact > 0)) return null;
+  const cr = input.invoicesFact / input.dealsFact;
+  if (!(cr > 0) || !Number.isFinite(cr)) return null;
+  return Math.ceil(planInv / cr);
+}
+
+/** Upsert МЕС plan values + week/day split formulas (never touches fact rows). */
+export function buildPlanMonthUpdates(input: {
+  tabTitle: string;
+  month: string;
+  plans: Partial<Record<PredictiveSvodPlanMetric, number | null | undefined>>;
+}): SheetCellUpdate[] {
+  const { weekBlocks, monthCol, weekCount } = layoutForMonth(input.month);
+  const monthL = colLetter(monthCol);
+  const updates: SheetCellUpdate[] = [];
+
+  for (const key of PREDICTIVE_SVOD_PLAN_METRICS) {
+    const value = input.plans[key];
+    if (value == null || !Number.isFinite(value)) continue;
+    const planRow = PREDICTIVE_METRICS[key].planRow;
+    updates.push({
+      range: a1(input.tabTitle, monthCol, planRow),
+      values: [[value]]
+    });
+    for (const block of weekBlocks) {
+      updates.push({
+        range: a1(input.tabTitle, block.totalCol, planRow),
+        values: [[`=${monthL}${planRow}/${weekCount}`]]
+      });
+      for (const col of block.dayCols) {
+        updates.push({
+          range: a1(input.tabTitle, col, planRow),
+          values: [[`=${colLetter(block.totalCol)}${planRow}/7`]]
+        });
+      }
+    }
+  }
+  return updates;
 }
 
 /** @deprecated alias */
@@ -420,14 +637,17 @@ export function buildDateRowUpdates(input: {
   let changed = false;
   for (const day of days) {
     const next = formatDisplayDate(day.iso);
-    if (String(dateRow[day.col] || "").trim() !== next) {
+    const current = String(dateRow[day.col] || "").trim().replace(/^'/, "");
+    const currentIso = parseDisplayDate(current, input.month);
+    if (currentIso !== day.iso && current !== next) {
       dateRow[day.col] = next;
       changed = true;
     }
   }
   for (let w = 0; w < weekBlocks.length; w += 1) {
     const col = weekBlocks[w].totalCol;
-    const label = `Даты недели ${w + 1}`;
+    const weekIsos = days.slice(w * 7, w * 7 + 7).map((d) => d.iso);
+    const label = formatWeekDateRangeLabel(weekIsos);
     if (String(dateRow[col] || "").trim() !== label) {
       dateRow[col] = label;
       changed = true;
@@ -457,9 +677,6 @@ export type SystemDayAgg = {
   payments: number;
   revenue: number;
   invoices: number;
-  dialogs: number;
-  stale_deals: number;
-  no_next_activity: number;
 };
 
 export function aggregateSystemDailyFact(
@@ -471,9 +688,6 @@ export function aggregateSystemDailyFact(
   let payments = 0;
   let revenue = 0;
   let invoices = 0;
-  let dialogs = 0;
-  let stale_deals = 0;
-  let no_next_activity = 0;
   for (const row of dailyFact) {
     if (String(row.date || "").slice(0, 10) !== date) continue;
     leads += parseSheetNumber(row.leads);
@@ -481,25 +695,12 @@ export function aggregateSystemDailyFact(
     payments += parseSheetNumber(row.payments);
     revenue += parseSheetNumber(row.revenue);
     invoices += parseSheetNumber(row.invoices);
-    dialogs += parseSheetNumber(row.dialogs);
-    stale_deals += parseSheetNumber(row.stale_deals);
-    no_next_activity += parseSheetNumber(row.deals_without_next_activity);
   }
-  return { leads, deals, payments, revenue, invoices, dialogs, stale_deals, no_next_activity };
-}
-
-export type AlertSlaSnapshot = {
-  asOfDate: string;
-  no_reply_24h: number;
-  unpaid_invoices: number;
-};
-
-export function countDataRows(values: string[][]): number {
-  return values.slice(1).filter((row) => String(row[0] ?? "").trim() !== "").length;
+  return { leads, deals, payments, revenue, invoices };
 }
 
 export type DayFactValues = Partial<Record<PredictiveAutoFactMetric, number | null>> & {
-  source: "maria" | "system" | "mixed" | "alerts";
+  source: "maria" | "system" | "mixed" | "svod";
 };
 
 export function resolveDayFacts(input: {
@@ -507,7 +708,7 @@ export function resolveDayFacts(input: {
   mariaDaily: MariaDailyRow[];
   mariaSnapshot?: Array<{ key?: string; value?: string }>;
   dailyFact: Array<Record<string, string>>;
-  alertSla?: AlertSlaSnapshot | null;
+  svodLeadsByDate?: Map<string, { paid: number; organic: number; total: number }> | null;
 }): DayFactValues {
   const snap = Object.fromEntries(
     (input.mariaSnapshot || []).map((row) => [String(row.key || "").trim(), String(row.value || "").trim()])
@@ -530,8 +731,12 @@ export function resolveDayFacts(input: {
     source = "system";
   }
 
+  // Leads: СВОД `day` (paid CRM) + `Органика` (CRM) — preferred over Bitrix duplicates.
   let leads: number | null = null;
-  if (reportDate === input.date) {
+  if (input.svodLeadsByDate?.has(input.date)) {
+    leads = input.svodLeadsByDate.get(input.date)!.total;
+    source = source === "maria" ? "mixed" : source === "system" ? "svod" : source;
+  } else if (reportDate === input.date) {
     const t = parseSheetNumber(snap.yesterday_traffic_leads);
     const o = parseSheetNumber(snap.yesterday_organic_leads);
     if (snap.yesterday_traffic_leads || snap.yesterday_organic_leads) {
@@ -562,19 +767,6 @@ export function resolveDayFacts(input: {
     aov = parseSheetNumber(snap.yesterday_avg_check);
   }
 
-  const hasSystemDay = input.dailyFact.some((row) => String(row.date || "").slice(0, 10) === input.date);
-  const dialogs = hasSystemDay ? system.dialogs : null;
-  const stale_deals = hasSystemDay ? system.stale_deals : null;
-  const no_next_activity = hasSystemDay ? system.no_next_activity : null;
-
-  let no_reply_24h: number | null = null;
-  let unpaid_invoices: number | null = null;
-  if (input.alertSla && input.alertSla.asOfDate === input.date) {
-    no_reply_24h = input.alertSla.no_reply_24h;
-    unpaid_invoices = input.alertSla.unpaid_invoices;
-    if (source === "system" || source === "maria") source = "mixed";
-  }
-
   return {
     revenue,
     sale,
@@ -582,11 +774,6 @@ export function resolveDayFacts(input: {
     deals,
     invoices,
     aov,
-    dialogs,
-    stale_deals,
-    no_next_activity,
-    no_reply_24h,
-    unpaid_invoices,
     source
   };
 }
@@ -623,7 +810,7 @@ export function collectFactsForMonth(input: {
   mariaDaily: MariaDailyRow[];
   mariaSnapshot?: Array<{ key?: string; value?: string }>;
   dailyFact: Array<Record<string, string>>;
-  alertSla?: AlertSlaSnapshot | null;
+  svodLeadsByDate?: Map<string, { paid: number; organic: number; total: number }> | null;
 }): Map<string, DayFactValues> {
   const dates = new Set<string>();
   for (const row of input.mariaDaily) {
@@ -633,9 +820,13 @@ export function collectFactsForMonth(input: {
     const d = String(row.date || "").slice(0, 10);
     if (d.startsWith(input.month)) dates.add(d);
   }
+  if (input.svodLeadsByDate) {
+    for (const d of input.svodLeadsByDate.keys()) {
+      if (d.startsWith(input.month)) dates.add(d);
+    }
+  }
   const snapDate = (input.mariaSnapshot || []).find((r) => r.key === "report_date")?.value;
   if (snapDate && String(snapDate).startsWith(input.month)) dates.add(String(snapDate));
-  if (input.alertSla?.asOfDate?.startsWith(input.month)) dates.add(input.alertSla.asOfDate);
 
   const out = new Map<string, DayFactValues>();
   for (const date of [...dates].sort()) {
@@ -644,7 +835,7 @@ export function collectFactsForMonth(input: {
       mariaDaily: input.mariaDaily,
       mariaSnapshot: input.mariaSnapshot,
       dailyFact: input.dailyFact,
-      alertSla: input.alertSla
+      svodLeadsByDate: input.svodLeadsByDate
     });
     const hasAny = PREDICTIVE_AUTO_FACT_METRICS.some(
       (k) => facts[k] != null && Number.isFinite(facts[k] as number)

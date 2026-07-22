@@ -1,0 +1,41 @@
+---
+description: GA4, Google Sheets, Bitrix, Gemini, Clarity
+globs: src/lib/google/**,src/lib/bitrix/**,src/lib/clarity/**,src/lib/*-analytics-ask.ts,src/lib/gemini*.ts
+alwaysApply: false
+---
+
+# Интеграции
+
+## GA4 + CRM
+
+- GA4 (сайт): `ga4-connector.ts` → newUsers, sessions, channels.
+- CRM-лиды (Sheets): `traffic-connector.ts` / `snapshot-store.ts` → paidLeads, organicLeads, spend.
+- **Не смешивать** GA4 users и CRM leads в одной метрике без явной подписи.
+- Ask AI: `ga4-analytics-ask.ts` — контекст через `ga4ContextForAsk()`.
+
+## Gemini
+
+- Общий клиент: `src/lib/gemini/client.ts` — все AI-вызовы через `callGeminiGenerateContent`.
+- **RU-сервер (Timeweb)**: AI Studio (`generativelanguage.googleapis.com`) часто блокируется → `GEMINI_PROVIDER=auto` или `vertex`.
+- Vertex: `GOOGLE_SERVICE_ACCOUNT_JSON` + Vertex AI API в GCP, регион `GEMINI_VERTEX_LOCATION=europe-west1`.
+- Альтернатива: `GEMINI_API_BASE_URL` — прокси в EU/US.
+- Модель: `GEMINI_MODEL` (default `gemini-2.5-flash`).
+- Кеш анализа переписок: `.cache/gemini-conversation-analysis.json`.
+
+## Bitrix
+
+- `src/lib/bitrix/connector.ts`, `conversation-connector.ts`.
+- Снапшоты: `data/bitrix-snapshots/` (gitignored).
+
+## Google Sheets
+
+- `sheets-client.ts` — общий клиент; credentials из env (`GOOGLE_SERVICE_ACCOUNT_*`).
+- Не хардкодить sheet ID — только env или константы рядом с connector.
+
+## Clarity
+
+- `src/lib/clarity/clarity-connector.ts`, token: `CLARITY_API_TOKEN`.
+
+## Sync-паттерн
+
+Connector → snapshot store (file cache) → API route отдаёт `{ summary, byChannel, daily, dataSource: "snapshot" | "live" }`.

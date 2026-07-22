@@ -1,0 +1,35 @@
+---
+description: Auth, middleware, роли доступа
+globs: src/middleware.ts,src/lib/auth/**,src/components/auth-provider.tsx
+alwaysApply: false
+---
+
+# Auth и безопасность
+
+## Middleware (`src/middleware.ts`)
+
+- Статика и `/_next` — без проверки.
+- `/api/auth/login` — публичный.
+- Остальные `/api/*` — нужна сессия (401 без cookie).
+- Страницы без сессии → redirect на `/` с `?next=`.
+- `/api/admin/*` — admin; `/api/admin/users` — admin или rop.
+
+## Роли (`src/lib/auth/access.ts`)
+
+| Level | Доступ |
+|-------|--------|
+| admin | всё + digital-twin + training/admin |
+| rop | hub, analytics, ad-analytics, rop, training, user management |
+| mop | hub, training |
+
+Новый защищённый маршрут → `canAccessRoute` + при необходимости middleware admin check.
+
+## Секреты
+
+- Никогда не коммитить `.env`, `.env.local`, service account JSON, API keys.
+- Не логировать ключи и webhook URL.
+- `data/auth/` — gitignored, локальные пользователи.
+
+## Новый API
+
+Если endpoint не должен быть публичным — не добавлять в `PUBLIC_API_PREFIXES`.

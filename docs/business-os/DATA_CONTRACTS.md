@@ -47,6 +47,20 @@ See `src/lib/sales-os/export-contract.ts` — version `sales_export_v1`.
 Child workbook: `SALES_OS_SPREADSHEET_ID` / `src/config/sales-os.ts`.
 Mother reads only `99_EXPORT`.
 
+## Traffic OS export
+
+See `src/lib/traffic-os/export-contract.ts`.
+
+| Version | Status |
+|---------|--------|
+| `traffic_export_v1` | Legacy reference (channel label, `paid_revenue`) |
+| `traffic_export_v2` | Lead-cohort management export (superseded in workbook) |
+| `traffic_export_v3` | **Active** on Traffic OS `99_EXPORT` — payment-calendar attribution + direct/contact/customer revenue splits |
+
+Mother must **not** ingest Traffic `99_EXPORT` as canon until explicit cutover.  
+Management sheets 16–22: `traffic_management_v1`.  
+Enrichment sheets 23–25: see `TRAFFIC_ATTRIBUTION_INTEGRITY.md`.
+
 ## Currency
 
 Current amounts assume EUR. Reserved fields: `amount_original`, `currency`, `exchange_rate`, `amount_eur`.

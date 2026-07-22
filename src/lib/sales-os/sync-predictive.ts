@@ -5,27 +5,32 @@ import {
   writeSheetValues
 } from "@/lib/google/sheets-client";
 import type { MariaDailyRow } from "@/lib/sales-os/maria-daily";
-import { applyPredictiveTemplateDesign, getSheetIdByTitle } from "@/lib/sales-os/predictive-design";
+import { applyPredictiveTemplateDesign, applyPredictiveTrafficLights, getSheetIdByTitle } from "@/lib/sales-os/predictive-design";
 import {
-  PREDICTIVE_ALERT_TABS,
+  PREDICTIVE_ASOF_DAY_ROW,
   PREDICTIVE_DATE_ROW,
   PREDICTIVE_HEADER_ROW,
   buildTemplatePredictiveGrid,
   buildDateRowUpdates,
   buildFactCellUpdates,
   buildMonthDayColumns,
+  buildPlanMonthUpdates,
+  buildPtfCellUpdates,
   colLetter,
   collectFactsForMonth,
-  countDataRows,
+  daysInCalendarMonth,
+  deriveDealsPlanForInvoices,
   formatDisplayDate,
+  formatWeekDateRangeLabel,
   getPredictiveSpreadsheetId,
   getPredictiveTabTitle,
   isPredictiveLayoutCurrent,
   layoutForMonth,
   parsePredictiveDateColumns,
-  quoteTab,
-  type AlertSlaSnapshot
+  quoteTab
 } from "@/lib/sales-os/predictive-model";
+import { parseSheetNumber } from "@/lib/os-sheets/sales-metric-defs";
+import { pullSvodDailyLeads, pullSvodMonthPlans, type SvodMonthPlans } from "@/lib/sales-os/svod-plans";
 
 export type PredictiveSyncResult = {
   spreadsheetId: string;
@@ -34,42 +39,12 @@ export type PredictiveSyncResult = {
   bootstrapped: boolean;
   datesEnsured: boolean;
   factCellsWritten: number;
+  planCellsWritten: number;
   datesFilled: number;
-  alertSla?: AlertSlaSnapshot;
+  svodPlans?: Pick<SvodMonthPlans, "revenue" | "sale" | "leads" | "invoices"> & { deals?: number | null };
   dryRun: boolean;
   skipped?: string;
 };
-
-async function pullAlertSlaSnapshot(input: {
-  spreadsheetId: string;
-  asOfDate: string;
-}): Promise<AlertSlaSnapshot> {
-  let noReply = 0;
-  let unpaid = 0;
-  try {
-    const noReplyValues = await readSheetValues({
-      spreadsheetId: input.spreadsheetId,
-      range: `${quoteTab(PREDICTIVE_ALERT_TABS.noReply24h)}!A:A`
-    });
-    noReply = countDataRows(noReplyValues);
-  } catch {
-    noReply = 0;
-  }
-  try {
-    const unpaidValues = await readSheetValues({
-      spreadsheetId: input.spreadsheetId,
-      range: `${quoteTab(PREDICTIVE_ALERT_TABS.unpaidInvoices)}!A:A`
-    });
-    unpaid = countDataRows(unpaidValues);
-  } catch {
-    unpaid = 0;
-  }
-  return {
-    asOfDate: input.asOfDate,
-    no_reply_24h: noReply,
-    unpaid_invoices: unpaid
-  };
-}
 
 async function writeHeaderAndDates(input: {
   spreadsheetId: string;
@@ -83,12 +58,16 @@ async function writeHeaderAndDates(input: {
   for (let w = 0; w < weekBlocks.length; w += 1) {
     const block = weekBlocks[w];
     header[block.totalCol] = `Неделя ${w + 1}`;
-    dates[block.totalCol] = `Даты недели ${w + 1}`;
     for (let d = 0; d < 7; d += 1) header[block.dayCols[d]] = weekdays[d];
   }
   header[monthCol] = "МЕС";
-  for (const day of buildMonthDayColumns(input.month)) {
+  const monthDays = buildMonthDayColumns(input.month);
+  for (const day of monthDays) {
     dates[day.col] = formatDisplayDate(day.iso);
+  }
+  for (let w = 0; w < weekBlocks.length; w += 1) {
+    const weekIsos = monthDays.slice(w * 7, w * 7 + 7).map((d) => d.iso);
+    dates[weekBlocks[w].totalCol] = formatWeekDateRangeLabel(weekIsos);
   }
   await writeSheetValues({
     spreadsheetId: input.spreadsheetId,
@@ -99,8 +78,8 @@ async function writeHeaderAndDates(input: {
 }
 
 /**
- * Upsert predictive front facts. Never overwrites plan rows after bootstrap.
- * Bootstraps a clean grid once if the tab is empty.
+ * Upsert predictive front: facts + monthly plans from СВОД «План/факт».
+ * Fact rows never overwrite plan formulas for CR/AOV.
  */
 export async function syncPredictiveSalesFront(input: {
   month: string;
@@ -118,7 +97,7 @@ export async function syncPredictiveSalesFront(input: {
   const dryRun = Boolean(input.dryRun);
   const month = input.month;
   const layout = layoutForMonth(month);
-  const gridEnd = `${colLetter(layout.monthCol)}40`;
+  const gridEnd = `${colLetter(layout.monthCol)}${PREDICTIVE_ASOF_DAY_ROW}`;
 
   if (!dryRun) {
     await ensureSheetColumnCapacity({
@@ -141,22 +120,52 @@ export async function syncPredictiveSalesFront(input: {
   const snap = Object.fromEntries(
     (input.mariaSnapshot || []).map((row) => [String(row.key || "").trim(), String(row.value || "").trim()])
   );
-  const planRevenue = snap.plan_revenue ? Number(String(snap.plan_revenue).replace(",", ".")) : null;
-  const planSales = snap.plan_sales ? Number(String(snap.plan_sales).replace(",", ".")) : null;
+
+  let svod: SvodMonthPlans | null = null;
+  try {
+    svod = await pullSvodMonthPlans({ month });
+  } catch (error) {
+    console.warn(`[predictive] svod plans pull failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const planRevenue =
+    svod?.revenue ??
+    (snap.plan_revenue ? Number(String(snap.plan_revenue).replace(",", ".")) : null);
+  const planSales =
+    svod?.sale ?? (snap.plan_sales ? Number(String(snap.plan_sales).replace(",", ".")) : null);
+  const planLeads = svod?.leads ?? null;
+  const planInvoices = svod?.invoices ?? null;
+
+  let dealsFactMonth = 0;
+  let invoicesFactMonth = 0;
+  for (const row of input.dailyFact) {
+    const d = String(row.date || "").slice(0, 10);
+    if (!d.startsWith(month)) continue;
+    dealsFactMonth += parseSheetNumber(row.deals_created);
+    invoicesFactMonth += parseSheetNumber(row.invoices);
+  }
+  const planDeals = deriveDealsPlanForInvoices({
+    planInvoices,
+    dealsFact: dealsFactMonth,
+    invoicesFact: invoicesFactMonth
+  });
 
   let bootstrapped = false;
   if (input.forceBootstrap || !isPredictiveLayoutCurrent(values, month)) {
     bootstrapped = true;
     const grid = buildTemplatePredictiveGrid({
       month,
-      planRevenue: Number.isFinite(planRevenue) ? planRevenue : null,
-      planSales: Number.isFinite(planSales) ? planSales : null
+      planRevenue: planRevenue != null && Number.isFinite(planRevenue) ? planRevenue : null,
+      planSales: planSales != null && Number.isFinite(planSales) ? planSales : null,
+      planLeads: planLeads != null && Number.isFinite(planLeads) ? planLeads : null,
+      planDeals: planDeals != null && Number.isFinite(planDeals) ? planDeals : null,
+      planInvoices: planInvoices != null && Number.isFinite(planInvoices) ? planInvoices : null
     });
     if (!dryRun) {
       await writeSheetValues({
         spreadsheetId,
         range: `${quoteTab(tabTitle)}!A1`,
-        clearRange: `${quoteTab(tabTitle)}!A1:AZ40`,
+        clearRange: `${quoteTab(tabTitle)}!A1:AZ55`,
         rows: grid,
         valueInputOption: "USER_ENTERED"
       });
@@ -170,6 +179,15 @@ export async function syncPredictiveSalesFront(input: {
       }
     }
     values = grid;
+  } else if (!dryRun) {
+    // Drop leftover SLA / quality rows below the funnel grid.
+    await writeSheetValues({
+      spreadsheetId,
+      range: `${quoteTab(tabTitle)}!A${PREDICTIVE_ASOF_DAY_ROW + 1}`,
+      clearRange: `${quoteTab(tabTitle)}!A${PREDICTIVE_ASOF_DAY_ROW + 1}:AZ80`,
+      rows: [[""]],
+      valueInputOption: "RAW"
+    });
   }
 
   let datesEnsured = false;
@@ -199,6 +217,40 @@ export async function syncPredictiveSalesFront(input: {
     }
   }
 
+  let planCellsWritten = 0;
+  const planPayload = {
+    revenue: svod?.revenue ?? null,
+    sale: svod?.sale ?? null,
+    leads: svod?.leads ?? null,
+    deals: planDeals,
+    invoices: svod?.invoices ?? null
+  };
+  const svodPlansOut = {
+    revenue: planPayload.revenue,
+    sale: planPayload.sale,
+    leads: planPayload.leads,
+    deals: planPayload.deals,
+    invoices: planPayload.invoices
+  };
+
+  if (!bootstrapped && (svod || planDeals != null)) {
+    const planUpdates = buildPlanMonthUpdates({
+      tabTitle,
+      month,
+      plans: planPayload
+    });
+    planCellsWritten = planUpdates.length;
+    if (!dryRun && planUpdates.length) {
+      await batchUpdateSheetValues({
+        spreadsheetId,
+        data: planUpdates,
+        valueInputOption: "USER_ENTERED"
+      });
+    }
+  } else if (bootstrapped) {
+    planCellsWritten = Object.values(planPayload).filter((v) => v != null && Number.isFinite(v)).length;
+  }
+
   const dateToCol = parsePredictiveDateColumns(values, month);
   if (!dateToCol.size) {
     return {
@@ -208,18 +260,21 @@ export async function syncPredictiveSalesFront(input: {
       bootstrapped,
       datesEnsured,
       factCellsWritten: 0,
+      planCellsWritten,
       datesFilled: 0,
+      svodPlans: svodPlansOut,
       dryRun,
       skipped: "no date columns parsed"
     };
   }
 
   const asOfDate = input.syncedAt.slice(0, 10);
-  let alertSla: AlertSlaSnapshot | undefined;
+
+  let svodLeadsByDate: Map<string, { paid: number; organic: number; total: number }> | undefined;
   try {
-    alertSla = await pullAlertSlaSnapshot({ spreadsheetId, asOfDate });
+    svodLeadsByDate = await pullSvodDailyLeads({ month });
   } catch (error) {
-    console.warn(`[predictive] alert SLA pull failed: ${error instanceof Error ? error.message : String(error)}`);
+    console.warn(`[predictive] svod leads pull failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const factsByDate = collectFactsForMonth({
@@ -227,7 +282,7 @@ export async function syncPredictiveSalesFront(input: {
     mariaDaily: input.mariaDaily,
     mariaSnapshot: input.mariaSnapshot,
     dailyFact: input.dailyFact,
-    alertSla
+    svodLeadsByDate
   });
 
   const updates = buildFactCellUpdates({
@@ -244,6 +299,43 @@ export async function syncPredictiveSalesFront(input: {
     });
   }
 
+  const ptfUpdates = buildPtfCellUpdates({ tabTitle, month });
+  if (!dryRun && ptfUpdates.length) {
+    await batchUpdateSheetValues({
+      spreadsheetId,
+      data: ptfUpdates,
+      valueInputOption: "USER_ENTERED"
+    });
+  }
+
+  const asOfDayRaw = Number(asOfDate.slice(8, 10));
+  const dim = daysInCalendarMonth(month);
+  const asOfDay =
+    asOfDate.startsWith(month) && Number.isFinite(asOfDayRaw)
+      ? Math.min(Math.max(asOfDayRaw, 1), dim)
+      : dim;
+  if (!dryRun) {
+    await writeSheetValues({
+      spreadsheetId,
+      range: `${quoteTab(tabTitle)}!A${PREDICTIVE_ASOF_DAY_ROW}`,
+      rows: [[asOfDay, "as_of_day"]],
+      valueInputOption: "USER_ENTERED"
+    });
+  }
+
+  if (!dryRun) {
+    try {
+      const sheetId = await getSheetIdByTitle(spreadsheetId, tabTitle);
+      if (sheetId != null) {
+        await applyPredictiveTrafficLights({ spreadsheetId, sheetId, month });
+      }
+    } catch (error) {
+      console.warn(
+        `[predictive] traffic lights failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
   return {
     spreadsheetId,
     tabTitle,
@@ -251,8 +343,9 @@ export async function syncPredictiveSalesFront(input: {
     bootstrapped,
     datesEnsured,
     factCellsWritten: updates.length,
+    planCellsWritten,
     datesFilled: factsByDate.size,
-    alertSla,
+    svodPlans: svodPlansOut,
     dryRun
   };
 }

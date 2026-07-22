@@ -1,0 +1,34 @@
+---
+description: Деплой, CI и PR для Retro Pressa
+globs: .github/**,AUTO_DEPLOY.md,DEPLOY_TIMEWEB.md,ecosystem.config.cjs
+alwaysApply: false
+---
+
+# Git, деплой, CI
+
+## Деплой
+
+- Auto-deploy: push в `main` → `.github/workflows/deploy.yml` → Timeweb `85.92.111.202`.
+- Секреты только в GitHub Actions Secrets (см. `AUTO_DEPLOY.md`).
+- `runtime-env.json` и `ecosystem.config.cjs` — генерируются при деплое, не коммитить.
+
+## Перед деплоем
+
+```bash
+npm test
+npm run build
+```
+
+## PR
+
+- Использовать `gh pr create` с Summary + Test plan.
+- Не push в remote без запроса.
+
+## Env на сервере
+
+Критичные для прода: `AUTH_SECRET`, `BITRIX_WEBHOOK_URL`, Google credentials, `GEMINI_API_KEY`, `GA4_PROPERTY_ID`.
+Без `GEMINI_API_KEY` — AI-фичи (ask, разметка переписок) падают с понятной ошибкой.
+
+## Trainer bot overlay
+
+Патчи для бота обучения: `scripts/trainer-backend-overlay/` — отдельный deploy path, не смешивать с Next.js без необходимости.

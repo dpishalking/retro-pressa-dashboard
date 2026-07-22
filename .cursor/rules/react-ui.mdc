@@ -1,0 +1,39 @@
+---
+description: React-экраны и UI Retro Pressa
+globs: src/components/**/*.tsx,src/app/**/page.tsx
+alwaysApply: false
+---
+
+# React UI
+
+## Структура
+
+- `src/app/**/page.tsx` — только metadata + `<XxxScreen />`.
+- Логика и UI — `src/components/*-screen.tsx` с `"use client"`.
+- Новый раздел кабинета → карточка в `office-hub.tsx` + `canAccessRoute` в `access.ts`.
+
+## Паттерны (см. `ad-analytics-screen.tsx`)
+
+```tsx
+type SyncStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
+
+function SectionHead({ title, subtitle }: { title: string; subtitle: string }) { ... }
+
+<section className="card mb-4 p-4">
+  <SectionHead title="..." subtitle="..." />
+</section>
+```
+
+## Обязательно
+
+- **Отдельный status state** на каждое действие (sync, ask, import). Не блокировать кнопку A из-за loading кнопки B.
+- Кнопки в формах: `type="button"`, `disabled` + текст loading («Думаю...», «Обновляю...»).
+- Ошибки показывать **рядом с действием**, не только в общей строке статуса.
+- Fetch к API: same-origin, cookies идут автоматически; для разбора ответа — `readJsonResponse` из `src/lib/api-response.ts`.
+- Числа/валюта: `number`, `eur`, `pct` из `src/lib/format.ts`.
+- Графики: recharts + `ResponsiveContainer`.
+- Иконки: `lucide-react`. Accent: emerald для рекламы, blue для аналитики.
+
+## Период
+
+Селектор месяца — `PeriodKey`; demo fallback: `monthlyMetrics` из `src/data/demo-data.ts`.

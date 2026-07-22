@@ -1,0 +1,40 @@
+---
+description: Конвенции API routes Retro Pressa
+globs: src/app/api/**/*.ts
+alwaysApply: false
+---
+
+# API routes
+
+## Шаблон
+
+```typescript
+export const dynamic = "force-dynamic";
+export const maxDuration = 60; // для sync / Gemini
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({})) as { ... };
+    // validate → lib → NextResponse.json(payload)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Fallback на русском";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+```
+
+## Правила
+
+- **Перед правкой API** — прочитай `src/middleware.ts` и `src/lib/auth/access.ts`; убедись, что endpoint защищён нужной ролью.
+- Бизнес-логика — в `src/lib/`, route только парсит body и отдаёт JSON.
+- Период: валидировать через whitelist `PeriodKey` (`may-2026`, `june-2026`, `july-2026`).
+- Ошибки: `{ error: string }` + корректный HTTP status (400/401/403/500).
+- Публичный API только `/api/auth/login`. Остальное — сессия через `middleware.ts`.
+- Admin routes (`/api/admin/*`) — проверять `accessLevel` (см. middleware).
+- Долгие операции (GA4, Gemini, Bitrix): `maxDuration = 60`.
+
+## Группы
+
+- Sync → `src/lib/google/`, `src/lib/bitrix/`, `src/lib/clarity/`
+- AI ask → `ga4-analytics-ask`, `clarity-analytics-ask`, `gemini-conversation-analyzer`
+- Training → `src/lib/training/`

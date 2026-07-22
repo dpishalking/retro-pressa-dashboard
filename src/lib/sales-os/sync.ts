@@ -37,6 +37,10 @@ import {
 } from "@/lib/sales-os/maria-truth";
 import { syncPredictiveSalesFront, type PredictiveSyncResult } from "@/lib/sales-os/sync-predictive";
 import {
+  syncPredictiveByTraffic,
+  type TrafficSyncResult
+} from "@/lib/sales-os/sync-predictive-by-traffic";
+import {
   appendSheetRows,
   ensureSheetTab,
   readGoogleServiceAccount,
@@ -69,6 +73,7 @@ export type SalesOsSyncResult = {
     export_rows: number;
   };
   predictive?: PredictiveSyncResult;
+  predictiveTraffic?: TrafficSyncResult;
 };
 
 let lock: Promise<SalesOsSyncResult> | null = null;
@@ -437,9 +442,10 @@ export async function syncSalesOsModel(options: {
     await writeAll();
 
     let predictive: PredictiveSyncResult | undefined;
+    let predictiveTraffic: TrafficSyncResult | undefined;
+    const planMonth = mergedSettings.find((row) => row.key === "plan_month")?.value?.trim()
+      || startedAt.slice(0, 7);
     try {
-      const planMonth = mergedSettings.find((row) => row.key === "plan_month")?.value?.trim()
-        || startedAt.slice(0, 7);
       predictive = await syncPredictiveSalesFront({
         month: planMonth,
         mariaDaily,
@@ -455,6 +461,25 @@ export async function syncSalesOsModel(options: {
       if (predictive.skipped) warnings.push(`predictive: ${predictive.skipped}`);
     } catch (error) {
       warnings.push(`predictive sync failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    try {
+      predictiveTraffic = await syncPredictiveByTraffic({
+        month: planMonth,
+        leads: model.leads,
+        deals: model.deals,
+        invoiceEvents: model.invoiceEvents,
+        paymentEvents: model.paymentEvents,
+        syncedAt: startedAt,
+        dryRun
+      });
+      console.log(
+        `[sales-os] traffic front tabs=${predictiveTraffic.tabs.join(" | ")} cells=${predictiveTraffic.factCellsWritten} dates=${predictiveTraffic.datesFilled}`
+        + (predictiveTraffic.skipped ? ` skipped=${predictiveTraffic.skipped}` : "")
+      );
+      if (predictiveTraffic.skipped) warnings.push(`traffic: ${predictiveTraffic.skipped}`);
+    } catch (error) {
+      warnings.push(`traffic sync failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     if (!dryRun) {
@@ -515,7 +540,8 @@ export async function syncSalesOsModel(options: {
         payments: model.paymentEvents.length,
         export_rows: model.exportRows.length
       },
-      predictive
+      predictive,
+      predictiveTraffic
     };
   })();
 

@@ -14,6 +14,7 @@ runtime-env.json
 ecosystem.config.cjs
 data/bitrix-snapshots/
 data/google-snapshots/
+data/ga4-snapshots/
 data/auth/
 data/conversation-exports/
 data/conversation-snapshots/

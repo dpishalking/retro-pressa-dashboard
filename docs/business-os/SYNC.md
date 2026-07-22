@@ -15,7 +15,18 @@ npm run sync:sales-os:dry
 npm run sync:sales-os
 npm run sync:sales-os-ingest:dry
 npm run sync:sales-os-ingest
+npm run sync:traffic-os:dry
+npm run sync:traffic-os
+npm run sync:traffic-management:dry
+npm run sync:traffic-management
 ```
+
+## Traffic OS
+
+`POST /api/sync/traffic-os` — admin/rop.
+
+Body: `{ periods, modules, dryRun }`. Modules: `all | management | foundation | traffic_management | … | export`.  
+Writes workbook `TRAFFIC_OS_SPREADSHEET_ID` sheets 00–22 + `99_EXPORT` (`traffic_export_v2`). Mother cutover **not** enabled. See `TRAFFIC_MANAGEMENT_LAYER.md`.
 
 ## Sales OS dual-run
 
