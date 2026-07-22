@@ -4,6 +4,7 @@ import {
   type SalesDailyColumn
 } from "@/config/os-sheets";
 import type { OrdersRow } from "@/lib/os-sheets/orders-mapper";
+import { isSalesFunnelDeal, parseSheetNumber } from "@/lib/os-sheets/sales-metric-defs";
 
 const numericColumnSet = new Set<string>(SALES_DAILY_NUMERIC_COLUMNS);
 
@@ -48,9 +49,7 @@ function toDateKey(value: string): string | null {
 }
 
 function numberOrZero(value: string) {
-  const cleaned = value.replace(/\s/g, "").replace(",", ".");
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return parseSheetNumber(value);
 }
 
 type DayManagerAgg = {
@@ -110,6 +109,7 @@ export function buildSalesDailyFromOrders(input: {
   const byKey = new Map<string, DayManagerAgg>();
 
   for (const order of input.orders) {
+    if (!isSalesFunnelDeal({ stageId: order.stage_id, categoryId: "" })) continue;
     const managerId = order.manager_id?.trim() || "";
     const managerName = order.manager_name?.trim() || (managerId ? `ID ${managerId}` : "Unknown");
     const createdDate = toDateKey(order.created_at);

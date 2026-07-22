@@ -43,7 +43,9 @@ Never unlabeled single `revenue`.
 
 ## Sales OS export
 
-See `src/lib/sales-os/export-contract.ts` — version `sales_export_v1`. Mother reads only `99_EXPORT`.
+See `src/lib/sales-os/export-contract.ts` — version `sales_export_v1`.
+Child workbook: `SALES_OS_SPREADSHEET_ID` / `src/config/sales-os.ts`.
+Mother reads only `99_EXPORT`.
 
 ## Currency
 

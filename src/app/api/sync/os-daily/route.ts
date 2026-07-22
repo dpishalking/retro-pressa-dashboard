@@ -15,6 +15,7 @@ import {
 } from "@/lib/os-sheets/registries-sync";
 import { syncOsMetricsRegistryToSheet } from "@/lib/os-sheets/metrics-registry-sync";
 import { ensureSyncRunsHeader } from "@/lib/os-sheets/sync-runs";
+import { runSalesOsDualRun } from "@/lib/os-sheets/sales-os-dual-run";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
@@ -35,8 +36,7 @@ async function runStep<T>(name: string, fn: () => Promise<T>): Promise<{ name: s
 
 /**
  * Morning OS sheet refresh.
- * Order: orders → traffic → sales → finance → customers → payments →
- * company_daily → company_monthly → dictionaries → reconciliation → metrics.
+ * Legacy domain syncs first; Sales OS candidate ingest is non-blocking for company aggregates.
  */
 export async function POST(request: Request) {
   if (osDailyRunning) {
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({})) as {
       period?: string;
       refresh?: boolean;
+      skipSalesOsCandidate?: boolean;
     };
 
     const targetDay = moscowYesterdayIso();
@@ -60,12 +61,21 @@ export async function POST(request: Request) {
 
     const orders = await runStep("orders", () => syncOsOrdersToSheet({ period, refreshBitrix: refresh }));
     const traffic = await runStep("traffic", () => syncOsTrafficToSheet({ period, refreshGoogle: refresh }));
-
     const sales = await runStep("sales", () => syncOsSalesToSheet({ period }));
     const finance = await runStep("finance", () => syncOsFinanceToSheet({ period }));
-
     const customers = await runStep("customers", () => syncOsCustomersToSheet({ triggerType: "cron" }));
     const payments = await runStep("payments", () => syncOsPaymentsToSheet({ triggerType: "cron" }));
+
+    const isoPeriod = period === "may-2026" ? "2026-05" : period === "june-2026" ? "2026-06" : "2026-07";
+    const salesOsCandidate = body.skipSalesOsCandidate
+      ? { name: "sales_os_candidate", ok: true as const, result: { status: "skipped" } }
+      : await runStep("sales_os_candidate", () => runSalesOsDualRun({
+          periods: [isoPeriod],
+          dryRun: false,
+          runReconciliation: true,
+          rebuildSalesOs: false
+        }));
+
     const companyDaily = await runStep("company_daily", () => syncOsCompanyDailyToSheet({ period }));
     const companyMonthly = await runStep("company_monthly", () => syncOsCompanyMonthlyToSheet({ period }));
     const dictionaries = await runStep("dictionaries", () => syncOsDictionariesToSheet());
@@ -73,7 +83,11 @@ export async function POST(request: Request) {
     const metrics = await runStep("metrics_registry", () => syncOsMetricsRegistryToSheet({ triggerType: "cron" }));
     const dataSources = await runStep("data_sources", () => syncOsDataSourcesToSheet());
 
-    const steps = [orders, traffic, sales, finance, customers, payments, companyDaily, companyMonthly, dictionaries, reconciliation, metrics, dataSources];
+    const steps = [
+      orders, traffic, sales, finance, customers, payments,
+      salesOsCandidate,
+      companyDaily, companyMonthly, dictionaries, reconciliation, metrics, dataSources
+    ];
     const failed = steps.filter((step) => !step.ok);
     const status = failed.length === 0 ? "success" : failed.length === steps.length ? "failed" : "partial";
 
@@ -83,8 +97,10 @@ export async function POST(request: Request) {
         system: "os-daily",
         entity: "mother",
         description: `os-daily ${status} for ${period}`,
-        reason: failed.length ? failed.map((item) => `${item.name}:${item.error}`).join("; ").slice(0, 300) : "scheduled refresh",
-        version: "mother-hardening-1"
+        reason: failed.length
+          ? failed.map((item) => `${item.name}:${"error" in item ? item.error : "failed"}`).join("; ").slice(0, 300)
+          : "scheduled refresh",
+        version: "sales-os-dual-run-1"
       }).catch(() => undefined);
     }
 
@@ -98,8 +114,9 @@ export async function POST(request: Request) {
       steps
     }, { status: status === "failed" ? 500 : 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось выполнить ежедневный OS sync";
-    return NextResponse.json({ error: message, status: "failed" }, { status: 500 });
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "os-daily failed"
+    }, { status: 500 });
   } finally {
     osDailyRunning = false;
   }

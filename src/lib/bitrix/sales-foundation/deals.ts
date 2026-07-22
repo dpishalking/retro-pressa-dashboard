@@ -14,72 +14,106 @@ export type DealRawRow = Record<(typeof DEALS_RAW_COLUMNS)[number], string>;
 type BitrixDeal = Record<string, unknown>;
 type ProductRow = { PRODUCT_ID?: string | number; PRODUCT_NAME?: string };
 
+function normalizeDeal(
+  deal: BitrixDeal,
+  products: ProductRow[],
+  userNames: Map<string, string>,
+  syncedAt: string
+): DealRawRow | null {
+  const dealId = asString(deal.ID);
+  if (!dealId) return null;
+  const primary = products[0];
+  const semantic = asString(deal.STAGE_SEMANTIC_ID);
+  const identity = resolveSfCustomerKey({
+    contactId: asString(deal.CONTACT_ID),
+    leadId: asString(deal.LEAD_ID),
+    dealId
+  });
+  const invoiceFlagRaw = asString(deal[SF_FIELDS.invoiceFlag]);
+  return {
+    deal_id: dealId,
+    lead_id: asString(deal.LEAD_ID),
+    contact_id: asString(deal.CONTACT_ID),
+    company_id: asString(deal.COMPANY_ID),
+    created_at: asString(deal.DATE_CREATE),
+    modified_at: asString(deal.DATE_MODIFY),
+    closed_at: asString(deal.CLOSEDATE),
+    stage_id: asString(deal.STAGE_ID),
+    stage_semantic: semantic,
+    category_id: asString(deal.CATEGORY_ID) || String(SALES_CATEGORY_ID),
+    is_open: semantic === "P" ? "true" : (semantic === "S" || semantic === "F" ? "false" : (asString(deal.CLOSED) === "N" ? "true" : (asString(deal.CLOSED) === "Y" ? "false" : ""))),
+    is_won: semantic === "S" ? "true" : "false",
+    is_lost: semantic === "F" ? "true" : "false",
+    assigned_by_id: asString(deal.ASSIGNED_BY_ID),
+    assigned_by_name: userNames.get(asString(deal.ASSIGNED_BY_ID)) || "",
+    source_id: asString(deal.SOURCE_ID),
+    currency: asString(deal.CURRENCY_ID) || "EUR",
+    opportunity: asNumberString(deal.OPPORTUNITY),
+    invoice_amount: asNumberString(deal[SF_FIELDS.invoiceAmount]),
+    invoice_at: asString(deal[SF_FIELDS.invoiceDate]),
+    invoice_flag: invoiceFlagRaw === BITRIX_INVOICE_FLAG_YES || invoiceFlagRaw === "Y" ? "true" : (invoiceFlagRaw ? "false" : ""),
+    country_raw: asString(deal[SF_FIELDS.dealCountry]),
+    country_id: "",
+    primary_product_id: primary?.PRODUCT_ID != null ? String(primary.PRODUCT_ID) : "",
+    primary_product_name: asString(primary?.PRODUCT_NAME),
+    product_rows_count: products.length ? String(products.length) : "",
+    customer_key: identity.customer_key,
+    customer_key_type: identity.customer_key_type,
+    last_activity_at: asString(deal.LAST_ACTIVITY_TIME),
+    next_activity_at: asString(deal.NEXT_ACTIVITY_TIME),
+    raw_updated_at: asString(deal.DATE_MODIFY) || asString(deal.DATE_CREATE),
+    sync_updated_at: syncedAt
+  };
+}
+
+/**
+ * Sales-funnel deals (CATEGORY_ID=0):
+ * - created in period (deals sheet grain)
+ * - WON closed in period (needed for payments even if created earlier)
+ */
 export async function fetchDealsRaw(periods: string[], syncedAt: string): Promise<{ rows: DealRawRow[]; warnings: string[] }> {
   const warnings: string[] = [];
   const byId = new Map<string, DealRawRow>();
 
   for (const period of periods) {
     const { startIso, endIso } = periodToRange(period);
-    const deals = await bitrixListAll<BitrixDeal>("crm.deal.list", {
-      filter: {
-        CATEGORY_ID: SALES_CATEGORY_ID,
-        ">=DATE_CREATE": startIso.slice(0, 19),
-        "<=DATE_CREATE": endIso.slice(0, 19)
-      },
-      select: [...SELECT_DEAL],
-      order: { DATE_CREATE: "ASC" }
-    });
+    const startDay = startIso.slice(0, 10);
+    const endDay = endIso.slice(0, 10);
 
+    const [createdDeals, closedWonDeals] = await Promise.all([
+      bitrixListAll<BitrixDeal>("crm.deal.list", {
+        filter: {
+          CATEGORY_ID: SALES_CATEGORY_ID,
+          ">=DATE_CREATE": startIso.slice(0, 19),
+          "<=DATE_CREATE": endIso.slice(0, 19)
+        },
+        select: [...SELECT_DEAL],
+        order: { DATE_CREATE: "ASC" }
+      }),
+      bitrixListAll<BitrixDeal>("crm.deal.list", {
+        filter: {
+          CATEGORY_ID: SALES_CATEGORY_ID,
+          STAGE_SEMANTIC_ID: "S",
+          ">=CLOSEDATE": startDay,
+          "<=CLOSEDATE": endDay
+        },
+        select: [...SELECT_DEAL],
+        order: { CLOSEDATE: "ASC" }
+      })
+    ]);
+
+    const merged = new Map<string, BitrixDeal>();
+    for (const deal of [...createdDeals, ...closedWonDeals]) {
+      const id = asString(deal.ID);
+      if (id) merged.set(id, deal);
+    }
+    const deals = [...merged.values()];
     const productMap = await loadProductRows(deals.map((deal) => asString(deal.ID)));
     const userNames = await loadUserNames(deals.map((deal) => asString(deal.ASSIGNED_BY_ID)));
 
     for (const deal of deals) {
-      const dealId = asString(deal.ID);
-      if (!dealId) continue;
-      const products = productMap.get(dealId) || [];
-      const primary = products[0];
-      const semantic = asString(deal.STAGE_SEMANTIC_ID);
-      const identity = resolveSfCustomerKey({
-        contactId: asString(deal.CONTACT_ID),
-        leadId: asString(deal.LEAD_ID),
-        dealId
-      });
-      const invoiceFlagRaw = asString(deal[SF_FIELDS.invoiceFlag]);
-
-      byId.set(dealId, {
-        deal_id: dealId,
-        lead_id: asString(deal.LEAD_ID),
-        contact_id: asString(deal.CONTACT_ID),
-        company_id: asString(deal.COMPANY_ID),
-        created_at: asString(deal.DATE_CREATE),
-        modified_at: asString(deal.DATE_MODIFY),
-        closed_at: asString(deal.CLOSEDATE),
-        stage_id: asString(deal.STAGE_ID),
-        stage_semantic: semantic,
-        category_id: asString(deal.CATEGORY_ID) || String(SALES_CATEGORY_ID),
-        is_open: semantic === "P" ? "true" : (semantic === "S" || semantic === "F" ? "false" : (asString(deal.CLOSED) === "N" ? "true" : (asString(deal.CLOSED) === "Y" ? "false" : ""))),
-        is_won: semantic === "S" ? "true" : "false",
-        is_lost: semantic === "F" ? "true" : "false",
-        assigned_by_id: asString(deal.ASSIGNED_BY_ID),
-        assigned_by_name: userNames.get(asString(deal.ASSIGNED_BY_ID)) || "",
-        source_id: asString(deal.SOURCE_ID),
-        currency: asString(deal.CURRENCY_ID) || "EUR",
-        opportunity: asNumberString(deal.OPPORTUNITY),
-        invoice_amount: asNumberString(deal[SF_FIELDS.invoiceAmount]),
-        invoice_at: asString(deal[SF_FIELDS.invoiceDate]),
-        invoice_flag: invoiceFlagRaw === BITRIX_INVOICE_FLAG_YES || invoiceFlagRaw === "Y" ? "true" : (invoiceFlagRaw ? "false" : ""),
-        country_raw: asString(deal[SF_FIELDS.dealCountry]),
-        country_id: "",
-        primary_product_id: primary?.PRODUCT_ID != null ? String(primary.PRODUCT_ID) : "",
-        primary_product_name: asString(primary?.PRODUCT_NAME),
-        product_rows_count: products.length ? String(products.length) : "",
-        customer_key: identity.customer_key,
-        customer_key_type: identity.customer_key_type,
-        last_activity_at: asString(deal.LAST_ACTIVITY_TIME),
-        next_activity_at: asString(deal.NEXT_ACTIVITY_TIME),
-        raw_updated_at: asString(deal.DATE_MODIFY) || asString(deal.DATE_CREATE),
-        sync_updated_at: syncedAt
-      });
+      const row = normalizeDeal(deal, productMap.get(asString(deal.ID)) || [], userNames, syncedAt);
+      if (row) byId.set(row.deal_id, row);
     }
   }
 

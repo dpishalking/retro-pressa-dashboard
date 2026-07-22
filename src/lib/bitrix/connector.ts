@@ -1024,7 +1024,7 @@ export async function syncBitrixMetrics(options: BitrixSyncOptions = {}): Promis
 
 /**
  * Broader Bitrix deal universe for OS Orders:
- * created in period + invoiced in period + paid in period (sales funnel).
+ * created / invoiced / paid in period + active sales-funnel pipeline (STAGE_SEMANTIC_ID=P).
  */
 export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   deals: BitrixSnapshotDeal[];
@@ -1038,7 +1038,7 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   const periodStartDate = dayKey(periodStart);
   const factualEndDate = dayKey(factualEndIso);
 
-  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, periodLeadsRaw, users, countryMetadata] = await Promise.all([
+  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, periodLeadsRaw, users, countryMetadata] = await Promise.all([
     listAll<BitrixDeal>("crm.deal.list", {
       order: { ID: "ASC" },
       filter: {
@@ -1078,6 +1078,14 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       },
       select: selectDeal
     }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID,
+        STAGE_SEMANTIC_ID: "P"
+      },
+      select: selectDeal
+    }),
     listAll<BitrixLead>("crm.lead.list", {
       order: { DATE_CREATE: "ASC" },
       filter: { ">=DATE_CREATE": periodStart, "<=DATE_CREATE": factualEndIso },
@@ -1107,7 +1115,7 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   const stageOnlyDealsRaw = stageOnlyIds.length ? await listDealsByIds(stageOnlyIds) : [];
 
   const rawById = new Map<string, BitrixDeal>();
-  for (const deal of [...createdDealsRaw, ...invoiceByDateRaw, ...stageOnlyDealsRaw, ...paidDealsRaw]) {
+  for (const deal of [...createdDealsRaw, ...invoiceByDateRaw, ...stageOnlyDealsRaw, ...paidDealsRaw, ...openPipelineRaw]) {
     rawById.set(String(deal.ID), deal);
   }
 

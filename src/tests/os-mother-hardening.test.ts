@@ -72,9 +72,10 @@ assert(paid?.sourceLabelRu !== svod?.sourceLabelRu, "distinct source labels");
 
 // sales export contract
 const headerOk = validateSalesExportHeader([
-  "date", "manager_id", "leads", "deals", "invoices", "payments", "revenue",
-  "active_pipeline_amount", "weighted_pipeline_amount", "forecast_revenue",
-  "median_first_response_minutes", "dialog_to_payment_cr", "sync_updated_at", "contract_version"
+  "date", "manager_id", "leads", "deals", "invoice_events", "payments", "paid_revenue",
+  "active_deals", "active_pipeline_amount", "stale_deals", "deals_without_next_activity",
+  "lead_to_deal_cr", "deal_to_invoice_cr", "invoice_to_payment_cr", "deal_to_payment_cr",
+  "average_check", "data_quality_score", "source_updated_at", "sync_updated_at", "contract_version"
 ]);
 assert(headerOk.ok, "sales export header ok");
 const rowsOk = validateSalesExportRows([{

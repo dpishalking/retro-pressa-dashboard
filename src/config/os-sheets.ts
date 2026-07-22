@@ -5,7 +5,9 @@
  */
 
 export const OS_SPREADSHEET_ID =
-  process.env.GOOGLE_OS_SHEET_ID?.trim() || "1iahEEemT9KusDJts9HxtgdjRFy7AViG_QqzJDtsQEu8";
+  process.env.MOTHER_OS_SPREADSHEET_ID?.trim()
+  || process.env.GOOGLE_OS_SHEET_ID?.trim()
+  || "1iahEEemT9KusDJts9HxtgdjRFy7AViG_QqzJDtsQEu8";
 
 /** Full dialog transcripts live here — not copied into mother. */
 export const OS_DIALOGS_SPREADSHEET_ID =
@@ -39,7 +41,10 @@ export const OS_TABS = {
   paymentsCore: "24_Payments_Core",
   companyDaily: "30_Company_Daily",
   companyMonthly: "31_Company_Monthly",
+  salesOsDaily: "32_Sales_OS_Daily",
   reconciliation: "50_Reconciliation",
+  salesReconciliation: "51_Sales_Reconciliation",
+  salesCutoverReadiness: "52_Sales_Cutover_Readiness",
   bitrixMap: "99_Bitrix_Map"
 } as const;
 

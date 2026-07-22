@@ -11,7 +11,20 @@ npm run sync:os-dialog-index
 npm run sync:os-core
 npm run sync:bitrix-sales-foundation:dry
 npm run sync:bitrix-sales-foundation
+npm run sync:sales-os:dry
+npm run sync:sales-os
+npm run sync:sales-os-ingest:dry
+npm run sync:sales-os-ingest
 ```
+
+## Sales OS dual-run
+
+`POST /api/sync/sales-os-ingest` — admin/rop.
+
+Ingests Sales OS `99_EXPORT` → mother `32_Sales_OS_Daily`, then writes `51_Sales_Reconciliation` + `52_Sales_Cutover_Readiness`.
+Legacy remains current. See `docs/business-os/SALES_OS_DUAL_RUN.md`.
+
+`os-daily` includes candidate step `sales_os_candidate` after payments; failure yields overall `partial` without stopping company aggregates.
 
 ## Bitrix Sales Foundation (staging 60–69)
 

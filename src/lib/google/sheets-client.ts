@@ -129,6 +129,37 @@ export async function writeSheetValues(input: {
   return data;
 }
 
+/** Sparse cell updates (e.g. only fact day cells). Does not clear other cells. */
+export async function batchUpdateSheetValues(input: {
+  spreadsheetId: string;
+  data: Array<{ range: string; values: Array<Array<string | number | boolean | null>> }>;
+  valueInputOption?: "RAW" | "USER_ENTERED";
+}) {
+  if (!input.data.length) return { totalUpdatedCells: 0 };
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const valueInputOption = input.valueInputOption ?? "USER_ENTERED";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}/values:batchUpdate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      valueInputOption,
+      data: input.data.map((item) => ({ range: item.range, values: item.values })),
+    }),
+  });
+  const data = (await response.json()) as {
+    totalUpdatedCells?: number;
+    error?: { message?: string };
+  };
+  if (!response.ok) {
+    throw new Error(`Google Sheets batchUpdate failed: ${data.error?.message || response.status}`);
+  }
+  return { totalUpdatedCells: data.totalUpdatedCells ?? 0 };
+}
+
 export async function getSheetIdByTitle(spreadsheetId: string, title: string): Promise<number | null> {
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
   const response = await fetch(
@@ -178,6 +209,40 @@ async function getSheetGridInfo(spreadsheetId: string, title: string) {
     rowCount: match.gridProperties?.rowCount ?? 1000,
     columnCount: match.gridProperties?.columnCount ?? 26,
   };
+}
+
+export async function ensureSheetColumnCapacity(input: {
+  spreadsheetId: string;
+  tabTitle: string;
+  requiredColumns: number;
+}) {
+  const info = await getSheetGridInfo(input.spreadsheetId, input.tabTitle);
+  if (!info) return;
+  if (info.columnCount >= input.requiredColumns) return;
+
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [{
+        updateSheetProperties: {
+          properties: {
+            sheetId: info.sheetId,
+            gridProperties: { columnCount: Math.max(input.requiredColumns, info.columnCount) },
+          },
+          fields: "gridProperties.columnCount",
+        },
+      }],
+    }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Google Sheets expand columns failed: ${response.status} ${body.slice(0, 200)}`);
+  }
 }
 
 export async function ensureSheetRowCapacity(input: {
