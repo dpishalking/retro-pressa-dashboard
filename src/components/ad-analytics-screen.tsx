@@ -307,19 +307,43 @@ export function AdAnalyticsScreen() {
   }, [period]);
 
   const loadMarketing = useCallback(async () => {
-    setMarketingStatus({ state: "loading", message: "Загружаю лиды из Google Sheets..." });
+    setMarketingStatus({ state: "loading", message: "Загружаю лиды из Bitrix и бюджет из Sheets..." });
     try {
-      const response = await fetch("/api/sync/google-traffic", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period })
+      const [bitrixRes, sheetsRes] = await Promise.all([
+        fetch("/api/sync/bitrix", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ period })
+        }),
+        fetch("/api/sync/google-traffic", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ period })
+        })
+      ]);
+      const bitrix = await bitrixRes.json() as {
+        monthly?: { paidLeads: number; organicLeads: number };
+        summary?: { dataSource?: string };
+        error?: string;
+      };
+      const sheets = await sheetsRes.json() as GoogleSyncPayload & { error?: string };
+      if (!bitrixRes.ok) throw new Error(bitrix.error || "Не удалось загрузить лиды из Bitrix");
+      if (!sheetsRes.ok) throw new Error(sheets.error || "Не удалось загрузить бюджет из Google Sheets");
+
+      const paidLeads = bitrix.monthly?.paidLeads ?? 0;
+      const organicLeads = bitrix.monthly?.organicLeads ?? 0;
+      const spend = sheets.summary.spend;
+      setMarketingSummary({
+        paidLeads,
+        organicLeads,
+        ql: sheets.summary.ql,
+        spend,
+        averageCpl: paidLeads > 0 ? spend / paidLeads : 0,
+        dataSource: bitrix.summary?.dataSource === "live" || sheets.summary.dataSource === "live" ? "live" : "snapshot"
       });
-      const data = await response.json() as GoogleSyncPayload & { error?: string };
-      if (!response.ok) throw new Error(data.error || "Не удалось загрузить маркетинг");
-      setMarketingSummary(data.summary);
       setMarketingStatus({
         state: "ok",
-        message: `${data.summary.dataSource}: платные ${number(data.summary.paidLeads)}, органика ${number(data.summary.organicLeads)}, бюджет ${eur(data.summary.spend)}.`
+        message: `Bitrix лиды: платные ${number(paidLeads)}, органика ${number(organicLeads)}. Sheets: бюджет ${eur(spend)}, QL ${number(sheets.summary.ql)}.`
       });
     } catch (error) {
       setMarketingStatus({
@@ -462,8 +486,8 @@ export function AdAnalyticsScreen() {
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Новые пользователи GA4" value={number(ga4Summary?.newUsers ?? 0)} hint="Посетители сайта" />
         <MetricCard title="Сессии GA4" value={number(ga4Summary?.sessions ?? 0)} hint="Все визиты за период" />
-        <MetricCard title="CRM лиды" value={number(crmLeads)} hint={`Платные ${number(marketingSummary?.paidLeads ?? current.paidLeads)} • Органика ${number(marketingSummary?.organicLeads ?? current.organicLeads)}`} />
-        <MetricCard title="Session → Lead" value={pct(sessionToLeadRate)} hint="Лиды / сессии GA4" />
+        <MetricCard title="CRM лиды (Bitrix)" value={number(crmLeads)} hint={`Платные ${number(marketingSummary?.paidLeads ?? current.paidLeads)} • Органика ${number(marketingSummary?.organicLeads ?? current.organicLeads)}`} />
+        <MetricCard title="Session → Lead" value={pct(sessionToLeadRate)} hint="Лиды Bitrix / сессии GA4" />
       </div>
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -474,10 +498,10 @@ export function AdAnalyticsScreen() {
       </div>
 
       <div className="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Бюджет" value={eur(marketingSummary?.spend ?? current.adSpend)} hint={`CPL ${eur(marketingSummary?.averageCpl ?? paidCpl(current))}`} />
+        <MetricCard title="Бюджет (Sheets)" value={eur(marketingSummary?.spend ?? current.adSpend)} hint={`CPL ${eur(marketingSummary?.averageCpl ?? paidCpl(current))} = spend / Bitrix paid`} />
         <MetricCard title="Cash ROAS" value={pct(cashRoas(current))} hint="Выручка / бюджет" />
         <MetricCard title="Invoice ROAS" value={pct(invoiceRoas(current))} hint="Счета / бюджет" />
-        <MetricCard title="CRM лиды" value={number(crmLeads)} hint={`Платные ${number(marketingSummary?.paidLeads ?? current.paidLeads)} • Органика ${number(marketingSummary?.organicLeads ?? current.organicLeads)}`} />
+        <MetricCard title="CRM лиды (Bitrix)" value={number(crmLeads)} hint={`Платные ${number(marketingSummary?.paidLeads ?? current.paidLeads)} • Органика ${number(marketingSummary?.organicLeads ?? current.organicLeads)}`} />
       </div>
 
       <p className={`mb-4 text-sm font-semibold ${ga4Status.state === "error" || marketingStatus.state === "error" || clarityStatus.state === "error" ? "text-red-700" : "text-slate-600"}`}>
@@ -774,7 +798,7 @@ export function AdAnalyticsScreen() {
       </section>
 
       <section className="card p-4">
-        <SectionHead title="CRM-метрики месяца" subtitle="Лиды и бюджет из Google Sheets — для сверки с GA4" />
+        <SectionHead title="CRM-метрики месяца" subtitle="Лиды из Bitrix, бюджет и QL из Google Sheets — для сверки с GA4" />
         <div className="table-scroll">
           <table>
             <thead><tr><th>Метрика</th><th>Предыдущий месяц</th><th>Текущий</th><th>Изменение</th></tr></thead>

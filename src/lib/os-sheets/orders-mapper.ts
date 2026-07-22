@@ -1,6 +1,7 @@
 import { PAID_LEAD_SOURCE_IDS } from "@/lib/bitrix/metric-definitions";
 import type { BitrixSnapshot, BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
 import { ORDERS_COLUMNS, ORDERS_MANUAL_COLUMNS, ORDERS_NUMERIC_COLUMNS, type OrdersColumn } from "@/config/os-sheets";
+import { resolveCustomerIdentity } from "@/lib/os-sheets/customer-identity";
 
 const paidSourceSet = new Set<string>(PAID_LEAD_SOURCE_IDS);
 const manualColumnSet = new Set<string>(ORDERS_MANUAL_COLUMNS);
@@ -99,7 +100,16 @@ export function mapDealToOrdersRow(
   row.deal_id = deal.id;
   row.deal_title = deal.title ?? "";
   row.bitrix_url = bitrixDealUrl(deal.id);
-  row.customer_key = "";
+  const identity = resolveCustomerIdentity({
+    contactId: deal.contactId,
+    phone: deal.phone,
+    email: deal.email,
+    leadId: deal.leadId,
+    dealId: deal.id,
+    orderId: deal.id
+  });
+  row.customer_key = identity.customer_key;
+  row.customer_key_type = identity.customer_key_type;
   row.manager_id = deal.assignedById;
   row.manager_name = deal.managerName;
   row.country = deal.country || lead?.country || "";

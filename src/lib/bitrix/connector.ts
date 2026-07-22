@@ -58,6 +58,7 @@ type BitrixDeal = {
   ID: string;
   TITLE?: string;
   LEAD_ID?: string;
+  CONTACT_ID?: string;
   DATE_CREATE?: string;
   CLOSEDATE?: string;
   OPPORTUNITY?: string;
@@ -166,6 +167,7 @@ const selectDeal = [
   "ID",
   "TITLE",
   "LEAD_ID",
+  "CONTACT_ID",
   "DATE_CREATE",
   "CLOSEDATE",
   "OPPORTUNITY",
@@ -514,6 +516,7 @@ function normalizeSnapshotDeal(
     id: String(deal.ID),
     title: deal.TITLE?.trim() || null,
     leadId,
+    contactId: deal.CONTACT_ID ? String(deal.CONTACT_ID) : null,
     dateCreate: deal.DATE_CREATE ?? null,
     closeDate: deal.CLOSEDATE ?? null,
     invoiceDate,
@@ -528,6 +531,8 @@ function normalizeSnapshotDeal(
     country,
     utmCampaign: deal.UTM_CAMPAIGN?.trim() || linkedLead?.utmCampaign || null,
     landingPage: extractBitrixWebValue(deal.WEB) || linkedLead?.landingPage || null,
+    phone: null,
+    email: null,
     products: products
       .map(normalizeProductRow)
       .filter((row) => row.productName),

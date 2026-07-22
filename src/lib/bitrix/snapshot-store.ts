@@ -30,6 +30,7 @@ export type BitrixSnapshotDeal = {
   id: string;
   title: string | null;
   leadId: string | null;
+  contactId: string | null;
   dateCreate: string | null;
   closeDate: string | null;
   /** Invoice event date used for period attribution. */
@@ -46,6 +47,8 @@ export type BitrixSnapshotDeal = {
   country: string;
   utmCampaign: string | null;
   landingPage: string | null;
+  phone: string | null;
+  email: string | null;
   products: BitrixSnapshotProductRow[];
   /** How this deal entered the invoice set. */
   invoiceSource?: "invoice_date_field" | "stage_history";

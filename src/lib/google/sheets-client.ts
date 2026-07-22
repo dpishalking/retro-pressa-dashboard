@@ -132,11 +132,17 @@ export async function writeSheetValues(input: {
 export async function getSheetIdByTitle(spreadsheetId: string, title: string): Promise<number | null> {
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
   const response = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title)`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties)`,
     { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" },
   );
   const data = (await response.json()) as {
-    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+    sheets?: Array<{
+      properties?: {
+        sheetId?: number;
+        title?: string;
+        gridProperties?: { rowCount?: number; columnCount?: number };
+      };
+    }>;
     error?: { message?: string };
   };
   if (!response.ok) {
@@ -144,6 +150,68 @@ export async function getSheetIdByTitle(spreadsheetId: string, title: string): P
   }
   const match = data.sheets?.find((sheet) => sheet.properties?.title === title);
   return match?.properties?.sheetId ?? null;
+}
+
+async function getSheetGridInfo(spreadsheetId: string, title: string) {
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties)`,
+    { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" },
+  );
+  const data = (await response.json()) as {
+    sheets?: Array<{
+      properties?: {
+        sheetId?: number;
+        title?: string;
+        gridProperties?: { rowCount?: number; columnCount?: number };
+      };
+    }>;
+    error?: { message?: string };
+  };
+  if (!response.ok) {
+    throw new Error(`Google Sheets metadata failed: ${data.error?.message || response.status}`);
+  }
+  const match = data.sheets?.find((sheet) => sheet.properties?.title === title)?.properties;
+  if (!match?.sheetId && match?.sheetId !== 0) return null;
+  return {
+    sheetId: match.sheetId as number,
+    rowCount: match.gridProperties?.rowCount ?? 1000,
+    columnCount: match.gridProperties?.columnCount ?? 26,
+  };
+}
+
+export async function ensureSheetRowCapacity(input: {
+  spreadsheetId: string;
+  tabTitle: string;
+  requiredRows: number;
+}) {
+  const info = await getSheetGridInfo(input.spreadsheetId, input.tabTitle);
+  if (!info) return;
+  if (info.rowCount >= input.requiredRows) return;
+
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [{
+        updateSheetProperties: {
+          properties: {
+            sheetId: info.sheetId,
+            gridProperties: { rowCount: Math.max(input.requiredRows + 100, info.rowCount) },
+          },
+          fields: "gridProperties.rowCount",
+        },
+      }],
+    }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Google Sheets expand rows failed: ${response.status} ${body.slice(0, 200)}`);
+  }
 }
 
 export async function formatSheetNumberColumns(input: {
@@ -266,6 +334,11 @@ export async function appendSheetRows(input: {
     range: `${tabPrefix}!A:A`,
   });
   const startRow = Math.max(1, existing.length + 1);
+  await ensureSheetRowCapacity({
+    spreadsheetId: input.spreadsheetId,
+    tabTitle: input.tabTitle,
+    requiredRows: startRow + input.rows.length - 1,
+  });
 
   await writeSheetValues({
     spreadsheetId: input.spreadsheetId,

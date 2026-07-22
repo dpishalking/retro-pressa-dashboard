@@ -34,11 +34,14 @@ const snapshot = {
   recentLeads: [],
   deals: [{
     id: "100",
+    title: "Test deal",
     leadId: "10",
+    contactId: "55",
     dateCreate: "2026-07-03T10:00:00+03:00",
     closeDate: null,
     invoiceDate: "2026-07-04",
     opportunity: 80,
+    currencyId: "EUR",
     invoiceAmount: 80,
     stageId: "1",
     stageSemanticId: "P",
@@ -48,15 +51,20 @@ const snapshot = {
     country: "Латвия",
     utmCampaign: "july_test",
     landingPage: null,
+    phone: null,
+    email: null,
     products: [{ productId: "sku-1", productName: "Газета", quantity: 1, price: 80 }]
   }],
   paidDeals: [{
     id: "100",
+    title: "Test deal",
     leadId: "10",
+    contactId: "55",
     dateCreate: "2026-07-03T10:00:00+03:00",
     closeDate: "2026-07-05",
     invoiceDate: "2026-07-04",
     opportunity: 80,
+    currencyId: "EUR",
     invoiceAmount: 80,
     stageId: "WON",
     stageSemanticId: "S",
@@ -66,6 +74,8 @@ const snapshot = {
     country: "Латвия",
     utmCampaign: "july_test",
     landingPage: null,
+    phone: null,
+    email: null,
     products: [{ productId: "sku-1", productName: "Газета", quantity: 1, price: 80 }]
   }]
 } satisfies BitrixSnapshot;
@@ -73,6 +83,8 @@ const snapshot = {
 const rows = buildOrdersRowsFromSnapshot(snapshot, "2026-07-21T12:00:00.000Z");
 assert(rows.length === 1, "expected one merged deal");
 assert(rows[0].payment_status === "paid", "paid deal should win");
+assert(rows[0].customer_key === "contact:55", "contact id should win customer_key");
+assert(rows[0].customer_key_type === "contact", "customer_key_type contact");
 assert(rows[0].utm_source === "facebook", "utm from lead");
 assert(rows[0].source_channel === "paid_social", "paid source channel");
 process.env.BITRIX_WEBHOOK_URL = "https://bb-wood.bitrix24.eu/rest/1/xxx/";
