@@ -2,6 +2,8 @@
 
 Next.js 15 (App Router) + TypeScript + Tailwind. Дашборд для Retro Pressa: аналитика, реклама, РОП, обучение, цифровой двойник. UI на **русском**, код и идентификаторы — на **английском**.
 
+**Business OS (архитектура, Sheets, sync, recovery):** начинать с [`docs/00_START_HERE.md`](docs/00_START_HERE.md). Этот файл — карта **кода и UI**, не замена governance-хаба.
+
 ## Запуск
 
 ```bash

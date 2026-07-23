@@ -47,6 +47,24 @@ See `src/lib/sales-os/export-contract.ts` — version `sales_export_v1`.
 Child workbook: `SALES_OS_SPREADSHEET_ID` / `src/config/sales-os.ts`.
 Mother reads only `99_EXPORT`.
 
+## Sales OS prediction (`sales_prediction_v1`)
+
+Sheets `40`–`46` + `98_PREDICTION_EXPORT`. Code: `src/lib/sales-os/prediction/`.
+
+| Sheet | Grain | Primary key | Update |
+|-------|-------|-------------|--------|
+| `40_Sales_Plans` | period×scope×metric | period_type+period+scope_type+scope_id+metric_id | preserve manual / upsert |
+| `41_Sales_Prediction_Fact` | same | same | full replace |
+| `42_Sales_Prediction_Model` | same | model_id | full replace |
+| `43_Sales_Prediction_Drivers` | period×scope×target×driver | composite | full replace |
+| `44_Sales_Prediction_Quality` | period×scope×metric | composite | full replace |
+| `45_Sales_Prediction_View` | display rows | — | full replace (from model) |
+| `46_Sales_Prediction_Reconciliation` | period×metric | composite | full replace |
+| `98_PREDICTION_EXPORT` | month×scope×metric | composite | full replace |
+
+Rules: approved plans only; fact from `12_Daily_Fact`; `gap_to_plan = run_rate − plan`; does **not** change `sales_export_v1`.  
+Docs: [SALES_PREDICTION_LAYER.md](./SALES_PREDICTION_LAYER.md).
+
 ## Traffic OS export
 
 See `src/lib/traffic-os/export-contract.ts`.

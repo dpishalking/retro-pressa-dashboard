@@ -156,6 +156,72 @@ export const salesOsManifest: BusinessOsManifest = {
       status: "legacy_but_working"
     },
     {
+      sheet_key: "salesPlans",
+      sheet_name: "40_Sales_Plans",
+      layer: "prediction",
+      grain: "period_type × period × scope_type × scope_id × metric_id",
+      primary_key: ["period_type", "period", "scope_type", "scope_id", "metric_id"],
+      manual_fields: ["plan_value", "status", "approved_by", "approved_at", "comment"],
+      sync_type: "upsert",
+      status: "compliant",
+      notes: "Only status=approved used by model"
+    },
+    {
+      sheet_key: "predictionFact",
+      sheet_name: "41_Sales_Prediction_Fact",
+      layer: "prediction",
+      grain: "period_type × period × scope_type × scope_id × metric_id",
+      sync_type: "full_replace",
+      status: "compliant",
+      source: "12_Daily_Fact"
+    },
+    {
+      sheet_key: "predictionModel",
+      sheet_name: "42_Sales_Prediction_Model",
+      layer: "prediction",
+      sync_type: "full_replace",
+      contract_version: "sales_prediction_v1",
+      status: "compliant"
+    },
+    {
+      sheet_key: "predictionDrivers",
+      sheet_name: "43_Sales_Prediction_Drivers",
+      layer: "prediction",
+      sync_type: "full_replace",
+      status: "compliant"
+    },
+    {
+      sheet_key: "predictionQuality",
+      sheet_name: "44_Sales_Prediction_Quality",
+      layer: "prediction",
+      sync_type: "full_replace",
+      status: "compliant"
+    },
+    {
+      sheet_key: "predictionView",
+      sheet_name: "45_Sales_Prediction_View",
+      layer: "dashboard",
+      sync_type: "full_replace",
+      status: "partially_compliant",
+      notes: "Display from model; not visual twin of legacy grid formatting"
+    },
+    {
+      sheet_key: "predictionRecon",
+      sheet_name: "46_Sales_Prediction_Reconciliation",
+      layer: "reconciliation",
+      sync_type: "full_replace",
+      status: "compliant"
+    },
+    {
+      sheet_key: "predictionExport",
+      sheet_name: "98_PREDICTION_EXPORT",
+      layer: "export",
+      contract_version: "sales_prediction_v1",
+      sync_type: "full_replace",
+      status: "compliant",
+      notes: "Does not alter sales_export_v1"
+    },
+    {
       sheet_key: "export",
       sheet_name: "99_EXPORT",
       layer: "export",
@@ -169,8 +235,8 @@ export const salesOsManifest: BusinessOsManifest = {
       sheet_key: "predictive_external",
       sheet_name: "Предиктивка продажи (external workbook)",
       layer: "prediction",
-      status: "needs_migration",
-      notes: "Prediction lives outside Sales OS numbering; needs Prediction Layer alignment"
+      status: "legacy_but_working",
+      notes: "Kept for dual-run; official layer is 40–46"
     }
   ],
   exports: [
@@ -181,14 +247,23 @@ export const salesOsManifest: BusinessOsManifest = {
       primary_key: ["date", "manager_id"],
       columns_ref: "src/lib/sales-os/export-contract.ts",
       mother_ingest: "dual_run"
+    },
+    {
+      sheet_name: "98_PREDICTION_EXPORT",
+      contract_version: "sales_prediction_v1",
+      grain: "period × scope × metric",
+      primary_key: ["period", "scope_type", "scope_id", "metric_id"],
+      columns_ref: "src/lib/sales-os/prediction/contract.ts",
+      mother_ingest: "not_applicable"
     }
   ],
   metrics_registry_source: "Mother 00_Metrics_Registry + docs/business-os/METRIC_DEFINITIONS.md",
   settings_source: "01_Settings",
-  data_quality_sheets: ["11_Data_Quality"],
+  data_quality_sheets: ["11_Data_Quality", "44_Sales_Prediction_Quality"],
   reconciliation_sheets: [
     "Mother 51_Sales_Reconciliation",
-    "Mother 52_Sales_Cutover_Readiness"
+    "Mother 52_Sales_Cutover_Readiness",
+    "46_Sales_Prediction_Reconciliation"
   ],
   sync_entrypoints: [
     {
@@ -208,17 +283,32 @@ export const salesOsManifest: BusinessOsManifest = {
       kind: "script",
       path: "src/scripts/sync-sales-os-ingest.ts",
       dry_run_supported: true
+    },
+    {
+      name: "sync:sales-prediction",
+      kind: "script",
+      path: "src/scripts/sync-sales-prediction.ts",
+      dry_run_supported: true
+    },
+    {
+      name: "POST /api/sync/sales-prediction",
+      kind: "api",
+      path: "src/app/api/sync/sales-prediction/route.ts",
+      dry_run_supported: true
     }
   ],
   docs: [
     "docs/business-os/SALES_OS.md",
     "docs/business-os/SALES_OS_DUAL_RUN.md",
     "docs/business-os/BITRIX_SALES_FOUNDATION.md",
-    "docs/business-os/BUSINESS_OS_STANDARD_V1.md"
+    "docs/business-os/BUSINESS_OS_STANDARD_V1.md",
+    "docs/business-os/SALES_PREDICTION_LAYER.md",
+    "docs/business-os/SALES_PREDICTION_ALIGNMENT_AUDIT.md"
   ],
   status: "active",
   notes: [
-    "Prediction not yet in-sheet under 40–49 numbering",
+    "Prediction Layer sales_prediction_v1 on sheets 40–46 + 98_PREDICTION_EXPORT",
+    "Legacy predictive workbook retained for dual-run",
     "Reconciliation primarily on Mother (51/52) — pointer declared",
     "Settings approval_status not fully standardized"
   ]

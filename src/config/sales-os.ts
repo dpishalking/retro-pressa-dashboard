@@ -1,6 +1,16 @@
 import { OS_SPREADSHEET_ID } from "@/config/os-sheets";
 import { SALES_FOUNDATION_TABS } from "@/config/sales-foundation";
 import { SALES_EXPORT_COLUMNS, SALES_EXPORT_CONTRACT_VERSION } from "@/lib/sales-os/export-contract";
+import {
+  PLAN_COLUMNS,
+  PREDICTION_DRIVER_COLUMNS,
+  PREDICTION_EXPORT_COLUMNS,
+  PREDICTION_FACT_COLUMNS,
+  PREDICTION_MODEL_COLUMNS,
+  PREDICTION_QUALITY_COLUMNS,
+  PREDICTION_RECON_COLUMNS,
+  PREDICTION_VIEW_COLUMNS
+} from "@/lib/sales-os/prediction/contract";
 
 /** Approved child Sales OS workbook. Env overrides fallback. */
 export const SALES_OS_SPREADSHEET_ID_DEFAULT = "1Zj_jLoJzJx0zuzJK0ZJIFKaS5TTQR_WyctAevB1ARwY";
@@ -33,6 +43,14 @@ export const SALES_OS_SHEETS = {
   ropBoard: "14_ROP_Board",
   mariaDaily: "15_Maria_Daily",
   mariaSnapshot: "16_Maria_Snapshot",
+  salesPlans: "40_Sales_Plans",
+  predictionFact: "41_Sales_Prediction_Fact",
+  predictionModel: "42_Sales_Prediction_Model",
+  predictionDrivers: "43_Sales_Prediction_Drivers",
+  predictionQuality: "44_Sales_Prediction_Quality",
+  predictionView: "45_Sales_Prediction_View",
+  predictionRecon: "46_Sales_Prediction_Reconciliation",
+  predictionExport: "98_PREDICTION_EXPORT",
   export: "99_EXPORT"
 } as const;
 
@@ -189,6 +207,14 @@ export const SALES_OS_COLUMN_CONTRACTS = {
   [SALES_OS_SHEETS.ropBoard]: ROP_BOARD_COLUMNS,
   [SALES_OS_SHEETS.mariaDaily]: MARIA_DAILY_COLUMNS,
   [SALES_OS_SHEETS.mariaSnapshot]: MARIA_SNAPSHOT_COLUMNS,
+  [SALES_OS_SHEETS.salesPlans]: PLAN_COLUMNS,
+  [SALES_OS_SHEETS.predictionFact]: PREDICTION_FACT_COLUMNS,
+  [SALES_OS_SHEETS.predictionModel]: PREDICTION_MODEL_COLUMNS,
+  [SALES_OS_SHEETS.predictionDrivers]: PREDICTION_DRIVER_COLUMNS,
+  [SALES_OS_SHEETS.predictionQuality]: PREDICTION_QUALITY_COLUMNS,
+  [SALES_OS_SHEETS.predictionView]: PREDICTION_VIEW_COLUMNS,
+  [SALES_OS_SHEETS.predictionRecon]: PREDICTION_RECON_COLUMNS,
+  [SALES_OS_SHEETS.predictionExport]: PREDICTION_EXPORT_COLUMNS,
   [SALES_OS_SHEETS.export]: SALES_EXPORT_COLUMNS
 } as const;
 

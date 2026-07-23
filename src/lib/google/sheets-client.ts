@@ -353,7 +353,9 @@ export async function ensureSheetTab(spreadsheetId: string, title: string): Prom
   });
   const data = await response.json();
   if (!response.ok) {
-    const message = (data as { error?: { message?: string } }).error?.message || response.status;
+    const message = String((data as { error?: { message?: string } }).error?.message || response.status);
+    // Race-safe: another writer may have created the tab between list and add.
+    if (/already exists/i.test(message)) return;
     throw new Error(`Google Sheets add tab failed: ${message}`);
   }
 }

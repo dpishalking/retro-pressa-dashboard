@@ -3,9 +3,9 @@
 1. Mother hardening — **done**  
 2. Sales Foundation / Management — **done** (dual-run ongoing)  
 3. Traffic Foundation / Identity / Management / Attribution — **done**  
-4. **Business OS Standard v1 — current**  
-5. Sales Prediction Layer Alignment v1  
-6. Traffic Prediction Layer v1 (only if quality gates allow; else keep blocked)  
+4. **Business OS Standard v1 — done**  
+5. **Sales Prediction Layer Alignment v1 — current / in progress**  
+6. Traffic Prediction Layer v1 (only if Sales Prediction reconciliation accepted + quality gates)  
 7. Finance OS Coverage Audit  
 8. Finance OS Foundation  
 9. Product OS Coverage Audit  

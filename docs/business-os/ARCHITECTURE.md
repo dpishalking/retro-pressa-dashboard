@@ -1,5 +1,7 @@
 # Architecture — Retro Pressa Business OS
 
+Hub (OS boundaries map): **[../ARCHITECTURE.md](../ARCHITECTURE.md)** · Start: **[../00_START_HERE.md](../00_START_HERE.md)**
+
 Canonical layer standard: **[BUSINESS_OS_STANDARD_V1.md](./BUSINESS_OS_STANDARD_V1.md)**  
 (Warehouse → Management → Prediction → Dashboard → Export + Settings/DQ/Recon).
 

@@ -13,6 +13,9 @@ npm run sync:bitrix-sales-foundation:dry
 npm run sync:bitrix-sales-foundation
 npm run sync:sales-os:dry
 npm run sync:sales-os
+npm run sync:sales-prediction:dry
+npm run sync:sales-prediction
+npm run sync:sales-prediction:validate
 npm run sync:sales-os-ingest:dry
 npm run sync:sales-os-ingest
 npm run sync:traffic-os:dry
@@ -20,6 +23,14 @@ npm run sync:traffic-os
 npm run sync:traffic-management:dry
 npm run sync:traffic-management
 ```
+
+## Sales Prediction Layer
+
+`POST /api/sync/sales-prediction` — admin/rop.
+
+Body: `{ period, scope: ["department","manager"], modules, dryRun }`.  
+Writes Sales OS `40`–`46` + `98_PREDICTION_EXPORT`. Does not modify `99_EXPORT`.  
+See [SALES_PREDICTION_LAYER.md](./SALES_PREDICTION_LAYER.md).
 
 ## Traffic OS
 
