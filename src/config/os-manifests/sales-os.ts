@@ -235,8 +235,8 @@ export const salesOsManifest: BusinessOsManifest = {
       sheet_key: "predictive_external",
       sheet_name: "Предиктивка продажи (external workbook)",
       layer: "prediction",
-      status: "legacy_but_working",
-      notes: "Kept for dual-run; official layer is 40–46"
+      status: "needs_migration",
+      notes: "External dual-run workbook; official layer is 40–46 — migrate consumers before drop"
     }
   ],
   exports: [
