@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Familia Studio — Подарок для него</title>
+    <meta
+      name="description"
+      content="Настоящая газета из дня его рождения. Проверьте дату и соберите подарок со смыслом."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-label="Familia Studio">
+        <div class="hero-visual" aria-hidden="true"></div>
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="paper" aria-hidden="true"></div>
+
+        <div class="hero-content">
+          <p class="brand">Familia <span>Studio</span></p>
+          <h1>Подарок, после которого молчат — и листают</h1>
+          <p class="support">
+            Настоящая газета из дня его рождения. Для папы, мужа, руководителя — когда «просто вещь» уже не
+            подходит.
+          </p>
+          <div class="cta-row">
+            <a class="cta-primary" href="#lead">Проверить дату</a>
+            <a class="cta-secondary" href="#lead">Оставить заявку</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="lead" id="lead" aria-label="Заявка">
+        <div class="lead-inner">
+          <div id="form-block">
+            <h2>Проверим дату и соберём подарок</h2>
+            <p class="lead-text">
+              Укажите день рождения — ответим, есть ли газета или журнал, и как лучше оформить.
+            </p>
+            <form id="lead-form" class="form" novalidate>
+              <label>
+                <span>Дата рождения</span>
+                <input name="birthDate" type="date" required />
+              </label>
+              <label>
+                <span>Как к вам обращаться</span>
+                <input name="name" type="text" autocomplete="name" placeholder="Имя" />
+              </label>
+              <label>
+                <span>Телефон</span>
+                <input
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="+371 ..."
+                  required
+                />
+              </label>
+              <button type="submit" id="submit-btn">Проверить наличие</button>
+            </form>
+          </div>
+
+          <div id="success-block" class="success" hidden>
+            <strong>Заявка принята</strong>
+            <p id="success-text">Мы проверим наличие издания и свяжемся с вами.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
