@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retro Pressa — Подарок мужчине</title>
+    <meta
+      name="description"
+      content="Подарок мужчине, которого уже не удивишь вещами из магазина — настоящая газета из дня его рождения."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&subset=latin,cyrillic&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-label="Retro Pressa">
+        <div class="hero-media" aria-hidden="true">
+          <img src="./assets/cover.jpg" alt="" />
+        </div>
+        <div class="hero-shade" aria-hidden="true"></div>
+
+        <div class="hero-content">
+          <p class="brand">Retro Pressa</p>
+          <h1>Подарок мужчине, которого уже не удивишь вещами из магазина</h1>
+          <p class="support">
+            Настоящая газета из дня его рождения — оригинал, который не купишь на полке и не забудешь через неделю.
+          </p>
+          <div class="cta-row">
+            <a class="cta-primary" href="#lead">Проверить наличие</a>
+            <a class="cta-phone" href="tel:+37128373939">Позвонить</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="lead" id="lead" aria-label="Заявка">
+        <div class="lead-inner">
+          <div id="form-block">
+            <h2>Выберите дату — мы проверим наличие</h2>
+            <p class="lead-text">
+              Стоимость издания от 45€ в зависимости от года выпуска. Отправляем по всему миру.
+            </p>
+            <form id="lead-form" class="form" novalidate>
+              <label>
+                <span>Дата рождения</span>
+                <input name="birthDate" type="date" required />
+              </label>
+              <label>
+                <span>Как вас зовут?</span>
+                <input name="name" type="text" autocomplete="name" placeholder="Имя" />
+              </label>
+              <label>
+                <span>Телефон</span>
+                <input
+                  name="phone"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="+371 ..."
+                  required
+                />
+              </label>
+              <button type="submit" id="submit-btn">Узнать доступность</button>
+            </form>
+          </div>
+
+          <div id="success-block" class="success" hidden>
+            <strong>Заявка принята</strong>
+            <p id="success-text">Мы проверим наличие издания и свяжемся с вами.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
