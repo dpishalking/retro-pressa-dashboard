@@ -65,6 +65,26 @@ Sheets `40`–`46` + `98_PREDICTION_EXPORT`. Code: `src/lib/sales-os/prediction/
 Rules: approved plans only; fact from `12_Daily_Fact`; `gap_to_plan = run_rate − plan`; does **not** change `sales_export_v1`.  
 Docs: [SALES_PREDICTION_LAYER.md](./SALES_PREDICTION_LAYER.md).
 
+## Marketing Planning (`marketing_predictive_v1`)
+
+Workbook `MARKETING_PLANNING_SPREADSHEET_ID` (`1Ru9H24Hs2WPNcP2TEGpvIEcRtjnDV8l-UyBnWNFakN4`).  
+Code: `src/lib/marketing-planning/`. Export contract: `marketing_predictive_export_v1` on `99_EXPORT`.
+
+| Sheet | Grain | Notes |
+|-------|-------|-------|
+| `02_Plan_Registry` | period×scope×metric | approved only; preserve comment/status |
+| `06`–`08` Marketing Daily/Weekly/Monthly | date/week/month × traffic_type | ratios recalculated |
+| `09`–`14` Paid / Organic | available dimensions | empty CPL/ROAS without spend |
+| `15`–`17` Channel/Method/Landing Fact | date × id | landing spend not allocated |
+| `18_Data_Quality` / `19_Reconciliation` | checks | separate from performance |
+| `20`–`24` Planning UX | week 1–5 + МЕС | Sales Planning design parity |
+| `25_Methods_Backlog` | method | readiness, not forecast |
+| `99_EXPORT` | date × traffic_type × channel × method | `marketing_predictive_export_v1` |
+
+Canons: Sales OS revenue; GA4 sessions via Traffic OS; СВОД plans/spend when verified. Mother cutover **not** enabled.
+
+Docs: [MARKETING_PLANNING.md](./MARKETING_PLANNING.md).
+
 ## Traffic OS export
 
 See `src/lib/traffic-os/export-contract.ts`.

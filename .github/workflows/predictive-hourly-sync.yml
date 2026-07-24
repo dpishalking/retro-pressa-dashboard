@@ -1,0 +1,47 @@
+name: Predictive Front Hourly Sync
+
+# Every hour — refresh «Предиктивка продажи» from current Sales OS + СВОД.
+# Full Bitrix close for yesterday: sales-predictive-daily-close.yml at 12:00 Moscow.
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Refresh predictive front
+        env:
+          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          if [ -z "$SECRET" ]; then
+            echo "CRON_SYNC_SECRET/AUTH_SECRET is empty"
+            exit 1
+          fi
+          # Prefer local script if deployed; else HTTP API
+          if [ -f /opt/retro-pressa/package.json ] && grep -q 'sync:predictive-front' /opt/retro-pressa/package.json; then
+            cd /opt/retro-pressa
+            npm run sync:predictive-front
+          else
+            curl -f -sS -X POST http://127.0.0.1:4174/api/sync/predictive-front \
+              -H "Content-Type: application/json" \
+              -H "x-cron-secret: ${SECRET}" \
+              -d '{}'
+          fi
+          EOF

@@ -16,6 +16,10 @@ npm run sync:sales-os
 npm run sync:sales-prediction:dry
 npm run sync:sales-prediction
 npm run sync:sales-prediction:validate
+npm run sync:marketing-planning:dry
+npm run sync:marketing-planning
+npm run sync:marketing-planning:validate
+npm run sync:marketing-planning:reconciliation
 npm run sync:sales-os-ingest:dry
 npm run sync:sales-os-ingest
 npm run sync:traffic-os:dry
@@ -31,6 +35,17 @@ npm run sync:traffic-management
 Body: `{ period, scope: ["department","manager"], modules, dryRun }`.  
 Writes Sales OS `40`–`46` + `98_PREDICTION_EXPORT`. Does not modify `99_EXPORT`.  
 See [SALES_PREDICTION_LAYER.md](./SALES_PREDICTION_LAYER.md).
+
+Morning `os-daily` also runs `predictive_front`: light refresh of workbook `Предиктивка продажи` from Sales OS Daily Fact + СВОД leads (no full Bitrix rebuild).
+
+## Marketing Planning
+
+`POST /api/sync/marketing-planning` — admin/rop.
+
+Body: `{ periods: ["2026-07"], modules: ["all"], dryRun }`.  
+Writes workbook `MARKETING_PLANNING_SPREADSHEET_ID` tabs `00`–`25` + `99_EXPORT`.  
+Does not create a new spreadsheet. Does not modify Sales Planning. Mother cutover **not** enabled.  
+See [MARKETING_PLANNING.md](./MARKETING_PLANNING.md).
 
 ## Traffic OS
 
@@ -58,9 +73,22 @@ Dry run reads Bitrix only. Production uses `safeReplaceSheet` on staging tabs; f
 
 ## Daily cron
 
-`POST /api/sync/os-daily` — 12:00 Europe/Moscow
+`POST /api/sync/os-daily` — **12:00 Europe/Moscow** (Mother OS sheets).
 
-Order:
+**Sales predictive close (yesterday):** GitHub Action `sales-predictive-daily-close.yml` at **12:00 Europe/Moscow**:
+
+1. `sync:bitrix-sales-foundation` (current month)
+2. `sync:sales-os` (rebuild + write «Предиктивка продажи»)
+
+**Hourly predictive:** `predictive-hourly-sync.yml` every hour (`:05` UTC) — light refresh from Sales OS + СВОД leads.
+
+```bash
+npm run sync:bitrix-sales-foundation -- --periods=2026-07
+npm run sync:sales-os -- --periods=2026-07
+npm run sync:predictive-front
+```
+
+Order of os-daily:
 
 1. orders  
 2. traffic  

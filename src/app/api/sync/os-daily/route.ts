@@ -16,6 +16,7 @@ import {
 import { syncOsMetricsRegistryToSheet } from "@/lib/os-sheets/metrics-registry-sync";
 import { ensureSyncRunsHeader } from "@/lib/os-sheets/sync-runs";
 import { runSalesOsDualRun } from "@/lib/os-sheets/sales-os-dual-run";
+import { refreshPredictiveSalesFrontFromWorkbook } from "@/lib/sales-os/sync-predictive";
 import type { PeriodKey } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
@@ -73,8 +74,13 @@ export async function POST(request: Request) {
           periods: [isoPeriod],
           dryRun: false,
           runReconciliation: true,
-          rebuildSalesOs: false
+          // Noon Moscow close: rebuild Sales OS so yesterday's Bitrix facts land before predictive.
+          rebuildSalesOs: true
         }));
+
+    const predictiveFront = await runStep("predictive_front", () =>
+      refreshPredictiveSalesFrontFromWorkbook({ month: isoPeriod, dryRun: false })
+    );
 
     const companyDaily = await runStep("company_daily", () => syncOsCompanyDailyToSheet({ period }));
     const companyMonthly = await runStep("company_monthly", () => syncOsCompanyMonthlyToSheet({ period }));
@@ -86,6 +92,7 @@ export async function POST(request: Request) {
     const steps = [
       orders, traffic, sales, finance, customers, payments,
       salesOsCandidate,
+      predictiveFront,
       companyDaily, companyMonthly, dictionaries, reconciliation, metrics, dataSources
     ];
     const failed = steps.filter((step) => !step.ok);

@@ -1,0 +1,33 @@
+name: Sales Predictive Daily Close
+
+# 12:00 Europe/Moscow = 09:00 UTC — close previous day:
+# Bitrix foundation → Sales OS rebuild → Предиктивка продажи
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Foundation + Sales OS + Predictive
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s << 'EOF'
+          set -euo pipefail
+          APP_DIR="/opt/retro-pressa"
+          cd "$APP_DIR"
+          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          echo "Closing predictive month=${MONTH} Europe/Moscow in ${APP_DIR}"
+          npm run sync:bitrix-sales-foundation -- --periods="${MONTH}"
+          npm run sync:sales-os -- --periods="${MONTH}"
+          EOF

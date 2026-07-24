@@ -732,11 +732,16 @@ export function resolveDayFacts(input: {
   }
 
   // Leads: СВОД `day` (paid CRM) + `Органика` (CRM) — preferred over Bitrix duplicates.
+  // Zero SVOD totals are treated as missing (early day / empty pull), not as a hard fact.
   let leads: number | null = null;
   if (input.svodLeadsByDate?.has(input.date)) {
-    leads = input.svodLeadsByDate.get(input.date)!.total;
-    source = source === "maria" ? "mixed" : source === "system" ? "svod" : source;
-  } else if (reportDate === input.date) {
+    const svodTotal = input.svodLeadsByDate.get(input.date)!.total;
+    if (svodTotal > 0) {
+      leads = svodTotal;
+      source = source === "maria" ? "mixed" : source === "system" ? "svod" : source;
+    }
+  }
+  if (leads == null && reportDate === input.date) {
     const t = parseSheetNumber(snap.yesterday_traffic_leads);
     const o = parseSheetNumber(snap.yesterday_organic_leads);
     if (snap.yesterday_traffic_leads || snap.yesterday_organic_leads) {
@@ -799,6 +804,27 @@ export function buildFactCellUpdates(input: {
       updates.push({
         range: a1(input.tabTitle, col, PREDICTIVE_METRICS[key].factRow),
         values: [[value]]
+      });
+    }
+  }
+  return updates;
+}
+
+/** Clear stale fact cells for incomplete/future days (e.g. leftover SVOD zero). */
+export function buildClearFutureFactUpdates(input: {
+  tabTitle: string;
+  dateToCol: Map<string, number>;
+  /** Last completed day inclusive (YYYY-MM-DD). Dates after this are cleared. */
+  completedThrough: string | null;
+}): SheetCellUpdate[] {
+  if (!input.completedThrough) return [];
+  const updates: SheetCellUpdate[] = [];
+  for (const [date, col] of input.dateToCol) {
+    if (date <= input.completedThrough) continue;
+    for (const key of PREDICTIVE_AUTO_FACT_METRICS) {
+      updates.push({
+        range: a1(input.tabTitle, col, PREDICTIVE_METRICS[key].factRow),
+        values: [[""]]
       });
     }
   }

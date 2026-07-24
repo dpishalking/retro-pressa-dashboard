@@ -6,7 +6,11 @@ import { readSessionCookie } from "@/lib/auth/session-edge";
 const PUBLIC_API_PREFIXES = ["/api/auth/login"];
 const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH];
 const LOGIN_PATH = "/";
-const CRON_API_PREFIXES = ["/api/rop/daily-sync", "/api/sync/os-daily"];
+const CRON_API_PREFIXES = [
+  "/api/rop/daily-sync",
+  "/api/sync/os-daily",
+  "/api/sync/predictive-front"
+];
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

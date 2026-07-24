@@ -246,7 +246,7 @@ export async function pullSvodMonthPlans(input: {
   return parseSvodObshiePlans(values, input.month);
 }
 
-/** Metric slice shared by ОБЩИЕ / Paid / Organic blocks (no Budget/ROAS/CPL). */
+/** Metric slice shared by ОБЩИЕ / Paid / Organic blocks. */
 export type SvodSalesPlanSlice = {
   revenue: number | null;
   sale: number | null;
@@ -259,6 +259,10 @@ export type SvodSalesPlanSlice = {
   crLeadSale: number | null;
   /** Invoice → Sale plan rate (0–1), from «Счет в оплату». */
   crInvoiceSale: number | null;
+  /** Marketing: CPL plan when present on СВОД. */
+  cpl: number | null;
+  /** Marketing: Budget/spend plan when present on СВОД. */
+  spend: number | null;
 };
 
 export type SvodPaidOrganicPlans = {
@@ -279,7 +283,9 @@ const EMPTY_SLICE = (): SvodSalesPlanSlice => ({
   aov: null,
   crLeadInvoice: null,
   crLeadSale: null,
-  crInvoiceSale: null
+  crInvoiceSale: null,
+  cpl: null,
+  spend: null
 });
 
 function addSlice(a: SvodSalesPlanSlice, b: SvodSalesPlanSlice): SvodSalesPlanSlice {
@@ -296,7 +302,9 @@ function addSlice(a: SvodSalesPlanSlice, b: SvodSalesPlanSlice): SvodSalesPlanSl
     aov: prefer(a.aov, b.aov),
     crLeadInvoice: prefer(a.crLeadInvoice, b.crLeadInvoice),
     crLeadSale: prefer(a.crLeadSale, b.crLeadSale),
-    crInvoiceSale: prefer(a.crInvoiceSale, b.crInvoiceSale)
+    crInvoiceSale: prefer(a.crInvoiceSale, b.crInvoiceSale),
+    cpl: prefer(a.cpl, b.cpl),
+    spend: sum(a.spend, b.spend)
   };
 }
 
@@ -318,7 +326,8 @@ function applyMetricToSlice(slice: SvodSalesPlanSlice, label: string, value: num
     slice.crLeadSale = svodRateToUnit(value);
   } else if (label.startsWith("счет в оплат")) {
     slice.crInvoiceSale = svodRateToUnit(value);
-  }
+  } else if (label === "cpl") slice.cpl = value;
+  else if (label.startsWith("бюджет") || label === "budget" || label === "spend") slice.spend = value;
 }
 
 function isPaidAdSection(label: string): boolean {
@@ -347,7 +356,7 @@ function isSectionHeader(label: string): boolean {
 
 /**
  * Parse Paid (= sum of Facebook / Yandex / Google / VK …) and Organic blocks
- * from СВОД «План/факт». Skips marketing rows (Budget, ROAS, CPL).
+ * from СВОД «План/факт». Captures Budget/CPL for marketing; ignores ROAS/ROI/ROMI.
  */
 export function parseSvodPaidOrganicPlans(values: string[][], month: string): SvodPaidOrganicPlans | null {
   const planCol = findSvodPlanColumn(values, month);
@@ -402,13 +411,7 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
     }
 
     if (mode === "none" || mode === "skip") continue;
-    if (
-      label.startsWith("бюджет") ||
-      label === "roas" ||
-      label === "cpl" ||
-      label === "roi" ||
-      label === "romi"
-    ) {
+    if (label === "roas" || label === "roi" || label === "romi") {
       continue;
     }
 
@@ -423,7 +426,7 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
   if (mode === "paid") out.paid = addSlice(out.paid, paidAccum);
 
   const hasAny = [out.obshie, out.paid, out.organic].some((s) =>
-    [s.revenue, s.sale, s.leads, s.invoices, s.aov].some((v) => v != null)
+    [s.revenue, s.sale, s.leads, s.invoices, s.aov, s.cpl, s.spend].some((v) => v != null)
   );
   return hasAny ? out : null;
 }

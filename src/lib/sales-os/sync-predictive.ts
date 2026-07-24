@@ -13,6 +13,7 @@ import {
   buildTemplatePredictiveGrid,
   buildDateRowUpdates,
   buildFactCellUpdates,
+  buildClearFutureFactUpdates,
   buildMonthDayColumns,
   buildPlanMonthUpdates,
   buildPtfCellUpdates,
@@ -31,6 +32,7 @@ import {
 } from "@/lib/sales-os/predictive-model";
 import { parseSheetNumber } from "@/lib/os-sheets/sales-metric-defs";
 import { pullSvodDailyLeads, pullSvodMonthPlans, type SvodMonthPlans } from "@/lib/sales-os/svod-plans";
+import { resolveForecastAsOf } from "@/lib/sales-os/prediction/periods";
 
 export type PredictiveSyncResult = {
   spreadsheetId: string;
@@ -290,11 +292,18 @@ export async function syncPredictiveSalesFront(input: {
     dateToCol,
     factsByDate
   });
+  const completedThrough = resolveForecastAsOf({ month, today: asOfDate });
+  const clearUpdates = buildClearFutureFactUpdates({
+    tabTitle,
+    dateToCol,
+    completedThrough
+  });
+  const allFactUpdates = [...updates, ...clearUpdates];
 
-  if (!dryRun && updates.length) {
+  if (!dryRun && allFactUpdates.length) {
     await batchUpdateSheetValues({
       spreadsheetId,
-      data: updates,
+      data: allFactUpdates,
       valueInputOption: "USER_ENTERED"
     });
   }
@@ -348,4 +357,65 @@ export async function syncPredictiveSalesFront(input: {
     svodPlans: svodPlansOut,
     dryRun
   };
+}
+
+function asRows(values: string[][]): Array<Record<string, string>> {
+  if (!values.length) return [];
+  const header = values[0].map((c) => String(c || "").trim());
+  return values.slice(1).map((raw) =>
+    Object.fromEntries(header.map((k, i) => [k, String(raw[i] ?? "").trim()]))
+  );
+}
+
+/**
+ * Light daily refresh: read Sales OS Daily Fact + Maria, pull СВОД leads, upsert predictive front.
+ * Does not rebuild Bitrix Sales OS warehouse.
+ */
+export async function refreshPredictiveSalesFrontFromWorkbook(input?: {
+  month?: string;
+  dryRun?: boolean;
+  spreadsheetId?: string;
+  salesOsSpreadsheetId?: string;
+  tabTitle?: string;
+}): Promise<PredictiveSyncResult> {
+  const { getSalesOsSpreadsheetId, SALES_OS_SHEETS } = await import("@/config/sales-os");
+  const { mariaDailyFromMap } = await import("@/lib/sales-os/maria-daily");
+  const salesOsId = input?.salesOsSpreadsheetId || getSalesOsSpreadsheetId();
+  const month = input?.month || new Date().toISOString().slice(0, 7);
+  const syncedAt = new Date().toISOString();
+
+  const [dailyValues, mariaValues, mariaSnapValues] = await Promise.all([
+    readSheetValues({
+      spreadsheetId: salesOsId,
+      range: `${quoteTab(SALES_OS_SHEETS.dailyFact)}!A1:Z`
+    }),
+    readSheetValues({
+      spreadsheetId: salesOsId,
+      range: `${quoteTab(SALES_OS_SHEETS.mariaDaily)}!A1:Z`
+    }).catch(() => [] as string[][]),
+    readSheetValues({
+      spreadsheetId: salesOsId,
+      range: `${quoteTab(SALES_OS_SHEETS.mariaSnapshot)}!A1:Z`
+    }).catch(() => [] as string[][])
+  ]);
+
+  const dailyFact = asRows(dailyValues).filter((r) => String(r.date || "").startsWith(month));
+  const mariaDaily = asRows(mariaValues)
+    .map((row) => mariaDailyFromMap(row))
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+  const mariaSnapshot = asRows(mariaSnapValues).map((r) => ({
+    key: r.key || "",
+    value: r.value || ""
+  }));
+
+  return syncPredictiveSalesFront({
+    month,
+    mariaDaily,
+    mariaSnapshot,
+    dailyFact,
+    syncedAt,
+    dryRun: input?.dryRun,
+    spreadsheetId: input?.spreadsheetId,
+    tabTitle: input?.tabTitle
+  });
 }
