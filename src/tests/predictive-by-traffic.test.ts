@@ -32,7 +32,9 @@ const paidGrid = buildTrafficChannelGrid({
     aov: 68,
     crLeadInvoice: 0.22,
     crLeadSale: 0.16,
-    crInvoiceSale: 0.73
+    crInvoiceSale: 0.73,
+    cpl: null,
+    spend: null
   },
   planDeals
 });
@@ -66,7 +68,9 @@ const organicGrid = buildTrafficChannelGrid({
     aov: 68,
     crLeadInvoice: 0.22,
     crLeadSale: 0.16,
-    crInvoiceSale: 0.73
+    crInvoiceSale: 0.73,
+    cpl: null,
+    spend: null
   },
   planDeals: 420
 });

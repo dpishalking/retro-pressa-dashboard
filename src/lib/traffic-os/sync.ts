@@ -429,14 +429,30 @@ async function runSync(input?: {
         ga4 = await buildTrafficOsGa4Foundation({
           periods,
           syncedAt: started_at,
-          crmLeads: model.crmLeads,
-          existingSourceMap: model.sourceMap,
-          existingLandingMap: model.landingMap,
-          existingCampaignMap: model.campaignMap
+          crmLeads: model.crmLeads.map((row) =>
+            Object.fromEntries(
+              Object.entries(row).map(([key, value]) => [key, value == null ? "" : String(value)])
+            )
+          ),
+          existingSourceMap: model.sourceMap.map((row) =>
+            Object.fromEntries(
+              Object.entries(row).map(([key, value]) => [key, value == null ? "" : String(value)])
+            )
+          ),
+          existingLandingMap: model.landingMap.map((row) =>
+            Object.fromEntries(
+              Object.entries(row).map(([key, value]) => [key, value == null ? "" : String(value)])
+            )
+          ),
+          existingCampaignMap: model.campaignMap.map((row) =>
+            Object.fromEntries(
+              Object.entries(row).map(([key, value]) => [key, value == null ? "" : String(value)])
+            )
+          )
         });
-        model.sourceMap.push(...ga4.sourceMapExtra);
-        model.landingMap.push(...ga4.landingMapExtra);
-        model.campaignMap.push(...ga4.campaignMapExtra);
+        model.sourceMap.push(...(ga4.sourceMapExtra as typeof model.sourceMap));
+        model.landingMap.push(...(ga4.landingMapExtra as typeof model.landingMap));
+        model.campaignMap.push(...(ga4.campaignMapExtra as typeof model.campaignMap));
         model.matrices.sourceMap = toMatrix(SOURCE_MAP_COLUMNS, model.sourceMap);
         model.matrices.landingMap = toMatrix(LANDING_MAP_COLUMNS, model.landingMap);
         model.matrices.campaignMap = toMatrix(CAMPAIGN_MAP_COLUMNS, model.campaignMap);
