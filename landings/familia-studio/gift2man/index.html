@@ -3,36 +3,36 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Familia Studio — Подарок для него</title>
+    <title>Retro Pressa — Подарок мужчине</title>
     <meta
       name="description"
-      content="Настоящая газета из дня его рождения. Проверьте дату и соберите подарок со смыслом."
+      content="Подарок мужчине, которого уже не удивишь вещами из магазина — настоящая газета из дня его рождения."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&subset=latin,cyrillic&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="page">
-      <section class="hero" aria-label="Familia Studio">
-        <div class="hero-visual" aria-hidden="true"></div>
+      <section class="hero" aria-label="Retro Pressa">
+        <div class="hero-media" aria-hidden="true">
+          <img src="./assets/cover.jpg" alt="" />
+        </div>
         <div class="hero-shade" aria-hidden="true"></div>
-        <div class="paper" aria-hidden="true"></div>
 
         <div class="hero-content">
-          <p class="brand">Familia <span>Studio</span></p>
-          <h1>Подарок, после которого молчат — и листают</h1>
+          <p class="brand">Retro Pressa</p>
+          <h1>Подарок мужчине, которого уже не удивишь вещами из магазина</h1>
           <p class="support">
-            Настоящая газета из дня его рождения. Для папы, мужа, руководителя — когда «просто вещь» уже не
-            подходит.
+            Настоящая газета из дня его рождения — оригинал, который не купишь на полке и не забудешь через неделю.
           </p>
           <div class="cta-row">
-            <a class="cta-primary" href="#lead">Проверить дату</a>
-            <a class="cta-secondary" href="#lead">Оставить заявку</a>
+            <a class="cta-primary" href="#lead">Проверить наличие</a>
+            <a class="cta-phone" href="tel:+37128373939">Позвонить</a>
           </div>
         </div>
       </section>
@@ -40,9 +40,9 @@
       <section class="lead" id="lead" aria-label="Заявка">
         <div class="lead-inner">
           <div id="form-block">
-            <h2>Проверим дату и соберём подарок</h2>
+            <h2>Выберите дату — мы проверим наличие</h2>
             <p class="lead-text">
-              Укажите день рождения — ответим, есть ли газета или журнал, и как лучше оформить.
+              Стоимость издания от 45€ в зависимости от года выпуска. Отправляем по всему миру.
             </p>
             <form id="lead-form" class="form" novalidate>
               <label>
@@ -50,7 +50,7 @@
                 <input name="birthDate" type="date" required />
               </label>
               <label>
-                <span>Как к вам обращаться</span>
+                <span>Как вас зовут?</span>
                 <input name="name" type="text" autocomplete="name" placeholder="Имя" />
               </label>
               <label>
@@ -64,7 +64,7 @@
                   required
                 />
               </label>
-              <button type="submit" id="submit-btn">Проверить наличие</button>
+              <button type="submit" id="submit-btn">Узнать доступность</button>
             </form>
           </div>
 
