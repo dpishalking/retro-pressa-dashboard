@@ -1,0 +1,60 @@
+name: Publish Product Issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: Issue slug (folder name inside products/issues)
+        required: true
+        type: string
+      release_tag:
+        description: GitHub release tag that contains <slug>.tar.gz
+        required: true
+        type: string
+
+concurrency:
+  group: publish-product
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Download issue pack from release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SLUG="${{ inputs.slug }}"
+          TAG="${{ inputs.release_tag }}"
+          ASSET="${SLUG}.tar.gz"
+          gh release download "$TAG" --repo "${{ github.repository }}" --pattern "$ASSET" --dir /tmp
+          test -f "/tmp/$ASSET"
+          echo "Downloaded /tmp/$ASSET ($(du -h "/tmp/$ASSET" | cut -f1))"
+
+      - name: Upload pack to server
+        run: |
+          scp -i ~/.ssh/deploy_key "/tmp/${{ inputs.slug }}.tar.gz" \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/${{ inputs.slug }}.tar.gz"
+
+      - name: Install issue on server
+        run: |
+          set -euo pipefail
+          SLUG="${{ inputs.slug }}"
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "set -euo pipefail
+             DEST=/opt/retro-pressa-shared/data/products/issues
+             mkdir -p \"\$DEST\"
+             rm -rf \"\$DEST/$SLUG\"
+             tar -xzf \"/tmp/$SLUG.tar.gz\" -C \"\$DEST\"
+             test -f \"\$DEST/$SLUG/manifest.json\"
+             rm -f \"/tmp/$SLUG.tar.gz\"
+             echo Published \"\$DEST/$SLUG\"
+             python3 -c \"import json; d=json.load(open('/opt/retro-pressa-shared/data/products/issues/$SLUG/manifest.json')); print('title:', d.get('title')); print('pages:', d.get('pageCount')); print('status:', d.get('status')); print('view: https://rp-bi.site/view/$SLUG')\""
