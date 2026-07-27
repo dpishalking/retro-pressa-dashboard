@@ -280,8 +280,8 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             <button
               type="button"
               className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-              onClick={() => setZoom((z) => Math.min(1.35, Number((z + 0.1).toFixed(2))))}
-              disabled={zoom >= 1.35}
+              onClick={() => setZoom((z) => Math.min(2, Number((z + 0.1).toFixed(2))))}
+              disabled={zoom >= 2}
               aria-label="Увеличить"
             >
               <Plus className="h-4 w-4" />

@@ -51,7 +51,8 @@ async function renderPageToRaster(doc: PDFDocumentProxy, pageNumber: number): Pr
   await page.render({
     canvas: canvas as unknown as HTMLCanvasElement,
     canvasContext: context as unknown as CanvasRenderingContext2D,
-    viewport
+    viewport,
+    intent: "print"
   }).promise;
 
   // Keep PNG until after deimpose so we don't double-compress text.
