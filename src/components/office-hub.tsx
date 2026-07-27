@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Settings, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Newspaper, Settings, Target, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -58,6 +58,14 @@ const offices: OfficeCard[] = [
     icon: Brain,
     status: "active",
     accent: "text-violet-600 bg-violet-50"
+  },
+  {
+    href: "/products",
+    title: "Продукты",
+    description: "Загрузка PDF-выпусков и вечные ссылки для клиентов: полистать готовое издание без входа в кабинет.",
+    icon: Newspaper,
+    status: "active",
+    accent: "text-sky-600 bg-sky-50"
   }
 ];
 

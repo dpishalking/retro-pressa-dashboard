@@ -82,3 +82,18 @@ http://ip-сервера:4174/
 ```
 
 Если приложение открылось, вкладка `Данные и настройки` сможет принимать переписки через файл или поле вставки текста.
+
+## Продукты (PDF-выпуски и вечные ссылки)
+
+Раздел кабинета `/products` загружает PDF на сервер и публикует вечную клиентскую ссылку:
+
+```text
+https://rp-bi.site/view/<slug>
+```
+
+Файлы хранятся в `data/products/issues/<slug>/` (source.pdf, pages/*.webp, manifest.json).
+
+- На VPS/PM2 убедитесь, что каталог `data/products` сохраняется между деплоями (не внутри `.next`).
+- В Docker смонтируйте volume на `/app/data/products` (или задайте `PRODUCTS_DATA_DIR`).
+- Публичные маршруты без логина: `/view/*`, `/api/products/public/*`.
+- Конвертация PDF → WebP идёт через `pdfjs-dist` + `@napi-rs/canvas` + `sharp` (Poppler не обязателен).
