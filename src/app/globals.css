@@ -222,22 +222,6 @@ td {
   image-rendering: auto;
 }
 
-.magazine-flip-page {
-  background: #fffdf8;
-  overflow: hidden;
-}
-
-.magazine-flip-page img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  -webkit-user-drag: none;
-  user-select: none;
-  /* Prefer crisp downscale of high-res page rasters on retina */
-  image-rendering: -webkit-optimize-contrast;
-}
-
 /* -------- solo cover: standing magazine object -------- */
 
 .magazine-flipbook-stage.is-solo {
@@ -267,7 +251,7 @@ td {
 
 .magazine-flipbook-host.is-solo {
   /* Narrow host so page-flip stays in single-page portrait for the cover */
-  max-width: min(480px, 78vw);
+  max-width: min(560px, 82vw);
   margin-inline: auto;
   perspective: 1400px;
 }

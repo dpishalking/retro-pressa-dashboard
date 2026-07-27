@@ -27,12 +27,12 @@ type PageFlipInstance = {
   destroy: () => void;
   update: () => void;
   loadFromImages: (images: string[]) => void;
-  loadFromHTML: (items: HTMLElement[]) => void;
   flipNext: () => void;
   flipPrev: () => void;
   getPageCount: () => number;
   getCurrentPageIndex: () => number;
   on: (event: string, callback: (event: { data: number | { page: number } }) => void) => void;
+  __dprUpdate?: () => void;
 };
 
 function prefersReducedMotion() {
@@ -116,17 +116,17 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         const reduced = prefersReducedMotion();
         const ratio = pageHeight / Math.max(1, pageWidth);
         const isPortraitPage = ratio >= 1;
-        const baseWidth = isPortraitPage ? 460 : 640;
+        const baseWidth = isPortraitPage ? 520 : 640;
         const baseHeight = Math.round(baseWidth * ratio);
         flip = new PageFlip(book, {
           width: baseWidth,
           height: baseHeight,
           size: "stretch",
-          minWidth: isPortraitPage ? 260 : 320,
+          minWidth: isPortraitPage ? 280 : 320,
           // Keep single-page (cover) mode from flipping into a wide empty+cover landscape frame.
-          maxWidth: isPortraitPage ? 560 : 980,
-          minHeight: Math.max(220, Math.round((isPortraitPage ? 260 : 320) * ratio)),
-          maxHeight: isPortraitPage ? 900 : 720,
+          maxWidth: isPortraitPage ? 640 : 980,
+          minHeight: Math.max(220, Math.round((isPortraitPage ? 280 : 320) * ratio)),
+          maxHeight: isPortraitPage ? 980 : 720,
           drawShadow: !reduced,
           flippingTime: reduced ? 1 : 900,
           usePortrait: true,
@@ -139,18 +139,36 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           startZIndex: 10
         });
 
-        const pageNodes = pages.map((page) => {
-          const el = document.createElement("div");
-          el.className = "magazine-flip-page";
-          const img = document.createElement("img");
-          img.src = page.src;
-          img.alt = "";
-          img.decoding = "async";
-          img.draggable = false;
-          el.appendChild(img);
-          return el;
-        });
-        flip.loadFromHTML(pageNodes);
+        const dprAwareUpdate = () => {
+          const canvas = book.querySelector("canvas.stf__canvas") as HTMLCanvasElement | null;
+          if (!canvas) {
+            flip?.update();
+            return;
+          }
+          flip?.update();
+          const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+          if (dpr <= 1) return;
+          const cssW = canvas.clientWidth;
+          const cssH = canvas.clientHeight;
+          if (!cssW || !cssH) return;
+          const tw = Math.round(cssW * dpr);
+          const th = Math.round(cssH * dpr);
+          if (canvas.width === tw && canvas.height === th) return;
+          canvas.width = tw;
+          canvas.height = th;
+          canvas.style.width = `${cssW}px`;
+          canvas.style.height = `${cssH}px`;
+          const ctx = canvas.getContext("2d");
+          ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+          // Redraw into the hi-dpi buffer without another layout resize.
+          try {
+            (flip as unknown as { render?: { start?: () => void; update?: () => void } }).render?.update?.();
+          } catch {
+            // ignore
+          }
+        };
+
+        flip.loadFromImages(pages.map((p) => p.src));
 
         flip.on("init", (e) => {
           if (cancelled || !flip) return;
@@ -158,7 +176,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           pageIndexRef.current = data.page;
           updateChrome(data.page, flip.getPageCount());
           setReady(true);
-          flip.update();
+          dprAwareUpdate();
         });
 
         flip.on("flip", (e) => {
@@ -169,18 +187,22 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           const count = flip.getPageCount();
           updateChrome(next, count);
           playFlipSound(prev, next, count);
+          requestAnimationFrame(dprAwareUpdate);
         });
 
         flip.on("changeOrientation", () => {
-          flip?.update();
+          dprAwareUpdate();
         });
 
         flipRef.current = flip;
 
         resizeObserver = new ResizeObserver(() => {
-          flip?.update();
+          dprAwareUpdate();
         });
         resizeObserver.observe(host);
+
+        // Expose for zoom/solo updates
+        (flip as unknown as { __dprUpdate?: () => void }).__dprUpdate = dprAwareUpdate;
       })();
     }, 40);
 
@@ -205,7 +227,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   useEffect(() => {
     if (!ready) return;
     const id = window.requestAnimationFrame(() => {
-      flipRef.current?.update();
+      flipRef.current?.__dprUpdate?.() ?? flipRef.current?.update();
     });
     return () => window.cancelAnimationFrame(id);
   }, [ready, soloCover, zoom]);
