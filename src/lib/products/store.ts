@@ -65,7 +65,9 @@ export async function listProductIssues(): Promise<ProductIssueSummary[]> {
       createdAt: manifest.createdAt,
       updatedAt: manifest.updatedAt,
       pageCount: manifest.pageCount,
-      viewPath: publicViewPath(manifest.slug)
+      viewPath: publicViewPath(manifest.slug),
+      status: manifest.status ?? (manifest.pageCount > 0 ? "ready" : "processing"),
+      errorMessage: manifest.errorMessage
     });
   }
 
@@ -78,6 +80,9 @@ export async function readProductManifest(slug: string): Promise<ProductIssueMan
     const raw = await readFile(getManifestPath(slug), "utf8");
     const parsed = JSON.parse(raw) as ProductIssueManifest;
     if (parsed?.version !== 1 || !parsed.slug || !Array.isArray(parsed.pages)) return null;
+    if (!parsed.status) {
+      parsed.status = parsed.pageCount > 0 ? "ready" : "processing";
+    }
     return parsed;
   } catch {
     return null;

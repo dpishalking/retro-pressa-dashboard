@@ -39,6 +39,11 @@ export function ProductsScreen() {
     setListStatus({ state: "loading", message: "Загружаю список…" });
     try {
       const response = await fetch("/api/products");
+      if (!response.ok && response.headers.get("content-type")?.includes("text/html")) {
+        throw new Error(
+          `Сервер вернул HTML (${response.status}). Часто это лимит nginx на размер файла — нужен client_max_body_size 150m.`
+        );
+      }
       const data = await readJsonResponse<{ issues?: ProductIssueSummary[]; error?: string }>(response);
       if (!response.ok) throw new Error(data.error || "Не удалось загрузить список");
       setIssues(data.issues ?? []);
@@ -54,6 +59,15 @@ export function ProductsScreen() {
   useEffect(() => {
     void loadIssues();
   }, [loadIssues]);
+
+  useEffect(() => {
+    const hasProcessing = issues.some((issue) => issue.status === "processing");
+    if (!hasProcessing) return;
+    const id = window.setInterval(() => {
+      void loadIssues();
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [issues, loadIssues]);
 
   useEffect(() => {
     if (!slugTouched) setSlug(slugifyTitle(title));
@@ -88,23 +102,38 @@ export function ProductsScreen() {
       return;
     }
 
-    setUploadStatus({ state: "loading", message: "Конвертирую PDF в страницы…" });
+    setUploadStatus({ state: "loading", message: "Загружаю PDF на сервер…" });
     try {
       const form = new FormData();
       form.set("title", title.trim());
       form.set("slug", slug.trim());
       form.set("file", file);
       const response = await fetch("/api/products", { method: "POST", body: form });
+      if (response.status === 413) {
+        throw new Error(
+          "Файл слишком большой для прокси (413). На сервере нужен client_max_body_size 150m."
+        );
+      }
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          `Сервер вернул не JSON (${response.status}). Обычно это лимит размера/таймаут nginx при загрузке PDF.`
+        );
+      }
       const data = await readJsonResponse<{
         ok?: boolean;
+        processing?: boolean;
         viewPath?: string;
+        message?: string;
         error?: string;
       }>(response);
       if (!response.ok || !data.ok) throw new Error(data.error || "Ошибка загрузки");
 
       setUploadStatus({
         state: "ok",
-        message: `Готово. Ссылка: ${origin}${data.viewPath}`
+        message: data.processing
+          ? `Файл принят, страницы готовятся. Ссылка: ${origin}${data.viewPath}`
+          : `Готово. Ссылка: ${origin}${data.viewPath}`
       });
       setFile(null);
       setTitle("");
@@ -280,7 +309,12 @@ export function ProductsScreen() {
                   <div className="min-w-0">
                     <p className="truncate text-base font-black text-slate-950">{issue.title}</p>
                     <p className="mt-1 truncate text-xs font-medium text-slate-500">
-                      {issue.pageCount} стр. · {issue.slug} · {new Date(issue.updatedAt).toLocaleString("ru-RU")}
+                      {issue.status === "processing"
+                        ? "Готовим страницы…"
+                        : issue.status === "error"
+                          ? `Ошибка: ${issue.errorMessage || "конвертация не удалась"}`
+                          : `${issue.pageCount} стр.`}{" "}
+                      · {issue.slug} · {new Date(issue.updatedAt).toLocaleString("ru-RU")}
                     </p>
                     <p className="mt-1 truncate text-xs text-sky-700">{url}</p>
                   </div>

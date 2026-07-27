@@ -1,13 +1,19 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { canAccessRoute } from "@/lib/auth/access";
 import { readSessionCookie } from "@/lib/auth/session";
-import { convertPdfToIssuePages } from "@/lib/products/convert-pdf";
+import { convertStoredIssuePdf, saveUploadedPdfDraft } from "@/lib/products/convert-pdf";
 import { isValidSlug, slugifyTitle } from "@/lib/products/slug";
-import { deleteProductIssue, issueExists, listProductIssues, publicViewPath, readProductManifest } from "@/lib/products/store";
+import {
+  deleteProductIssue,
+  issueExists,
+  listProductIssues,
+  publicViewPath,
+  readProductManifest
+} from "@/lib/products/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Large PDF + rasterization can take a while. */
+/** Upload is quick; conversion continues in after(). */
 export const maxDuration = 300;
 
 function unauthorized() {
@@ -49,7 +55,13 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
-    return NextResponse.json({ error: "Не удалось прочитать форму загрузки" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "Не удалось принять файл. Часто это лимит размера на прокси (nginx). Нужно client_max_body_size ≥ 150m."
+      },
+      { status: 400 }
+    );
   }
 
   const title = String(form.get("title") ?? "").trim();
@@ -84,14 +96,24 @@ export async function POST(request: Request) {
   const pdfBuffer = Buffer.from(await file.arrayBuffer());
 
   try {
-    const { manifest } = await convertPdfToIssuePages({ slug, title, pdfBuffer });
+    const draft = await saveUploadedPdfDraft({ slug, title, pdfBuffer });
+    after(async () => {
+      try {
+        await convertStoredIssuePdf(slug);
+      } catch (error) {
+        console.error("[products] convert failed", slug, error);
+      }
+    });
+
     return NextResponse.json({
       ok: true,
-      issue: manifest,
-      viewPath: publicViewPath(manifest.slug)
+      processing: true,
+      issue: draft,
+      viewPath: publicViewPath(draft.slug),
+      message: "Файл принят, страницы готовятся в фоне"
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Ошибка конвертации PDF";
+    const message = error instanceof Error ? error.message : "Ошибка сохранения PDF";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,3 +1,5 @@
+export type ProductIssueStatus = "processing" | "ready" | "error";
+
 export type ProductIssuePage = {
   page: number;
   src: string;
@@ -15,6 +17,8 @@ export type ProductIssueManifest = {
   pageHeight: number;
   sourceFile: string;
   pages: ProductIssuePage[];
+  status: ProductIssueStatus;
+  errorMessage?: string;
 };
 
 export type ProductIssueSummary = {
@@ -24,4 +28,6 @@ export type ProductIssueSummary = {
   updatedAt: string;
   pageCount: number;
   viewPath: string;
+  status: ProductIssueStatus;
+  errorMessage?: string;
 };

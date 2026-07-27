@@ -1,10 +1,16 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createCanvas } from "@napi-rs/canvas";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import sharp from "sharp";
 import type { ProductIssueManifest, ProductIssuePage } from "@/types/products";
-import { getPagesDir, getSourcePdfPath, publicPageUrl, writeProductManifest } from "@/lib/products/store";
+import {
+  getPagesDir,
+  getSourcePdfPath,
+  publicPageUrl,
+  readProductManifest,
+  writeProductManifest
+} from "@/lib/products/store";
 
 /** Target long-edge for sharp text (≈3× print-screen quality). */
 const TARGET_LONG_EDGE = 2650;
@@ -43,21 +49,20 @@ async function renderPageToWebp(doc: PDFDocumentProxy, pageNumber: number): Prom
   }).promise;
 
   const png = canvas.toBuffer("image/png");
-  const webp = await sharp(png).webp({ quality: 92, effort: 4 }).toBuffer();
+  const webp = await sharp(png).webp({ quality: 90, effort: 4 }).toBuffer();
   return { buffer: webp, width: canvas.width, height: canvas.height };
 }
 
-export async function convertPdfToIssuePages(opts: {
+async function rasterizePdfBuffer(opts: {
   slug: string;
   title: string;
   pdfBuffer: Buffer;
-  createdAt?: string;
-}): Promise<ConvertResult> {
+  createdAt: string;
+}): Promise<ProductIssueManifest> {
   assertPdfMagic(opts.pdfBuffer);
 
   const pagesDir = getPagesDir(opts.slug);
   await mkdir(pagesDir, { recursive: true });
-  await writeFile(getSourcePdfPath(opts.slug), opts.pdfBuffer);
 
   const loadingTask = getDocument({
     data: new Uint8Array(opts.pdfBuffer),
@@ -92,19 +97,86 @@ export async function convertPdfToIssuePages(opts: {
   }
 
   const now = new Date().toISOString();
-  const manifest: ProductIssueManifest = {
+  return {
     version: 1,
     slug: opts.slug,
     title: opts.title,
-    createdAt: opts.createdAt ?? now,
+    createdAt: opts.createdAt,
     updatedAt: now,
     pageCount: pages.length,
     pageWidth,
     pageHeight,
     sourceFile: "source.pdf",
-    pages
+    pages,
+    status: "ready"
   };
+}
 
-  await writeProductManifest(manifest);
-  return { manifest };
+/** Save PDF and write a processing placeholder (fast path for upload response). */
+export async function saveUploadedPdfDraft(opts: {
+  slug: string;
+  title: string;
+  pdfBuffer: Buffer;
+}): Promise<ProductIssueManifest> {
+  assertPdfMagic(opts.pdfBuffer);
+  await mkdir(getPagesDir(opts.slug), { recursive: true });
+  await writeFile(getSourcePdfPath(opts.slug), opts.pdfBuffer);
+
+  const now = new Date().toISOString();
+  const draft: ProductIssueManifest = {
+    version: 1,
+    slug: opts.slug,
+    title: opts.title,
+    createdAt: now,
+    updatedAt: now,
+    pageCount: 0,
+    pageWidth: 0,
+    pageHeight: 0,
+    sourceFile: "source.pdf",
+    pages: [],
+    status: "processing"
+  };
+  await writeProductManifest(draft);
+  return draft;
+}
+
+/** Convert a previously saved source.pdf into page images. */
+export async function convertStoredIssuePdf(slug: string): Promise<ConvertResult> {
+  const existing = await readProductManifest(slug);
+  if (!existing) {
+    throw new Error("Выпуск не найден");
+  }
+
+  const pdfBuffer = await readFile(getSourcePdfPath(slug));
+  try {
+    const manifest = await rasterizePdfBuffer({
+      slug,
+      title: existing.title,
+      pdfBuffer,
+      createdAt: existing.createdAt
+    });
+    await writeProductManifest(manifest);
+    return { manifest };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ошибка конвертации PDF";
+    await writeProductManifest({
+      ...existing,
+      updatedAt: new Date().toISOString(),
+      status: "error",
+      errorMessage: message,
+      pages: [],
+      pageCount: 0
+    });
+    throw error;
+  }
+}
+
+export async function convertPdfToIssuePages(opts: {
+  slug: string;
+  title: string;
+  pdfBuffer: Buffer;
+  createdAt?: string;
+}): Promise<ConvertResult> {
+  await saveUploadedPdfDraft(opts);
+  return convertStoredIssuePdf(opts.slug);
 }

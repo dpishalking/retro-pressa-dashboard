@@ -26,7 +26,9 @@ export async function GET(_request: Request, context: RouteContext) {
       pageCount: manifest.pageCount,
       pageWidth: manifest.pageWidth,
       pageHeight: manifest.pageHeight,
-      pages: manifest.pages.map((page) => ({ page: page.page, src: page.src }))
+      pages: manifest.pages.map((page) => ({ page: page.page, src: page.src })),
+      status: manifest.status ?? (manifest.pageCount > 0 ? "ready" : "processing"),
+      errorMessage: manifest.errorMessage
     },
     viewPath: publicViewPath(manifest.slug)
   });

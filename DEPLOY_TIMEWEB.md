@@ -96,4 +96,6 @@ https://rp-bi.site/view/<slug>
 - На VPS/PM2 убедитесь, что каталог `data/products` сохраняется между деплоями (не внутри `.next`).
 - В Docker смонтируйте volume на `/app/data/products` (или задайте `PRODUCTS_DATA_DIR`).
 - Публичные маршруты без логина: `/view/*`, `/api/products/public/*`.
-- Конвертация PDF → WebP идёт через `pdfjs-dist` + `@napi-rs/canvas` + `sharp` (Poppler не обязателен).
+- Конвертация PDF → WebP идёт в фоне после загрузки (`after()`), через `pdfjs-dist` + `@napi-rs/canvas` + `sharp`.
+- Nginx: `client_max_body_size 150m` (иначе загрузка ~50 МБ вернёт HTML 413). Деплой пишет `/etc/nginx/conf.d/00-retro-pressa-uploads.conf`.
+- Env: `PRODUCTS_DATA_DIR=/opt/retro-pressa-shared/data/products`.

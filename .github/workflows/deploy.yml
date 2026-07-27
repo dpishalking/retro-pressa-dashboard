@@ -175,8 +175,10 @@ jobs:
           env.TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG || "retro-pressa";
           env.TRAINER_BOT_USERNAME = trainerBotUsername;
           env.TRAINING_DATA_DIR = "/opt/retro-pressa-shared/data/training";
+          env.PRODUCTS_DATA_DIR = "/opt/retro-pressa-shared/data/products";
           env.AUTH_USERS_FILE = "/opt/retro-pressa-shared/data/auth/users.json";
           env.AUTH_CATALOG_DIR = "/opt/retro-pressa-shared/auth-catalog";
+          env.NEXT_PUBLIC_APP_URL = "https://rp-bi.site";
           fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
 
           const backendEnv = {
@@ -329,7 +331,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/products" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
@@ -473,4 +475,33 @@ jobs:
           pm2 save
           sleep 3
           curl -f -sS -X POST http://127.0.0.1:4174/api/conversations/seed-archives || true
+
+          # Allow large PDF uploads for /products (default nginx limit is often 1m).
+          if command -v nginx > /dev/null; then
+            mkdir -p /etc/nginx/conf.d
+            cat > /etc/nginx/conf.d/00-retro-pressa-uploads.conf <<'NGINX'
+# Retro Pressa: PDF product uploads (up to ~120MB) + long conversions
+client_max_body_size 150m;
+NGINX
+            # Prefer site-level proxy timeouts if the vhost exists.
+            for conf in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
+              [ -f "$conf" ] || continue
+              case "$conf" in
+                *00-retro-pressa-uploads.conf) continue ;;
+              esac
+              if grep -qE 'rp-bi\.site|proxy_pass.*4174' "$conf" 2>/dev/null; then
+                if ! grep -q 'retro-pressa-proxy-timeouts' "$conf"; then
+                  printf '\n# retro-pressa-proxy-timeouts\nproxy_connect_timeout 600s;\nproxy_send_timeout 600s;\nproxy_read_timeout 600s;\nsend_timeout 600s;\n' >> "$conf"
+                fi
+              fi
+            done
+            if nginx -t; then
+              systemctl reload nginx || service nginx reload || true
+              echo "nginx upload limits reloaded"
+            else
+              echo "WARNING: nginx -t failed; upload limits may still be low" >&2
+            fi
+          else
+            echo "nginx not found; ensure reverse proxy allows >=150m body size"
+          fi
           EOF
