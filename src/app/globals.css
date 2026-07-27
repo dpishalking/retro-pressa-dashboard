@@ -251,7 +251,7 @@ td {
 
 .magazine-flipbook-host.is-solo {
   /* Narrow host so page-flip stays in single-page portrait for the cover */
-  max-width: min(420px, 72vw);
+  max-width: min(480px, 78vw);
   margin-inline: auto;
   perspective: 1400px;
 }

@@ -51,7 +51,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   const [pageLabel, setPageLabel] = useState("Обложка");
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(1);
   const [ready, setReady] = useState(false);
   const [soloCover, setSoloCover] = useState(true);
   const [soundMuted, setSoundMuted] = useState(false);
@@ -115,17 +115,17 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         const reduced = prefersReducedMotion();
         const ratio = pageHeight / Math.max(1, pageWidth);
         const isPortraitPage = ratio >= 1;
-        const baseWidth = isPortraitPage ? 420 : 640;
+        const baseWidth = isPortraitPage ? 460 : 640;
         const baseHeight = Math.round(baseWidth * ratio);
         flip = new PageFlip(book, {
           width: baseWidth,
           height: baseHeight,
           size: "stretch",
-          minWidth: isPortraitPage ? 240 : 320,
+          minWidth: isPortraitPage ? 260 : 320,
           // Keep single-page (cover) mode from flipping into a wide empty+cover landscape frame.
-          maxWidth: isPortraitPage ? 520 : 980,
-          minHeight: Math.max(220, Math.round((isPortraitPage ? 240 : 320) * ratio)),
-          maxHeight: isPortraitPage ? 820 : 720,
+          maxWidth: isPortraitPage ? 560 : 980,
+          minHeight: Math.max(220, Math.round((isPortraitPage ? 260 : 320) * ratio)),
+          maxHeight: isPortraitPage ? 900 : 720,
           drawShadow: !reduced,
           flippingTime: reduced ? 1 : 900,
           usePortrait: true,
@@ -234,8 +234,8 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             <button
               type="button"
               className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-              onClick={() => setZoom((z) => Math.max(0.85, Number((z - 0.1).toFixed(2))))}
-              disabled={zoom <= 0.85}
+              onClick={() => setZoom((z) => Math.max(0.9, Number((z - 0.1).toFixed(2))))}
+              disabled={zoom <= 0.9}
               aria-label="Уменьшить"
             >
               <Minus className="h-4 w-4" />
