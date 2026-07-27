@@ -114,14 +114,16 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         const reduced = prefersReducedMotion();
         const ratio = pageHeight / Math.max(1, pageWidth);
+        const baseWidth = ratio >= 1 ? 480 : 640;
+        const baseHeight = Math.round(baseWidth * ratio);
         flip = new PageFlip(book, {
-          width: 550,
-          height: Math.round(550 * ratio),
+          width: baseWidth,
+          height: baseHeight,
           size: "stretch",
-          minWidth: 280,
-          maxWidth: 920,
-          minHeight: 400,
-          maxHeight: 1280,
+          minWidth: ratio >= 1 ? 260 : 320,
+          maxWidth: ratio >= 1 ? 560 : 980,
+          minHeight: Math.max(220, Math.round((ratio >= 1 ? 260 : 320) * ratio)),
+          maxHeight: ratio >= 1 ? 860 : 720,
           drawShadow: !reduced,
           flippingTime: reduced ? 1 : 900,
           usePortrait: true,

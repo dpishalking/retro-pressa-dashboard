@@ -4,6 +4,7 @@ import { createCanvas } from "@napi-rs/canvas";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import sharp from "sharp";
 import type { ProductIssueManifest, ProductIssuePage } from "@/types/products";
+import { deimposeSaddleStitchSpreads, type RasterPage } from "@/lib/products/deimpose-booklet";
 import {
   getPagesDir,
   getSourcePdfPath,
@@ -14,6 +15,7 @@ import {
 
 /** Target long-edge for sharp text (≈3× print-screen quality). */
 const TARGET_LONG_EDGE = 2650;
+const MAX_OUTPUT_PAGES = 80;
 
 type ConvertResult = {
   manifest: ProductIssueManifest;
@@ -26,11 +28,7 @@ function assertPdfMagic(buffer: Buffer) {
   }
 }
 
-async function renderPageToWebp(doc: PDFDocumentProxy, pageNumber: number): Promise<{
-  buffer: Buffer;
-  width: number;
-  height: number;
-}> {
+async function renderPageToRaster(doc: PDFDocumentProxy, pageNumber: number): Promise<RasterPage> {
   const page = await doc.getPage(pageNumber);
   const base = page.getViewport({ scale: 1 });
   const longEdge = Math.max(base.width, base.height);
@@ -63,6 +61,11 @@ async function rasterizePdfBuffer(opts: {
 
   const pagesDir = getPagesDir(opts.slug);
   await mkdir(pagesDir, { recursive: true });
+  // Drop previous rasterization so page count changes don't leave stale files.
+  const { readdir, unlink } = await import("node:fs/promises");
+  for (const name of await readdir(pagesDir).catch(() => [])) {
+    if (name.endsWith(".webp")) await unlink(path.join(pagesDir, name));
+  }
 
   const loadingTask = getDocument({
     data: new Uint8Array(opts.pdfBuffer),
@@ -73,26 +76,37 @@ async function rasterizePdfBuffer(opts: {
   if (doc.numPages < 1) {
     throw new Error("В PDF нет страниц");
   }
-  if (doc.numPages > 80) {
-    throw new Error("Слишком много страниц (максимум 80)");
+  if (doc.numPages > MAX_OUTPUT_PAGES) {
+    throw new Error(`Слишком много страниц PDF (максимум ${MAX_OUTPUT_PAGES})`);
+  }
+
+  const spreads: RasterPage[] = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    spreads.push(await renderPageToRaster(doc, i));
+  }
+
+  const rasters = await deimposeSaddleStitchSpreads(spreads);
+  if (rasters.length > MAX_OUTPUT_PAGES) {
+    throw new Error(`Слишком много страниц после разбора спуска (максимум ${MAX_OUTPUT_PAGES})`);
   }
 
   const pages: ProductIssuePage[] = [];
   let pageWidth = 0;
   let pageHeight = 0;
 
-  for (let i = 1; i <= doc.numPages; i++) {
-    const rendered = await renderPageToWebp(doc, i);
+  for (let i = 0; i < rasters.length; i++) {
+    const rendered = rasters[i];
     if (!pageWidth) {
       pageWidth = rendered.width;
       pageHeight = rendered.height;
     }
-    const file = `page-${String(i).padStart(2, "0")}.webp`;
+    const pageNumber = i + 1;
+    const file = `page-${String(pageNumber).padStart(2, "0")}.webp`;
     await writeFile(path.join(pagesDir, file), rendered.buffer);
     pages.push({
-      page: i,
+      page: pageNumber,
       file,
-      src: publicPageUrl(opts.slug, i)
+      src: publicPageUrl(opts.slug, pageNumber)
     });
   }
 
