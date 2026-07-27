@@ -13,9 +13,12 @@ import {
   writeProductManifest
 } from "@/lib/products/store";
 
-/** Target long-edge for sharp text (≈3× print-screen quality). */
-const TARGET_LONG_EDGE = 2650;
+/** Target long-edge of each final reader page (after spread split). */
+const TARGET_PAGE_LONG_EDGE = 3200;
+/** Hard cap so a landscape print sheet does not explode memory. */
+const MAX_SPREAD_LONG_EDGE = 6400;
 const MAX_OUTPUT_PAGES = 80;
+const WEBP_QUALITY = 95;
 
 type ConvertResult = {
   manifest: ProductIssueManifest;
@@ -31,8 +34,13 @@ function assertPdfMagic(buffer: Buffer) {
 async function renderPageToRaster(doc: PDFDocumentProxy, pageNumber: number): Promise<RasterPage> {
   const page = await doc.getPage(pageNumber);
   const base = page.getViewport({ scale: 1 });
+  const isLandscape = base.width > base.height * 1.15;
+  // Landscape print sheets are later split in half — render ~2× the final page budget.
+  const targetLongEdge = isLandscape
+    ? Math.min(MAX_SPREAD_LONG_EDGE, TARGET_PAGE_LONG_EDGE * 2)
+    : TARGET_PAGE_LONG_EDGE;
   const longEdge = Math.max(base.width, base.height);
-  const scale = Math.min(3.2, Math.max(2, TARGET_LONG_EDGE / longEdge));
+  const scale = Math.min(5.5, Math.max(2.5, targetLongEdge / longEdge));
   const viewport = page.getViewport({ scale });
 
   const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
@@ -46,9 +54,9 @@ async function renderPageToRaster(doc: PDFDocumentProxy, pageNumber: number): Pr
     viewport
   }).promise;
 
+  // Keep PNG until after deimpose so we don't double-compress text.
   const png = canvas.toBuffer("image/png");
-  const webp = await sharp(png).webp({ quality: 90, effort: 4 }).toBuffer();
-  return { buffer: webp, width: canvas.width, height: canvas.height };
+  return { buffer: png, width: canvas.width, height: canvas.height };
 }
 
 async function rasterizePdfBuffer(opts: {
@@ -103,7 +111,10 @@ async function rasterizePdfBuffer(opts: {
     }
     const pageNumber = i + 1;
     const file = `page-${String(pageNumber).padStart(2, "0")}.webp`;
-    await writeFile(path.join(pagesDir, file), rendered.buffer);
+    const webp = await sharp(rendered.buffer)
+      .webp({ quality: WEBP_QUALITY, effort: 5, smartSubsample: false })
+      .toBuffer();
+    await writeFile(path.join(pagesDir, file), webp);
     pages.push({
       page: pageNumber,
       file,

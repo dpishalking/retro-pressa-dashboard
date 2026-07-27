@@ -11,6 +11,9 @@ export type RasterPage = {
  *   even PDF pages:  (N-i) | (i+1)     e.g. 28|1, 26|3, …
  *   odd  PDF pages:  (i+1) | (N-i)     e.g.  2|27, 4|25, …
  * Rebuild single pages in reader order (1…N).
+ *
+ * Expects lossless (or near-lossless) buffers — typically PNG from pdf render.
+ * Outputs PNG halves; caller encodes the final delivery format once.
  */
 export async function deimposeSaddleStitchSpreads(spreads: RasterPage[]): Promise<RasterPage[]> {
   if (spreads.length === 0) return [];
@@ -32,11 +35,11 @@ export async function deimposeSaddleStitchSpreads(spreads: RasterPage[]): Promis
 
     const leftBuf = await sharp(spread.buffer)
       .extract({ left: 0, top: 0, width: leftWidth, height: spread.height })
-      .webp({ quality: 90, effort: 4 })
+      .png()
       .toBuffer();
     const rightBuf = await sharp(spread.buffer)
       .extract({ left: mid, top: 0, width: rightWidth, height: spread.height })
-      .webp({ quality: 90, effort: 4 })
+      .png()
       .toBuffer();
 
     const left: RasterPage = { buffer: leftBuf, width: leftWidth, height: spread.height };

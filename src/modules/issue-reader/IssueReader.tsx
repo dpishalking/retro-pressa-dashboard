@@ -27,6 +27,7 @@ type PageFlipInstance = {
   destroy: () => void;
   update: () => void;
   loadFromImages: (images: string[]) => void;
+  loadFromHTML: (items: HTMLElement[]) => void;
   flipNext: () => void;
   flipPrev: () => void;
   getPageCount: () => number;
@@ -138,7 +139,18 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           startZIndex: 10
         });
 
-        flip.loadFromImages(pages.map((p) => p.src));
+        const pageNodes = pages.map((page) => {
+          const el = document.createElement("div");
+          el.className = "magazine-flip-page";
+          const img = document.createElement("img");
+          img.src = page.src;
+          img.alt = "";
+          img.decoding = "async";
+          img.draggable = false;
+          el.appendChild(img);
+          return el;
+        });
+        flip.loadFromHTML(pageNodes);
 
         flip.on("init", (e) => {
           if (cancelled || !flip) return;
