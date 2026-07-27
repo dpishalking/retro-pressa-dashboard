@@ -114,16 +114,18 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         const reduced = prefersReducedMotion();
         const ratio = pageHeight / Math.max(1, pageWidth);
-        const baseWidth = ratio >= 1 ? 480 : 640;
+        const isPortraitPage = ratio >= 1;
+        const baseWidth = isPortraitPage ? 420 : 640;
         const baseHeight = Math.round(baseWidth * ratio);
         flip = new PageFlip(book, {
           width: baseWidth,
           height: baseHeight,
           size: "stretch",
-          minWidth: ratio >= 1 ? 260 : 320,
-          maxWidth: ratio >= 1 ? 560 : 980,
-          minHeight: Math.max(220, Math.round((ratio >= 1 ? 260 : 320) * ratio)),
-          maxHeight: ratio >= 1 ? 860 : 720,
+          minWidth: isPortraitPage ? 240 : 320,
+          // Keep single-page (cover) mode from flipping into a wide empty+cover landscape frame.
+          maxWidth: isPortraitPage ? 520 : 980,
+          minHeight: Math.max(220, Math.round((isPortraitPage ? 240 : 320) * ratio)),
+          maxHeight: isPortraitPage ? 820 : 720,
           drawShadow: !reduced,
           flippingTime: reduced ? 1 : 900,
           usePortrait: true,
@@ -288,7 +290,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         >
           <div className="magazine-flipbook-glow" aria-hidden />
           <div className="magazine-flipbook-floor" aria-hidden />
-          <div className="magazine-flipbook-shell relative mx-auto h-[min(62svh,720px)] w-full sm:h-[min(64svh,760px)]">
+          <div className="magazine-flipbook-shell relative mx-auto h-[min(68svh,780px)] w-full sm:h-[min(72svh,820px)]">
             <div
               ref={hostRef}
               className={cx("magazine-flipbook-host relative h-full w-full", soloCover && "is-solo")}
