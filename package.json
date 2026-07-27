@@ -52,7 +52,8 @@
     "sync:manager-dialogs": "tsx src/scripts/export-manager-dialogs-to-sheet.ts",
     "backfill:manager-dialogs": "tsx src/scripts/backfill-manager-dialogs-to-sheet.ts",
     "seed:training": "tsx src/scripts/seed-training-catalog.ts",
-    "publish:product": "tsx src/scripts/publish-product-issue.ts"
+    "publish:product": "tsx src/scripts/publish-product-issue.ts",
+    "product-hub:push-to-sheets": "tsx --env-file=.env.local scripts/product-hub/push-bootstrap-to-google-sheets.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",

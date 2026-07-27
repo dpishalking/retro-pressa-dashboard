@@ -90,6 +90,7 @@ async function rasterizePdfBuffer(opts: {
     throw new Error(`Слишком много страниц после разбора спуска (максимум ${MAX_OUTPUT_PAGES})`);
   }
 
+  const now = new Date().toISOString();
   const pages: ProductIssuePage[] = [];
   let pageWidth = 0;
   let pageHeight = 0;
@@ -106,11 +107,9 @@ async function rasterizePdfBuffer(opts: {
     pages.push({
       page: pageNumber,
       file,
-      src: publicPageUrl(opts.slug, pageNumber)
+      src: publicPageUrl(opts.slug, pageNumber, now)
     });
   }
-
-  const now = new Date().toISOString();
   return {
     version: 1,
     slug: opts.slug,

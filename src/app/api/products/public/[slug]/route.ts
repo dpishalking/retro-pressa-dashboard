@@ -26,7 +26,13 @@ export async function GET(_request: Request, context: RouteContext) {
       pageCount: manifest.pageCount,
       pageWidth: manifest.pageWidth,
       pageHeight: manifest.pageHeight,
-      pages: manifest.pages.map((page) => ({ page: page.page, src: page.src })),
+      pages: manifest.pages.map((page) => {
+        const base = page.src.split("?")[0];
+        return {
+          page: page.page,
+          src: `${base}?v=${encodeURIComponent(manifest.updatedAt)}`
+        };
+      }),
       status: manifest.status ?? (manifest.pageCount > 0 ? "ready" : "processing"),
       errorMessage: manifest.errorMessage
     },

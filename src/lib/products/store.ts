@@ -29,8 +29,10 @@ export function getSourcePdfPath(slug: string) {
   return path.join(getIssueDir(slug), "source.pdf");
 }
 
-export function publicPageUrl(slug: string, page: number) {
-  return `/api/products/public/${encodeURIComponent(slug)}/pages/${String(page).padStart(2, "0")}`;
+export function publicPageUrl(slug: string, page: number, version?: string) {
+  const base = `/api/products/public/${encodeURIComponent(slug)}/pages/${String(page).padStart(2, "0")}`;
+  if (!version) return base;
+  return `${base}?v=${encodeURIComponent(version)}`;
 }
 
 export function publicViewPath(slug: string) {
