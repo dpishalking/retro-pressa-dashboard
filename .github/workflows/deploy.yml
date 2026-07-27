@@ -479,11 +479,10 @@ jobs:
           # Allow large PDF uploads for /products (default nginx limit is often 1m).
           if command -v nginx > /dev/null; then
             mkdir -p /etc/nginx/conf.d
-            cat > /etc/nginx/conf.d/00-retro-pressa-uploads.conf <<'NGINX'
-# Retro Pressa: PDF product uploads (up to ~120MB) + long conversions
-client_max_body_size 150m;
-NGINX
-            # Prefer site-level proxy timeouts if the vhost exists.
+            printf '%s\n' \
+              '# Retro Pressa: PDF product uploads (up to ~120MB)' \
+              'client_max_body_size 150m;' \
+              > /etc/nginx/conf.d/00-retro-pressa-uploads.conf
             for conf in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
               [ -f "$conf" ] || continue
               case "$conf" in
