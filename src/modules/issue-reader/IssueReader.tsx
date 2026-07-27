@@ -101,7 +101,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         if (!host || cancelled || pages.length === 0) return;
 
         const mod = await import("page-flip/dist/js/page-flip.module.js");
-        const PageFlip = mod.PageFlip as new (
+        const PageFlip = mod.PageFlip as unknown as new (
           element: HTMLElement,
           settings: Record<string, unknown>
         ) => PageFlipInstance;
