@@ -25,6 +25,7 @@ type PageFlipInstance = {
   flipPrev: () => void;
   getPageCount: () => number;
   getCurrentPageIndex: () => number;
+  getSettings: () => { minWidth: number; maxWidth: number };
   on: (event: string, callback: (event: { data: number | { page: number } }) => void) => void;
   __dprUpdate?: () => void;
 };
@@ -228,15 +229,22 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         const syncHostForMode = (solo: boolean) => {
           const m = measure();
+          const settings = flip?.getSettings();
           if (solo || narrow) {
-            host.style.width = `${m.cover.pageW}px`;
-            host.style.maxWidth = `${m.cover.pageW}px`;
-            host.style.height = `${m.cover.pageH}px`;
+            const w = m.cover.pageW;
+            const h = m.cover.pageH;
+            host.style.width = `${w}px`;
+            host.style.maxWidth = `${w}px`;
+            host.style.height = `${h}px`;
+            // page-flip picks portrait only when blockWidth < minWidth * 2.
+            // Without this, a large cover host opens as a landscape spread with an empty left half.
+            if (settings) settings.minWidth = Math.floor(w / 2) + 1;
           } else {
             const spreadW = Math.min(m.availW, m.spread.pageW * 2);
             host.style.width = `${spreadW}px`;
             host.style.maxWidth = `${spreadW}px`;
             host.style.height = `${m.spread.pageH}px`;
+            if (settings) settings.minWidth = Math.max(100, Math.floor(spreadW / 2) - 1);
           }
         };
 
