@@ -65,26 +65,20 @@ function preloadImage(src: string) {
   });
 }
 
-async function preloadAll(urls: string[], onProgress: (done: number, total: number) => void) {
-  const total = urls.length;
-  let done = 0;
-  const concurrency = Math.min(4, total);
+/** Warm the browser cache without blocking the reader. */
+function preloadInBackground(urls: string[], concurrency = 3) {
   let index = 0;
-
   async function worker() {
-    while (index < total) {
+    while (index < urls.length) {
       const current = index++;
       try {
         await preloadImage(urls[current]);
       } catch {
-        // keep going
+        // ignore — page-flip will retry when the page is shown
       }
-      done += 1;
-      onProgress(done, total);
     }
   }
-
-  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  void Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, () => worker()));
 }
 
 /** Fit a single page (or half-spread page) into the available box. */
@@ -106,7 +100,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   const [canNext, setCanNext] = useState(true);
   const [ready, setReady] = useState(false);
   const [soloCover, setSoloCover] = useState(true);
-  const [loadHint, setLoadHint] = useState("Готовим страницы…");
+  const [loadHint, setLoadHint] = useState("Открываем…");
   const [mobile, setMobile] = useState(false);
 
   const updateChrome = useCallback((index: number, count: number) => {
@@ -158,20 +152,21 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         if (!host || !shell || cancelled || pages.length === 0) return;
 
         const narrow = isMobileViewport();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const displayWidth = narrow
-          ? Math.min(1200, Math.max(800, Math.round(window.innerWidth * dpr * 1.25)))
-          : Math.min(1800, Math.max(1200, Math.round(700 * dpr)));
-
+        // Stick to prebuilt cache widths (w1000 / w1400) for fast first paint.
+        const displayWidth = narrow ? 1000 : 1400;
         const displayUrls = pages.map((page) => withDisplayWidth(page.src, displayWidth));
 
-        setLoadHint(`Загрузка 0/${displayUrls.length}`);
-        await preloadAll(displayUrls, (done, total) => {
-          if (!cancelled) setLoadHint(`Загрузка ${done}/${total}`);
-        });
+        // Open as soon as the cover is ready; warm the rest in the background.
+        const eagerCount = Math.min(3, displayUrls.length);
+        setLoadHint("Открываем обложку…");
+        await Promise.all(
+          displayUrls.slice(0, eagerCount).map((url) => preloadImage(url).catch(() => undefined))
+        );
         if (cancelled || !hostRef.current || !shellRef.current) return;
 
-        setLoadHint("Собираем выпуск…");
+        if (displayUrls.length > eagerCount) {
+          preloadInBackground(displayUrls.slice(eagerCount));
+        }
 
         const mod = await import("page-flip/dist/js/page-flip.module.js");
         const PageFlip = mod.PageFlip as unknown as new (
@@ -351,7 +346,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a1714]/92 px-6 text-center">
             <div>
               <p className="text-[12px] tracking-[0.16em] uppercase text-white/60 md:text-[13px]">{loadHint}</p>
-              <p className="mt-2 text-[12px] text-white/35">Сначала подгружаем страницы, потом открываем</p>
             </div>
           </div>
         )}
