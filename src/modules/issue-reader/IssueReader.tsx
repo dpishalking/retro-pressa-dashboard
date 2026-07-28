@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import "page-flip/src/Style/stPageFlip.css";
 
 export type IssueReaderPage = {
@@ -76,7 +76,7 @@ async function preloadAll(urls: string[], onProgress: (done: number, total: numb
       try {
         await preloadImage(urls[current]);
       } catch {
-        // Keep going; missing page will still be attempted by page-flip.
+        // keep going
       }
       done += 1;
       onProgress(done, total);
@@ -86,19 +86,28 @@ async function preloadAll(urls: string[], onProgress: (done: number, total: numb
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
 }
 
+/** Fit a single page (or half-spread page) into the available box. */
+function fitSinglePage(availW: number, availH: number, ratio: number) {
+  const widthByBox = availW;
+  const widthByHeight = availH / Math.max(0.01, ratio);
+  const pageW = Math.floor(Math.max(200, Math.min(widthByBox, widthByHeight)));
+  return { pageW, pageH: Math.round(pageW * ratio) };
+}
+
 export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: IssueReaderProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<PageFlipInstance | null>(null);
   const pageIndexRef = useRef(0);
   const soloTimerRef = useRef<number | null>(null);
   const [pageLabel, setPageLabel] = useState("Обложка");
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
-  const [zoom, setZoom] = useState(1);
   const [ready, setReady] = useState(false);
   const [soloCover, setSoloCover] = useState(true);
   const [loadHint, setLoadHint] = useState("Готовим страницы…");
   const [mobile, setMobile] = useState(false);
+  const [soloPageWidth, setSoloPageWidth] = useState<number | null>(null);
 
   const updateChrome = useCallback((index: number, count: number) => {
     const isSolo = index <= 0 || index >= count - 1;
@@ -113,7 +122,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
       soloTimerRef.current = window.setTimeout(() => {
         setSoloCover(false);
         soloTimerRef.current = null;
-      }, 560);
+      }, 420);
     }
 
     if (index <= 0) {
@@ -130,11 +139,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   }, []);
 
   useEffect(() => {
-    const syncMobile = () => {
-      const next = isMobileViewport();
-      setMobile(next);
-      if (next) setZoom(1);
-    };
+    const syncMobile = () => setMobile(isMobileViewport());
     syncMobile();
     const mq = window.matchMedia("(max-width: 720px)");
     mq.addEventListener("change", syncMobile);
@@ -149,13 +154,14 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
     const timer = window.setTimeout(() => {
       void (async () => {
         const host = hostRef.current;
-        if (!host || cancelled || pages.length === 0) return;
+        const shell = shellRef.current;
+        if (!host || !shell || cancelled || pages.length === 0) return;
 
         const narrow = isMobileViewport();
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const displayWidth = narrow
-          ? Math.min(1100, Math.max(720, Math.round(window.innerWidth * dpr * 1.15)))
-          : Math.min(1600, Math.max(1000, Math.round(520 * dpr * 1.35)));
+          ? Math.min(1200, Math.max(800, Math.round(window.innerWidth * dpr * 1.25)))
+          : Math.min(1800, Math.max(1200, Math.round(700 * dpr)));
 
         const displayUrls = pages.map((page) => withDisplayWidth(page.src, displayWidth));
 
@@ -163,7 +169,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         await preloadAll(displayUrls, (done, total) => {
           if (!cancelled) setLoadHint(`Загрузка ${done}/${total}`);
         });
-        if (cancelled || !hostRef.current) return;
+        if (cancelled || !hostRef.current || !shellRef.current) return;
 
         setLoadHint("Собираем выпуск…");
 
@@ -173,7 +179,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           settings: Record<string, unknown>
         ) => PageFlipInstance;
 
-        if (cancelled || !hostRef.current) return;
+        if (cancelled || !hostRef.current || !shellRef.current) return;
 
         host.innerHTML = "";
         const book = document.createElement("div");
@@ -182,28 +188,37 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         const reduced = prefersReducedMotion();
         const ratio = pageHeight / Math.max(1, pageWidth);
-        const isPortraitPage = ratio >= 1;
-        const viewportW = Math.max(280, host.clientWidth || window.innerWidth);
-        const baseWidth = narrow
-          ? Math.min(isPortraitPage ? 360 : 420, Math.floor(viewportW - 24))
-          : isPortraitPage
-            ? 420
-            : 640;
-        const baseHeight = Math.round(baseWidth * ratio);
+
+        const measure = () => {
+          const shellBox = shellRef.current?.getBoundingClientRect();
+          const availW = Math.max(240, shellBox?.width || host.clientWidth || window.innerWidth);
+          const availH = Math.max(280, shellBox?.height || host.clientHeight || window.innerHeight * 0.75);
+          // Cover / mobile: one page fills the box.
+          const cover = fitSinglePage(availW * 0.98, availH * 0.98, ratio);
+          // Open book: two pages side by side.
+          const spread = fitSinglePage(availW * 0.98 * 0.5, availH * 0.98, ratio);
+          return { availW, availH, cover, spread };
+        };
+
+        const initial = measure();
+        setSoloPageWidth(initial.cover.pageW);
+
+        // Keep host narrow on cover so page-flip stays in portrait (no empty left half).
+        host.style.maxWidth = `${initial.cover.pageW}px`;
 
         flip = new PageFlip(book, {
-          width: baseWidth,
-          height: baseHeight,
+          width: initial.cover.pageW,
+          height: initial.cover.pageH,
           size: "stretch",
-          minWidth: narrow ? 240 : isPortraitPage ? 260 : 320,
-          maxWidth: narrow ? Math.min(400, viewportW - 16) : isPortraitPage ? 520 : 980,
-          minHeight: Math.max(200, Math.round((narrow ? 240 : 260) * ratio)),
-          maxHeight: narrow ? Math.floor(window.innerHeight * 0.72) : isPortraitPage ? 900 : 720,
-          drawShadow: !reduced && !narrow,
-          flippingTime: reduced ? 1 : narrow ? 650 : 900,
+          minWidth: Math.min(220, initial.cover.pageW),
+          maxWidth: Math.max(initial.cover.pageW, initial.spread.pageW),
+          minHeight: Math.min(300, initial.cover.pageH),
+          maxHeight: Math.max(initial.cover.pageH, initial.spread.pageH),
+          drawShadow: !reduced,
+          flippingTime: reduced ? 1 : narrow ? 600 : 820,
           usePortrait: true,
           autoSize: true,
-          maxShadowOpacity: narrow ? 0.25 : 0.45,
+          maxShadowOpacity: 0.35,
           showCover: true,
           mobileScrollSupport: true,
           showPageCorners: !reduced && !narrow,
@@ -211,14 +226,30 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           startZIndex: 10
         });
 
+        const syncHostForMode = (solo: boolean) => {
+          const m = measure();
+          if (solo || narrow) {
+            host.style.maxWidth = `${m.cover.pageW}px`;
+            setSoloPageWidth(m.cover.pageW);
+          } else {
+            host.style.maxWidth = `${Math.min(m.availW, m.spread.pageW * 2)}px`;
+            setSoloPageWidth(null);
+          }
+        };
+
         const dprAwareUpdate = () => {
           const canvas = book.querySelector("canvas.stf__canvas") as HTMLCanvasElement | null;
+          const solo =
+            pageIndexRef.current <= 0 ||
+            (flip ? pageIndexRef.current >= flip.getPageCount() - 1 : true);
+          syncHostForMode(solo);
+
           if (!canvas) {
             flip?.update();
             return;
           }
           flip?.update();
-          const pixelRatio = Math.min(window.devicePixelRatio || 1, narrow ? 2 : 2.5);
+          const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.25);
           if (pixelRatio <= 1) return;
           const cssW = canvas.clientWidth;
           const cssH = canvas.clientHeight;
@@ -247,7 +278,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           pageIndexRef.current = data.page;
           updateChrome(data.page, flip.getPageCount());
           setReady(true);
-          dprAwareUpdate();
+          requestAnimationFrame(dprAwareUpdate);
         });
 
         flip.on("flip", (e) => {
@@ -268,7 +299,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         resizeObserver = new ResizeObserver(() => {
           dprAwareUpdate();
         });
-        resizeObserver.observe(host);
+        resizeObserver.observe(shell);
       })();
     }, 20);
 
@@ -283,7 +314,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
       try {
         flip?.destroy();
       } catch {
-        // page-flip may already have detached the node
+        // ignore
       }
       flipRef.current = null;
       if (hostRef.current) hostRef.current.innerHTML = "";
@@ -296,7 +327,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
       flipRef.current?.__dprUpdate?.() ?? flipRef.current?.update();
     });
     return () => window.cancelAnimationFrame(id);
-  }, [ready, soloCover, zoom]);
+  }, [ready, soloCover]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -313,7 +344,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   }, []);
 
   return (
-    <div className="magazine-flipbook-dialog flex h-[100svh] w-full flex-col gap-0 overflow-hidden text-[#f7f2ea]">
+    <div className="magazine-flipbook-dialog flex h-[100svh] w-full flex-col overflow-hidden text-[#f7f2ea]">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-2 md:px-6 md:py-2.5">
         <div className="min-w-0">
           <h1 className="truncate font-serif text-[16px] italic font-normal md:text-[20px]">{title}</h1>
@@ -323,42 +354,16 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             </p>
           ) : null}
         </div>
-
-        {!mobile ? (
-          <div className="hidden items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1 sm:flex">
-            <button
-              type="button"
-              className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-              onClick={() => setZoom((z) => Math.max(0.9, Number((z - 0.1).toFixed(2))))}
-              disabled={zoom <= 0.9}
-              aria-label="Уменьшить"
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <span className="min-w-[3rem] text-center text-[11px] tabular-nums text-white/60">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              type="button"
-              className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-              onClick={() => setZoom((z) => Math.min(2, Number((z + 0.1).toFixed(2))))}
-              disabled={zoom >= 2}
-              aria-label="Увеличить"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
-        ) : null}
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-2 py-3 md:overflow-auto md:px-10 md:py-8">
+      <div className="relative flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,248,235,0.1),transparent_55%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,248,235,0.08),transparent_58%)]"
         />
 
         {!ready && (
-          <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a1714]/90 px-6 text-center">
+          <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a1714]/92 px-6 text-center">
             <div>
               <p className="text-[12px] tracking-[0.16em] uppercase text-white/60 md:text-[13px]">{loadHint}</p>
               <p className="mt-2 text-[12px] text-white/35">Сначала подгружаем страницы, потом открываем</p>
@@ -368,23 +373,21 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         <div
           className={cx(
-            "magazine-flipbook-stage relative w-full max-w-[1120px] transition-[padding] duration-500 ease-out",
+            "magazine-flipbook-stage relative flex h-full w-full flex-col",
             soloCover && "is-solo",
             ready && "is-ready",
             mobile && "is-mobile"
           )}
           style={
-            mobile
-              ? undefined
-              : {
-                  transform: `scale(${zoom})`,
-                  transformOrigin: "center center"
-                }
+            soloPageWidth
+              ? ({ ["--solo-page-width" as string]: `${soloPageWidth}px` } as React.CSSProperties)
+              : undefined
           }
         >
-          <div className="magazine-flipbook-glow" aria-hidden />
-          <div className="magazine-flipbook-floor" aria-hidden />
-          <div className="magazine-flipbook-shell relative mx-auto h-[min(74svh,680px)] w-full sm:h-[min(72svh,820px)]">
+          <div
+            ref={shellRef}
+            className="magazine-flipbook-shell relative mx-auto flex min-h-0 w-full flex-1 items-center justify-center px-2 py-2 md:px-4 md:py-3"
+          >
             <div
               ref={hostRef}
               className={cx(
@@ -396,7 +399,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             />
           </div>
           {soloCover && ready && canNext ? (
-            <p className="magazine-flipbook-solo-hint pointer-events-none mt-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45 md:mt-5 md:text-[11px] md:tracking-[0.18em]">
+            <p className="magazine-flipbook-solo-hint pointer-events-none shrink-0 pb-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45 md:pb-3 md:text-[11px]">
               {mobile ? "Листайте вправо" : "Листайте вправо — открыть выпуск"}
             </p>
           ) : null}
@@ -408,13 +411,13 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           type="button"
           onClick={() => flipRef.current?.flipPrev()}
           disabled={!canPrev || !ready}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px] md:tracking-[0.14em]"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px]"
         >
           <ChevronLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Назад</span>
         </button>
 
-        <p className="text-center text-[11px] uppercase tracking-[0.14em] text-white/55 md:text-[12px] md:tracking-[0.16em]">
+        <p className="text-center text-[11px] uppercase tracking-[0.14em] text-white/55 md:text-[12px]">
           {pageLabel}
         </p>
 
@@ -422,7 +425,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           type="button"
           onClick={() => flipRef.current?.flipNext()}
           disabled={!canNext || !ready}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px] md:tracking-[0.14em]"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px]"
         >
           <span className="hidden sm:inline">Дальше</span>
           <ChevronRight className="h-4 w-4" />
