@@ -25,6 +25,10 @@ export function getPagesDir(slug: string) {
   return path.join(getIssueDir(slug), "pages");
 }
 
+export function getPageCacheDir(slug: string, width: number) {
+  return path.join(getIssueDir(slug), "cache", `w${width}`);
+}
+
 export function getSourcePdfPath(slug: string) {
   return path.join(getIssueDir(slug), "source.pdf");
 }
@@ -116,4 +120,32 @@ export async function readIssuePageFile(slug: string, pageFile: string): Promise
   } catch {
     return null;
   }
+}
+
+export async function readOrCreateResizedPage(opts: {
+  slug: string;
+  pageFile: string;
+  width: number;
+  source: Buffer;
+}): Promise<Buffer> {
+  const width = Math.max(400, Math.min(2400, Math.round(opts.width)));
+  const cacheDir = getPageCacheDir(opts.slug, width);
+  const cachePath = path.join(cacheDir, opts.pageFile);
+  try {
+    return await readFile(cachePath);
+  } catch {
+    // continue
+  }
+
+  const sharp = (await import("sharp")).default;
+  const resized = await sharp(opts.source)
+    .resize({ width, withoutEnlargement: true })
+    .webp({ quality: 82, effort: 4, smartSubsample: false })
+    .toBuffer();
+
+  await mkdir(cacheDir, { recursive: true });
+  await writeFile(cachePath, resized).catch(() => {
+    // cache write is best-effort
+  });
+  return resized;
 }

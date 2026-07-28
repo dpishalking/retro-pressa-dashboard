@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { isValidSlug } from "@/lib/products/slug";
-import { readIssuePageFile, readProductManifest } from "@/lib/products/store";
+import {
+  readIssuePageFile,
+  readOrCreateResizedPage,
+  readProductManifest
+} from "@/lib/products/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ slug: string; page: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { slug: rawSlug, page: rawPage } = await context.params;
   const slug = decodeURIComponent(rawSlug).trim().toLowerCase();
   const pageToken = decodeURIComponent(rawPage).trim();
@@ -37,7 +41,18 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return new NextResponse(new Uint8Array(buffer), {
+  const wRaw = Number(new URL(request.url).searchParams.get("w"));
+  let body = buffer;
+  if (Number.isFinite(wRaw) && wRaw >= 400 && wRaw <= 2400) {
+    body = await readOrCreateResizedPage({
+      slug,
+      pageFile: file,
+      width: wRaw,
+      source: buffer
+    });
+  }
+
+  return new NextResponse(new Uint8Array(body), {
     status: 200,
     headers: {
       "Content-Type": "image/webp",

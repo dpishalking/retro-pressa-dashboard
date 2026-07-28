@@ -47,6 +47,20 @@ async function main() {
   const { manifest } = await convertPdfToIssuePages({ slug, title, pdfBuffer });
   console.log(`  pages: ${manifest.pageCount} (${manifest.pageWidth}×${manifest.pageHeight})`);
 
+  // Prebuild light display variants so first mobile/desktop open is fast.
+  const { readIssuePageFile, readOrCreateResizedPage } = await import("@/lib/products/store");
+  for (const width of [1000, 1400]) {
+    process.stdout.write(`  cache w${width}:`);
+    for (let i = 1; i <= manifest.pageCount; i++) {
+      const pageFile = `page-${String(i).padStart(2, "0")}.webp`;
+      const source = await readIssuePageFile(slug, pageFile);
+      if (!source) continue;
+      await readOrCreateResizedPage({ slug, pageFile, width, source });
+      process.stdout.write(` ${i}`);
+    }
+    process.stdout.write("\n");
+  }
+
   const packDir = path.join(process.cwd(), ".cache", "product-packs");
   await mkdir(packDir, { recursive: true });
   const packPath = path.join(packDir, `${slug}.tar.gz`);

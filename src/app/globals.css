@@ -251,13 +251,13 @@ td {
 
 .magazine-flipbook-host.is-solo {
   /* Narrow host so page-flip stays in single-page portrait for the cover */
-  max-width: min(560px, 82vw);
+  max-width: min(520px, 82vw);
   margin-inline: auto;
   perspective: 1400px;
 }
 
 /* Page block behind cover — thickness of the issue */
-.magazine-flipbook-host.is-solo::before {
+.magazine-flipbook-host.is-solo.is-ready::before {
   content: "";
   pointer-events: none;
   position: absolute;
@@ -276,7 +276,7 @@ td {
   transform: translate3d(10px, 8px, -24px);
 }
 
-.magazine-flipbook-host.is-solo::after {
+.magazine-flipbook-host.is-solo.is-ready::after {
   content: "";
   pointer-events: none;
   position: absolute;
@@ -336,12 +336,50 @@ td {
   z-index: 2;
 }
 
+@media (max-width: 720px) {
+  .magazine-flipbook-stage {
+    padding: 6px 4px 12px;
+    max-width: 100%;
+  }
+
+  .magazine-flipbook-glow,
+  .magazine-flipbook-floor {
+    display: none !important;
+  }
+
+  .magazine-flipbook-host.is-solo {
+    max-width: min(92vw, 420px);
+    perspective: none;
+  }
+
+  .magazine-flipbook-host.is-solo.is-ready::before,
+  .magazine-flipbook-host.is-solo.is-ready::after,
+  .magazine-flipbook-host:not(.is-solo)::before,
+  .magazine-flipbook-host:not(.is-solo)::after,
+  .magazine-flipbook-host:not(.is-solo) .stf__wrapper.--landscape::after,
+  .magazine-flipbook-host.is-solo .stf__parent::after {
+    display: none !important;
+  }
+
+  .magazine-flipbook-host .stf__parent {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.35) inset,
+      0 14px 36px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .magazine-flipbook-host.is-solo .stf__parent {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.4) inset,
+      0 18px 40px rgba(0, 0, 0, 0.45) !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .magazine-flipbook-stage {
     transition: none;
   }
 
-  .magazine-flipbook-host.is-solo::before {
+  .magazine-flipbook-host.is-solo.is-ready::before {
     transform: translate(10px, 8px);
   }
 }
