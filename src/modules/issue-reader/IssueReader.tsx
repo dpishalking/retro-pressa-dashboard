@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus, Volume2, VolumeX } from "lucide-react";
-import {
-  isIssueSoundMuted,
-  playFlipSound,
-  playIssueSound,
-  setIssueSoundMuted
-} from "@/modules/issue-reader/issueSounds";
+import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 import "page-flip/src/Style/stPageFlip.css";
 
 export type IssueReaderPage = {
@@ -27,7 +21,6 @@ type PageFlipInstance = {
   destroy: () => void;
   update: () => void;
   loadFromImages: (images: string[]) => void;
-  updateFromImages?: (images: string[]) => void;
   flipNext: () => void;
   flipPrev: () => void;
   getPageCount: () => number;
@@ -66,8 +59,31 @@ function preloadImage(src: string) {
     const img = new Image();
     img.onload = () => resolve();
     img.onerror = () => reject(new Error(`Failed to load ${src}`));
+    img.decoding = "async";
     img.src = src;
   });
+}
+
+async function preloadAll(urls: string[], onProgress: (done: number, total: number) => void) {
+  const total = urls.length;
+  let done = 0;
+  const concurrency = Math.min(4, total);
+  let index = 0;
+
+  async function worker() {
+    while (index < total) {
+      const current = index++;
+      try {
+        await preloadImage(urls[current]);
+      } catch {
+        // Keep going; missing page will still be attempted by page-flip.
+      }
+      done += 1;
+      onProgress(done, total);
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
 }
 
 export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: IssueReaderProps) {
@@ -81,8 +97,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   const [zoom, setZoom] = useState(1);
   const [ready, setReady] = useState(false);
   const [soloCover, setSoloCover] = useState(true);
-  const [soundMuted, setSoundMuted] = useState(false);
-  const [loadHint, setLoadHint] = useState("Открываем выпуск…");
+  const [loadHint, setLoadHint] = useState("Готовим страницы…");
   const [mobile, setMobile] = useState(false);
 
   const updateChrome = useCallback((index: number, count: number) => {
@@ -115,7 +130,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   }, []);
 
   useEffect(() => {
-    setSoundMuted(isIssueSoundMuted());
     const syncMobile = () => {
       const next = isMobileViewport();
       setMobile(next);
@@ -139,23 +153,19 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
         const narrow = isMobileViewport();
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        // Light assets for flipbook; full archive stays on disk for optional hi-res later.
         const displayWidth = narrow
           ? Math.min(1100, Math.max(720, Math.round(window.innerWidth * dpr * 1.15)))
           : Math.min(1600, Math.max(1000, Math.round(520 * dpr * 1.35)));
 
         const displayUrls = pages.map((page) => withDisplayWidth(page.src, displayWidth));
 
-        setLoadHint(narrow ? "Загружаем обложку…" : "Открываем выпуск…");
-        try {
-          await preloadImage(displayUrls[0]);
-        } catch {
-          // continue; page-flip will show its own loader
-        }
+        setLoadHint(`Загрузка 0/${displayUrls.length}`);
+        await preloadAll(displayUrls, (done, total) => {
+          if (!cancelled) setLoadHint(`Загрузка ${done}/${total}`);
+        });
         if (cancelled || !hostRef.current) return;
 
-        // Warm the first interior spread in the background.
-        void Promise.all(displayUrls.slice(1, 4).map((src) => preloadImage(src).catch(() => undefined)));
+        setLoadHint("Собираем выпуск…");
 
         const mod = await import("page-flip/dist/js/page-flip.module.js");
         const PageFlip = mod.PageFlip as unknown as new (
@@ -238,23 +248,13 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           updateChrome(data.page, flip.getPageCount());
           setReady(true);
           dprAwareUpdate();
-
-          // Prefetch the rest after first paint so flipping feels instant.
-          window.setTimeout(() => {
-            for (let i = 4; i < displayUrls.length; i++) {
-              void preloadImage(displayUrls[i]).catch(() => undefined);
-            }
-          }, 300);
         });
 
         flip.on("flip", (e) => {
           if (cancelled || !flip) return;
           const next = e.data as number;
-          const prev = pageIndexRef.current;
           pageIndexRef.current = next;
-          const count = flip.getPageCount();
-          updateChrome(next, count);
-          playFlipSound(prev, next, count);
+          updateChrome(next, flip.getPageCount());
           requestAnimationFrame(dprAwareUpdate);
         });
 
@@ -312,13 +312,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const toggleMute = () => {
-    const next = !soundMuted;
-    setSoundMuted(next);
-    setIssueSoundMuted(next);
-    if (!next) void playIssueSound("uiTap", { force: true });
-  };
-
   return (
     <div className="magazine-flipbook-dialog flex h-[100svh] w-full flex-col gap-0 overflow-hidden text-[#f7f2ea]">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-2 md:px-6 md:py-2.5">
@@ -331,43 +324,31 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2">
-          {!mobile ? (
-            <div className="hidden items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1 sm:flex">
-              <button
-                type="button"
-                className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-                onClick={() => setZoom((z) => Math.max(0.9, Number((z - 0.1).toFixed(2))))}
-                disabled={zoom <= 0.9}
-                aria-label="Уменьшить"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="min-w-[3rem] text-center text-[11px] tabular-nums text-white/60">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                type="button"
-                className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
-                onClick={() => setZoom((z) => Math.min(2, Number((z + 0.1).toFixed(2))))}
-                disabled={zoom >= 2}
-                aria-label="Увеличить"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={toggleMute}
-            className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:bg-white/10 hover:text-white md:h-10 md:w-10"
-            aria-pressed={soundMuted}
-            aria-label={soundMuted ? "Включить звук" : "Выключить звук"}
-          >
-            {soundMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </button>
-        </div>
+        {!mobile ? (
+          <div className="hidden items-center gap-1 rounded-full border border-white/15 bg-white/5 p-1 sm:flex">
+            <button
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
+              onClick={() => setZoom((z) => Math.max(0.9, Number((z - 0.1).toFixed(2))))}
+              disabled={zoom <= 0.9}
+              aria-label="Уменьшить"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="min-w-[3rem] text-center text-[11px] tabular-nums text-white/60">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30"
+              onClick={() => setZoom((z) => Math.min(2, Number((z + 0.1).toFixed(2))))}
+              disabled={zoom >= 2}
+              aria-label="Увеличить"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-2 py-3 md:overflow-auto md:px-10 md:py-8">
@@ -377,8 +358,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         />
 
         {!ready && (
-          <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a1714]/85 px-6 text-center text-[12px] tracking-[0.16em] uppercase text-white/60 md:text-[13px]">
-            {loadHint}
+          <div className="absolute inset-0 z-20 grid place-items-center bg-[#1a1714]/90 px-6 text-center">
+            <div>
+              <p className="text-[12px] tracking-[0.16em] uppercase text-white/60 md:text-[13px]">{loadHint}</p>
+              <p className="mt-2 text-[12px] text-white/35">Сначала подгружаем страницы, потом открываем</p>
+            </div>
           </div>
         )}
 
@@ -423,7 +407,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         <button
           type="button"
           onClick={() => flipRef.current?.flipPrev()}
-          disabled={!canPrev}
+          disabled={!canPrev || !ready}
           className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px] md:tracking-[0.14em]"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -437,7 +421,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         <button
           type="button"
           onClick={() => flipRef.current?.flipNext()}
-          disabled={!canNext}
+          disabled={!canNext || !ready}
           className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px] md:tracking-[0.14em]"
         >
           <span className="hidden sm:inline">Дальше</span>
