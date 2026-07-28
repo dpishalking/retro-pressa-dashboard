@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import "page-flip/src/Style/stPageFlip.css";
 
@@ -107,7 +107,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   const [soloCover, setSoloCover] = useState(true);
   const [loadHint, setLoadHint] = useState("Готовим страницы…");
   const [mobile, setMobile] = useState(false);
-  const [soloPageWidth, setSoloPageWidth] = useState<number | null>(null);
 
   const updateChrome = useCallback((index: number, count: number) => {
     const isSolo = index <= 0 || index >= count - 1;
@@ -194,26 +193,27 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           const availW = Math.max(240, shellBox?.width || host.clientWidth || window.innerWidth);
           const availH = Math.max(280, shellBox?.height || host.clientHeight || window.innerHeight * 0.75);
           // Cover / mobile: one page fills the box.
-          const cover = fitSinglePage(availW * 0.98, availH * 0.98, ratio);
+          const cover = fitSinglePage(availW * 0.96, availH * 0.96, ratio);
           // Open book: two pages side by side.
-          const spread = fitSinglePage(availW * 0.98 * 0.5, availH * 0.98, ratio);
+          const spread = fitSinglePage(availW * 0.96 * 0.5, availH * 0.96, ratio);
           return { availW, availH, cover, spread };
         };
 
         const initial = measure();
-        setSoloPageWidth(initial.cover.pageW);
 
         // Keep host narrow on cover so page-flip stays in portrait (no empty left half).
+        host.style.width = `${initial.cover.pageW}px`;
         host.style.maxWidth = `${initial.cover.pageW}px`;
+        host.style.height = `${initial.cover.pageH}px`;
 
         flip = new PageFlip(book, {
           width: initial.cover.pageW,
           height: initial.cover.pageH,
           size: "stretch",
-          minWidth: Math.min(220, initial.cover.pageW),
-          maxWidth: Math.max(initial.cover.pageW, initial.spread.pageW),
-          minHeight: Math.min(300, initial.cover.pageH),
-          maxHeight: Math.max(initial.cover.pageH, initial.spread.pageH),
+          minWidth: 200,
+          maxWidth: Math.max(initial.cover.pageW, initial.spread.pageW, 1600),
+          minHeight: 280,
+          maxHeight: Math.max(initial.cover.pageH, initial.spread.pageH, 2200),
           drawShadow: !reduced,
           flippingTime: reduced ? 1 : narrow ? 600 : 820,
           usePortrait: true,
@@ -229,11 +229,14 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         const syncHostForMode = (solo: boolean) => {
           const m = measure();
           if (solo || narrow) {
+            host.style.width = `${m.cover.pageW}px`;
             host.style.maxWidth = `${m.cover.pageW}px`;
-            setSoloPageWidth(m.cover.pageW);
+            host.style.height = `${m.cover.pageH}px`;
           } else {
-            host.style.maxWidth = `${Math.min(m.availW, m.spread.pageW * 2)}px`;
-            setSoloPageWidth(null);
+            const spreadW = Math.min(m.availW, m.spread.pageW * 2);
+            host.style.width = `${spreadW}px`;
+            host.style.maxWidth = `${spreadW}px`;
+            host.style.height = `${m.spread.pageH}px`;
           }
         };
 
@@ -244,11 +247,15 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             (flip ? pageIndexRef.current >= flip.getPageCount() - 1 : true);
           syncHostForMode(solo);
 
-          if (!canvas) {
-            flip?.update();
-            return;
+          // Never freeze canvas CSS size — page-flip measures the canvas for stretch.
+          if (canvas) {
+            canvas.style.removeProperty("width");
+            canvas.style.removeProperty("height");
           }
+
           flip?.update();
+
+          if (!canvas) return;
           const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.25);
           if (pixelRatio <= 1) return;
           const cssW = canvas.clientWidth;
@@ -259,8 +266,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           if (canvas.width === tw && canvas.height === th) return;
           canvas.width = tw;
           canvas.height = th;
-          canvas.style.width = `${cssW}px`;
-          canvas.style.height = `${cssH}px`;
           const ctx = canvas.getContext("2d");
           ctx?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
           try {
@@ -378,11 +383,6 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             ready && "is-ready",
             mobile && "is-mobile"
           )}
-          style={
-            soloPageWidth
-              ? ({ ["--solo-page-width" as string]: `${soloPageWidth}px` } as React.CSSProperties)
-              : undefined
-          }
         >
           <div
             ref={shellRef}
@@ -391,7 +391,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             <div
               ref={hostRef}
               className={cx(
-                "magazine-flipbook-host relative h-full w-full",
+                "magazine-flipbook-host relative",
                 soloCover && "is-solo",
                 ready && "is-ready",
                 mobile && "is-mobile"
