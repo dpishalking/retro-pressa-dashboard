@@ -46,9 +46,16 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function isMobileViewport() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(max-width: 720px)").matches;
+/** Phones and narrow tablets: always one page, never a tiny two-page spread. */
+function isSinglePageViewport() {
+  if (typeof window === "undefined") return true;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (w <= 900) return true;
+  // Landscape phone / compact device: still too narrow for a readable spread.
+  if (w <= 1100 && h <= 600) return true;
+  if (w < h && w <= 1000) return true;
+  return false;
 }
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -115,13 +122,15 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   const [mobile, setMobile] = useState(false);
 
   const updateChrome = useCallback((index: number, count: number) => {
+    const singlePage = isSinglePageViewport();
     const isSolo = index <= 0 || index >= count - 1;
     if (soloTimerRef.current) {
       window.clearTimeout(soloTimerRef.current);
       soloTimerRef.current = null;
     }
 
-    if (isSolo) {
+    // On phones we always show one page, so keep solo chrome sizing.
+    if (singlePage || isSolo) {
       setSoloCover(true);
     } else {
       soloTimerRef.current = window.setTimeout(() => {
@@ -134,6 +143,8 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
       setPageLabel("Обложка");
     } else if (index >= count - 1) {
       setPageLabel("Задняя обложка");
+    } else if (singlePage) {
+      setPageLabel(`Стр. ${index + 1}`);
     } else {
       const left = index + 1;
       const right = Math.min(index + 2, count);
@@ -144,11 +155,14 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
   }, []);
 
   useEffect(() => {
-    const syncMobile = () => setMobile(isMobileViewport());
+    const syncMobile = () => setMobile(isSinglePageViewport());
     syncMobile();
-    const mq = window.matchMedia("(max-width: 720px)");
-    mq.addEventListener("change", syncMobile);
-    return () => mq.removeEventListener("change", syncMobile);
+    window.addEventListener("resize", syncMobile);
+    window.addEventListener("orientationchange", syncMobile);
+    return () => {
+      window.removeEventListener("resize", syncMobile);
+      window.removeEventListener("orientationchange", syncMobile);
+    };
   }, []);
 
   useEffect(() => {
@@ -163,11 +177,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         const shell = shellRef.current;
         if (!host || !shell || cancelled || pages.length === 0) return;
 
-        const narrow = isMobileViewport();
+        const singlePage = isSinglePageViewport();
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
         // Request enough pixels for Retina; server caps/caches at ≤2400.
-        const displayWidth = narrow
-          ? Math.min(2400, Math.max(1400, Math.round(1100 * dpr)))
+        const displayWidth = singlePage
+          ? Math.min(2400, Math.max(1400, Math.round(900 * dpr)))
           : Math.min(2400, Math.max(2000, Math.round(1200 * dpr)));
         const displayUrls = pages.map((page) => withDisplayWidth(page.src, displayWidth));
 
@@ -203,10 +217,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           const shellBox = shellRef.current?.getBoundingClientRect();
           const availW = Math.max(240, shellBox?.width || host.clientWidth || window.innerWidth);
           const availH = Math.max(280, shellBox?.height || host.clientHeight || window.innerHeight * 0.75);
+          const fill = isSinglePageViewport() ? 0.98 : 0.96;
           // Cover / mobile: one page fills the box.
-          const cover = fitSinglePage(availW * 0.96, availH * 0.96, ratio);
+          const cover = fitSinglePage(availW * fill, availH * fill, ratio);
           // Open book: two pages side by side.
-          const spread = fitSinglePage(availW * 0.96 * 0.5, availH * 0.96, ratio);
+          const spread = fitSinglePage(availW * fill * 0.5, availH * fill, ratio);
           return { availW, availH, cover, spread };
         };
 
@@ -224,11 +239,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           usePortrait: true,
           autoSize: false,
           drawShadow: !reduced,
-          flippingTime: reduced ? 1 : narrow ? 600 : 820,
+          flippingTime: reduced ? 1 : singlePage ? 480 : 820,
           maxShadowOpacity: 0.35,
           showCover: true,
           mobileScrollSupport: true,
-          showPageCorners: !reduced && !narrow,
+          showPageCorners: !reduced && !singlePage,
           useMouseEvents: true,
           startZIndex: 10
         });
@@ -236,8 +251,9 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         const syncHostForMode = (solo: boolean) => {
           const m = measure();
           const settings = flip?.getSettings();
-          const page = solo || narrow ? m.cover : m.spread;
-          const hostW = solo || narrow ? page.pageW : Math.min(m.availW, page.pageW * 2);
+          const forceSingle = isSinglePageViewport() || solo;
+          const page = forceSingle ? m.cover : m.spread;
+          const hostW = forceSingle ? page.pageW : Math.min(m.availW, page.pageW * 2);
           const hostH = page.pageH;
 
           host.style.width = `${hostW}px`;
@@ -269,6 +285,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             canvas.style.height = "100%";
           }
           flip?.getUI()?.update?.() ?? flip?.update();
+          if (flip) updateChrome(pageIndexRef.current, flip.getPageCount());
         };
 
         flip.loadFromImages(displayUrls);
@@ -348,11 +365,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
 
   return (
     <div className="magazine-flipbook-dialog flex h-[100svh] w-full flex-col overflow-hidden text-[#f7f2ea]">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-2 md:px-6 md:py-2.5">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-1.5 md:px-6 md:py-2.5">
         <div className="min-w-0">
-          <h1 className="truncate font-serif text-[16px] italic font-normal md:text-[20px]">{title}</h1>
+          <h1 className="truncate font-serif text-[15px] italic font-normal md:text-[20px]">{title}</h1>
           {subtitle ? (
-            <p className="truncate text-[10px] uppercase tracking-[0.16em] text-white/50 md:text-[11px]">
+            <p className="truncate text-[9px] uppercase tracking-[0.14em] text-white/50 md:text-[11px]">
               {subtitle}
             </p>
           ) : null}
@@ -383,7 +400,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         >
           <div
             ref={shellRef}
-            className="magazine-flipbook-shell relative mx-auto flex min-h-0 w-full flex-1 items-center justify-center px-2 py-2 md:px-4 md:py-3"
+            className="magazine-flipbook-shell relative mx-auto flex min-h-0 w-full flex-1 items-center justify-center px-1.5 py-1.5 md:px-4 md:py-3"
           >
             <div
               ref={hostRef}
@@ -395,19 +412,20 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
               )}
             />
           </div>
-          {soloCover && ready && canNext ? (
-            <p className="magazine-flipbook-solo-hint pointer-events-none shrink-0 pb-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45 md:pb-3 md:text-[11px]">
+          {ready && canNext && !canPrev ? (
+            <p className="magazine-flipbook-solo-hint pointer-events-none shrink-0 pb-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45 md:pb-3 md:text-[11px]">
               {mobile ? "Листайте вправо" : "Листайте вправо — открыть выпуск"}
             </p>
           ) : null}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-white/10 px-3 py-2.5 md:gap-3 md:px-6">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-white/10 px-3 py-2 md:gap-3 md:px-6 md:py-2.5">
         <button
           type="button"
           onClick={() => flipRef.current?.flipPrev()}
           disabled={!canPrev || !ready}
+          aria-label="Назад"
           className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px]"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -422,6 +440,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           type="button"
           onClick={() => flipRef.current?.flipNext()}
           disabled={!canNext || !ready}
+          aria-label="Дальше"
           className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:gap-2 md:px-4 md:text-[12px]"
         >
           <span className="hidden sm:inline">Дальше</span>
