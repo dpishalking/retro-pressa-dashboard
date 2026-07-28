@@ -247,39 +247,12 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           book.style.maxWidth = "none";
         };
 
-        const dprAwareUpdate = () => {
-          const canvas = book.querySelector("canvas.stf__canvas") as HTMLCanvasElement | null;
+        const refreshLayout = () => {
           const solo =
             pageIndexRef.current <= 0 ||
             (flip ? pageIndexRef.current >= flip.getPageCount() - 1 : true);
           syncHostForMode(solo);
-
-          // Never freeze canvas CSS size — layout size comes from the host.
-          if (canvas) {
-            canvas.style.removeProperty("width");
-            canvas.style.removeProperty("height");
-          }
-
           flip?.update();
-
-          if (!canvas) return;
-          const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.25);
-          if (pixelRatio <= 1) return;
-          const cssW = canvas.clientWidth;
-          const cssH = canvas.clientHeight;
-          if (!cssW || !cssH) return;
-          const tw = Math.round(cssW * pixelRatio);
-          const th = Math.round(cssH * pixelRatio);
-          if (canvas.width === tw && canvas.height === th) return;
-          canvas.width = tw;
-          canvas.height = th;
-          const ctx = canvas.getContext("2d");
-          ctx?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-          try {
-            (flip as unknown as { render?: { update?: () => void } }).render?.update?.();
-          } catch {
-            // ignore
-          }
         };
 
         flip.loadFromImages(displayUrls);
@@ -290,7 +263,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           pageIndexRef.current = data.page;
           updateChrome(data.page, flip.getPageCount());
           setReady(true);
-          requestAnimationFrame(dprAwareUpdate);
+          requestAnimationFrame(refreshLayout);
         });
 
         flip.on("flip", (e) => {
@@ -298,18 +271,18 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
           const next = e.data as number;
           pageIndexRef.current = next;
           updateChrome(next, flip.getPageCount());
-          requestAnimationFrame(dprAwareUpdate);
+          requestAnimationFrame(refreshLayout);
         });
 
         flip.on("changeOrientation", () => {
-          dprAwareUpdate();
+          refreshLayout();
         });
 
         flipRef.current = flip;
-        (flip as PageFlipInstance).__dprUpdate = dprAwareUpdate;
+        (flip as PageFlipInstance).__dprUpdate = refreshLayout;
 
         resizeObserver = new ResizeObserver(() => {
-          dprAwareUpdate();
+          refreshLayout();
         });
         resizeObserver.observe(shell);
       })();
