@@ -246,20 +246,27 @@ export function ClientMaterials() {
         </div>
       </section>
 
-      <section className="card p-5">
-        <h3 className="text-lg font-black text-slate-950">Онлайн-читалки наших изданий</h3>
-        <p className="mt-1 text-sm text-slate-600">
-          Откройте выпуск в браузере или скопируйте ссылку и отправьте клиенту.
-        </p>
+      <section className="overflow-hidden rounded-[28px] border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-sky-50 p-5 shadow-[0_10px_30px_rgba(37,99,235,0.08)] sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <span className="inline-flex rounded-full bg-blue-600 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-white">
+              Онлайн
+            </span>
+            <h3 className="mt-3 text-xl font-black text-slate-950">Онлайн-читалки наших изданий</h3>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              Откройте выпуск в браузере или скопируйте ссылку и отправьте клиенту.
+            </p>
+          </div>
+        </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {ONLINE_READERS.map((reader) => (
             <article
               key={reader.id}
-              className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <p className="font-black text-slate-950">{reader.title}</p>
-                <p className="mt-1 truncate text-xs text-slate-500">{reader.href}</p>
+                <p className="mt-1 truncate text-xs font-medium text-blue-700/70">{reader.href}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <a
@@ -274,7 +281,7 @@ export function ClientMaterials() {
                 <button
                   type="button"
                   onClick={() => void copyReaderLink(reader.id, reader.href)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-800 hover:bg-blue-100"
                 >
                   {copiedReaderId === reader.id ? <Check size={16} /> : <Copy size={16} />}
                   {copiedReaderId === reader.id ? "Скопировано" : "Ссылка"}
