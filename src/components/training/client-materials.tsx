@@ -21,6 +21,19 @@ const CLIENT_MATERIAL_CATEGORY_ORDER = [
   "Видеоотзывы"
 ];
 
+const ONLINE_READERS = [
+  {
+    id: "veselaya-semeika-1",
+    title: "Весёлая семейка 1",
+    href: "https://rp-bi.site/view/veselaya-semeika-1"
+  },
+  {
+    id: "glamur-14-06-2025",
+    title: "Гламур 14-06-2025",
+    href: "https://rp-bi.site/view/glamur-14-06-2025"
+  }
+] as const;
+
 function publicUrl(url: string) {
   if (/^https?:\/\//.test(url)) return url;
   if (typeof window === "undefined") return url;
@@ -144,6 +157,7 @@ function MaterialCard({
 export function ClientMaterials() {
   const [activeCategory, setActiveCategory] = useState("Все");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedReaderId, setCopiedReaderId] = useState<string | null>(null);
 
   const materials = useMemo(
     () => [...catalog.materials].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -169,6 +183,12 @@ export function ClientMaterials() {
     await navigator.clipboard.writeText(link);
     setCopiedId(material.id);
     window.setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const copyReaderLink = async (id: string, href: string) => {
+    await navigator.clipboard.writeText(href);
+    setCopiedReaderId(id);
+    window.setTimeout(() => setCopiedReaderId(null), 2000);
   };
 
   const shareMaterial = async (material: ClientMaterial) => {
@@ -222,6 +242,45 @@ export function ClientMaterials() {
               {category === "Все" ? <ImageIcon size={16} /> : null}
               {category}
             </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="card p-5">
+        <h3 className="text-lg font-black text-slate-950">Онлайн-читалки наших изданий</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Откройте выпуск в браузере или скопируйте ссылку и отправьте клиенту.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {ONLINE_READERS.map((reader) => (
+            <article
+              key={reader.id}
+              className="flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-black text-slate-950">{reader.title}</p>
+                <p className="mt-1 truncate text-xs text-slate-500">{reader.href}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={reader.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                  <ExternalLink size={16} />
+                  Открыть
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void copyReaderLink(reader.id, reader.href)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  {copiedReaderId === reader.id ? <Check size={16} /> : <Copy size={16} />}
+                  {copiedReaderId === reader.id ? "Скопировано" : "Ссылка"}
+                </button>
+              </div>
+            </article>
           ))}
         </div>
       </section>
