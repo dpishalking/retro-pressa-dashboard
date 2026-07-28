@@ -49,7 +49,7 @@ async function main() {
 
   // Prebuild light display variants so first mobile/desktop open is fast.
   const { readIssuePageFile, readOrCreateResizedPage } = await import("@/lib/products/store");
-  for (const width of [1000, 1400]) {
+  for (const width of [1400, 2200]) {
     process.stdout.write(`  cache w${width}:`);
     for (let i = 1; i <= manifest.pageCount; i++) {
       const pageFile = `page-${String(i).padStart(2, "0")}.webp`;

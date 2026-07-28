@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { enableFlipbookRetinaCanvas } from "@/modules/issue-reader/retinaCanvas";
 import "page-flip/src/Style/stPageFlip.css";
 
 export type IssueReaderPage = {
@@ -26,6 +27,16 @@ type PageFlipInstance = {
   getPageCount: () => number;
   getCurrentPageIndex: () => number;
   getSettings: () => { minWidth: number; maxWidth: number; width: number; height: number };
+  getUI: () => {
+    getCanvas: () => HTMLCanvasElement;
+    update: () => void;
+    resizeCanvas?: () => void;
+  };
+  getRender: () => {
+    getContext: () => CanvasRenderingContext2D;
+    clear?: () => void;
+    update: () => void;
+  };
   on: (event: string, callback: (event: { data: number | { page: number } }) => void) => void;
   __dprUpdate?: () => void;
 };
@@ -144,6 +155,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
     let flip: PageFlipInstance | null = null;
+    let restoreCanvas: (() => void) | undefined;
 
     const timer = window.setTimeout(() => {
       void (async () => {
@@ -152,8 +164,11 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         if (!host || !shell || cancelled || pages.length === 0) return;
 
         const narrow = isMobileViewport();
-        // Stick to prebuilt cache widths (w1000 / w1400) for fast first paint.
-        const displayWidth = narrow ? 1000 : 1400;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+        // Request enough pixels for Retina; server caps/caches at ≤2400.
+        const displayWidth = narrow
+          ? Math.min(2400, Math.max(1400, Math.round(1100 * dpr)))
+          : Math.min(2400, Math.max(2000, Math.round(1200 * dpr)));
         const displayUrls = pages.map((page) => withDisplayWidth(page.src, displayWidth));
 
         // Open as soon as the cover is ready; warm the rest in the background.
@@ -247,13 +262,20 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
             pageIndexRef.current <= 0 ||
             (flip ? pageIndexRef.current >= flip.getPageCount() - 1 : true);
           syncHostForMode(solo);
-          flip?.update();
+          // Keep CSS size in sync before page-flip measures the canvas.
+          const canvas = book.querySelector("canvas.stf__canvas") as HTMLCanvasElement | null;
+          if (canvas) {
+            canvas.style.width = "100%";
+            canvas.style.height = "100%";
+          }
+          flip?.getUI()?.update?.() ?? flip?.update();
         };
 
         flip.loadFromImages(displayUrls);
 
         flip.on("init", (e) => {
           if (cancelled || !flip) return;
+          restoreCanvas = enableFlipbookRetinaCanvas(flip);
           const data = e.data as { page: number };
           pageIndexRef.current = data.page;
           updateChrome(data.page, flip.getPageCount());
@@ -291,6 +313,7 @@ export function IssueReader({ title, subtitle, pageWidth, pageHeight, pages }: I
         soloTimerRef.current = null;
       }
       resizeObserver?.disconnect();
+      restoreCanvas?.();
       try {
         flip?.destroy();
       } catch {

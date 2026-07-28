@@ -140,7 +140,7 @@ export async function readOrCreateResizedPage(opts: {
   const sharp = (await import("sharp")).default;
   const resized = await sharp(opts.source)
     .resize({ width, withoutEnlargement: true })
-    .webp({ quality: 82, effort: 4, smartSubsample: false })
+    .webp({ quality: 92, effort: 5, smartSubsample: false })
     .toBuffer();
 
   await mkdir(cacheDir, { recursive: true });
