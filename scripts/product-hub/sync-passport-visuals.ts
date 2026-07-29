@@ -21,6 +21,7 @@ import {
   type PassportVisualSource,
   PASSPORT_REGISTRY,
 } from "./passport-registry";
+import { VISUAL_TABLE_HEADER, VISUAL_TABLE_WHY_ROW } from "./passport-field-labels";
 
 type VisualRow = {
   sourceId: string;
@@ -239,20 +240,12 @@ async function syncOne(entry: PassportRegistryEntry) {
   console.log(`  tab: ${JSON.stringify(tabTitle)}`);
 
   const syncedAt = new Date().toISOString();
-  const header = [
-    "source_id",
-    "type",
-    "title",
-    "description",
-    "category",
-    "url",
-    "kb_source",
-    "synced_at",
-  ];
+  const header = [...VISUAL_TABLE_HEADER];
+  const whyRow = [...VISUAL_TABLE_WHY_ROW];
   const note = [
     [
       "_META",
-      "note",
+      "служебное",
       "Автовыгрузка из базы знаний / training",
       "Не редактируйте строки вручную — перезаписываются sync-скриптом. Добавляйте новые визуалы в data/training/client-materials.json (категория продукта) или training/products.json.",
       entry.bitrixName,
@@ -282,7 +275,7 @@ async function syncOne(entry: PassportRegistryEntry) {
 
   await batchUpdateSheetValues({
     spreadsheetId: entry.spreadsheetId,
-    data: [{ range: quote(tabTitle, "A1"), values: [header, ...note, ...body] }],
+    data: [{ range: quote(tabTitle, "A1"), values: [header, whyRow, ...note, ...body] }],
     valueInputOption: "USER_ENTERED",
   });
 

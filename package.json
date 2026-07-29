@@ -57,7 +57,12 @@
     "product-hub:sync-bitrix-types": "tsx --env-file=.env.local scripts/product-hub/push-bootstrap-to-google-sheets.ts --mode=force-replace --source=bitrix",
     "product-hub:fill-reproduction-passport": "tsx --env-file=.env.local scripts/product-hub/fill-reproduction-passport.ts",
     "product-hub:sync-passport-visuals": "tsx --env-file=.env.local scripts/product-hub/sync-passport-visuals.ts",
-    "product-hub:sync-passport-economy": "tsx --env-file=.env.local scripts/product-hub/sync-passport-economy.ts"
+    "product-hub:sync-passport-economy": "tsx --env-file=.env.local scripts/product-hub/sync-passport-economy.ts",
+    "product-hub:sync-passport-mint": "tsx --env-file=.env.local scripts/product-hub/sync-passport-mint-production.ts",
+    "product-hub:sync-passport-meanings": "tsx --env-file=.env.local scripts/product-hub/sync-passport-meanings.ts",
+    "product-hub:sync-passport-cost-benefit": "tsx --env-file=.env.local scripts/product-hub/sync-passport-economy-cost-benefit.ts",
+    "product-hub:sync-passport-cogs": "tsx --env-file=.env.local scripts/product-hub/sync-passport-cogs.ts",
+    "product-hub:sync-passport-dashboard": "tsx --env-file=.env.local scripts/product-hub/sync-passport-dashboard.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",

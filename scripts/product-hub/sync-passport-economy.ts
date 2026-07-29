@@ -20,6 +20,7 @@ import {
   PASSPORT_REGISTRY,
   type PassportRegistryEntry,
 } from "./passport-registry";
+import { passportKvRows } from "./passport-field-labels";
 
 type BitrixProduct = {
   ID?: string;
@@ -101,61 +102,54 @@ function buildEconomyRows(
   match: { product: BitrixProduct; price: string; currency: string } | null,
 ): Array<Array<string | number>> {
   const syncedAt = new Date().toISOString();
-  const rows: Array<Array<string | number>> = [
-    ["Поле", "Значение", "Комментарий", "Источник"],
-  ];
+  const raw: Array<[string, string | number, string, string?]> = [];
 
   if (match) {
-    rows.push(
-      [
-        "retail_price",
-        match.price,
-        `Bitrix: «${match.product.NAME}»`,
-        `crm.product#${match.product.ID}`,
-      ],
-      ["currency", match.currency, "Валюта каталога Bitrix", `crm.product#${match.product.ID}`],
+    raw.push(
+      ["retail_price", match.price, `crm.product#${match.product.ID}`, `Bitrix: «${match.product.NAME}»`],
+      ["currency", match.currency, `crm.product#${match.product.ID}`, "Валюта каталога Bitrix"],
       [
         "bitrix_product_id",
         String(match.product.ID || ""),
-        "ID позиции в CRM Product Catalog",
         `crm.product#${match.product.ID}`,
+        "ID позиции в CRM Product Catalog",
       ],
     );
   } else {
-    rows.push(
+    raw.push(
       [
         "retail_price",
         "",
-        "В Bitrix нет однозначной цены для этого типа подарка — не выдумываем. Внести вручную после согласования.",
         "",
+        "В Bitrix нет однозначной цены для этого типа подарка — не выдумываем. Внести вручную после согласования.",
       ],
-      ["currency", "EUR", "По умолчанию EUR (витрина / CRM)", ""],
+      ["currency", "EUR", "", "По умолчанию EUR (витрина / CRM)"],
     );
   }
 
-  rows.push(
-    ["cost_price", "", "Себестоимость (COGS) — заполняет финансы/производство", ""],
-    ["packaging_cost", "", "Себестоимость упаковки, если отдельно", ""],
-    ["delivery_cost", "", "Наша доля доставки / фулфилмента, если несём мы", ""],
-    ["minimum_price", "", "Минимальная цена продажи — утверждает РОП/финансы", ""],
-    ["partner_price", "", "Партнёрская цена — если есть сетка", ""],
-    ["urgent_price", "", "Срочная надбавка — после согласования", ""],
+  raw.push(
+    ["cost_price", "", "", "Себестоимость (COGS) — заполняет финансы/производство"],
+    ["packaging_cost", "", "", "Себестоимость упаковки, если отдельно"],
+    ["delivery_cost", "", "", "Наша доля доставки / фулфилмента, если несём мы"],
+    ["minimum_price", "", "", "Минимальная цена продажи — утверждает РОП/финансы"],
+    ["partner_price", "", "", "Партнёрская цена — если есть сетка"],
+    ["urgent_price", "", "", "Срочная надбавка — после согласования"],
     [
       "contribution_margin",
       "",
-      "Считать вручную: retail_price − cost_price − packaging_cost − delivery_cost (и комиссии, если есть)",
       "",
+      "Считать вручную: retail_price − cost_price − packaging_cost − delivery_cost (и комиссии, если есть)",
     ],
     [
       "rule",
       "Розницу брать из Bitrix; себестоимость и маржу — только из факта, без выдуманных цифр.",
-      entry.bitrixName,
       "",
+      entry.bitrixName,
     ],
-    ["synced_at", syncedAt, "UTC timestamp выгрузки retail из Bitrix (если была)", "script"],
+    ["synced_at", syncedAt, "script", "UTC timestamp выгрузки retail из Bitrix (если была)"],
   );
 
-  return rows;
+  return passportKvRows(raw);
 }
 
 async function ensureEconomyTab(

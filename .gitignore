@@ -20,4 +20,6 @@ data/conversation-exports/
 data/conversation-snapshots/
 data/manager-dialogs-sheet-state/
 data/products/
+data/product-passports/*
+!data/product-passports/dashboard.json
 tsconfig.tsbuildinfo

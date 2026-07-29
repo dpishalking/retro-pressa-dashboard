@@ -187,6 +187,19 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     },
     economySource: {},
   },
+  {
+    productId: "PRODUCT_CONGRATS_SONG",
+    bitrixName: "Поздравительная песня",
+    spreadsheetId: "1E__1xcrf4I2OPmXaIPDGdrpTK3bC1ezEl76zebpofmU",
+    visualTabName: "Визуал",
+    economyTabName: "Экономика",
+    visualSource: {
+      clientMaterialCategories: ["Поздравительная песня"],
+    },
+    economySource: {
+      bitrixProductName: "Поздравительная песня",
+    },
+  },
 ];
 
 export function findPassportByProductId(productId: string): PassportRegistryEntry | undefined {
