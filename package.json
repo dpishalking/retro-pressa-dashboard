@@ -53,7 +53,11 @@
     "backfill:manager-dialogs": "tsx src/scripts/backfill-manager-dialogs-to-sheet.ts",
     "seed:training": "tsx src/scripts/seed-training-catalog.ts",
     "publish:product": "tsx src/scripts/publish-product-issue.ts",
-    "product-hub:push-to-sheets": "tsx --env-file=.env.local scripts/product-hub/push-bootstrap-to-google-sheets.ts"
+    "product-hub:push-to-sheets": "tsx --env-file=.env.local scripts/product-hub/push-bootstrap-to-google-sheets.ts",
+    "product-hub:sync-bitrix-types": "tsx --env-file=.env.local scripts/product-hub/push-bootstrap-to-google-sheets.ts --mode=force-replace --source=bitrix",
+    "product-hub:fill-reproduction-passport": "tsx --env-file=.env.local scripts/product-hub/fill-reproduction-passport.ts",
+    "product-hub:sync-passport-visuals": "tsx --env-file=.env.local scripts/product-hub/sync-passport-visuals.ts",
+    "product-hub:sync-passport-economy": "tsx --env-file=.env.local scripts/product-hub/sync-passport-economy.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",

@@ -5,7 +5,7 @@
       "id": "personal-newspaper-site-photo",
       "title": "Газета из важной даты — фото с сайта",
       "description": "Визуал для объяснения продукта: настоящее издание из дня рождения или другой важной даты.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "https://static.tildacdn.net/tild6335-3161-4537-b433-353738363539/1_.webp",
       "sortOrder": 1
@@ -14,7 +14,7 @@
       "id": "newspaper-from-date-pravda-izvestiya-stack",
       "title": "Правда и Известия — веер оригинальных газет",
       "description": "Пример оригинальных газет из даты: «Правда» от 20 мая 1950 и «Известия» от 31 декабря 1946.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/pravda-izvestiya-stack.png",
       "sortOrder": 2
@@ -23,7 +23,7 @@
       "id": "newspaper-from-date-cina-latvia",
       "title": "Cīņa — латвийская газета",
       "description": "Пример оригинальной латвийской газеты «Cīņa» из архива.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/cina-latvia.png",
       "sortOrder": 3
@@ -32,7 +32,7 @@
       "id": "newspaper-from-date-moscow-news-1986",
       "title": "Московские новости — 6 июля 1986",
       "description": "Пример оригинальной газеты «Московские новости» от 6 июля 1986 года.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/moscow-news-1986-07-06.png",
       "sortOrder": 4
@@ -41,7 +41,7 @@
       "id": "newspaper-from-date-lithuanian-stack",
       "title": "Литовские газеты — подборка",
       "description": "Примеры оригинальных литовских газет: «Lietuvos rytas», «Komjaunimo tiesa» и другие.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/lithuanian-newspapers-stack.png",
       "sortOrder": 5
@@ -50,7 +50,7 @@
       "id": "newspaper-from-date-krasny-sport-1938",
       "title": "Красный спорт — 9 января 1938",
       "description": "Пример оригинальной газеты «Красный спорт» от 9 января 1938 года.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/krasny-sport-1938-01-09.png",
       "sortOrder": 6
@@ -59,7 +59,7 @@
       "id": "newspaper-from-date-lietuvos-rytas-1990",
       "title": "Lietuvos rytas — 5 января 1990",
       "description": "Пример оригинальной литовской газеты «Lietuvos rytas» от 5 января 1990 года.",
-      "category": "Газета из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/newspaper-from-date/lietuvos-rytas-1990-01-05.png",
       "sortOrder": 7
@@ -68,7 +68,7 @@
       "id": "magazine-from-date-semya-i-shkola-1987",
       "title": "Семья и школа — февраль 1987",
       "description": "Пример оригинального журнала из даты: «Семья и школа», №2, 1987.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/semya-i-shkola-1987-02.png",
       "sortOrder": 2
@@ -77,7 +77,7 @@
       "id": "magazine-from-date-krokodil-1987-04",
       "title": "Крокодил — февраль 1987, №4",
       "description": "Пример оригинального журнала из даты: «Крокодил», февраль 1987.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/krokodil-1987-02-04.png",
       "sortOrder": 3
@@ -86,7 +86,7 @@
       "id": "magazine-from-date-krokodil-1987-05",
       "title": "Крокодил — февраль 1987, №5",
       "description": "Пример оригинального журнала из даты: «Крокодил», февраль 1987.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/krokodil-1987-02-05.png",
       "sortOrder": 4
@@ -95,7 +95,7 @@
       "id": "magazine-from-date-krestyanka-1993",
       "title": "Крестьянка — март 1993",
       "description": "Пример оригинального журнала из даты: «Крестьянка», №3, 1993.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/krestyanka-1993-03.png",
       "sortOrder": 5
@@ -104,7 +104,7 @@
       "id": "magazine-from-date-iskatel-1978",
       "title": "Искатель — 1978, №4",
       "description": "Пример оригинального журнала из даты: «Искатель», №4, 1978.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/iskatel-1978-04.png",
       "sortOrder": 6
@@ -113,7 +113,7 @@
       "id": "magazine-from-date-rabotnitsa-1993",
       "title": "Работница — март 1993",
       "description": "Пример оригинального журнала из даты: «Работница», март 1993.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/rabotnitsa-1993-03.png",
       "sortOrder": 7
@@ -122,7 +122,7 @@
       "id": "magazine-from-date-za-rulem-1993",
       "title": "За рулем — март 1993",
       "description": "Пример оригинального журнала из даты: «За рулем», март 1993.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/za-rulem-1993-03.png",
       "sortOrder": 8
@@ -131,7 +131,7 @@
       "id": "magazine-from-date-dadzis-1979",
       "title": "Dadzis — 1979, №9",
       "description": "Пример оригинального журнала из даты: латвийский «Dadzis», №9, 1979.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/dadzis-1979-09.png",
       "sortOrder": 9
@@ -140,7 +140,7 @@
       "id": "magazine-from-date-zilite-1979",
       "title": "Zīlīte — май 1979",
       "description": "Пример оригинального журнала из даты: латвийский «Zīlīte», №5, май 1979.",
-      "category": "Журнал из даты",
+      "category": "Оригинал",
       "type": "image",
       "url": "/training/magazine-from-date/zilite-1979-05.png",
       "sortOrder": 10
@@ -149,37 +149,19 @@
       "id": "life-book-site-photo",
       "title": "Книга жизни — фото с сайта",
       "description": "Визуал для объяснения книги жизни в заголовках газет.",
-      "category": "Книга жизни в заголовках газет",
+      "category": "Книга жизни",
       "type": "image",
       "url": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
       "sortOrder": 3
     },
     {
-      "id": "life-book-video-preview",
-      "title": "Как выглядит книга жизни",
-      "description": "Видео показывает внешний вид книги жизни в заголовках газет вживую.",
-      "category": "Книга жизни в заголовках газет",
-      "type": "video",
-      "url": "https://www.youtube.com/shorts/0Cqn9NkkvLM",
-      "sortOrder": 4
-    },
-    {
       "id": "life-book-diana-kanberg-cover",
       "title": "Книга жизни — обложка Дианы Канберг",
       "description": "Пример обложки книги жизни в заголовках газет: «Дианы Канберг, или 30 лет через прессу».",
-      "category": "Книга жизни в заголовках газет",
+      "category": "Книга жизни",
       "type": "image",
       "url": "/training/life-book/diana-kanberg-cover.png",
       "sortOrder": 5
-    },
-    {
-      "id": "life-book-video-preview-2",
-      "title": "Как выглядит книга жизни — видео",
-      "description": "Видео показывает внешний вид книги жизни в заголовках газет вживую.",
-      "category": "Книга жизни в заголовках газет",
-      "type": "video",
-      "url": "https://youtu.be/Vefxpzf0b5M",
-      "sortOrder": 6
     },
     {
       "id": "retro-newspaper-site-photo",
@@ -248,7 +230,7 @@
       "id": "gift-edition-site-photo",
       "title": "Персонализированное издание — фото с сайта",
       "description": "Общий визуал для персонализированной газеты Party Page и глянцевого журнала.",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "image",
       "url": "https://static.tildacdn.net/tild3461-3131-4533-a462-623130626535/4_.webp",
       "sortOrder": 7
@@ -257,7 +239,7 @@
       "id": "personal-newspaper-love-times-semya",
       "title": "Love Times и Семейная газета",
       "description": "Примеры персональных газет: «Love Times» и «Семейная газета» с фото и поздравлением.",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "image",
       "url": "/training/personal-newspaper/love-times-semya-gazeta.png",
       "sortOrder": 8
@@ -266,7 +248,7 @@
       "id": "personal-newspaper-muzhskaya-pravda-spread",
       "title": "Мужская правда — разворот",
       "description": "Пример персональной газеты «Мужская правда» с историей и фото героя.",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "image",
       "url": "/training/personal-newspaper/muzhskaya-pravda-spread-2024.png",
       "sortOrder": 9
@@ -275,7 +257,7 @@
       "id": "personal-newspaper-muzhskaya-pravda-cover",
       "title": "Мужская правда — обложка",
       "description": "Пример обложки персональной газеты «Мужская правда».",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "image",
       "url": "/training/personal-newspaper/muzhskaya-pravda-cover-2026.png",
       "sortOrder": 10
@@ -284,7 +266,7 @@
       "id": "personal-newspaper-muzhskaya-pravda-open",
       "title": "Мужская правда — открытый разворот",
       "description": "Пример персональной газеты «Мужская правда» с интервью и семейными фото.",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "image",
       "url": "/training/personal-newspaper/muzhskaya-pravda-open-spread.png",
       "sortOrder": 11
@@ -293,7 +275,7 @@
       "id": "personal-newspaper-video-preview",
       "title": "Как выглядит персональная газета",
       "description": "Видео показывает внешний вид персональной газеты вживую.",
-      "category": "Персональная газета",
+      "category": "Персонализированная газета",
       "type": "video",
       "url": "https://youtu.be/MMkfWGi4M9A",
       "sortOrder": 12
@@ -302,7 +284,7 @@
       "id": "gift-edition-zhenschina-goda-marina",
       "title": "Женщина года — персональный журнал",
       "description": "Пример персонального журнала для клиентской презентации.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/zhenschina-goda-marina.png",
       "sortOrder": 8
@@ -311,7 +293,7 @@
       "id": "gift-edition-forbes-vitaliy",
       "title": "Forbes — персональный журнал",
       "description": "Пример премиального персонализированного журнального подарка.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/forbes-vitaliy.png",
       "sortOrder": 9
@@ -320,7 +302,7 @@
       "id": "gift-edition-zhl-elena",
       "title": "ЖЗЛ — персональный журнал",
       "description": "Пример обложки персонального журнала для клиента.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/zhl-elena.png",
       "sortOrder": 10
@@ -329,7 +311,7 @@
       "id": "gift-edition-muzhchina-goda-igor",
       "title": "Мужчина года — персональный журнал",
       "description": "Пример персонализированного журнального подарка.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/muzhchina-goda-igor.png",
       "sortOrder": 11
@@ -338,7 +320,7 @@
       "id": "gift-edition-forbes-adlet",
       "title": "Forbes — персональный журнал",
       "description": "Визуал для клиентов, которые выбирают персональный журнал.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/forbes-adlet.png",
       "sortOrder": 12
@@ -347,7 +329,7 @@
       "id": "gift-edition-glamour-tatyana",
       "title": "Glamour — персональный журнал",
       "description": "Пример глянцевого персонального журнала.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/glamour-tatyana.png",
       "sortOrder": 13
@@ -356,7 +338,7 @@
       "id": "gift-edition-forbes-maksim",
       "title": "Forbes — персональный журнал",
       "description": "Пример персонализированного журнального подарка для клиента.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "image",
       "url": "/training/gift-edition/forbes-maksim.png",
       "sortOrder": 14
@@ -365,18 +347,9 @@
       "id": "gift-edition-gloss-video-preview",
       "title": "Как выглядит персональный журнал",
       "description": "Видео показывает внешний вид персонального глянцевого журнала вживую.",
-      "category": "Персональный журнал (глянец)",
+      "category": "Персонализированный журнал",
       "type": "video",
       "url": "https://youtube.com/shorts/Av_eFuPX42Q?feature=share",
-      "sortOrder": 15
-    },
-    {
-      "id": "gift-edition-malenkiy-rasskaz",
-      "title": "Маленький рассказ — персональная книга",
-      "description": "Пример персональной книги или журнального формата.",
-      "category": "Персональная книга",
-      "type": "image",
-      "url": "/training/gift-edition/malenkiy-rasskaz.png",
       "sortOrder": 15
     },
     {
