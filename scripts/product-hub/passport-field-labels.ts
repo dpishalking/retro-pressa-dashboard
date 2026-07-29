@@ -477,7 +477,7 @@ export function passportKvRow(
 }
 
 export function passportKvRows(
-  rows: Array<[string, string | number, string] | [string, string | number, string, string]>,
+  rows: Array<[string, string | number, string, string?]>,
 ): Array<Array<string | number>> {
   return [
     [...PASSPORT_KV_HEADER],
