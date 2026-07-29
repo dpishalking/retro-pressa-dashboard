@@ -67,6 +67,10 @@ jobs:
             mkdir -p /tmp/retro-pressa-deploy/training-seed
             cp data/training/practice-modules.json /tmp/retro-pressa-deploy/training-seed/practice-modules.json
           fi
+          if [ -f data/product-passports/dashboard.json ]; then
+            mkdir -p /tmp/retro-pressa-deploy/product-passports-seed
+            cp data/product-passports/dashboard.json /tmp/retro-pressa-deploy/product-passports-seed/dashboard.json
+          fi
           cp -R scripts/trainer-backend-overlay /tmp/retro-pressa-deploy/trainer-backend-overlay
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
@@ -176,6 +180,7 @@ jobs:
           env.TRAINER_BOT_USERNAME = trainerBotUsername;
           env.TRAINING_DATA_DIR = "/opt/retro-pressa-shared/data/training";
           env.PRODUCTS_DATA_DIR = "/opt/retro-pressa-shared/data/products";
+          env.PRODUCT_PASSPORTS_DATA_DIR = "/opt/retro-pressa-shared/data/product-passports";
           env.AUTH_USERS_FILE = "/opt/retro-pressa-shared/data/auth/users.json";
           env.AUTH_CATALOG_DIR = "/opt/retro-pressa-shared/auth-catalog";
           env.NEXT_PUBLIC_APP_URL = "https://rp-bi.site";
@@ -331,7 +336,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/products" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/products" "$APP_DATA_DIR/product-passports" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
@@ -447,6 +452,11 @@ jobs:
           fi
           if [ -f "$APP_DIR/training-seed/practice-modules.json" ]; then
             cp "$APP_DIR/training-seed/practice-modules.json" "$APP_DATA_DIR/training/practice-modules.json"
+          fi
+          if [ -f "$APP_DIR/product-passports-seed/dashboard.json" ]; then
+            mkdir -p "$APP_DATA_DIR/product-passports"
+            cp "$APP_DIR/product-passports-seed/dashboard.json" "$APP_DATA_DIR/product-passports/dashboard.json"
+            echo "Updated product passports dashboard snapshot"
           fi
           cp /tmp/retro-pressa-runtime-env.json runtime-env.json
           chmod 600 runtime-env.json

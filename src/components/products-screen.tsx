@@ -86,7 +86,7 @@ function PassportCard({
             className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
             <ExternalLink size={15} />
-            Паспорт
+            Открыть карточку
           </a>
           <button
             type="button"
@@ -141,7 +141,7 @@ function PassportsPanel() {
   const [expandedId, setExpandedId] = useState("");
 
   const load = useCallback(async () => {
-    setStatus({ state: "loading", message: "Загружаю паспорта…" });
+    setStatus({ state: "loading", message: "Загружаю продукты…" });
     try {
       const response = await fetch("/api/product-passports", { cache: "no-store" });
       const data = await readJsonResponse<{
@@ -150,7 +150,7 @@ function PassportsPanel() {
         syncedAt?: string;
         error?: string;
       }>(response);
-      if (!response.ok) throw new Error(data.error || "Не удалось загрузить паспорта");
+      if (!response.ok) throw new Error(data.error || "Не удалось загрузить продукты");
       setProducts(data.products ?? []);
       setCanSeeCogs(Boolean(data.canSeeCogs));
       setSyncedAt(data.syncedAt || "");
@@ -158,7 +158,7 @@ function PassportsPanel() {
     } catch (error) {
       setStatus({
         state: "error",
-        message: error instanceof Error ? error.message : "Ошибка загрузки паспортов",
+        message: error instanceof Error ? error.message : "Ошибка загрузки продуктов",
       });
     }
   }, []);
@@ -171,14 +171,14 @@ function PassportsPanel() {
     <section className="card p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-black text-slate-950">Паспорта — как продавать</h2>
+          <h2 className="text-lg font-black text-slate-950">Наши продукты</h2>
           <p className="mt-1 text-sm font-medium text-slate-600">
-            Кому продавать, когда предлагать, питч и цена
-            {canSeeCogs ? ", себестоимость и маржа" : ""}. Данные из Google-паспортов продуктов.
+            Кому предложить, когда говорить, какой питч и какая цена
+            {canSeeCogs ? ", плюс себестоимость и маржа" : ""}. Это линейка товаров Retro Pressa для продажи.
           </p>
           {syncedAt ? (
             <p className="mt-1 text-xs font-medium text-slate-500">
-              Снимок: {new Date(syncedAt).toLocaleString("ru-RU")}
+              Обновлено: {new Date(syncedAt).toLocaleString("ru-RU")}
             </p>
           ) : null}
         </div>
@@ -197,10 +197,7 @@ function PassportsPanel() {
       {status.state === "error" ? <p className="text-sm text-rose-600">{status.message}</p> : null}
 
       {products.length === 0 && status.state !== "loading" ? (
-        <p className="text-sm text-slate-500">
-          Пока нет снимка паспортов. На сервере:{" "}
-          <code className="rounded bg-slate-100 px-1">npm run product-hub:sync-passport-dashboard</code>
-        </p>
+        <p className="text-sm text-slate-500">Пока нет данных по продуктам.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {products.map((product) => (
@@ -281,7 +278,7 @@ export function ProductsScreen() {
           <OfficeHubBackLink />
           <h1 className="mt-3 font-serif text-3xl italic tracking-tight text-slate-950">Продукты</h1>
           <p className="mt-1 max-w-xl text-sm font-medium text-slate-600">
-            Паспорта для продаж и готовые PDF-выпуски со ссылками для клиентов.
+            Линейка Retro Pressa для продаж и готовые PDF-выпуски со ссылками для клиентов.
           </p>
         </div>
       </div>
@@ -296,7 +293,7 @@ export function ProductsScreen() {
               : "border border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50"
           }`}
         >
-          Паспорта · как продавать
+          Наши продукты
         </button>
         <button
           type="button"

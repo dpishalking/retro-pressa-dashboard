@@ -34,8 +34,7 @@ export async function GET(request: Request) {
   if (!snapshot) {
     return NextResponse.json(
       {
-        error:
-          "Снимок паспортов ещё не собран. Запустите: npm run product-hub:sync-passport-dashboard",
+        error: "Каталог продуктов ещё не загружен. Обновите страницу или пересоберьте снимок.",
         products: [],
       },
       { status: 404 },
