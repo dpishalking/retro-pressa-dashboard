@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-29T23:44:28.116Z",
+  "syncedAt": "2026-07-30T10:01:46.075Z",
   "source": "product-hub passports (Смыслы + Экономика)",
   "productCount": 12,
   "products": [
@@ -177,12 +177,12 @@
         "compare_with": "Апселл к оригиналу/репродукции/поздравительным/персональным. Не самостоятельный «главный» подарок в большинстве сценариев."
       },
       "economy": {
-        "retail_price": "от 2",
+        "retail_price": "4",
         "currency": "EUR",
-        "cost_price": "10,5",
-        "cogs_total": "10,5",
-        "cogs_margin_pct": "65",
-        "cogs_retail_model": "30"
+        "cost_price": "0,005",
+        "cogs_total": "0,005",
+        "cogs_margin_pct": "99,88",
+        "cogs_retail_model": "4"
       }
     },
     {
@@ -225,7 +225,11 @@
       },
       "economy": {
         "retail_price": "3.5",
-        "currency": "EUR"
+        "currency": "EUR",
+        "cost_price": "0,2",
+        "cogs_total": "0,2",
+        "cogs_margin_pct": "94,29",
+        "cogs_retail_model": "3,5"
       }
     },
     {
