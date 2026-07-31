@@ -97,8 +97,24 @@ function MyTrainingContent() {
       </section>
 
       <section className="mb-6 grid gap-4 lg:grid-cols-2">
+        <Link href="/training/intro" className="block h-full">
+          <article className="card flex h-full flex-col p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-700">1</div>
+            </div>
+            <h2 className="text-xl font-black text-slate-950">Retro Pressa — кто мы?</h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600">
+              Посмотрите видео, чтобы лучше понять масштаб компании, географию работы и продукты, с которыми мы
+              работаем. Тест не нужен.
+            </p>
+            <p className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-blue-600">
+              Смотреть видео
+              <ArrowRight size={16} />
+            </p>
+          </article>
+        </Link>
         {stages.map((stage, index) => (
-          <StageCard key={stage.id} stage={stage} index={index} />
+          <StageCard key={stage.id} stage={stage} index={index + 1} />
         ))}
       </section>
 

@@ -164,6 +164,15 @@
       "sortOrder": 5
     },
     {
+      "id": "life-book-video-review",
+      "title": "Видеоотзыв клиента — книга жизни",
+      "description": "Клиентский видеоотзыв по книге жизни в заголовках газет.",
+      "category": "Книга жизни",
+      "type": "video",
+      "url": "https://www.youtube.com/shorts/VyXhRMkL-zw",
+      "sortOrder": 6
+    },
+    {
       "id": "retro-newspaper-site-photo",
       "title": "Поздравительная газета — фото с сайта",
       "description": "Визуал для объяснения ретро-газеты с личными фото и поздравлением.",
@@ -477,6 +486,69 @@
       "type": "video",
       "url": "https://www.youtube.com/shorts/7wygdVyplo8",
       "sortOrder": 28
+    },
+    {
+      "id": "family-edition-veselaya-semeika-1",
+      "title": "Весёлая семейка 1 — PDF для печати",
+      "description": "Полный PDF-макет семейного издания «Весёлая семейка 1». Можно скачать и отправить клиенту как пример.",
+      "category": "Семейное издание",
+      "type": "document",
+      "url": "/training/family-edition/veselaya-semeika-1.pdf",
+      "sortOrder": 1
+    },
+    {
+      "id": "family-edition-veselaya-semeika-spread",
+      "title": "Весёлая семейка — разворот «Ни дня без шутки»",
+      "description": "Пример разворота семейного издания с юмористическими семейными фото.",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/veselaya-semeika-spread.png",
+      "sortOrder": 2
+    },
+    {
+      "id": "family-edition-nachalo-tolko-ty",
+      "title": "Семейное издание — «С чего всё начиналось»",
+      "description": "Пример разворота семейного издания: история знакомства и фото пары.",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/nachalo-tolko-ty-spread.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "family-edition-vestnik-lyubvi",
+      "title": "Вестник любви — обложка",
+      "description": "Пример обложки семейного издания «Вестник любви», специальный выпуск.",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/vestnik-lyubvi-cover.png",
+      "sortOrder": 4
+    },
+    {
+      "id": "family-edition-love-times-cover",
+      "title": "The Love Times — обложка",
+      "description": "Пример персональной газеты «The Love Times» с заголовком «История настоящей любви».",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/love-times-cover.png",
+      "sortOrder": 5
+    },
+    {
+      "id": "family-edition-corporate-spread",
+      "title": "Корпоративное издание Retro Pressa",
+      "description": "Пример корпоративного семейного/брендового издания Retro Pressa, №1 2025.",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/corporate-edition-spread.png",
+      "sortOrder": 6
+    },
+    {
+      "id": "family-edition-love-times-spread",
+      "title": "The Love Times — разворот",
+      "description": "Пример разворота «The Love Times»: история знакомства и первые слова.",
+      "category": "Семейное издание",
+      "type": "image",
+      "url": "/training/family-edition/love-times-spread.png",
+      "sortOrder": 7
     }
   ]
 }
