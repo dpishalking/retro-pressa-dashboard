@@ -331,7 +331,7 @@ function TrainingHubContent() {
 export function TrainingHub() {
   return (
     <TrainingLayout
-      title="Продукт"
+      title="Наши продукты"
       backHref="/training"
       backLabel="К этапам обучения"
     >

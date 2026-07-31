@@ -102,7 +102,7 @@ function MyTrainingContent() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="rounded-xl bg-amber-50 p-3 text-sm font-black text-amber-700">1</div>
             </div>
-            <h2 className="text-xl font-black text-slate-950">Retro Pressa — кто мы?</h2>
+            <h2 className="text-xl font-black text-slate-950">Что такое Retro Pressa</h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">
               Посмотрите видео, чтобы лучше понять масштаб компании, географию работы и продукты, с которыми мы
               работаем. Тест не нужен.

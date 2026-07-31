@@ -10,7 +10,7 @@ export function TrainingIntroScreen() {
   const embedUrl = normalizeVideoEmbedUrl(INTRO_VIDEO_URL);
 
   return (
-    <TrainingLayout title="Retro Pressa — кто мы?" backHref="/training" backLabel="К обучению">
+    <TrainingLayout title="Что такое Retro Pressa" backHref="/training" backLabel="К обучению">
       <section className="card p-6">
         <p className="text-base leading-relaxed text-slate-700">
           Посмотрите это видео, чтобы лучше понять масштаб компании, географию работы и продукты, с которыми мы
@@ -22,7 +22,7 @@ export function TrainingIntroScreen() {
             <div className="aspect-video">
               <iframe
                 src={embedUrl}
-                title="Retro Pressa — кто мы?"
+                title="Что такое Retro Pressa"
                 className="h-full w-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

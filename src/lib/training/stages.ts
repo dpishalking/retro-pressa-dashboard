@@ -12,7 +12,7 @@ export type TrainingStageConfig = {
 export const TRAINING_STAGES: TrainingStageConfig[] = [
   {
     id: "products",
-    title: "Продукт",
+    title: "Наши продукты",
     description: "Изучаем линейку подарков: смысл каждого продукта, кому предлагать, как объяснять ценность и сдавать тест.",
     href: "/training/products",
     order: 1,
@@ -20,7 +20,7 @@ export const TRAINING_STAGES: TrainingStageConfig[] = [
   },
   {
     id: "crm",
-    title: "Сырьё архива",
+    title: "CRM + Архив",
     description: "CRM и архив изданий: как работать с заявками, оригиналами и репродукциями, не теряя контекст клиента.",
     href: "/training/crm",
     order: 2,

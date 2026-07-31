@@ -60,6 +60,12 @@ const LIVE_LINKS = [
     description: "crm5.profita.biz",
     href: "https://crm5.profita.biz/",
     Icon: ClipboardList
+  },
+  {
+    label: "Создание сценария поздравления",
+    description: "familia-studio.com",
+    href: "https://familia-studio.com/presentation/scenario",
+    Icon: Pencil
   }
 ] as const;
 
