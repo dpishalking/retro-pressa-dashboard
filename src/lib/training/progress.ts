@@ -47,7 +47,8 @@ function trackStageStats(
 export function buildTrainingOverview(
   products: ProductTrainingModule[],
   crmModules: TrainingTrackModule[],
-  progress: UserTrainingProgress
+  progress: UserTrainingProgress,
+  practiceModules: TrainingTrackModule[] = []
 ): TrainingOverview {
   const completedProducts = progress.products.filter((item) => item.status === "completed").length;
   const inProgressProducts = progress.products.filter((item) => item.status === "in_progress").length;
@@ -63,6 +64,7 @@ export function buildTrainingOverview(
     .map((product) => product.id);
 
   const crmStats = trackStageStats(crmModules, progress, "crm");
+  const practiceStats = trackStageStats(practiceModules, progress, "practice");
 
   const stages: TrainingStageOverview[] = TRAINING_STAGES.map((stage) => {
     if (stage.id === "products") {
@@ -78,11 +80,14 @@ export function buildTrainingOverview(
         status: stageStatus(completedProducts, inProgressProducts, totalProducts)
       };
     }
+    if (stage.id === "practice") {
+      return { id: stage.id, title: stage.title, description: stage.description, href: stage.href, ...practiceStats };
+    }
     return { id: stage.id, title: stage.title, description: stage.description, href: stage.href, ...crmStats };
   });
 
-  const totalUnits = totalProducts + crmStats.totalModules;
-  const completedUnits = completedProducts + crmStats.completedModules;
+  const totalUnits = totalProducts + crmStats.totalModules + practiceStats.totalModules;
+  const completedUnits = completedProducts + crmStats.completedModules + practiceStats.completedModules;
   const totalStagesPercent = totalUnits ? Math.round((completedUnits / totalUnits) * 100) : 0;
 
   return {

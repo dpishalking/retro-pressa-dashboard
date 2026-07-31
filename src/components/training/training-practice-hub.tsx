@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import { getStageConfig } from "@/lib/training/stages";
 
 function PracticeHubContent() {
   const { user, loading: userLoading } = useTrainingUser();
@@ -90,11 +89,9 @@ function PracticeHubContent() {
 }
 
 export function TrainingPracticeHub() {
-  const stage = getStageConfig("practice")!;
-
   return (
     <TrainingLayout
-      title={stage.title.replace(/^Этап \d+\.\s/, "")}
+      title="Практика"
       backHref="/training"
       backLabel="К этапам обучения"
     >

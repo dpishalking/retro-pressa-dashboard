@@ -15,13 +15,14 @@ function pickLatestTimestamp(values: Array<string | undefined>): string | undefi
 }
 
 export async function buildManagerTrainingReport(user: AppUserPublic): Promise<ManagerTrainingReport> {
-  const [products, crmModules, progress] = await Promise.all([
+  const [products, crmModules, practiceModules, progress] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
+    listTrackModules("practice"),
     getOrCreateUserProgress(user.id, user.name)
   ]);
 
-  const overview = buildTrainingOverview(products, crmModules, progress);
+  const overview = buildTrainingOverview(products, crmModules, progress, practiceModules);
 
   const productRows = products.map((product) => {
     const item = progress.products.find((entry) => entry.productId === product.id);

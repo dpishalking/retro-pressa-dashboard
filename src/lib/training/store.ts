@@ -421,12 +421,13 @@ export async function getQuizAttempt(userId: string, attemptId: string) {
 }
 
 export async function getTrainingOverview(userId: string): Promise<TrainingOverview> {
-  const [products, crmModules, progress] = await Promise.all([
+  const [products, crmModules, practiceModules, progress] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
+    listTrackModules("practice"),
     getOrCreateUserProgress(userId)
   ]);
-  return buildTrainingOverview(products, crmModules, progress);
+  return buildTrainingOverview(products, crmModules, progress, practiceModules);
 }
 
 export async function markBotScenarioStarted(userId: string, scenarioId: string) {
@@ -477,9 +478,10 @@ export async function markBotScenarioCompleted(userId: string, scenarioId: strin
 
 export async function listAllManagerProgress() {
   const { listTraineeUsers } = await import("@/lib/auth/store");
-  const [products, crmModules, trainees] = await Promise.all([
+  const [products, crmModules, practiceModules, trainees] = await Promise.all([
     listProducts(),
     listTrackModules("crm"),
+    listTrackModules("practice"),
     listTraineeUsers()
   ]);
 
@@ -493,7 +495,7 @@ export async function listAllManagerProgress() {
           role: "manager" as const
         },
         progress,
-        overview: buildTrainingOverview(products, crmModules, progress)
+        overview: buildTrainingOverview(products, crmModules, progress, practiceModules)
       };
     })
   );

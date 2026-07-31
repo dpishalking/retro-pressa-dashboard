@@ -190,7 +190,7 @@ export function TrainingTrackHub({ stageId }: { stageId: TrackStageId }) {
 
   return (
     <TrainingLayout
-      title={stage.title.replace(/^Этап \d+\.\s/, "")}
+      title={stage.title}
       backHref="/training"
       backLabel="К этапам обучения"
     >

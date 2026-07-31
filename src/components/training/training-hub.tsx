@@ -128,7 +128,8 @@ function TrainingHubContent() {
       overview: buildTrainingOverview(
         fallbackProducts,
         createTrackModulesSeed("crm"),
-        fallbackProgress
+        fallbackProgress,
+        createTrackModulesSeed("practice")
       )
     };
   }, [user?.id, user?.name]);
@@ -330,7 +331,7 @@ function TrainingHubContent() {
 export function TrainingHub() {
   return (
     <TrainingLayout
-      title="Этап 1. Продукт"
+      title="Продукт"
       backHref="/training"
       backLabel="К этапам обучения"
     >

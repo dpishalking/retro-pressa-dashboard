@@ -12,7 +12,7 @@ export type TrainingStageConfig = {
 export const TRAINING_STAGES: TrainingStageConfig[] = [
   {
     id: "products",
-    title: "Этап 1. Продукт",
+    title: "Продукт",
     description: "Изучаем линейку подарков: смысл каждого продукта, кому предлагать, как объяснять ценность и сдавать тест.",
     href: "/training/products",
     order: 1,
@@ -20,8 +20,8 @@ export const TRAINING_STAGES: TrainingStageConfig[] = [
   },
   {
     id: "crm",
-    title: "CRM + Архив изданий",
-    description: "Битрикс24: где смотреть заявки, как вести клиента, фиксировать переписку и не терять контекст.",
+    title: "Сырьё архива",
+    description: "CRM и архив изданий: как работать с заявками, оригиналами и репродукциями, не теряя контекст клиента.",
     href: "/training/crm",
     order: 2,
     accent: "text-blue-600 bg-blue-50"

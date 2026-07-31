@@ -118,13 +118,13 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
 
       <section className="grid gap-4 md:grid-cols-2">
         <StageSummaryCard
-          title="Этап 1. Продукт"
+          title="Продукт"
           completed={productsStage?.completedModules ?? 0}
           total={productsStage?.totalModules ?? 0}
           percent={productsStage?.percent ?? 0}
         />
         <StageSummaryCard
-          title="CRM + Архив изданий"
+          title="Сырьё архива"
           completed={crmStage?.completedModules ?? 0}
           total={crmStage?.totalModules ?? 0}
           percent={crmStage?.percent ?? 0}
