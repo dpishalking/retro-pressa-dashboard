@@ -133,15 +133,26 @@ const seed = JSON.parse(fs.readFileSync(seedPath, "utf8"));
 const live = JSON.parse(fs.readFileSync(livePath, "utf8"));
 let changed = false;
 
+if (!Array.isArray(live.products)) {
+  live.products = [];
+}
+
 for (const seedProduct of seed.products ?? []) {
-  const liveProduct = live.products?.find((item) => item.id === seedProduct.id);
-  if (!liveProduct) continue;
+  const liveProduct = live.products.find((item) => item.id === seedProduct.id);
+  if (!liveProduct) {
+    live.products.push(JSON.parse(JSON.stringify(seedProduct)));
+    changed = true;
+    console.log(`Added product from seed: ${seedProduct.id}`);
+    continue;
+  }
 
   if (syncProductFromSeed(seedProduct, liveProduct)) {
     changed = true;
     console.log(`Synced product content for ${seedProduct.id}`);
   }
 }
+
+live.products.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
 if (changed) {
   live.updatedAt = new Date().toISOString();

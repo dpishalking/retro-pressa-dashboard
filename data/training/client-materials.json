@@ -549,6 +549,33 @@
       "type": "image",
       "url": "/training/family-edition/love-times-spread.png",
       "sortOrder": 7
+    },
+    {
+      "id": "congratulatory-song-man",
+      "title": "Поздравление мужчины",
+      "description": "Пример поздравительной песни для мужчины — можно отправить клиенту как образец.",
+      "category": "Поздравительная песня",
+      "type": "video",
+      "url": "https://youtu.be/VTJNqKoY1us",
+      "sortOrder": 1
+    },
+    {
+      "id": "congratulatory-song-dog",
+      "title": "Песня псу",
+      "description": "Пример поздравительной песни для питомца — можно отправить клиенту как образец.",
+      "category": "Поздравительная песня",
+      "type": "video",
+      "url": "https://youtu.be/JyNZt2YWK2w",
+      "sortOrder": 2
+    },
+    {
+      "id": "congratulatory-song-grandfather",
+      "title": "Песня дедушке",
+      "description": "Пример поздравительной песни для дедушки — можно отправить клиенту как образец.",
+      "category": "Поздравительная песня",
+      "type": "video",
+      "url": "https://youtu.be/jvHjELZSCms",
+      "sortOrder": 3
     }
   ]
 }
