@@ -716,14 +716,9 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         summary: "Юмористические наклейки в формате «справка / микстура». Стоимость — 3,5 €.",
         whyNow: "Лёгкий апселл к любому подарку: весело, понятно и почти без возражений по цене.",
         tip: "Предлагайте в конце: «Можем добавить наклейку-справку за 3,5 € — клиенты обычно улыбаются и берут».",
-        linkLabel: "",
-        linkUrl: "",
-        imageUrls: [
-          "/motivation/stickers/mixtura.png",
-          "/motivation/stickers/spravka-3-dnya.png",
-          "/motivation/stickers/otgul-48.png",
-          "/motivation/stickers/otgul-blue.png"
-        ],
+        linkLabel: "Открыть в продуктах",
+        linkUrl: "/training/products/stickers",
+        imageUrls: [],
         displayOrder: 4
       }
     ],
