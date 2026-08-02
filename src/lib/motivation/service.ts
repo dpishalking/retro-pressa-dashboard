@@ -322,26 +322,28 @@ function bonusCondition(rule: MotivationRule): string {
 /** Simple board for managers: month bonuses + products to push now. */
 export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
   const catalog = await readMotivationCatalog();
-  const period = pickDefaultPeriod(catalog);
-  const seedFocus = createMotivationCatalogSeed().focusProducts;
+  const seed = createMotivationCatalogSeed();
+  const catalogPeriod = pickDefaultPeriod(catalog);
+  const seedPeriod =
+    (catalogPeriod
+      ? seed.periods.find((p) => p.month === catalogPeriod.month && p.year === catalogPeriod.year)
+      : null) ??
+    seed.periods.find((p) => p.status === "active") ??
+    pickDefaultPeriod(seed);
 
-  if (!period) {
+  if (!seedPeriod) {
     return {
       periodTitle: "Мотивация месяца",
       periodStatus: "draft",
       intro: "Условия мотивации на этот месяц пока не опубликованы.",
       bonuses: [],
-      focusProducts: seedFocus
+      focusProducts: seed.focusProducts
     };
   }
 
-  const seedRules = createMotivationCatalogSeed().rules;
-  const sourceRules =
-    catalog.isDemo
-      ? seedRules.filter((rule) => rule.periodId === period.id && rule.isActive)
-      : catalog.rules.filter((rule) => rule.periodId === period.id && rule.isActive);
-
-  const bonuses = sourceRules
+  // Board content is edited in seed for now — ignore stale on-disk catalog rules.
+  const bonuses = seed.rules
+    .filter((rule) => rule.periodId === seedPeriod.id && rule.isActive)
     .sort((a, b) => a.displayOrder - b.displayOrder)
     .map((rule) => ({
       id: rule.id,
@@ -351,10 +353,7 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
       condition: bonusCondition(rule)
     }));
 
-  // Demo catalog always follows seed so focus products stay editable in code.
-  const focusProducts: FocusProduct[] = (
-    catalog.isDemo || catalog.focusProducts.length === 0 ? seedFocus : catalog.focusProducts
-  )
+  const focusProducts: FocusProduct[] = [...seed.focusProducts]
     .map((product) => ({
       ...product,
       imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : []
@@ -362,8 +361,8 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return {
-    periodTitle: period.title,
-    periodStatus: period.status,
+    periodTitle: catalogPeriod?.title ?? seedPeriod.title,
+    periodStatus: catalogPeriod?.status ?? seedPeriod.status,
     intro: "Дополнительные бонусы месяца — просто зафиксируйте условия и опирайтесь на них в работе.",
     bonuses,
     focusProducts
