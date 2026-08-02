@@ -8,6 +8,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
   const ruleAvgId = "rule-avg-items-2026-08";
   const ruleReviewsId = "rule-reviews-2026-08";
   const ruleAvgCheckId = "rule-avg-check-2026-08";
+  const ruleConversionId = "rule-conversion-2026-08";
 
   return {
     version: 1,
@@ -111,7 +112,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         periodId,
         title: "Средний чек от 80 €",
         description:
-          "Если средний чек оплаченных заказов за месяц составляет 80 € или больше, менеджер получает дополнительный бонус +55 €. Комиссия — 20%. Выплата — +111 €.",
+          "Если средний чек оплаченных заказов за месяц составляет 80 € или больше, менеджер получает дополнительный бонус +55 €.",
         ruleType: "numeric_target",
         rewardType: "fixed",
         rewardAmount: 55,
@@ -121,11 +122,34 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         calculationConfig: {
           metricKey: "average_check",
           dataSource: "manual",
-          notes: "Средний чек = сумма оплаченных заказов / количество оплаченных заказов. Комиссия 20%. Выплата +111 €."
+          notes: "Средний чек = сумма оплаченных заказов / количество оплаченных заказов."
         },
         dataSource: "manual",
         isActive: true,
         displayOrder: 3,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: ruleConversionId,
+        periodId,
+        title: "Конверсия из лида в оплату от 20%",
+        description:
+          "Если средняя конверсия из лида в оплату за месяц составляет 20% или больше, менеджер получает дополнительно +111 €.",
+        ruleType: "numeric_target",
+        rewardType: "fixed",
+        rewardAmount: 111,
+        currency: "EUR",
+        targetValue: 20,
+        minimumValue: null,
+        calculationConfig: {
+          metricKey: "lead_to_paid_conversion",
+          dataSource: "manual",
+          notes: "Конверсия = оплаченные заказы / полученные лиды × 100."
+        },
+        dataSource: "manual",
+        isActive: true,
+        displayOrder: 4,
         createdAt: now,
         updatedAt: now
       }

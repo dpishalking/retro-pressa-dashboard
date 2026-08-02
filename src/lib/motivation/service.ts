@@ -302,7 +302,11 @@ function bonusCondition(rule: MotivationRule): string {
   }
   if (rule.calculationConfig.metricKey === "average_check") {
     const target = rule.targetValue ?? 80;
-    return `Средний чек оплаченных заказов ≥ ${target} € · комиссия 20% · выплата +111 €`;
+    return `Средний чек оплаченных заказов ≥ ${target} €`;
+  }
+  if (rule.calculationConfig.metricKey === "lead_to_paid_conversion") {
+    const target = rule.targetValue ?? 20;
+    return `Средняя конверсия из лида в оплату ≥ ${target}%`;
   }
   if (rule.calculationConfig.metricKey === "review_lead_ratio") {
     const minLeads = rule.calculationConfig.minLeads ?? 50;
