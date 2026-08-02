@@ -54,7 +54,7 @@ const offices: OfficeCard[] = [
   {
     href: "/motivation",
     title: "Мотивация",
-    description: "Дополнительные бонусы, прогресс по целям, рейтинг команды, отзывы клиентов и актуальные инструменты продаж.",
+    description: "Бонусы текущего месяца и продукты, на которых сейчас стоит сфокусироваться в продажах.",
     icon: Trophy,
     status: "active",
     accent: "text-orange-600 bg-orange-50"

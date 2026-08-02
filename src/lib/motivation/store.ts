@@ -35,11 +35,18 @@ function isValidCatalog(value: unknown): value is MotivationCatalog {
   );
 }
 
+function normalizeCatalog(catalog: MotivationCatalog): MotivationCatalog {
+  return {
+    ...catalog,
+    focusProducts: Array.isArray(catalog.focusProducts) ? catalog.focusProducts : []
+  };
+}
+
 export async function readRawMotivationCatalog(): Promise<MotivationCatalog | null> {
   try {
     const raw = await readFile(catalogPath, "utf8");
     const parsed = JSON.parse(raw) as unknown;
-    if (isValidCatalog(parsed)) return parsed;
+    if (isValidCatalog(parsed)) return normalizeCatalog(parsed);
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (!message.includes("ENOENT")) {

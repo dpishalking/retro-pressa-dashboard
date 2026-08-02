@@ -234,6 +234,17 @@ export type MotivationNotification = {
   createdAt: string;
 };
 
+export type FocusProduct = {
+  id: string;
+  title: string;
+  summary: string;
+  whyNow: string;
+  tip: string;
+  linkLabel: string;
+  linkUrl: string;
+  displayOrder: number;
+};
+
 export type MotivationCatalog = {
   version: 1;
   isDemo: boolean;
@@ -245,6 +256,7 @@ export type MotivationCatalog = {
   reviews: ReviewSubmission[];
   updates: MonthlyUpdate[];
   resources: SalesResource[];
+  focusProducts: FocusProduct[];
   adjustments: MetricAdjustment[];
   notifications: MotivationNotification[];
   winners: Array<{
@@ -255,6 +267,21 @@ export type MotivationCatalog = {
     confirmedAt: string;
   }>;
   updatedAt: string;
+};
+
+/** Simplified board for managers: month bonuses + focus products. */
+export type MotivationBoardPayload = {
+  periodTitle: string;
+  periodStatus: MotivationPeriodStatus;
+  intro: string;
+  bonuses: Array<{
+    id: string;
+    title: string;
+    description: string;
+    rewardAmount: number;
+    condition: string;
+  }>;
+  focusProducts: FocusProduct[];
 };
 
 export type PaidOrderInput = {

@@ -626,63 +626,37 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         updatedAt: "2026-08-04T09:00:00.000Z"
       }
     ],
-    resources: [
+    resources: [],
+    focusProducts: [
       {
-        id: "res-1",
-        title: "Сценарий поздравления",
-        type: "quiz",
-        description: "Помогает клиенту выбрать, как вручить подарок и превратить вручение в событие.",
-        usageInstructions:
-          "Когда клиент уже выбрал подарок; когда сомневается, как его вручить; когда нужно усилить ценность заказа.",
-        salesStage: "Дожим / апселл",
-        url: "https://example.com/greeting-quiz",
-        status: "active",
-        owner: "РОП",
-        updatedAt: now,
-        displayOrder: 1,
-        createdAt: now
+        id: "focus-song",
+        title: "Поздравительная песня",
+        summary: "Персональная песня за один день. Стоимость — 20 €.",
+        whyNow: "Легко добавляется к заказу и поднимает средний чек без долгого согласования.",
+        tip: "Предлагайте после выбора основного подарка: «Можем добавить песню — клиенту обычно очень нравится».",
+        linkLabel: "Открыть в обучении",
+        linkUrl: "/training",
+        displayOrder: 1
       },
       {
-        id: "res-2",
-        title: "Подарок для мужчины",
-        type: "landing",
-        description: "Лендинг для клиентов, которым сложно выбрать подарок мужчине.",
-        usageInstructions: "На этапе подбора подарка, если клиент сомневается в выборе.",
-        salesStage: "Подбор",
-        url: "https://example.com/gift-for-man",
-        status: "active",
-        owner: "Маркетинг",
-        updatedAt: now,
-        displayOrder: 2,
-        createdAt: now
+        id: "focus-greeting",
+        title: "Сервис сценариев поздравления",
+        summary: "Квиз, который помогает клиенту выбрать, как вручить подарок.",
+        whyNow: "Усиливает ценность заказа и помогает дойти до комплекта, а не до одной позиции.",
+        tip: "Отправляйте, когда подарок уже выбран, но клиент сомневается, как его вручить.",
+        linkLabel: "Открыть сервис",
+        linkUrl: "https://example.com/greeting-quiz",
+        displayOrder: 2
       },
       {
-        id: "res-3",
-        title: "Скрипт апселла песни",
-        type: "script",
-        description: "Как предложить поздравительную песню к заказу.",
-        usageInstructions: "После согласования основного подарка, перед выставлением счёта.",
-        salesStage: "Апселл",
-        url: "https://example.com/song-script",
-        status: "active",
-        owner: "РОП",
-        updatedAt: now,
-        displayOrder: 3,
-        createdAt: now
-      },
-      {
-        id: "res-4",
-        title: "Калькулятор комплекта",
-        type: "calculator",
-        description: "Быстрый расчёт стоимости комплекта с доставкой.",
-        usageInstructions: "Когда клиент просит ориентир по бюджету.",
-        salesStage: "Презентация цены",
-        url: "https://example.com/calc",
-        status: "testing",
-        owner: "Продукт",
-        updatedAt: now,
-        displayOrder: 4,
-        createdAt: now
+        id: "focus-man-gift",
+        title: "Лендинг «Подарок для мужчины»",
+        summary: "Подборка для клиентов, которым сложно выбрать подарок.",
+        whyNow: "Частый сценарий в августе — быстрее закрывает «не знаю, что выбрать».",
+        tip: "Используйте на этапе подбора, если клиент долго сомневается.",
+        linkLabel: "Открыть лендинг",
+        linkUrl: "https://example.com/gift-for-man",
+        displayOrder: 3
       }
     ],
     adjustments: [],

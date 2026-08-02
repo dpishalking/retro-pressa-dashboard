@@ -1,5 +1,6 @@
 import type { AccessLevel, SessionUser } from "@/types/auth";
 import type {
+  FocusProduct,
   ManagerBonusCard,
   ManagerMotivationProfile,
   ManagerMotivationResult,
@@ -7,6 +8,7 @@ import type {
   ManagerPeriodMetrics,
   MetricAdjustment,
   MonthlyUpdate,
+  MotivationBoardPayload,
   MotivationCatalog,
   MotivationPagePayload,
   MotivationPeriod,
@@ -14,6 +16,7 @@ import type {
   ReviewSubmission,
   SalesResource
 } from "@/types/motivation";
+import { createMotivationCatalogSeed } from "@/data/motivation-seed";
 import {
   buildContentFingerprint,
   buildManagerLeaderboard,
@@ -290,6 +293,63 @@ function buildBonusCards(
       gapToLeader
     };
   });
+}
+
+function bonusCondition(rule: MotivationRule): string {
+  if (rule.calculationConfig.metricKey === "average_items_per_order") {
+    const target = rule.targetValue ?? rule.calculationConfig.targetAverageItems ?? 2.5;
+    return `Среднее число наименований в оплаченных заказах ≥ ${String(target).replace(".", ",")}`;
+  }
+  if (rule.calculationConfig.metricKey === "review_lead_ratio") {
+    const minLeads = rule.calculationConfig.minLeads ?? 50;
+    const minReviews = rule.calculationConfig.minReviews ?? 3;
+    return `Лучшее соотношение отзывов к лидам. Минимум: ${minLeads} лидов и ${minReviews} подтверждённых отзыва`;
+  }
+  if (rule.targetValue != null) {
+    return `Цель: ${rule.targetValue}`;
+  }
+  return rule.description;
+}
+
+/** Simple board for managers: month bonuses + products to push now. */
+export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
+  const catalog = await readMotivationCatalog();
+  const period = pickDefaultPeriod(catalog);
+  const seedFocus = createMotivationCatalogSeed().focusProducts;
+
+  if (!period) {
+    return {
+      periodTitle: "Мотивация месяца",
+      periodStatus: "draft",
+      intro: "Условия мотивации на этот месяц пока не опубликованы.",
+      bonuses: [],
+      focusProducts: seedFocus
+    };
+  }
+
+  const bonuses = catalog.rules
+    .filter((rule) => rule.periodId === period.id && rule.isActive)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((rule) => ({
+      id: rule.id,
+      title: rule.title,
+      description: rule.description,
+      rewardAmount: rule.rewardAmount,
+      condition: bonusCondition(rule)
+    }));
+
+  const focusProducts: FocusProduct[] =
+    catalog.focusProducts.length > 0
+      ? [...catalog.focusProducts].sort((a, b) => a.displayOrder - b.displayOrder)
+      : seedFocus;
+
+  return {
+    periodTitle: period.title,
+    periodStatus: period.status,
+    intro: "Дополнительные бонусы месяца — просто зафиксируйте условия и опирайтесь на них в работе.",
+    bonuses,
+    focusProducts
+  };
 }
 
 export async function getMotivationPagePayload(input: {
