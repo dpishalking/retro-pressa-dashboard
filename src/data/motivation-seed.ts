@@ -636,6 +636,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         tip: "Предлагайте после выбора основного подарка: «Можем добавить песню — клиенту обычно очень нравится».",
         linkLabel: "Открыть в обучении",
         linkUrl: "/training",
+        imageUrls: [],
         displayOrder: 1
       },
       {
@@ -646,16 +647,23 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         tip: "Отправляйте, когда подарок уже выбран, но клиент сомневается, как его вручить.",
         linkLabel: "Открыть сервис",
         linkUrl: "https://example.com/greeting-quiz",
+        imageUrls: [],
         displayOrder: 2
       },
       {
-        id: "focus-man-gift",
-        title: "Лендинг «Подарок для мужчины»",
-        summary: "Подборка для клиентов, которым сложно выбрать подарок.",
-        whyNow: "Частый сценарий в августе — быстрее закрывает «не знаю, что выбрать».",
-        tip: "Используйте на этапе подбора, если клиент долго сомневается.",
-        linkLabel: "Открыть лендинг",
-        linkUrl: "https://example.com/gift-for-man",
+        id: "focus-stickers",
+        title: "Наклейки-справки",
+        summary: "Юмористические наклейки в формате «справка / микстура». Стоимость — 3,5 €.",
+        whyNow: "Лёгкий апселл к любому подарку: весело, понятно и почти без возражений по цене.",
+        tip: "Предлагайте в конце: «Можем добавить наклейку-справку за 3,5 € — клиенты обычно улыбаются и берут».",
+        linkLabel: "",
+        linkUrl: "",
+        imageUrls: [
+          "/motivation/stickers/mixtura.png",
+          "/motivation/stickers/spravka-3-dnya.png",
+          "/motivation/stickers/otgul-48.png",
+          "/motivation/stickers/otgul-blue.png"
+        ],
         displayOrder: 3
       }
     ],

@@ -149,6 +149,19 @@ export function MotivationScreen() {
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   <span className="font-bold text-slate-900">Как говорить:</span> {product.tip}
                 </p>
+                {product.imageUrls.length > 0 ? (
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {product.imageUrls.map((src) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={src}
+                        src={src}
+                        alt={product.title}
+                        className="aspect-[3/4] w-full rounded-xl border border-[var(--line)] object-cover bg-slate-50"
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 {product.linkUrl ? (
                   <a
                     href={product.linkUrl}

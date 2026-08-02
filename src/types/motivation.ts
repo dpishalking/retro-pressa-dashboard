@@ -242,6 +242,7 @@ export type FocusProduct = {
   tip: string;
   linkLabel: string;
   linkUrl: string;
+  imageUrls: string[];
   displayOrder: number;
 };
 

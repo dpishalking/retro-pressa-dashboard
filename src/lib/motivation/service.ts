@@ -338,10 +338,15 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
       condition: bonusCondition(rule)
     }));
 
-  const focusProducts: FocusProduct[] =
-    catalog.focusProducts.length > 0
-      ? [...catalog.focusProducts].sort((a, b) => a.displayOrder - b.displayOrder)
-      : seedFocus;
+  // Demo catalog always follows seed so focus products stay editable in code.
+  const focusProducts: FocusProduct[] = (
+    catalog.isDemo || catalog.focusProducts.length === 0 ? seedFocus : catalog.focusProducts
+  )
+    .map((product) => ({
+      ...product,
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : []
+    }))
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return {
     periodTitle: period.title,
