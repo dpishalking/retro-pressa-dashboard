@@ -237,15 +237,10 @@ export function MotivationScreen() {
                       className={`relative flex min-h-[140px] items-center justify-center bg-gradient-to-br p-6 sm:w-40 sm:min-h-[168px] ${visual.panel}`}
                     >
                       <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(15,23,42,0.06),transparent_40%)]" />
-                      <div className="relative flex flex-col items-center gap-2">
-                        <div
-                          className={`rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5 transition duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] ${visual.accent}`}
-                        >
-                          <Icon size={36} strokeWidth={1.75} />
-                        </div>
-                        <span className={`text-[11px] font-extrabold uppercase tracking-wide ${visual.accent}`}>
-                          {visual.label}
-                        </span>
+                      <div
+                        className={`relative rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-black/5 transition duration-300 group-hover:scale-110 group-hover:rotate-[-3deg] ${visual.accent}`}
+                      >
+                        <Icon size={36} strokeWidth={1.75} />
                       </div>
                     </div>
                     <div className="flex-1 p-5">
