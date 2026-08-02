@@ -206,16 +206,14 @@ export function MotivationScreen() {
       </header>
 
       <section className="card mb-5 p-5 sm:p-7">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="rounded-2xl bg-orange-50 p-3 text-orange-600">
-            <Trophy size={24} />
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="rounded-2xl bg-orange-50 p-3.5 text-orange-600">
+            <Trophy size={28} />
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-950">Мотивация месяца</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Условия бонусов на текущий месяц. Личный прогресс и рейтинг подключим позже — сейчас важно просто знать правила.
-            </p>
-          </div>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Мотивация месяца</h2>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+            Условия бонусов на текущий месяц. Личный прогресс и рейтинг подключим позже — сейчас важно просто знать правила.
+          </p>
         </div>
 
         {payload.bonuses.length === 0 ? (
@@ -264,16 +262,16 @@ export function MotivationScreen() {
       </section>
 
       <section className="card p-5 sm:p-7">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="rounded-2xl bg-sky-50 p-3 text-sky-600">
-            <Gift size={24} />
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="rounded-2xl bg-sky-50 p-3.5 text-sky-600">
+            <Gift size={28} />
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-950">На чём фокусироваться сейчас</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Продукты и инструменты, которые сейчас лучше всего усиливают продажу.
-            </p>
-          </div>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            На чём фокусироваться сейчас
+          </h2>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+            Продукты и инструменты, которые сейчас лучше всего усиливают продажу.
+          </p>
         </div>
 
         {payload.focusProducts.length === 0 ? (
