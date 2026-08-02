@@ -89,8 +89,16 @@ function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
   );
 }
 
+function isLocalVideoUrl(url?: string | null) {
+  const value = url?.trim() ?? "";
+  if (!value || /^https?:\/\//i.test(value)) return false;
+  return /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(value);
+}
+
 function VideoBlock({ material, hideTitle = false }: { material: ProductMaterial; hideTitle?: boolean }) {
-  const embedUrl = normalizeVideoEmbedUrl(material.embedUrl ?? material.url);
+  const sourceUrl = material.url ?? material.embedUrl;
+  const localVideoUrl = isLocalVideoUrl(sourceUrl) ? sourceUrl!.trim() : "";
+  const embedUrl = localVideoUrl ? "" : normalizeVideoEmbedUrl(material.embedUrl ?? material.url);
   const isShorts =
     (material.url ?? material.embedUrl ?? "").includes("/shorts/") || material.content === "shorts";
 
@@ -101,7 +109,24 @@ function VideoBlock({ material, hideTitle = false }: { material: ProductMaterial
           {material.title}
         </div>
       ) : null}
-      {embedUrl ? (
+      {localVideoUrl ? (
+        <div
+          className={`bg-black ${
+            material.content === "shorts" || material.content === "vertical"
+              ? "mx-auto aspect-[9/16] max-w-sm"
+              : "aspect-video"
+          }`}
+        >
+          <video
+            src={localVideoUrl}
+            controls
+            playsInline
+            preload="metadata"
+            className="h-full w-full"
+            title={material.title}
+          />
+        </div>
+      ) : embedUrl ? (
         <div className={`bg-black ${isShorts ? "mx-auto aspect-[9/16] max-w-sm" : "aspect-video"}`}>
           <iframe
             src={embedUrl}

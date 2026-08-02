@@ -576,6 +576,51 @@
       "type": "video",
       "url": "https://youtu.be/jvHjELZSCms",
       "sortOrder": 3
+    },
+    {
+      "id": "sticker-spravka-osvobozhdenie",
+      "title": "Справка — освобождение от работы",
+      "description": "Шуточная наклейка-справка: можно налепить на бутылку или другую поверхность.",
+      "category": "Наклейка",
+      "type": "image",
+      "url": "/training/stickers/spravka-osvobozhdenie.png",
+      "sortOrder": 1
+    },
+    {
+      "id": "sticker-spravka-otgul-blue",
+      "title": "Справка об отгуле — 48 часов",
+      "description": "Шуточная наклейка «Министерство неотложного ничегонеделания».",
+      "category": "Наклейка",
+      "type": "image",
+      "url": "/training/stickers/spravka-otgul-48h-blue.png",
+      "sortOrder": 2
+    },
+    {
+      "id": "sticker-mixtura-sport",
+      "title": "Микстура для спортсменов",
+      "description": "Шуточная наклейка-микстура для бутылки.",
+      "category": "Наклейка",
+      "type": "image",
+      "url": "/training/stickers/mixtura-sport.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "sticker-spravka-otgul-beige",
+      "title": "Справка об отгуле — бежевый дизайн",
+      "description": "Шуточная наклейка-справка об отгуле на 48 часов.",
+      "category": "Наклейка",
+      "type": "image",
+      "url": "/training/stickers/spravka-otgul-48h-beige.png",
+      "sortOrder": 4
+    },
+    {
+      "id": "ozivi-photo-revival-demo",
+      "title": "Пример оживления фото",
+      "description": "Демо «Оживи»: статичное фото превращается в короткое кино. Можно показать клиенту.",
+      "category": "Оживи",
+      "type": "video",
+      "url": "/training/ozivi/photo-revival-demo.mp4",
+      "sortOrder": 1
     }
   ]
 }

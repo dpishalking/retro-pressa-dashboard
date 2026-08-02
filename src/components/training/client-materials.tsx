@@ -44,8 +44,29 @@ function publicUrl(url: string) {
   return new URL(url, window.location.origin).toString();
 }
 
+function isLocalVideoUrl(url?: string | null) {
+  const value = url?.trim() ?? "";
+  if (!value || /^https?:\/\//i.test(value)) return false;
+  return /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(value);
+}
+
 function MaterialPreview({ material }: { material: ClientMaterial }) {
   if (material.type === "video") {
+    if (isLocalVideoUrl(material.url)) {
+      return (
+        <div className="mx-auto aspect-[9/16] max-w-sm overflow-hidden rounded-2xl border border-[var(--line)] bg-black">
+          <video
+            src={material.url}
+            controls
+            playsInline
+            preload="metadata"
+            className="h-full w-full"
+            title={material.title}
+          />
+        </div>
+      );
+    }
+
     const embedUrl = normalizeVideoEmbedUrl(material.url);
 
     if (embedUrl) {
