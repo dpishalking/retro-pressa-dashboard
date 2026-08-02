@@ -300,6 +300,10 @@ function bonusCondition(rule: MotivationRule): string {
     const target = rule.targetValue ?? rule.calculationConfig.targetAverageItems ?? 2.5;
     return `Среднее число наименований в оплаченных заказах ≥ ${String(target).replace(".", ",")}`;
   }
+  if (rule.calculationConfig.metricKey === "average_check") {
+    const target = rule.targetValue ?? 80;
+    return `Средний чек оплаченных заказов ≥ ${target} € · комиссия 20% · выплата +111 €`;
+  }
   if (rule.calculationConfig.metricKey === "review_lead_ratio") {
     const minLeads = rule.calculationConfig.minLeads ?? 50;
     const minReviews = rule.calculationConfig.minReviews ?? 3;
@@ -327,8 +331,13 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
     };
   }
 
-  const bonuses = catalog.rules
-    .filter((rule) => rule.periodId === period.id && rule.isActive)
+  const seedRules = createMotivationCatalogSeed().rules;
+  const sourceRules =
+    catalog.isDemo
+      ? seedRules.filter((rule) => rule.periodId === period.id && rule.isActive)
+      : catalog.rules.filter((rule) => rule.periodId === period.id && rule.isActive);
+
+  const bonuses = sourceRules
     .sort((a, b) => a.displayOrder - b.displayOrder)
     .map((rule) => ({
       id: rule.id,

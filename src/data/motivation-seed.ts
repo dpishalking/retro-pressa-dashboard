@@ -7,6 +7,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
   const periodId = "period-2026-08";
   const ruleAvgId = "rule-avg-items-2026-08";
   const ruleReviewsId = "rule-reviews-2026-08";
+  const ruleAvgCheckId = "rule-avg-check-2026-08";
 
   return {
     version: 1,
@@ -102,6 +103,29 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         dataSource: "manual",
         isActive: true,
         displayOrder: 2,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: ruleAvgCheckId,
+        periodId,
+        title: "Средний чек от 80 €",
+        description:
+          "Если средний чек оплаченных заказов за месяц составляет 80 € или больше, менеджер получает дополнительный бонус +55 €. Комиссия — 20%. Выплата — +111 €.",
+        ruleType: "numeric_target",
+        rewardType: "fixed",
+        rewardAmount: 55,
+        currency: "EUR",
+        targetValue: 80,
+        minimumValue: null,
+        calculationConfig: {
+          metricKey: "average_check",
+          dataSource: "manual",
+          notes: "Средний чек = сумма оплаченных заказов / количество оплаченных заказов. Комиссия 20%. Выплата +111 €."
+        },
+        dataSource: "manual",
+        isActive: true,
+        displayOrder: 3,
         createdAt: now,
         updatedAt: now
       }
