@@ -35,6 +35,11 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
     return accessLevel === "admin";
   }
 
+  // Motivation board is for the whole sales team, including managers (mop).
+  if (normalized === "/motivation" || normalized.startsWith("/motivation/")) {
+    return accessLevel === "admin" || accessLevel === "rop" || accessLevel === "mop";
+  }
+
   const allowed = ACCESS_ROUTE_PREFIXES[accessLevel];
   if (allowed === "*") return true;
 
