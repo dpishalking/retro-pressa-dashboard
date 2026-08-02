@@ -688,6 +688,18 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         displayOrder: 1
       },
       {
+        id: "focus-ozivi",
+        title: "Оживи",
+        summary: "Оживление фото в короткое кино. 4 € за снимок.",
+        whyNow:
+          "Сильный апселл к газете, журналу или книге жизни: высокая эмоция при небольшой цене, легко показать на телефоне.",
+        tip: "Сначала покажите демо. Потом: «Некоторые фото остаются в сердце навсегда — можем оживить их в целое маленькое кино за 4 €».",
+        linkLabel: "Открыть в обучении",
+        linkUrl: "/training/products/ozivi",
+        imageUrls: [],
+        displayOrder: 2
+      },
+      {
         id: "focus-greeting",
         title: "Сервис сценариев поздравления",
         summary: "Квиз, который помогает клиенту выбрать, как вручить подарок.",
@@ -696,7 +708,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         linkLabel: "Открыть сервис",
         linkUrl: "https://example.com/greeting-quiz",
         imageUrls: [],
-        displayOrder: 2
+        displayOrder: 3
       },
       {
         id: "focus-stickers",
@@ -712,7 +724,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
           "/motivation/stickers/otgul-48.png",
           "/motivation/stickers/otgul-blue.png"
         ],
-        displayOrder: 3
+        displayOrder: 4
       }
     ],
     adjustments: [],
