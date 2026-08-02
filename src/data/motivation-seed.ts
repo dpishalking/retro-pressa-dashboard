@@ -706,7 +706,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         whyNow: "Усиливает ценность заказа и помогает дойти до комплекта, а не до одной позиции.",
         tip: "Отправляйте, когда подарок уже выбран, но клиент сомневается, как его вручить.",
         linkLabel: "Открыть сервис",
-        linkUrl: "https://example.com/greeting-quiz",
+        linkUrl: "https://familia-studio.com/presentation/scenario/",
         imageUrls: [],
         displayOrder: 3
       },
