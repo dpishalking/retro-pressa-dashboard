@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { canAccessRoute } from "@/lib/auth/access";
-import { HUB_PATH, PRODUCT_VIEW_PUBLIC_PREFIX, UTM_GENERATOR_PUBLIC_PATH } from "@/lib/auth/routes";
+import { HUB_PATH, MD_PUBLIC_PREFIX, PRODUCT_VIEW_PUBLIC_PREFIX, UTM_GENERATOR_PUBLIC_PATH } from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
 const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/products/public"];
-const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH, PRODUCT_VIEW_PUBLIC_PREFIX];
+const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH, PRODUCT_VIEW_PUBLIC_PREFIX, MD_PUBLIC_PREFIX];
 const LOGIN_PATH = "/";
 const CRON_API_PREFIXES = [
   "/api/rop/daily-sync",

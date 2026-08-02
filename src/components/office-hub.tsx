@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Newspaper, Settings, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -50,6 +50,14 @@ const offices: OfficeCard[] = [
     icon: BookOpen,
     status: "active",
     accent: "text-rose-600 bg-rose-50"
+  },
+  {
+    href: "/motivation",
+    title: "Мотивация",
+    description: "Дополнительные бонусы, прогресс по целям, рейтинг команды, отзывы клиентов и актуальные инструменты продаж.",
+    icon: Trophy,
+    status: "active",
+    accent: "text-orange-600 bg-orange-50"
   },
   {
     href: "/digital-twin",

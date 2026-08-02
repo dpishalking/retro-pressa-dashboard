@@ -24,6 +24,8 @@ Env-шаблон: `.env.example`. Локальные секреты — толь
 | Реклама | `/ad-analytics` | `ad-analytics-screen.tsx` | `google/ga4-connector`, `ga4-analytics-ask` |
 | РОП | `/rop`, `/rop/conversations` | `rop-*-screen.tsx` | `bitrix/`, `conversation-*`, `gemini-conversation-analyzer` |
 | Обучение | `/training/**` | `src/app/training/**` | `src/lib/training/` |
+| Мотивация | `/motivation` | `motivation-screen.tsx` | `src/lib/motivation/` |
+| Спеки (публично) | `/md`, `/md/[slug]` | `md-doc-screen.tsx` | `src/content/md/`, `src/lib/md/` |
 | Цифровой двойник | `/digital-twin` | `digital-twin-screen.tsx` | `digital-twin/`, `planning-layer/`, `financial-engine` |
 | UTM | `/utm` | `utm-generator-*` | `utm-generator`, `utm-standards` |
 | Админ | `/admin/users` | — | `auth/admin-users-auth` |

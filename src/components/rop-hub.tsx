@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, MessageSquare, Target, Users, Workflow } from "lucide-react";
+import { ArrowRight, MessageSquare, Target, Trophy, Users, Workflow } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type RopTile = {
@@ -16,6 +16,13 @@ const tiles: RopTile[] = [
     title: "Анализ переписок",
     description: "Дневные и месячные срезы переписок из Bitrix: качество, возражения, конверсия и потери.",
     icon: MessageSquare,
+    status: "active"
+  },
+  {
+    href: "/motivation",
+    title: "Мотивация",
+    description: "Бонусы команды, рейтинг по отзывам, подтверждение заявок и настройки условий месяца.",
+    icon: Trophy,
     status: "active"
   },
   {
