@@ -281,6 +281,7 @@ export type MotivationBoardPayload = {
     description: string;
     rewardAmount: number;
     condition: string;
+    metricKey: string | null;
   }>;
   focusProducts: FocusProduct[];
 };

@@ -350,7 +350,8 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
       title: rule.title,
       description: rule.description,
       rewardAmount: rule.rewardAmount,
-      condition: bonusCondition(rule)
+      condition: bonusCondition(rule),
+      metricKey: rule.calculationConfig.metricKey ?? null
     }));
 
   const focusProducts: FocusProduct[] = [...seed.focusProducts]
