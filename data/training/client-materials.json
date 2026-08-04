@@ -621,6 +621,24 @@
       "type": "video",
       "url": "/training/ozivi/photo-revival-demo.mp4",
       "sortOrder": 1
+    },
+    {
+      "id": "ozivi-shorts-demo",
+      "title": "Оживление подарка — пример",
+      "description": "Короткое видео-пример оживления фото. Можно показать клиенту.",
+      "category": "Оживи",
+      "type": "video",
+      "url": "https://youtube.com/shorts/d2d5CP8mHsk",
+      "sortOrder": 2
+    },
+    {
+      "id": "ozivi-manager-memo",
+      "title": "Памятка для менеджеров — оживление подарка",
+      "description": "PDF-памятка для менеджеров по продукту «Оживи».",
+      "category": "Оживи",
+      "type": "document",
+      "url": "/training/ozivi/manager-memo-photo-revival.pdf",
+      "sortOrder": 3
     }
   ]
 }

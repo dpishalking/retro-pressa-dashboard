@@ -2725,18 +2725,34 @@
           "sortOrder": 1
         },
         {
+          "id": "video-ozivi-shorts",
+          "type": "video",
+          "title": "Оживление подарка — пример",
+          "content": "shorts",
+          "url": "https://youtube.com/shorts/d2d5CP8mHsk",
+          "embedUrl": "https://www.youtube.com/embed/d2d5CP8mHsk",
+          "sortOrder": 2
+        },
+        {
+          "id": "doc-ozivi-manager-memo",
+          "type": "document",
+          "title": "Памятка для менеджеров — оживление подарка",
+          "url": "/training/ozivi/manager-memo-photo-revival.pdf",
+          "sortOrder": 3
+        },
+        {
           "id": "mat-ozivi-sales",
           "type": "text",
           "title": "Как продавать",
           "content": "• Сначала покажите пример видео.\n• Говорите про воспоминание и «живое фото», а не про технику.\n• Формула: некоторые фото остаются в сердце навсегда — мы оживляем их в целое кино.\n• Цена: 4 € за фото.\n• Предлагайте после основного продукта как апселл или отдельно, если клиент пришёл именно с фото.",
-          "sortOrder": 2
+          "sortOrder": 4
         },
         {
           "id": "mat-ozivi-questions",
           "type": "text",
           "title": "Вопросы клиенту",
           "content": "1. Какое фото хотите оживить?\n2. Для кого это воспоминание?\n3. Какой повод — день рождения, юбилей, годовщина, просто память?\n4. Нужно ли это как дополнение к газете/журналу/книге?\n5. Сколько фото хотите оживить?",
-          "sortOrder": 3
+          "sortOrder": 5
         }
       ],
       "questions": [
@@ -2972,8 +2988,8 @@
         }
       ],
       "createdAt": "2026-08-02T20:00:00.000Z",
-      "updatedAt": "2026-08-02T20:12:17.022Z"
+      "updatedAt": "2026-08-04T11:41:16.436Z"
     }
   ],
-  "updatedAt": "2026-08-02T20:12:17.022Z"
+  "updatedAt": "2026-08-04T11:41:16.436Z"
 }
