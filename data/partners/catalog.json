@@ -1,56 +1,98 @@
 [
   {
-    "id": "newspaper",
-    "title": "Газета",
-    "description": "Персональная газета с историей, фото и заголовками — классический подарок Retro Pressa.",
-    "priceFrom": 49,
-    "productionDays": "3–5 дней",
-    "audience": "День рождения, юбилей, корпоратив",
-    "image": "/partners/catalog/newspaper.svg"
+    "id": "personal-newspaper",
+    "title": "Газета из дня рождения / Издание из важной даты",
+    "description": "Настоящая газета или журнал из дня рождения. Машина времени и главный момент праздника.",
+    "priceFrom": 0,
+    "priceLabel": "по запросу",
+    "productionDays": "зависит от наличия",
+    "audience": "Для тех, кто ищет небанальный подарок взрослому человеку: папе, маме, дедушке, бабушке, руководителю, коллеге, учителю, тренеру, другу,…",
+    "image": "https://static.tildacdn.net/tild6335-3161-4537-b433-353738363539/1_.webp",
+    "detailsHref": "https://retro-pressa.com"
   },
   {
-    "id": "magazine",
-    "title": "Журнал",
-    "description": "Глянцевый персональный журнал с разворотами и вашей историей.",
-    "priceFrom": 79,
-    "productionDays": "5–7 дней",
-    "audience": "Пары, семьи, особые даты",
-    "image": "/partners/catalog/magazine.svg"
+    "id": "personal-magazine",
+    "title": "Книга жизни / Книга жизни в заголовках газет",
+    "description": "Книга из газет за каждый год жизни. Сильный подарок на юбилей — «моя жизнь как история».",
+    "priceFrom": 0,
+    "priceLabel": "по запросу",
+    "productionDays": "индивидуально",
+    "audience": "Для родителей, бабушки, дедушки, мужа, жены, юбиляра, руководителя, учителя, тренера, близкого родственника или человека, у которого «всё…",
+    "image": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
+    "detailsHref": "https://retro-pressa.com"
   },
   {
-    "id": "life-book",
-    "title": "Книга жизни",
-    "description": "Книга о человеке или семье: хронология, фото, тексты и тёплый дизайн.",
-    "priceFrom": 149,
-    "productionDays": "7–14 дней",
-    "audience": "Семейный архив, подарок родителям",
-    "image": "/partners/catalog/life-book.svg"
+    "id": "retro-newspaper",
+    "title": "Поздравительная газета / Поздравительный журнал / Ретро-газета с фото и текстом",
+    "description": "Ретро-издание из даты рождения с вашими фото и текстом. Ностальгия плюс «это же про меня!»",
+    "priceFrom": 0,
+    "priceLabel": "по запросу",
+    "productionDays": "несколько дней",
+    "audience": "Для тех, кому нравится идея газеты или журнала из даты рождения, но хочется добавить личное поздравление с фото. Для мамы, папы, мужа,…",
+    "image": "https://static.tildacdn.net/tild6532-6461-4436-b730-383563383362/2.webp",
+    "detailsHref": "https://retro-pressa.com"
   },
   {
-    "id": "song",
+    "id": "gift-edition",
+    "title": "Персонализированная газета Party Page",
+    "description": "Персональная газета с нуля за 1–2 дня. Шаблоны под повод, печать в любом городе.",
+    "priceFrom": 0,
+    "priceLabel": "по запросу",
+    "productionDays": "1–2 дня",
+    "audience": "Для тех, кто хочет личный яркий подарок «про человека» и знает повод: день рождения, свадьба, гендер-пати, выпускной, выход на пенсию,…",
+    "image": "/training/personal-newspaper/muzhskaya-pravda-cover-2026.png",
+    "detailsHref": "https://retro-pressa.com"
+  },
+  {
+    "id": "glossy-magazine",
+    "title": "Глянцевый персональный журнал",
+    "description": "Глянцевый журнал с нуля про человека. От 16 страниц, от 240 €.",
+    "priceFrom": 240,
+    "productionDays": "индивидуально",
+    "audience": "Для тех, кто хочет большой, личный и эффектный подарок: близкому человеку, руководителю, родителю, супругу, юбиляру, коллеге, учителю,…",
+    "image": "/training/gift-edition/zhenschina-goda-marina.png",
+    "detailsHref": "https://retro-pressa.com"
+  },
+  {
+    "id": "family-edition",
+    "title": "Семейное издание",
+    "description": "Издание о семье и памяти: истории, фото и живые слова. Наследие, а не разовый вау.",
+    "priceFrom": 0,
+    "priceLabel": "по запросу",
+    "productionDays": "индивидуально",
+    "audience": "Для людей, которые хотят сохранить историю близкого человека, семьи, любви или важного периода жизни. Особенно для: детей и внуков, которые…",
+    "image": "/training/family-edition/love-times-cover.png",
+    "detailsHref": "https://retro-pressa.com"
+  },
+  {
+    "id": "congratulatory-song",
     "title": "Поздравительная песня",
-    "description": "Уникальная песня под имя и историю получателя — готовый трек для поздравления.",
-    "priceFrom": 39,
-    "productionDays": "2–4 дня",
-    "audience": "День рождения, свадьба, сюрприз",
-    "image": "/partners/catalog/song.svg"
+    "description": "Персональная песня за один день. 20 € — подарок или дополнение к изданию.",
+    "priceFrom": 20,
+    "productionDays": "1 день",
+    "audience": "Для тех, кто хочет поздравить близкого человека необычно и эмоционально: маму, папу, дедушку, бабушку, супруга, ребёнка, друга, коллегу,…",
+    "image": "/training/congratulatory-song/cover.jpg",
+    "detailsHref": "https://retro-pressa.com"
   },
   {
-    "id": "video-revive",
-    "title": "Видеооживление",
-    "description": "Оживление фото в короткое кинематографичное видео.",
-    "priceFrom": 29,
-    "productionDays": "1–3 дня",
-    "audience": "Соцсети, быстрый эмоциональный подарок",
-    "image": "/partners/catalog/video.svg"
+    "id": "stickers",
+    "title": "Наклейки",
+    "description": "Шуточные наклейки на бутылку. От 3,5 € — эмоция и лёгкий подъём чека.",
+    "priceFrom": 0,
+    "priceLabel": "от 3,5 €",
+    "productionDays": "быстро",
+    "audience": "Любой заказ печатного подарка, где важно красивое и весёлое вручение. Особенно уместно к газете, журналу, семейному изданию или любому…",
+    "image": "/training/stickers/cover.png",
+    "detailsHref": "https://retro-pressa.com"
   },
   {
-    "id": "postcards",
-    "title": "Открытки",
-    "description": "Набор персональных открыток с ретро-эстетикой и вашим текстом.",
-    "priceFrom": 19,
-    "productionDays": "2–3 дня",
-    "audience": "Корпоративные наборы, мини-подарки",
-    "image": "/partners/catalog/postcards.svg"
+    "id": "ozivi",
+    "title": "Оживи",
+    "description": "Оживление фото в короткое кино. 4 € за снимок.",
+    "priceFrom": 4,
+    "productionDays": "быстро",
+    "audience": "Клиенты с дорогими семейными или личными фото: родители, бабушки и дедушки, пары, юбиляры, люди, которые хотят оживить старый снимок или…",
+    "image": "/training/ozivi/cover.jpg",
+    "detailsHref": "https://retro-pressa.com"
   }
 ]

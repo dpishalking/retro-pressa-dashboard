@@ -45,15 +45,21 @@ export function PartnersCatalogScreen() {
               <dl className="mt-4 space-y-1 text-sm text-slate-700">
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Цена от</dt>
-                  <dd className="font-bold">{eur(product.priceFrom)}</dd>
+                  <dd className="font-bold">
+                    {product.priceLabel
+                      ? product.priceLabel
+                      : product.priceFrom > 0
+                        ? eur(product.priceFrom)
+                        : "по запросу"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Срок</dt>
-                  <dd className="font-semibold">{product.productionDays}</dd>
+                  <dd className="font-semibold text-right">{product.productionDays}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Кому подходит</dt>
-                  <dd className="mt-1 font-semibold">{product.audience}</dd>
+                  <dd className="mt-1 font-semibold leading-6">{product.audience}</dd>
                 </div>
               </dl>
               <a

@@ -62,6 +62,8 @@ export type PartnerCatalogProduct = {
   title: string;
   description: string;
   priceFrom: number;
+  /** When set, shown instead of formatted priceFrom (e.g. «по запросу»). */
+  priceLabel?: string;
   productionDays: string;
   audience: string;
   image: string;

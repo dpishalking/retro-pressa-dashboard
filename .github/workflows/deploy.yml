@@ -71,6 +71,11 @@ jobs:
             mkdir -p /tmp/retro-pressa-deploy/product-passports-seed
             cp data/product-passports/dashboard.json /tmp/retro-pressa-deploy/product-passports-seed/dashboard.json
           fi
+          if [ -d data/partners ]; then
+            mkdir -p /tmp/retro-pressa-deploy/data/partners
+            cp data/partners/catalog.json data/partners/materials.json data/partners/faq.json \
+              /tmp/retro-pressa-deploy/data/partners/ 2>/dev/null || true
+          fi
           cp -R scripts/trainer-backend-overlay /tmp/retro-pressa-deploy/trainer-backend-overlay
           tar -czf /tmp/retro-pressa-deploy.tar.gz -C /tmp/retro-pressa-deploy .
           mv /tmp/retro-pressa-deploy.tar.gz retro-pressa-deploy.tar.gz
