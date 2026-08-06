@@ -1,10 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
+import { PARTNERS_REGISTER_PATH } from "@/lib/auth/routes";
+import type { AccessLevel } from "@/types/auth";
 
 export function LoginPage() {
   const router = useRouter();
@@ -28,7 +31,10 @@ export function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ login, password })
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        user?: { accessLevel: AccessLevel };
+      };
 
       if (!response.ok) {
         setError(data.error ?? "Не удалось войти");
@@ -37,8 +43,15 @@ export function LoginPage() {
 
       await refresh();
       const next = searchParams.get("next");
-      const fallback = next && next.startsWith("/") && next !== "/" ? next : HUB_PATH;
-      router.replace(fallback);
+      const roleHome = data.user ? homePathForAccessLevel(data.user.accessLevel) : homePathForAccessLevel("mop");
+      const canUseNext =
+        Boolean(data.user) &&
+        Boolean(next) &&
+        next!.startsWith("/") &&
+        next !== "/" &&
+        !next!.startsWith("/partners/register") &&
+        canAccessRoute(data.user!.accessLevel, next!);
+      router.replace(canUseNext ? next! : roleHome);
       router.refresh();
     } catch {
       setError("Ошибка сети. Попробуйте ещё раз.");
@@ -61,7 +74,7 @@ export function LoginPage() {
         </div>
 
         <p className="mb-6 text-sm leading-6 text-slate-600">
-          Введите логин и пароль, выданные администратором. Регистрация недоступна.
+          Сотрудники входят по логину от администратора. Партнёры — после одобрения заявки.
         </p>
 
         {denied ? (
@@ -106,6 +119,13 @@ export function LoginPage() {
             {submitting ? "Вход..." : "Войти"}
           </button>
         </form>
+
+        <p className="mt-6 text-sm text-slate-500">
+          Хотите рекомендовать продукты?{" "}
+          <Link href={PARTNERS_REGISTER_PATH} className="font-semibold text-emerald-700 hover:underline">
+            Стать партнёром
+          </Link>
+        </p>
       </div>
     </main>
   );

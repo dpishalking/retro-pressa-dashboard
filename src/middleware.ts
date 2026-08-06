@@ -1,10 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessRoute } from "@/lib/auth/access";
-import { HUB_PATH, MD_PUBLIC_PREFIX, PRODUCT_VIEW_PUBLIC_PREFIX, UTM_GENERATOR_PUBLIC_PATH } from "@/lib/auth/routes";
+import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
+import {
+  HUB_PATH,
+  MD_PUBLIC_PREFIX,
+  PARTNERS_PATH,
+  PARTNERS_REGISTER_API,
+  PARTNERS_REGISTER_PATH,
+  PRODUCT_VIEW_PUBLIC_PREFIX,
+  UTM_GENERATOR_PUBLIC_PATH
+} from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/products/public"];
-const PUBLIC_PAGE_PREFIXES = [UTM_GENERATOR_PUBLIC_PATH, PRODUCT_VIEW_PUBLIC_PREFIX, MD_PUBLIC_PREFIX];
+const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/products/public", PARTNERS_REGISTER_API];
+const PUBLIC_PAGE_PREFIXES = [
+  UTM_GENERATOR_PUBLIC_PATH,
+  PRODUCT_VIEW_PUBLIC_PREFIX,
+  MD_PUBLIC_PREFIX,
+  PARTNERS_REGISTER_PATH
+];
 const LOGIN_PATH = "/";
 const CRON_API_PREFIXES = [
   "/api/rop/daily-sync",
@@ -84,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === LOGIN_PATH) {
     if (session) {
-      return NextResponse.redirect(new URL(HUB_PATH, request.url));
+      return NextResponse.redirect(new URL(homePathForAccessLevel(session.accessLevel), request.url));
     }
     return NextResponse.next();
   }
@@ -103,9 +116,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hubUrl = new URL(HUB_PATH, request.url);
-  hubUrl.searchParams.set("denied", "1");
-  return NextResponse.redirect(hubUrl);
+  const fallbackPath = homePathForAccessLevel(session.accessLevel);
+  const deniedUrl = new URL(fallbackPath === HUB_PATH ? HUB_PATH : PARTNERS_PATH, request.url);
+  deniedUrl.searchParams.set("denied", "1");
+  return NextResponse.redirect(deniedUrl);
 }
 
 export const config = {

@@ -1,3 +1,4 @@
+import type { AccessLevel } from "@/types/auth";
 import type {
   LeaderboardRow,
   ManagerMotivationProfile,
@@ -336,13 +337,10 @@ export function recalculateAverageFromCounts(totalItems: number, orders: number)
   return round2(totalItems / orders);
 }
 
-export function canEditPeriod(
-  status: string,
-  accessLevel: "admin" | "rop" | "mop"
-): boolean {
-  if (accessLevel === "mop") return false;
+export function canEditPeriod(status: string, accessLevel: AccessLevel): boolean {
+  if (accessLevel !== "admin" && accessLevel !== "rop") return false;
   if (status === "closed" || status === "archive") return accessLevel === "admin";
-  return accessLevel === "admin" || accessLevel === "rop";
+  return true;
 }
 
 function round2(value: number): number {

@@ -199,6 +199,13 @@ export async function findUserByLogin(login: string): Promise<AppUser | null> {
   return catalog.users.find((user) => user.login.toLowerCase() === normalized && user.active) ?? null;
 }
 
+/** Finds a user by login regardless of active flag (login flow / partner moderation). */
+export async function findUserByLoginAny(login: string): Promise<AppUser | null> {
+  const catalog = await readUsersCatalog();
+  const normalized = login.trim().toLowerCase();
+  return catalog.users.find((user) => user.login.toLowerCase() === normalized) ?? null;
+}
+
 export async function findUserById(id: string): Promise<AppUser | null> {
   const catalog = await readUsersCatalog();
   return catalog.users.find((user) => user.id === id) ?? null;

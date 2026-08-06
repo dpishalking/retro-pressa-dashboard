@@ -1,4 +1,4 @@
-export type AccessLevel = "admin" | "rop" | "mop";
+export type AccessLevel = "admin" | "rop" | "mop" | "partner";
 
 export type AppUser = {
   id: string;

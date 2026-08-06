@@ -1,0 +1,58 @@
+[
+  {
+    "id": "presentation",
+    "title": "PDF-презентация Retro Pressa",
+    "description": "Краткий обзор продуктов и партнёрской программы.",
+    "kind": "pdf",
+    "href": "/partners/materials/presentation.pdf"
+  },
+  {
+    "id": "photos",
+    "title": "Фотографии продуктов",
+    "description": "Готовый набор снимков для постов и сторис.",
+    "kind": "photo",
+    "href": "/partners/materials/photos.zip"
+  },
+  {
+    "id": "product-video",
+    "title": "Видео о продуктах",
+    "description": "Короткий ролик для рекомендаций клиентам.",
+    "kind": "video",
+    "href": "/partners/materials/product-video.mp4"
+  },
+  {
+    "id": "reels",
+    "title": "Reels-шаблоны",
+    "description": "Готовые вертикальные ролики под Instagram и TikTok.",
+    "kind": "reels",
+    "href": "/partners/materials/reels.zip"
+  },
+  {
+    "id": "logos",
+    "title": "Логотипы",
+    "description": "Логотипы Retro Pressa в PNG и SVG.",
+    "kind": "logo",
+    "href": "/partners/materials/logos.zip"
+  },
+  {
+    "id": "banners",
+    "title": "Баннеры",
+    "description": "Баннеры для сайта, Telegram и рассылок.",
+    "kind": "banner",
+    "href": "/partners/materials/banners.zip"
+  },
+  {
+    "id": "ready-texts",
+    "title": "Готовые тексты",
+    "description": "Тексты для WhatsApp, Instagram и email.",
+    "kind": "text",
+    "href": "/partners/materials/ready-texts.txt"
+  },
+  {
+    "id": "faq-sheet",
+    "title": "Ответы на частые вопросы",
+    "description": "Шпаргалка для общения с клиентами.",
+    "kind": "faq",
+    "href": "/partners/materials/faq-sheet.pdf"
+  }
+]

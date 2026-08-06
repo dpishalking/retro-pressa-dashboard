@@ -1,0 +1,56 @@
+[
+  {
+    "id": "newspaper",
+    "title": "Газета",
+    "description": "Персональная газета с историей, фото и заголовками — классический подарок Retro Pressa.",
+    "priceFrom": 49,
+    "productionDays": "3–5 дней",
+    "audience": "День рождения, юбилей, корпоратив",
+    "image": "/partners/catalog/newspaper.svg"
+  },
+  {
+    "id": "magazine",
+    "title": "Журнал",
+    "description": "Глянцевый персональный журнал с разворотами и вашей историей.",
+    "priceFrom": 79,
+    "productionDays": "5–7 дней",
+    "audience": "Пары, семьи, особые даты",
+    "image": "/partners/catalog/magazine.svg"
+  },
+  {
+    "id": "life-book",
+    "title": "Книга жизни",
+    "description": "Книга о человеке или семье: хронология, фото, тексты и тёплый дизайн.",
+    "priceFrom": 149,
+    "productionDays": "7–14 дней",
+    "audience": "Семейный архив, подарок родителям",
+    "image": "/partners/catalog/life-book.svg"
+  },
+  {
+    "id": "song",
+    "title": "Поздравительная песня",
+    "description": "Уникальная песня под имя и историю получателя — готовый трек для поздравления.",
+    "priceFrom": 39,
+    "productionDays": "2–4 дня",
+    "audience": "День рождения, свадьба, сюрприз",
+    "image": "/partners/catalog/song.svg"
+  },
+  {
+    "id": "video-revive",
+    "title": "Видеооживление",
+    "description": "Оживление фото в короткое кинематографичное видео.",
+    "priceFrom": 29,
+    "productionDays": "1–3 дня",
+    "audience": "Соцсети, быстрый эмоциональный подарок",
+    "image": "/partners/catalog/video.svg"
+  },
+  {
+    "id": "postcards",
+    "title": "Открытки",
+    "description": "Набор персональных открыток с ретро-эстетикой и вашим текстом.",
+    "priceFrom": 19,
+    "productionDays": "2–3 дня",
+    "audience": "Корпоративные наборы, мини-подарки",
+    "image": "/partners/catalog/postcards.svg"
+  }
+]

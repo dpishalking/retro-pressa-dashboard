@@ -11,3 +11,12 @@ export const MD_PUBLIC_PREFIX = "/md";
 
 /** Authenticated products cabinet (upload / manage share links). */
 export const PRODUCTS_PATH = "/products";
+
+/** Partner cabinet (affiliate). */
+export const PARTNERS_PATH = "/partners";
+
+/** Public partner self-registration. */
+export const PARTNERS_REGISTER_PATH = "/partners/register";
+
+/** Public partner registration API. */
+export const PARTNERS_REGISTER_API = "/api/partners/register";

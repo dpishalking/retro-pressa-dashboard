@@ -1,12 +1,13 @@
 import type { AccessLevel } from "@/types/auth";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { HUB_PATH, PARTNERS_PATH } from "@/lib/auth/routes";
 import { USER_MANAGEMENT_PATH, canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 
 /** Route prefixes each access level may visit. Admin uses wildcard. */
 export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   admin: "*",
   rop: [HUB_PATH, "/analytics", "/ad-analytics", "/rop", "/training", "/products", "/motivation", USER_MANAGEMENT_PATH],
-  mop: [HUB_PATH, "/training", "/products", "/motivation"]
+  mop: [HUB_PATH, "/training", "/products", "/motivation"],
+  partner: [PARTNERS_PATH]
 };
 
 /** Admin-only configuration area. */
@@ -50,6 +51,10 @@ export function canSeeOfficeSection(accessLevel: AccessLevel, href: string): boo
   return canAccessRoute(accessLevel, href);
 }
 
+export function homePathForAccessLevel(level: AccessLevel): string {
+  return level === "partner" ? PARTNERS_PATH : HUB_PATH;
+}
+
 export function accessLevelLabel(level: AccessLevel): string {
   switch (level) {
     case "admin":
@@ -58,6 +63,8 @@ export function accessLevelLabel(level: AccessLevel): string {
       return "РОП";
     case "mop":
       return "Менеджер";
+    case "partner":
+      return "Партнёр";
   }
 }
 
@@ -69,6 +76,8 @@ export function accessLevelScope(level: AccessLevel): string {
       return "аналитика, аналитика рекламы, инструменты РОП, обучение менеджеров, продукты, мотивация";
     case "mop":
       return "обучение менеджеров, продукты, мотивация";
+    case "partner":
+      return "кабинет партнёрской программы";
   }
 }
 

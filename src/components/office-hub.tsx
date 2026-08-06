@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { HUB_PATH, PARTNERS_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel } from "@/types/auth";
 
@@ -74,6 +74,14 @@ const offices: OfficeCard[] = [
     icon: Newspaper,
     status: "active",
     accent: "text-sky-600 bg-sky-50"
+  },
+  {
+    href: PARTNERS_PATH,
+    title: "Партнёрская программа",
+    description: "Кабинет партнёра: промокод, материалы, продажи и начисления. Для admin — предпросмотр кабинета.",
+    icon: Handshake,
+    status: "active",
+    accent: "text-emerald-700 bg-emerald-50"
   }
 ];
 
@@ -135,6 +143,15 @@ export function OfficeHub() {
               >
                 <Settings size={16} />
                 {user.accessLevel === "rop" ? "Менеджеры" : "Доступы"}
+              </Link>
+            ) : null}
+            {user.accessLevel === "admin" ? (
+              <Link
+                href="/admin/partners"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <Handshake size={16} />
+                Партнёры
               </Link>
             ) : null}
             <button

@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LoginPage } from "@/components/login-page";
 import { useAuth } from "@/components/auth-provider";
-import { HUB_PATH } from "@/lib/auth/routes";
+import { homePathForAccessLevel } from "@/lib/auth/access";
 
 function LoginContent() {
   const router = useRouter();
@@ -12,7 +12,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace(HUB_PATH);
+      router.replace(homePathForAccessLevel(user.accessLevel));
     }
   }, [loading, user, router]);
 
