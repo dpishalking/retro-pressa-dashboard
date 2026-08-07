@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowDown, Wallet } from "lucide-react";
+import { ArrowDown, Info, Wallet } from "lucide-react";
 import { PartnersLayout } from "@/components/partners/partners-layout";
 import { CopyShareButtons } from "@/components/partners/copy-share-buttons";
 import { QrDownloadButton } from "@/components/partners/qr-download-button";
 import { readJsonResponse } from "@/lib/api-response";
-import { eur, number, pct } from "@/lib/format";
+import { eur, number } from "@/lib/format";
 import type { PartnerMeResponse, PartnerSale } from "@/types/partners";
 
 const steps = [
   "Поделитесь своим промокодом",
-  "Клиент оформляет заказ",
+  "Клиент указывает промокод при заказе",
   "Заказ оплачивается",
   "Вы получаете комиссию"
 ];
@@ -63,9 +63,22 @@ export function PartnersHomeScreen() {
           {partner ? `Привет, ${partner.name.split(" ")[0]}` : "Кабинет партнёра"}
         </h1>
         <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-          Делитесь нашими подарками, рекомендуйте Retro Pressa друзьям или клиентам и получайте комиссию с каждого
-          оплаченного заказа.
+          Рекомендуйте подарки Retro Pressa и получайте комиссию с оплаченных заказов по вашему промокоду.
         </p>
+      </section>
+
+      <section className="card mb-5 border-amber-200 bg-amber-50/70 p-4 md:p-5">
+        <div className="flex gap-3">
+          <Info className="mt-0.5 shrink-0 text-amber-700" size={20} />
+          <div className="text-sm leading-6 text-amber-950">
+            <p className="font-bold">Важно: комиссия только по промокоду</p>
+            <p className="mt-1">
+              Реферальных ссылок в программе нет — у Retro Pressa много лендингов и точек входа, поэтому клики по ссылке
+              не привязывают заказ к партнёру. Клиент должен назвать или ввести ваш промокод. Если забыл —
+              менеджер может закрепить сделку за вами вручную.
+            </p>
+          </div>
+        </div>
       </section>
 
       {denied ? (
@@ -78,55 +91,33 @@ export function PartnersHomeScreen() {
         <p className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
-      <section className="mb-5 grid gap-4 lg:grid-cols-2">
-        <article className="card p-6">
-          <p className="text-sm font-semibold text-slate-500">Мой промокод</p>
-          <p className="mt-3 break-all font-mono text-3xl font-black tracking-wide text-slate-950 md:text-4xl">
-            {partner?.promoCode ?? "—"}
-          </p>
-          {partner ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <CopyShareButtons
-                value={partner.promoCode}
-                shareTitle="Промокод Retro Pressa"
-                shareText={`Мой промокод Retro Pressa: ${partner.promoCode}`}
-              />
-              <QrDownloadButton value={partner.referralUrl} fileName={`${partner.referralSlug}-qr.png`} />
-            </div>
-          ) : null}
-        </article>
-
-        <article className="card p-6">
-          <p className="text-sm font-semibold text-slate-500">Реферальная ссылка</p>
-          <p className="mt-3 break-all text-lg font-bold text-slate-950">{partner?.referralUrl ?? "—"}</p>
-          {partner ? (
-            <div className="mt-4">
-              <CopyShareButtons
-                value={partner.referralUrl}
-                openHref={partner.referralUrl}
-                showOpen
-                shareTitle="Retro Pressa"
-                shareText="Персональные подарки Retro Pressa"
-              />
-            </div>
-          ) : null}
-        </article>
+      <section className="card mb-5 p-6 md:p-8">
+        <p className="text-sm font-semibold text-slate-500">Мой промокод</p>
+        <p className="mt-3 break-all font-mono text-3xl font-black tracking-wide text-slate-950 md:text-5xl">
+          {partner?.promoCode ?? "—"}
+        </p>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+          Передайте этот код клиенту при рекомендации. Именно по нему мы начислим комиссию после оплаты.
+        </p>
+        {partner ? (
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <CopyShareButtons
+              value={partner.promoCode}
+              shareTitle="Промокод Retro Pressa"
+              shareText={`Мой промокод Retro Pressa: ${partner.promoCode}. Назовите его при заказе — так заказ закрепится за мной.`}
+            />
+            <QrDownloadButton value={partner.promoCode} fileName={`${partner.promoCode.toLowerCase()}-promo-qr.png`} />
+          </div>
+        ) : null}
       </section>
 
-      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Переходов" value={partner ? number(partner.clicks) : "—"} />
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Kpi label="Заявок" value={partner ? number(partner.leads) : "—"} />
         <Kpi label="Оплаченных заказов" value={partner ? number(partner.paidOrders) : "—"} />
-        <Kpi label="Конверсия" value={data ? pct(data.conversion) : "—"} />
         <Kpi label="Общая сумма продаж" value={partner ? eur(partner.salesTotal) : "—"} />
         <Kpi label="Начисленная комиссия" value={partner ? eur(partner.accrued) : "—"} accent />
         <Kpi label="Выплачено" value={partner ? eur(partner.paidOut) : "—"} />
-        <Kpi
-          label="Доступно к выводу"
-          value={partner ? eur(partner.available) : "—"}
-          accent
-          icon
-        />
+        <Kpi label="Доступно к выводу" value={partner ? eur(partner.available) : "—"} accent icon />
       </section>
 
       <section className="card mb-5 p-6">

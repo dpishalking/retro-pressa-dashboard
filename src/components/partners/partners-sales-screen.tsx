@@ -41,7 +41,7 @@ export function PartnersSalesScreen() {
   }, []);
 
   return (
-    <PartnersLayout title="История продаж" description="Все заказы, закреплённые за вашим промокодом или ссылкой.">
+    <PartnersLayout title="История продаж" description="Заказы, закреплённые за вашим промокодом или менеджером вручную.">
       {error ? (
         <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}

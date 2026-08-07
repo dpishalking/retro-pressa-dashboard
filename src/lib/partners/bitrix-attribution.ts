@@ -24,7 +24,10 @@ export function isPaidDeal(deal: PartnerBitrixDeal): boolean {
 }
 
 /**
- * Attribution priority: promo code → referral UTM → manual UF.
+ * Attribution priority for future Bitrix sync:
+ * 1) promo code (primary — partner program is promo-only in UI)
+ * 2) referral UTM (legacy / unused in cabinet — many landings)
+ * 3) manual UF (manager attach)
  * One deal belongs to at most one partner.
  */
 export function resolvePartnerForDeal(

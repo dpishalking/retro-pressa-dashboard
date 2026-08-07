@@ -78,7 +78,7 @@ const offices: OfficeCard[] = [
   {
     href: PARTNERS_PATH,
     title: "Партнёрская программа",
-    description: "Кабинет партнёра: промокод, материалы, продажи и начисления. Для admin — предпросмотр кабинета.",
+    description: "Кабинет партнёра: промокод, материалы, продажи и начисления (без реферальных ссылок). Для admin — предпросмотр.",
     icon: Handshake,
     status: "active",
     accent: "text-emerald-700 bg-emerald-50"
