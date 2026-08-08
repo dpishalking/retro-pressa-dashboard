@@ -27,7 +27,8 @@ const LOGIN_PATH = "/";
 const CRON_API_PREFIXES = [
   "/api/rop/daily-sync",
   "/api/sync/os-daily",
-  "/api/sync/predictive-front"
+  "/api/sync/predictive-front",
+  "/api/sync/bitrix"
 ];
 
 function isPublicApi(pathname: string): boolean {
