@@ -20,9 +20,9 @@ type OfficeCard = {
 
 const offices: OfficeCard[] = [
   {
-    href: "/analytics",
-    title: "Аналитика",
-    description: "Операционный пульт: KPI, воронка, маркетинг, продажи, качество переписок и Growth Intelligence.",
+    href: "/os",
+    title: "Analytics OS",
+    description: "CEO Control Center: план/факт, выручка, воронка, менеджеры, страны, продукты и data trust.",
     icon: BarChart3,
     status: "active",
     accent: "text-blue-600 bg-blue-50"

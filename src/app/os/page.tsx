@@ -6,6 +6,6 @@ export const metadata: Metadata = {
   description: "Аналитическая операционная система собственника Retro Pressa"
 };
 
-export default function AnalyticsPage() {
+export default function OsAnalyticsPage() {
   return <AnalyticsOsScreen />;
 }

@@ -53,6 +53,10 @@ Hub: [00_START_HERE.md](./00_START_HERE.md)
 
 [METRICS.md](./business-os/METRICS.md) · [METRIC_DEFINITIONS.md](./business-os/METRIC_DEFINITIONS.md) · [METRIC_ALIGNMENT_REPORT.md](./business-os/METRIC_ALIGNMENT_REPORT.md) · [DATA_CONTRACTS.md](./business-os/DATA_CONTRACTS.md) · [SYNC.md](./business-os/SYNC.md) · [AUDIT.md](./business-os/AUDIT.md) · [business-os/ARCHITECTURE.md](./business-os/ARCHITECTURE.md)
 
+## Analytics OS (audit — pre-build)
+
+[analytics-os-audit.md](./analytics-os-audit.md) · [analytics-os-metrics.md](./analytics-os-metrics.md) · [analytics-os-data-map.md](./analytics-os-data-map.md) · [analytics-os-phase1.md](./analytics-os-phase1.md)
+
 ## Other / older
 
 [business-os-architecture-audit.md](./business-os-architecture-audit.md) · [conversation-analytics-architecture.md](./conversation-analytics-architecture.md)
