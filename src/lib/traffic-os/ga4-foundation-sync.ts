@@ -83,6 +83,7 @@ export function periodsToDateRange(periods: string[]): { startDate: string; endD
       if (p === "may-2026") return "2026-05";
       if (p === "june-2026") return "2026-06";
       if (p === "july-2026") return "2026-07";
+      if (p === "august-2026") return "2026-08";
       return "";
     })
     .filter(Boolean)

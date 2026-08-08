@@ -3,8 +3,10 @@ import { buildFallbackFinancialReport } from "@/lib/financial-report/fallback";
 import { parsePeriodParam, periodToIsoMonth } from "@/lib/financial-report/period";
 
 assert.equal(parsePeriodParam("2026-07"), "july-2026");
+assert.equal(parsePeriodParam("2026-08"), "august-2026");
 assert.equal(parsePeriodParam("june-2026"), "june-2026");
 assert.equal(periodToIsoMonth("july-2026"), "2026-07");
+assert.equal(periodToIsoMonth("august-2026"), "2026-08");
 
 const fact = buildFallbackFinancialReport("june-2026", { mode: "FACT" });
 assert.equal(fact.planning.mode, "FACT");

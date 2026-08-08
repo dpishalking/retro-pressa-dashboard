@@ -56,6 +56,7 @@ async function listAvailablePeriods(): Promise<AnalyticsPeriod[]> {
         if (key === "may-2026") return "2026-05";
         if (key === "june-2026") return "2026-06";
         if (key === "july-2026") return "2026-07";
+        if (key === "august-2026") return "2026-08";
         return null;
       })
       .filter((v): v is AnalyticsPeriod => Boolean(v));

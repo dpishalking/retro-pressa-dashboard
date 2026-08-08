@@ -544,6 +544,7 @@ function GlobalFilters({
       <label className="grid gap-1 text-xs font-bold text-slate-500">
         Период
         <select className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-950" value={period} onChange={(event) => setPeriod(event.target.value)}>
+          <option value="august-2026">Август 2026</option>
           <option value="july-2026">Июль 2026</option>
           <option value="june-2026">Июнь 2026</option>
           <option value="may-2026">Май 2026</option>
@@ -598,9 +599,10 @@ function elapsedDaysForPeriod(period: string) {
   const months: Record<string, { year: number; monthIndex: number; days: number }> = {
     "may-2026": { year: 2026, monthIndex: 4, days: 31 },
     "june-2026": { year: 2026, monthIndex: 5, days: 30 },
-    "july-2026": { year: 2026, monthIndex: 6, days: 31 }
+    "july-2026": { year: 2026, monthIndex: 6, days: 31 },
+    "august-2026": { year: 2026, monthIndex: 7, days: 31 }
   };
-  const selected = months[period] ?? months["july-2026"];
+  const selected = months[period] ?? months["august-2026"];
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const periodStart = new Date(selected.year, selected.monthIndex, 1);
@@ -614,13 +616,15 @@ function elapsedDaysForPeriod(period: string) {
 }
 
 function monthPrefixForPeriod(period: string) {
+  if (period === "august-2026") return "2026-08";
   if (period === "july-2026") return "2026-07";
   if (period === "june-2026") return "2026-06";
   if (period === "may-2026") return "2026-05";
-  return "2026-07";
+  return "2026-08";
 }
 
 function periodLabel(period: string) {
+  if (period === "august-2026") return "Август 2026";
   if (period === "july-2026") return "Июль 2026";
   if (period === "june-2026") return "Июнь 2026";
   if (period === "may-2026") return "Май 2026";
@@ -2534,7 +2538,7 @@ export function DashboardApp({
   initialTab?: string;
 } = {}) {
   const [activeTab, setActiveTab] = useState(initialTab && tabs.includes(initialTab) ? initialTab : tabs[0]);
-  const [period, setPeriod] = useState("july-2026");
+  const [period, setPeriod] = useState("august-2026");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [countryFilter, setCountryFilter] = useState("all");
   const [countryOptions, setCountryOptions] = useState(defaultCountryOptions);
@@ -2567,7 +2571,14 @@ export function DashboardApp({
   const rawCurrentDaily = liveDaily.filter((item) => item.date.startsWith(monthPrefixForPeriod(rawCurrent.month)));
   const currentDaily = filterDailyBySource(rawCurrentDaily, sourceFilter);
   const current = filterMonthlyTrafficBySource(rawCurrent, rawCurrentDaily, sourceFilter);
-  const previous = current.month === "july-2026" ? liveMonthly[1] : current.month === "june-2026" ? liveMonthly[0] : liveMonthly[1];
+  const previous =
+    current.month === "august-2026"
+      ? liveMonthly.find((item) => item.month === "july-2026") ?? liveMonthly[1]
+      : current.month === "july-2026"
+        ? liveMonthly.find((item) => item.month === "june-2026") ?? liveMonthly[1]
+        : current.month === "june-2026"
+          ? liveMonthly.find((item) => item.month === "may-2026") ?? liveMonthly[0]
+          : liveMonthly[1];
   const quality = qualityMetrics.find((item) => item.month === current.month) ?? qualityMetrics[1];
   const signals = useMemo(() => buildSignals(current, previous, quality, targetScenario, elapsedDaysForPeriod(current.month)), [current, previous, quality]);
   const managerOptions = useMemo(() => {
@@ -2584,7 +2595,7 @@ export function DashboardApp({
       .sort((a, b) => a.label.localeCompare(b.label, "ru"));
   }, [liveManagers, managerFilter]);
   const hasCohortFilter = countryFilter !== "all" || managerFilter !== "all" || productFilter !== "all";
-  const showCurrentPlan = period === "july-2026" && !hasCohortFilter;
+  const showCurrentPlan = (period === "august-2026" || period === "july-2026") && !hasCohortFilter;
   const selectedManagerLabel = useMemo(() => {
     if (managerFilter === "all") return "все менеджеры";
     return managerOptions.find((manager) => manager.value === managerFilter)?.label ?? managerFilter;

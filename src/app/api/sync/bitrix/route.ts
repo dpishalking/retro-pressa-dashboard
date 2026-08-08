@@ -5,12 +5,12 @@ import type { PeriodKey } from "@/types/metrics";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
+const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as { period?: string; country?: string; manager?: string; product?: string; refresh?: boolean };
-    const period = periods.includes(body.period as PeriodKey) ? body.period as PeriodKey : "july-2026";
+    const period = periods.includes(body.period as PeriodKey) ? body.period as PeriodKey : "august-2026";
     const country = body.country && body.country !== "all" ? body.country : undefined;
     const manager = body.manager && body.manager !== "all" ? body.manager : undefined;
     const product = body.product && body.product !== "all" ? body.product : undefined;

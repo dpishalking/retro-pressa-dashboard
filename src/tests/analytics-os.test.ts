@@ -121,7 +121,7 @@ assert.equal(isAnalyticsPeriod("july-2026"), false);
 assert.equal(parseAnalyticsPeriod("july-2026"), "2026-07");
 assert.equal(parseAnalyticsPeriod("2026-08"), "2026-08");
 assert.equal(analyticsPeriodToLegacy("2026-07"), "july-2026");
-assert.equal(analyticsPeriodToLegacy("2026-08"), null);
+assert.equal(analyticsPeriodToLegacy("2026-08"), "august-2026");
 assert.match(currentAnalyticsPeriod(new Date("2026-08-08T12:00:00Z")), /^\d{4}-\d{2}$/);
 
 // Revenue / orders / AOV

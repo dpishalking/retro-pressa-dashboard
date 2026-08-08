@@ -90,6 +90,7 @@ function periodRange(period: PeriodKey) {
     "may-2026": { year: 2026, month: 5 },
     "june-2026": { year: 2026, month: 6 },
     "july-2026": { year: 2026, month: 7 },
+    "august-2026": { year: 2026, month: 8 },
   };
   const { year, month } = months[period];
   const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));

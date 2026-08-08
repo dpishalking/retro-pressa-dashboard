@@ -7,7 +7,8 @@ const exportDir = path.join(process.cwd(), "data", "conversation-exports");
 const periodSlug: Record<PeriodKey, string> = {
   "may-2026": "2026-05",
   "june-2026": "2026-06",
-  "july-2026": "2026-07"
+  "july-2026": "2026-07",
+  "august-2026": "2026-08"
 };
 
 function extensionOf(filename: string) {

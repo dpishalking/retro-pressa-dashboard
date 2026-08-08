@@ -21,6 +21,10 @@ const periodExportNames: Record<PeriodKey, string[]> = {
   "july-2026": [
     "retro-pressa-conversations-2026-07.json",
     "retro-pressa-conversations-2026-07.csv"
+  ],
+  "august-2026": [
+    "retro-pressa-conversations-2026-08.json",
+    "retro-pressa-conversations-2026-08.csv"
   ]
 };
 
@@ -49,7 +53,7 @@ async function readExportMessages(periodKey: PeriodKey): Promise<{ messages: Con
 }
 
 function isPeriodKey(value: string | null): value is PeriodKey {
-  return value === "may-2026" || value === "june-2026" || value === "july-2026";
+  return value === "may-2026" || value === "june-2026" || value === "july-2026" || value === "august-2026";
 }
 
 export async function GET(request: Request) {
@@ -58,11 +62,11 @@ export async function GET(request: Request) {
     const period = url.searchParams.get("period");
 
     if (!isPeriodKey(period)) {
-      return NextResponse.json({ error: "Нужно передать period: may-2026, june-2026 или july-2026." }, { status: 400 });
+      return NextResponse.json({ error: "Нужно передать period: may-2026, june-2026, july-2026 или august-2026." }, { status: 400 });
     }
 
     const exportData = await readExportMessages(period);
-    const liveData = period === "july-2026" ? await readLivePeriodStore(period) : null;
+    const liveData = period === "august-2026" || period === "july-2026" ? await readLivePeriodStore(period) : null;
     const messages = exportData?.messages ?? liveData?.messages ?? [];
 
     if (!messages.length) {

@@ -141,7 +141,8 @@ type GoogleSyncPayload = {
 const periods: Array<{ value: PeriodKey; label: string }> = [
   { value: "may-2026", label: "Май 2026" },
   { value: "june-2026", label: "Июнь 2026" },
-  { value: "july-2026", label: "Июль 2026" }
+  { value: "july-2026", label: "Июль 2026" },
+  { value: "august-2026", label: "Август 2026" }
 ];
 
 function SectionHead({ title, subtitle }: { title: string; subtitle: string }) {
@@ -164,7 +165,7 @@ function MetricCard({ title, value, hint }: { title: string; value: string; hint
 }
 
 export function AdAnalyticsScreen() {
-  const [period, setPeriod] = useState<PeriodKey>("july-2026");
+  const [period, setPeriod] = useState<PeriodKey>("august-2026");
   const [ga4Status, setGa4Status] = useState<SyncStatus>({
     state: "idle",
     message: "Загружаю GA4..."

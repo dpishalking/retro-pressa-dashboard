@@ -79,6 +79,7 @@ const archiveLabelMap: Record<"may" | "june" | "july", string> = {
   july: "июльский"
 };
 const periodOptions: Array<{ value: PeriodKey; label: string }> = [
+  { value: "august-2026", label: "Август 2026" },
   { value: "july-2026", label: "Июль 2026" },
   { value: "june-2026", label: "Июнь 2026" },
   { value: "may-2026", label: "Май 2026" }

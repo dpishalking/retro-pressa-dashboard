@@ -234,14 +234,16 @@ const requestedCountryOrder = [
 const workingDaysByPeriod: Record<PeriodKey, number> = {
   "may-2026": 21,
   "june-2026": 21,
-  "july-2026": 23
+  "july-2026": 23,
+  "august-2026": 21
 };
 
 function monthRangeForPeriod(period: PeriodKey, now = new Date()) {
   const months: Record<PeriodKey, { year: number; month: number }> = {
     "may-2026": { year: 2026, month: 5 },
     "june-2026": { year: 2026, month: 6 },
-    "july-2026": { year: 2026, month: 7 }
+    "july-2026": { year: 2026, month: 7 },
+    "august-2026": { year: 2026, month: 8 }
   };
   const { year, month } = months[period];
   const start = new Date(Date.UTC(year, month - 1, 1));
@@ -1017,7 +1019,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
 }
 
 export async function syncBitrixMetrics(options: BitrixSyncOptions = {}): Promise<BitrixSyncPayload> {
-  const period = options.period ?? "july-2026";
+  const period = options.period ?? "august-2026";
   const { snapshot, dataSource } = await loadBitrixSnapshot(period, options.refresh);
   return aggregateBitrixSnapshot(snapshot, options, dataSource);
 }

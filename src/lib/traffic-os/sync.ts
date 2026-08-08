@@ -82,6 +82,7 @@ function normalizePeriods(periods?: string[]): string[] {
     if (period === "may-2026") return "2026-05";
     if (period === "june-2026") return "2026-06";
     if (period === "july-2026") return "2026-07";
+    if (period === "august-2026") return "2026-08";
     return period;
   });
 }

@@ -15,7 +15,7 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const periodArg = args.find((arg) => !arg.startsWith("--"));
-  const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
+  const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
   const period = periods.includes(periodArg as PeriodKey) ? periodArg as PeriodKey : undefined;
 
   await ensureSyncRunsHeader();

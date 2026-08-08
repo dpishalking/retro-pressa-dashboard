@@ -40,7 +40,7 @@ import type {
 
 const safeDiv = (num: number, den: number) => (den === 0 ? 0 : num / den);
 
-const periodOrder: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
+const periodOrder: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
 
 function previousPeriod(period: PeriodKey): PeriodKey | null {
   const index = periodOrder.indexOf(period);

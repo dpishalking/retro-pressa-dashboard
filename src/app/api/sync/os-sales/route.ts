@@ -7,7 +7,7 @@ import type { PeriodKey } from "@/types/metrics";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026"];
+const periods: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
 
 export async function POST(request: Request) {
   const session = readSessionCookie(request.headers.get("cookie"));

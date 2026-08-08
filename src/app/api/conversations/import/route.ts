@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const uploads = formData.getAll("files").filter((item): item is File => item instanceof File);
     const source = String(formData.get("source") ?? "manual") as "manual" | "gift-ai" | "bitrix";
     const periodRaw = String(formData.get("periodKey") ?? "");
-    const periodKey = (["may-2026", "june-2026", "july-2026"] as const).includes(periodRaw as PeriodKey)
+    const periodKey = (["may-2026", "june-2026", "july-2026", "august-2026"] as const).includes(periodRaw as PeriodKey)
       ? periodRaw as PeriodKey
       : null;
     const label = String(formData.get("label") ?? "").trim();

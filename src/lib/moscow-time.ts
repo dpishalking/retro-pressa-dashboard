@@ -3,7 +3,8 @@ import type { PeriodKey } from "@/types/metrics";
 const periodByMonth: Record<number, PeriodKey> = {
   5: "may-2026",
   6: "june-2026",
-  7: "july-2026"
+  7: "july-2026",
+  8: "august-2026"
 };
 
 function moscowParts(now = new Date()) {
@@ -35,5 +36,5 @@ export function moscowYesterdayIso(now = new Date()) {
 
 export function moscowPeriodKey(now = new Date()): PeriodKey {
   const { month } = moscowParts(now);
-  return periodByMonth[month] ?? "july-2026";
+  return periodByMonth[month] ?? "august-2026";
 }

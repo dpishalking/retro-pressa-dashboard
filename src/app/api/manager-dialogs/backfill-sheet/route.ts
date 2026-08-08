@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 function isPeriodKey(value: unknown): value is PeriodKey {
-  return value === "may-2026" || value === "june-2026" || value === "july-2026";
+  return value === "may-2026" || value === "june-2026" || value === "july-2026" || value === "august-2026";
 }
 
 export async function POST(request: Request) {

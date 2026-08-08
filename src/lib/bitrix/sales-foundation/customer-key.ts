@@ -90,6 +90,7 @@ export function periodToRange(period: string): { startIso: string; endIso: strin
   } else if (period === "may-2026") month = 5;
   else if (period === "june-2026") month = 6;
   else if (period === "july-2026") month = 7;
+  else if (period === "august-2026") month = 8;
 
   const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
   const end = new Date(Date.UTC(year, month, 0, 23, 59, 59));

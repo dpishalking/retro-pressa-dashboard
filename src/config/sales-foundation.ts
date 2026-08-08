@@ -59,7 +59,7 @@ export const QUALITY_THRESHOLDS = {
 
 export const BATCH_LIMIT = 50;
 
-export const DEFAULT_SF_PERIODS = ["2026-05", "2026-06", "2026-07"] as const;
+export const DEFAULT_SF_PERIODS = ["2026-05", "2026-06", "2026-07", "2026-08"] as const;
 
 export const LEADS_RAW_COLUMNS = [
   "lead_id", "created_at", "modified_at", "status_id", "status_semantic", "source_id", "source_description",
