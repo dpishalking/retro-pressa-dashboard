@@ -59,8 +59,8 @@ export function buildOwnerIntelligence(input: {
   const whereStatus: OwnerIntelligenceCard["status"] = moneyParts.length ? "calculated" : "no_data";
 
   return [
-    { id: "why", title: "ПОЧЕМУ?", body: whyBody, status: whyStatus },
-    { id: "what_to_do", title: "ЧТО ДЕЛАТЬ?", body: whatToDoBody, status: whatToDoStatus },
+    { id: "why", title: "ПОЧЕМУ?", body: whyBody, status: whyStatus, href: "/os/plan" },
+    { id: "what_to_do", title: "ЧТО ДЕЛАТЬ?", body: whatToDoBody, status: whatToDoStatus, href: "/os/funnel" },
     {
       id: "what_if",
       title: "ЧТО ЕСЛИ?",
@@ -68,12 +68,19 @@ export function buildOwnerIntelligence(input: {
       status: "calculated",
       href: "/digital-twin"
     },
-    { id: "where_is_the_money", title: "ГДЕ ДЕНЬГИ?", body: whereBody, status: whereStatus },
+    {
+      id: "where_is_the_money",
+      title: "ГДЕ ДЕНЬГИ?",
+      body: whereBody,
+      status: whereStatus,
+      href: "/os/geography"
+    },
     {
       id: "what_breaks_at_x10",
       title: "×10?",
       body: "Нужны данные производства.",
-      status: "no_data"
+      status: "no_data",
+      href: "/os/production"
     }
   ];
 }
