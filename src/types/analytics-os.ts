@@ -61,6 +61,10 @@ export type AnalyticsProductRow = {
   aov: number;
   share: number;
   productsPerOrder: number;
+  /** Passport/SKU COGS for mapped lines; null when unmapped. */
+  cogs: number | null;
+  grossProfit: number | null;
+  marginRate: number | null;
 };
 
 export type AnalyticsCountryRow = {
@@ -130,6 +134,17 @@ export type AnalyticsMarketing = {
   note: string;
 };
 
+export type AnalyticsProductMargin = {
+  cogs: AnalyticsMetricValue;
+  grossProfit: AnalyticsMetricValue;
+  marginRate: AnalyticsMetricValue;
+  mappedDeals: number;
+  dealsWithProducts: number;
+  dealsTotal: number;
+  lineCoverage: number;
+  source: string;
+};
+
 export type AnalyticsProduction = {
   status: MetricDataStatus;
   message: string;
@@ -190,6 +205,7 @@ export type CeoControlCenterSnapshot = {
   customers: AnalyticsCustomers;
   pipeline: AnalyticsPipeline;
   marketing: AnalyticsMarketing;
+  productMargin: AnalyticsProductMargin;
   production: AnalyticsProduction;
   reconciliation: AnalyticsReconciliation;
   sources: AnalyticsSourceCard[];

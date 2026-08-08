@@ -28,8 +28,14 @@ import {
   periodCalendarBounds
 } from "@/lib/analytics-os/period";
 import { pullMonthlyPlanIndicators } from "@/lib/sales-os/svod-plans";
+import {
+  aggregateMargins,
+  aggregateProductMargins,
+  loadProductHubMarginCatalog
+} from "@/lib/product-hub/sku-margin-catalog";
 import type {
   AnalyticsPlanIndicator,
+  AnalyticsProductMargin,
   CeoControlCenterSnapshot,
   AnalyticsPeriod
 } from "@/types/analytics-os";
@@ -211,7 +217,16 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const tree = aggregateRevenueTree(paidDeals);
   const funnel = aggregateFunnel({ leads, invoiceDeals, paidDeals });
   const managers = aggregateManagers({ leads, paidDeals });
-  const products = aggregateProducts(paidDeals);
+
+  let marginCatalog: Awaited<ReturnType<typeof loadProductHubMarginCatalog>> | null = null;
+  try {
+    marginCatalog = await loadProductHubMarginCatalog();
+  } catch {
+    marginCatalog = null;
+  }
+  const marginAgg = marginCatalog ? aggregateMargins(paidDeals, marginCatalog) : null;
+  const productMarginMap = marginCatalog ? aggregateProductMargins(paidDeals, marginCatalog) : undefined;
+  const products = aggregateProducts(paidDeals, productMarginMap);
   const countries = aggregateCountries({ paidDeals, leads });
   const customers = aggregateCustomers(paidDeals);
   const conversion = conversionFromBitrix(leads.length, paidDeals.length);
@@ -371,19 +386,84 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           unit: "ratio"
         });
 
-  const grossProfitMetric = noDataMetric(
-    "gross_profit",
-    "Finance / COGS",
-    "Order-level COGS not available",
-    "eur"
-  );
+  const marginCoverage = marginAgg?.lineCoverage ?? 0;
+  const marginStatus =
+    marginAgg?.grossProfit == null
+      ? "no_data"
+      : marginCoverage >= 0.7
+        ? "calculated"
+        : "manual";
+  const marginConfidence =
+    marginAgg?.grossProfit == null ? "low" : marginCoverage >= 0.7 ? "high" : "medium";
 
-  const contributionMetric = noDataMetric(
-    "contribution_margin",
-    "variable costs",
-    "Shipping, fees, actual COGS missing",
-    "pct"
-  );
+  const grossProfitMetric =
+    marginAgg?.grossProfit == null
+      ? noDataMetric("gross_profit", "Product Hub COGS", "Нет COGS по позициям заказа", "eur")
+      : metricValue({
+          metricId: "gross_profit",
+          value: marginAgg.grossProfit,
+          status: marginStatus,
+          asOf: marginCatalog?.loadedAt ?? asOf,
+          source: marginAgg.source,
+          confidence: marginConfidence,
+          unit: "eur",
+          decisionHint: `На выручке с COGS €${Math.round(marginAgg.mappedRevenue)} из €${Math.round(marginAgg.revenue)} · линии ${Math.round(marginCoverage * 100)}% · сделки ${marginAgg.dealsWithProducts}/${marginAgg.dealsTotal}`
+        });
+
+  const contributionMetric =
+    marginAgg?.grossProfit == null
+      ? noDataMetric(
+          "contribution_margin",
+          "Product Hub COGS − ad spend",
+          "Нужен COGS; доставка/комиссии ещё не вычтены",
+          "pct"
+        )
+      : metricValue({
+          metricId: "contribution_margin",
+          value:
+            marginAgg.mappedRevenue > 0
+              ? (marginAgg.grossProfit - (adSpendInfo.value ?? 0)) / marginAgg.mappedRevenue
+              : null,
+          status: "calculated",
+          asOf: marginCatalog?.loadedAt ?? asOf,
+          source: "Валовая (паспорт COGS) − реклама / выручка с COGS — без доставки и комиссий",
+          confidence: "medium",
+          unit: "pct",
+          decisionHint: "Частичная маржа вклада"
+        });
+
+  const productMarginBlock: AnalyticsProductMargin = {
+    cogs:
+      marginAgg?.cogs == null
+        ? noDataMetric("product_cogs", "Product Hub", "COGS не сопоставлен", "eur")
+        : metricValue({
+            metricId: "product_cogs",
+            value: marginAgg.cogs,
+            status: marginStatus,
+            asOf: marginCatalog?.loadedAt ?? asOf,
+            source: marginAgg.source,
+            confidence: marginConfidence,
+            unit: "eur"
+          }),
+    grossProfit: grossProfitMetric,
+    marginRate:
+      marginAgg?.marginRate == null
+        ? noDataMetric("product_margin_rate", "Product Hub", undefined, "pct")
+        : metricValue({
+            metricId: "product_margin_rate",
+            value: marginAgg.marginRate,
+            status: marginStatus,
+            asOf: marginCatalog?.loadedAt ?? asOf,
+            source: marginAgg.source,
+            confidence: marginConfidence,
+            unit: "pct"
+          }),
+    mappedDeals: marginAgg?.dealsFullyMapped ?? 0,
+    dealsWithProducts: marginAgg?.dealsWithProducts ?? 0,
+    dealsTotal: paidDeals.length,
+    lineCoverage: marginCoverage,
+    source: marginAgg?.source || "Product Hub unavailable"
+  };
 
   const productionLoad = noDataMetric("production_load", "Производство", "Нет связи", "pct");
   const cashMetric = noDataMetric("cash", "Финансы", "Касса пока не подключена", "eur");
@@ -615,10 +695,11 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       roas: roasMetric,
       note: "Маркетинг частично. Детали — в разделе Реклама."
     },
+    productMargin: productMarginBlock,
     production: {
       status: "no_data",
       message: "Статусы производства пока нет.",
-      available: ["Нормы сроков из Product Hub"],
+      available: ["Нормы сроков из Product Hub", "COGS из 00_INDEX / SKU_MAP"],
       missing: [
         "старт производства",
         "конец производства",
@@ -662,7 +743,16 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         lastSync: null,
         note: mariaRevenueValue == null ? "Месяц недоступен" : "Оперативный факт"
       },
-      { id: "product_hub", name: "Product Hub", connection: "partial", lastSync: null },
+      {
+        id: "product_hub",
+        name: "Product Hub COGS",
+        connection: marginAgg?.grossProfit != null ? "connected" : "partial",
+        lastSync: marginCatalog?.loadedAt ?? null,
+        note:
+          marginAgg?.grossProfit != null
+            ? `Маржа ${Math.round((marginAgg.marginRate || 0) * 100)}% · линии ${Math.round(marginCoverage * 100)}%`
+            : "00_INDEX / SKU_MAP недоступны"
+      },
       { id: "open_lines", name: "Open Lines", connection: "connected", lastSync: null, note: "Диалоги" },
       { id: "meta_ads", name: "Meta Ads API", connection: "not_connected", lastSync: null },
       { id: "google_ads", name: "Google Ads API", connection: "not_connected", lastSync: null }
@@ -794,10 +884,20 @@ function emptySnapshot(input: {
       roas: no("roas", "marketing", "ratio"),
       note: "Нет снимка Bitrix за период."
     },
+    productMargin: {
+      cogs: no("product_cogs", "Product Hub", "eur"),
+      grossProfit: no("gross_profit", "Product Hub", "eur"),
+      marginRate: no("product_margin_rate", "Product Hub", "pct"),
+      mappedDeals: 0,
+      dealsWithProducts: 0,
+      dealsTotal: 0,
+      lineCoverage: 0,
+      source: "Product Hub unavailable"
+    },
     production: {
       status: "no_data",
       message: "Статусы производства пока нет.",
-      available: ["Нормы сроков из Product Hub"],
+      available: ["Нормы сроков из Product Hub", "COGS из 00_INDEX / SKU_MAP"],
       missing: ["старт производства", "конец производства", "дата отправки", "дата доставки"]
     },
     reconciliation: {
@@ -818,6 +918,7 @@ function emptySnapshot(input: {
     },
     sources: [
       { id: "bitrix", name: "Bitrix24", connection: "partial", lastSync: null, note: `Нет снимка за ${input.period}` },
+      { id: "product_hub", name: "Product Hub COGS", connection: "partial", lastSync: null },
       { id: "meta_ads", name: "Meta Ads API", connection: "not_connected", lastSync: null },
       { id: "google_ads", name: "Google Ads API", connection: "not_connected", lastSync: null }
     ],

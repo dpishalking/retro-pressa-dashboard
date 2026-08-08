@@ -260,7 +260,10 @@ export function aggregateManagers(input: {
   return rows;
 }
 
-export function aggregateProducts(paidDeals: BitrixSnapshotDeal[]): {
+export function aggregateProducts(
+  paidDeals: BitrixSnapshotDeal[],
+  marginByProduct?: Map<string, { cogs: number; revenue: number; orders: number; mapped: boolean }>
+): {
   rows: AnalyticsProductRow[];
   multiProductOrdersPct: number | null;
 } {
@@ -277,15 +280,23 @@ export function aggregateProducts(paidDeals: BitrixSnapshotDeal[]): {
   }
   const totalRevenue = sumPaidRevenue(paidDeals);
   const rows = [...byProduct.entries()]
-    .map(([productId, v]) => ({
-      productId,
-      productName: v.name,
-      orders: v.orders,
-      revenue: v.revenue,
-      aov: v.orders ? v.revenue / v.orders : 0,
-      share: safeShare(v.revenue, totalRevenue),
-      productsPerOrder: v.orders ? v.rowsSum / v.orders : 0
-    }))
+    .map(([productId, v]) => {
+      const margin = marginByProduct?.get(productId);
+      const cogs = margin?.mapped ? margin.cogs : null;
+      const grossProfit = cogs == null ? null : v.revenue - cogs;
+      return {
+        productId,
+        productName: v.name,
+        orders: v.orders,
+        revenue: v.revenue,
+        aov: v.orders ? v.revenue / v.orders : 0,
+        share: safeShare(v.revenue, totalRevenue),
+        productsPerOrder: v.orders ? v.rowsSum / v.orders : 0,
+        cogs,
+        grossProfit,
+        marginRate: grossProfit == null || v.revenue <= 0 ? null : grossProfit / v.revenue
+      };
+    })
     .sort((a, b) => b.revenue - a.revenue);
 
   return {

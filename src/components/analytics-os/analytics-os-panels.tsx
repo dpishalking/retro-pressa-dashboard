@@ -264,8 +264,9 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
         <div>
           <h2>Продукты</h2>
           <p>
-            Основной товар · Заказы с 2+ товарами:{" "}
-            {formatMetricDisplay(snapshot.multiProductOrdersPct)} <StatusBadge status="partial" />
+            Основной товар · 2+ в заказе: {formatMetricDisplay(snapshot.multiProductOrdersPct)} · валовая{" "}
+            {formatMetricDisplay(snapshot.productMargin.marginRate)}{" "}
+            <StatusBadge status={snapshot.productMargin.marginRate.status} />
           </p>
         </div>
       </div>
@@ -276,15 +277,17 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
               <th>Продукт</th>
               <th>Заказы</th>
               <th>Выручка</th>
+              <th>COGS</th>
+              <th>Валовая</th>
+              <th>Маржа</th>
               <th>Чек</th>
               <th>Доля</th>
-              <th>Товары / заказ</th>
             </tr>
           </thead>
           <tbody>
             {snapshot.products.length === 0 ? (
               <tr>
-                <td colSpan={6}>—</td>
+                <td colSpan={8}>—</td>
               </tr>
             ) : (
               snapshot.products.map((row) => (
@@ -292,9 +295,11 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
                   <td>{row.productName}</td>
                   <td>{number(row.orders)}</td>
                   <td>{eur(row.revenue)}</td>
+                  <td>{row.cogs == null ? "—" : eur(row.cogs)}</td>
+                  <td>{row.grossProfit == null ? "—" : eur(row.grossProfit)}</td>
+                  <td>{row.marginRate == null ? "—" : pct(row.marginRate)}</td>
                   <td>{eur(row.aov)}</td>
                   <td>{pct(row.share)}</td>
-                  <td>{number(row.productsPerOrder, 2)}</td>
                 </tr>
               ))
             )}
@@ -383,21 +388,28 @@ export function CustomersPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
 
 export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const m = snapshot.marketing;
+  const pm = snapshot.productMargin;
   return (
     <section className="aos-card" id="aos-unit-economics">
       <div className="aos-section-head">
         <div>
           <h2>Юнит-экономика</h2>
-          <p>{m.note}</p>
+          <p>
+            {pm.source} · покрытие линий {pct(pm.lineCoverage)} · сделки с товарами {pm.dealsWithProducts}/
+            {pm.dealsTotal}
+          </p>
         </div>
+        <StatusBadge status={pm.grossProfit.status} />
       </div>
       <div className="aos-stat-grid">
         {[
           ["Средний чек", snapshot.metrics.aov],
+          ["COGS", pm.cogs],
+          ["Валовая прибыль", pm.grossProfit],
+          ["Валовая маржа", pm.marginRate],
           ["CPL", m.cpl],
           ["CAC", m.cac],
           ["ROAS", m.roas],
-          ["Валовая прибыль", snapshot.metrics.gross_profit],
           ["Маржа вклада", snapshot.metrics.contribution_margin]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
@@ -414,7 +426,8 @@ export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSna
         ))}
       </div>
       <p className="aos-note">
-        Доставка, комиссии и полная себестоимость по заказу пока нет.
+        COGS из Product Hub (00_INDEX + SKU_MAP). Доставка и комиссии платёжек в марже вклада ещё не вычтены.
+        Заказы без товарных строк в Bitrix не дают COGS.
       </p>
     </section>
   );

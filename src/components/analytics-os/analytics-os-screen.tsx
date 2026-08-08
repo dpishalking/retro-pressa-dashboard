@@ -173,10 +173,11 @@ function HubPreviews({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
           contour={byId["unit-economics"]}
           preview={
             <>
-              <strong>AOV {formatMetricDisplay(snapshot.metrics.aov)}</strong>
+              <strong>Маржа {formatMetricDisplay(snapshot.productMargin.marginRate)}</strong>
               <span>
-                CPL {formatMetricDisplay(snapshot.metrics.cpl)} · ROAS{" "}
-                {formatMetricDisplay(snapshot.metrics.roas)}
+                Валовая {formatMetricDisplay(snapshot.productMargin.grossProfit)} · COGS{" "}
+                {formatMetricDisplay(snapshot.productMargin.cogs)} · AOV{" "}
+                {formatMetricDisplay(snapshot.metrics.aov)}
               </span>
             </>
           }
@@ -188,7 +189,9 @@ function HubPreviews({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
               <>
                 <strong>{topProduct.productName}</strong>
                 <span>
-                  {eur(topProduct.revenue)} · {pct(topProduct.share)}
+                  {eur(topProduct.revenue)}
+                  {topProduct.marginRate == null ? "" : ` · маржа ${pct(topProduct.marginRate)}`} ·{" "}
+                  {pct(topProduct.share)}
                 </span>
               </>
             ) : (
