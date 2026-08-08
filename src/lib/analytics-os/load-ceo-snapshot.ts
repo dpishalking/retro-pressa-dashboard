@@ -27,8 +27,29 @@ import {
   parseAnalyticsPeriod,
   periodCalendarBounds
 } from "@/lib/analytics-os/period";
-import type { CeoControlCenterSnapshot, AnalyticsPeriod } from "@/types/analytics-os";
+import { pullMonthlyPlanIndicators } from "@/lib/sales-os/svod-plans";
+import type {
+  AnalyticsPlanIndicator,
+  CeoControlCenterSnapshot,
+  AnalyticsPeriod
+} from "@/types/analytics-os";
 import type { PeriodKey } from "@/types/metrics";
+
+const MONTHLY_PLAN_SOURCE_LABEL =
+  "Google Sheets · План/факт (16ocjHOl… gid=2079098693)";
+
+function mapPlanIndicators(
+  indicators: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>>["indicators"]
+): AnalyticsPlanIndicator[] {
+  return indicators.map((item) => ({
+    id: `${item.section}|${item.label}|${item.row}`,
+    section: item.section,
+    label: item.label,
+    value: item.unit === "pct" && item.value > 1 ? item.value / 100 : item.value,
+    unit: item.unit,
+    source: MONTHLY_PLAN_SOURCE_LABEL
+  }));
+}
 
 const AUDIT_DATA_QUALITY = {
   overallScore: 52,
@@ -144,7 +165,27 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const { calendarDays } = periodCalendarBounds(period);
   const daysElapsed = daysElapsedInPeriod(period, now);
   const daysRemaining = Math.max(0, calendarDays - daysElapsed);
-  const planRevenueTarget = targetScenario.targetRevenue;
+
+  let monthlyPlanBundle: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>> | null = null;
+  try {
+    monthlyPlanBundle = await pullMonthlyPlanIndicators({ month: period });
+  } catch {
+    monthlyPlanBundle = null;
+  }
+  const planIndicators = mapPlanIndicators(monthlyPlanBundle?.indicators || []);
+  const planRevenueTarget =
+    monthlyPlanBundle?.obshie?.revenue ??
+    monthlyPlanBundle?.channels?.obshie.revenue ??
+    targetScenario.targetRevenue;
+  const planSource =
+    monthlyPlanBundle?.obshie?.revenue != null
+      ? MONTHLY_PLAN_SOURCE_LABEL
+      : "targetScenario / North Star (fallback)";
+  const planLeads = monthlyPlanBundle?.channels?.obshie.leads ?? monthlyPlanBundle?.obshie?.leads ?? null;
+  const planSales = monthlyPlanBundle?.channels?.obshie.sale ?? monthlyPlanBundle?.obshie?.sale ?? null;
+  const planAov = monthlyPlanBundle?.channels?.obshie.aov ?? monthlyPlanBundle?.obshie?.aov ?? null;
+  const planSpend = monthlyPlanBundle?.channels?.obshie.spend ?? null;
+  const planCrSale = monthlyPlanBundle?.channels?.obshie.crLeadSale ?? null;
 
   const adSpendInfo = await loadAdSpend(legacy);
   const mariaRevenueValue = await loadMariaMonthRevenue(period);
@@ -155,6 +196,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       legacyPeriodKey: legacy,
       availablePeriods,
       planRevenueTarget,
+      planIndicators,
+      planSource,
       calendarDays,
       daysElapsed,
       daysRemaining,
@@ -205,7 +248,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     status: "live",
     asOf,
     source: "Bitrix leads (DATE_CREATE in period snapshot)",
-    unit: "count"
+    unit: "count",
+    plan: planLeads
   });
 
   const ordersMetric = metricValue({
@@ -214,7 +258,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     status: "live",
     asOf,
     source: "Bitrix paidDeals",
-    unit: "count"
+    unit: "count",
+    plan: planSales
   });
 
   const aovMetric = metricValue({
@@ -224,7 +269,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     asOf,
     source: "metrics-engine averagePaidCheck / Bitrix",
     unit: "eur",
-    confidence: "high"
+    confidence: "high",
+    plan: planAov
   });
 
   const crMetric = metricValue({
@@ -235,7 +281,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     source: "paid_orders / leads (period snapshot)",
     unit: "pct",
     confidence: "medium",
-    decisionHint: "Конверсия за период"
+    decisionHint: "Конверсия за период",
+    plan: planCrSale
   });
 
   const repeatMetric = metricValue({
@@ -250,7 +297,16 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
 
   const adSpendMetric =
     adSpendInfo.value == null
-      ? noDataMetric("ad_spend", "СВОД / company-snapshot", "Нет spend в snapshot", "eur")
+      ? metricValue({
+          metricId: "ad_spend",
+          value: null,
+          status: "no_data",
+          asOf: null,
+          source: "СВОД / company-snapshot",
+          unit: "eur",
+          plan: planSpend,
+          decisionHint: "Нет spend в snapshot"
+        })
       : metricValue({
           metricId: "ad_spend",
           value: adSpendInfo.value,
@@ -258,7 +314,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           asOf: adSpendInfo.asOf,
           source: adSpendInfo.source,
           confidence: "medium",
-          unit: "eur"
+          unit: "eur",
+          plan: planSpend
         });
 
   const cplMetric =
@@ -461,11 +518,11 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       planRevenue: metricValue({
         metricId: "plan_revenue",
         value: planRevenueTarget,
-        status: "manual",
+        status: monthlyPlanBundle?.obshie?.revenue != null ? "live" : "manual",
         asOf,
-        source: "targetScenario / North Star plan",
+        source: planSource,
         unit: "eur",
-        confidence: "medium"
+        confidence: monthlyPlanBundle?.obshie?.revenue != null ? "high" : "medium"
       }),
       factRevenue: revenueMetric,
       forecastRevenue: metricValue({
@@ -496,7 +553,10 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       daysElapsed,
       daysRemaining,
       calendarDays,
-      forecastSource
+      forecastSource,
+      indicators: planIndicators,
+      planSource,
+      indicatorCount: planIndicators.length
     },
     revenueTree: {
       total: revenueMetric,
@@ -586,6 +646,16 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       { id: "ga4", name: "GA4", connection: "connected", lastSync: null, note: "Раздел Реклама" },
       { id: "svod", name: "СВОД", connection: "partial", lastSync: adSpendInfo.asOf, note: "Расход сводно" },
       {
+        id: "monthly_plan",
+        name: "План/факт",
+        connection: planIndicators.length > 0 ? "connected" : "partial",
+        lastSync: asOf,
+        note:
+          planIndicators.length > 0
+            ? `${planIndicators.length} показателей · ${period}`
+            : "Нет колонки плана за период"
+      },
+      {
         id: "maria",
         name: "Maria",
         connection: mariaRevenueValue == null ? "partial" : "connected",
@@ -616,6 +686,8 @@ function emptySnapshot(input: {
   legacyPeriodKey: PeriodKey | null;
   availablePeriods: AnalyticsPeriod[];
   planRevenueTarget: number;
+  planIndicators: AnalyticsPlanIndicator[];
+  planSource: string;
   calendarDays: number;
   daysElapsed: number;
   daysRemaining: number;
@@ -676,8 +748,8 @@ function emptySnapshot(input: {
       planRevenue: metricValue({
         metricId: "plan_revenue",
         value: input.planRevenueTarget,
-        status: "manual",
-        source: "targetScenario",
+        status: input.planIndicators.length > 0 ? "live" : "manual",
+        source: input.planSource,
         unit: "eur"
       }),
       factRevenue: no("revenue", "Bitrix WON", "eur"),
@@ -687,7 +759,10 @@ function emptySnapshot(input: {
       daysElapsed: input.daysElapsed,
       daysRemaining: input.daysRemaining,
       calendarDays: input.calendarDays,
-      forecastSource: "n/a"
+      forecastSource: "n/a",
+      indicators: input.planIndicators,
+      planSource: input.planSource,
+      indicatorCount: input.planIndicators.length
     },
     revenueTree: {
       total: no("revenue", "Bitrix WON", "eur"),

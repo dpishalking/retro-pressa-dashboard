@@ -12,7 +12,11 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
       <div className="aos-section-head">
         <div>
           <h2>План / Факт / Прогноз</h2>
-          <p>Источник прогноза: {plan.forecastSource}</p>
+          <p>
+            План: {plan.planSource || "—"} · показателей: {plan.indicatorCount ?? plan.indicators?.length ?? 0}
+            <br />
+            Прогноз: {plan.forecastSource}
+          </p>
         </div>
         <StatusBadge status={plan.forecastRevenue.status} />
       </div>
@@ -49,6 +53,61 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
       <div className="aos-plan__days">
         Дни: {plan.daysElapsed} · Остаток: {plan.daysRemaining} · Месяц: {plan.calendarDays}
       </div>
+    </section>
+  );
+}
+
+export function PlanIndicatorsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const indicators = snapshot.plan.indicators || [];
+  const sections = Array.from(new Set(indicators.map((item) => item.section)));
+  return (
+    <section className="aos-card" id="aos-plan-indicators">
+      <div className="aos-section-head">
+        <div>
+          <h2>План месяца</h2>
+          <p>
+            {snapshot.plan.planSource || "Google Sheets · План/факт"} · {indicators.length} показателей
+          </p>
+        </div>
+        <StatusBadge status={indicators.length > 0 ? "live" : "no_data"} />
+      </div>
+      {indicators.length === 0 ? (
+        <p className="aos-muted">Нет плана за {snapshot.period}</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="aos-table">
+            <thead>
+              <tr>
+                <th>Блок</th>
+                <th>Показатель</th>
+                <th>План</th>
+              </tr>
+            </thead>
+            <tbody>
+              {indicators.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.section}</td>
+                  <td>{item.label}</td>
+                  <td>
+                    {item.unit === "eur"
+                      ? eur(item.value)
+                      : item.unit === "pct"
+                        ? pct(item.value)
+                        : item.unit === "ratio"
+                          ? `${number(item.value, 2)}×`
+                          : number(item.value)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {sections.length > 0 ? (
+        <p className="aos-muted" style={{ marginTop: "0.75rem" }}>
+          Блоки: {sections.join(" · ")}
+        </p>
+      ) : null}
     </section>
   );
 }

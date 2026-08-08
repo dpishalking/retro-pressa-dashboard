@@ -176,9 +176,24 @@ jobs:
             "GOOGLE_PRIVATE_KEY",
             "GA4_PROPERTY_ID",
             "CLARITY_API_TOKEN",
-            "CLARITY_DASHBOARD_URL"
+            "CLARITY_DASHBOARD_URL",
+            "MONTHLY_PLAN_SPREADSHEET_ID",
+            "MONTHLY_PLAN_TAB",
+            "SVOD_PLAN_SPREADSHEET_ID",
+            "SVOD_PLAN_TAB",
+            "SVOD_PAID_LEADS_TAB",
+            "SVOD_ORGANIC_LEADS_TAB",
+            "MARIA_TRUTH_SPREADSHEET_ID",
+            "PREDICTIVE_SALES_SPREADSHEET_ID",
+            "PREDICTIVE_SALES_TAB"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
+          if (!env.MONTHLY_PLAN_SPREADSHEET_ID) {
+            env.MONTHLY_PLAN_SPREADSHEET_ID = "16ocjHOlOjnJacYhlLxhdF-so5FclgIijImC_vsMlsLM";
+          }
+          if (!env.MONTHLY_PLAN_TAB) {
+            env.MONTHLY_PLAN_TAB = "План/факт";
+          }
           env.TRAINER_API_URL = trainerApiUrl;
           env.TRAINER_ADMIN_API_KEY = adminKey;
           env.TRAINER_SERVICE_TAG = process.env.TRAINER_SERVICE_TAG || "retro-pressa";

@@ -74,6 +74,15 @@ export type AnalyticsCountryRow = {
   leads: number | null;
 };
 
+export type AnalyticsPlanIndicator = {
+  id: string;
+  section: string;
+  label: string;
+  value: number;
+  unit: "eur" | "pct" | "count" | "ratio";
+  source: string;
+};
+
 export type AnalyticsPlanBlock = {
   planRevenue: AnalyticsMetricValue;
   factRevenue: AnalyticsMetricValue;
@@ -84,6 +93,10 @@ export type AnalyticsPlanBlock = {
   daysRemaining: number;
   calendarDays: number;
   forecastSource: string;
+  /** Full monthly plan sheet rows for the period (ОБЩИЕ + channels + expenses). */
+  indicators: AnalyticsPlanIndicator[];
+  planSource: string;
+  indicatorCount: number;
 };
 
 export type AnalyticsReconciliation = {

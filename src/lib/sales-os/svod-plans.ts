@@ -1,19 +1,37 @@
 import { readSheetValues } from "@/lib/google/sheets-client";
 
 /**
- * СВОД_RetroPressa → tab «План/факт» (ОБЩИЕ monthly plan columns).
- * https://docs.google.com/spreadsheets/d/1nItFm1eqBMVBJF1ZSBuBKZX-g03wx5v60l7h7Pqey4M
+ * Monthly CEO plan workbook → tab «План/факт» (all indicators).
+ * https://docs.google.com/spreadsheets/d/16ocjHOlOjnJacYhlLxhdF-so5FclgIijImC_vsMlsLM
+ *
+ * Daily paid/organic lead sheets stay on the traffic СВОД book below.
  */
 
+/** CEO monthly plan/fact (July / August / September … columns). */
+export const MONTHLY_PLAN_SPREADSHEET_ID_DEFAULT = "16ocjHOlOjnJacYhlLxhdF-so5FclgIijImC_vsMlsLM";
+export const MONTHLY_PLAN_GID_DEFAULT = "2079098693";
+export const MONTHLY_PLAN_TAB_DEFAULT = "План/факт";
+
+/** Traffic СВОД book (tabs `day`, `Органика`, legacy plan copy). */
 export const SVOD_PLAN_SPREADSHEET_ID_DEFAULT = "1nItFm1eqBMVBJF1ZSBuBKZX-g03wx5v60l7h7Pqey4M";
 export const SVOD_PLAN_TAB_DEFAULT = "План/факт";
 
+export function getMonthlyPlanSpreadsheetId(): string {
+  // Prefer explicit MONTHLY_PLAN_*; ignore legacy SVOD_PLANFACT aliases that may point at old books.
+  return process.env.MONTHLY_PLAN_SPREADSHEET_ID?.trim() || MONTHLY_PLAN_SPREADSHEET_ID_DEFAULT;
+}
+
+export function getMonthlyPlanTabTitle(): string {
+  return process.env.MONTHLY_PLAN_TAB?.trim() || process.env.SVOD_PLAN_TAB?.trim() || MONTHLY_PLAN_TAB_DEFAULT;
+}
+
+/** @deprecated Prefer getMonthlyPlanSpreadsheetId for plans; kept for daily lead tabs. */
 export function getSvodPlanSpreadsheetId(): string {
   return process.env.SVOD_PLAN_SPREADSHEET_ID?.trim() || SVOD_PLAN_SPREADSHEET_ID_DEFAULT;
 }
 
 export function getSvodPlanTabTitle(): string {
-  return process.env.SVOD_PLAN_TAB?.trim() || SVOD_PLAN_TAB_DEFAULT;
+  return getMonthlyPlanTabTitle();
 }
 
 const MONTH_NAMES_RU = [
@@ -237,13 +255,106 @@ export async function pullSvodMonthPlans(input: {
   spreadsheetId?: string;
   tabTitle?: string;
 }): Promise<SvodMonthPlans | null> {
-  const spreadsheetId = input.spreadsheetId || getSvodPlanSpreadsheetId();
-  const tabTitle = input.tabTitle || getSvodPlanTabTitle();
+  const spreadsheetId = input.spreadsheetId || getMonthlyPlanSpreadsheetId();
+  const tabTitle = input.tabTitle || getMonthlyPlanTabTitle();
   const values = await readSheetValues({
     spreadsheetId,
     range: `'${tabTitle.replace(/'/g, "''")}'!A1:Z80`
   });
   return parseSvodObshiePlans(values, input.month);
+}
+
+export type MonthlyPlanIndicator = {
+  row: number;
+  section: string;
+  label: string;
+  value: number;
+  raw: string;
+  unit: "eur" | "pct" | "count" | "ratio";
+};
+
+function inferPlanUnit(label: string, raw: string): MonthlyPlanIndicator["unit"] {
+  const text = `${label} ${raw}`.toLowerCase();
+  if (text.includes("%") || text.includes("конверсия") || text.includes("roas") || text.includes("roi") || text.includes("romi") || /^[a-e]$/i.test(label.trim())) {
+    return "pct";
+  }
+  if (text.includes("€") || text.includes("выручка") || text.includes("бюджет") || text.includes("чек") || text.includes("cpl") || text.includes("cac") || text.includes("аренда") || text.includes("прибыл") || text.includes("расход")) {
+    return "eur";
+  }
+  if (text.includes("roas") || text.includes("romi")) return "ratio";
+  return "count";
+}
+
+/** Parse every non-empty plan cell for YYYY-MM (section headers skipped). */
+export function parseMonthlyPlanIndicators(values: string[][], month: string): MonthlyPlanIndicator[] {
+  const planCol = findSvodPlanColumn(values, month);
+  if (planCol == null) return [];
+
+  const out: MonthlyPlanIndicator[] = [];
+  let section = "ОБЩИЕ";
+  for (let r = 2; r < values.length; r += 1) {
+    const labelRaw = String(values[r]?.[0] || "").replace(/\s+/g, " ").trim();
+    if (!labelRaw) continue;
+    const label = normalizeMetricLabel(labelRaw);
+    if (
+      label.startsWith("общие") ||
+      isPaidAdSection(label) ||
+      isOrganicSection(label) ||
+      label.startsWith("расход") ||
+      label.startsWith("основные") ||
+      label.startsWith("накладные") ||
+      label.startsWith("административ")
+    ) {
+      section = labelRaw.replace(/\s+/g, " ").trim();
+      continue;
+    }
+    if (label.startsWith("подытог") || label.startsWith("сумма") || label.startsWith("чистая")) {
+      // keep as indicators (totals)
+    }
+    const raw = values[r]?.[planCol];
+    const value = parseSvodPlanNumber(raw);
+    if (value == null) continue;
+    out.push({
+      row: r + 1,
+      section,
+      label: labelRaw.replace(/\s+/g, " ").trim(),
+      value,
+      raw: String(raw ?? "").trim(),
+      unit: inferPlanUnit(labelRaw, String(raw ?? ""))
+    });
+  }
+  return out;
+}
+
+export async function pullMonthlyPlanIndicators(input: {
+  month: string;
+  spreadsheetId?: string;
+  tabTitle?: string;
+}): Promise<{
+  month: string;
+  spreadsheetId: string;
+  tabTitle: string;
+  planCol: number | null;
+  indicators: MonthlyPlanIndicator[];
+  obshie: SvodMonthPlans | null;
+  channels: SvodPaidOrganicPlans | null;
+}> {
+  const spreadsheetId = input.spreadsheetId || getMonthlyPlanSpreadsheetId();
+  const tabTitle = input.tabTitle || getMonthlyPlanTabTitle();
+  const values = await readSheetValues({
+    spreadsheetId,
+    range: `'${tabTitle.replace(/'/g, "''")}'!A1:Z160`
+  });
+  const planCol = findSvodPlanColumn(values, input.month);
+  return {
+    month: input.month,
+    spreadsheetId,
+    tabTitle,
+    planCol,
+    indicators: parseMonthlyPlanIndicators(values, input.month),
+    obshie: parseSvodObshiePlans(values, input.month),
+    channels: parseSvodPaidOrganicPlans(values, input.month)
+  };
 }
 
 /** Metric slice shared by ОБЩИЕ / Paid / Organic blocks. */
@@ -436,8 +547,8 @@ export async function pullSvodPaidOrganicPlans(input: {
   spreadsheetId?: string;
   tabTitle?: string;
 }): Promise<SvodPaidOrganicPlans | null> {
-  const spreadsheetId = input.spreadsheetId || getSvodPlanSpreadsheetId();
-  const tabTitle = input.tabTitle || getSvodPlanTabTitle();
+  const spreadsheetId = input.spreadsheetId || getMonthlyPlanSpreadsheetId();
+  const tabTitle = input.tabTitle || getMonthlyPlanTabTitle();
   const values = await readSheetValues({
     spreadsheetId,
     range: `'${tabTitle.replace(/'/g, "''")}'!A1:Z120`

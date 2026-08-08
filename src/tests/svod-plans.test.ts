@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   findSvodPlanColumn,
+  parseMonthlyPlanIndicators,
   parseSvodDailyLeads,
   parseSvodDayDate,
   parseSvodObshiePlans,
@@ -87,6 +88,28 @@ assert.equal(channel!.paid.crLeadSale, 0.16);
 assert.equal(channel!.paid.crInvoiceSale, 0.73);
 assert.equal(channel!.organic.crLeadSale, 0.16);
 assert.ok(channel!.paidSections.some((s) => /facebook/i.test(s)));
+
+const fullIndicators = parseMonthlyPlanIndicators(
+  [
+    ["Показатели", "", "Июль", "", "", "", "", "Август"],
+    ["", "", "План", "", "Факт", "", "", "План"],
+    ["ОБЩИЕ"],
+    ["Выручка", "", "36274", "", "", "", "", "46676"],
+    ["Бюджет", "", "4500", "", "", "", "", "4500"],
+    ["Лиды", "", "3334", "", "", "", "", "3334"],
+    ["Оплаты шт.", "", "533", "", "", "", "", "667"],
+    ["Facebook"],
+    ["Выручка", "", "29017", "", "", "", "", "37338"],
+    ["Расходы"],
+    ["Аренда офиса Минск", "", "500", "", "", "", "", "500"]
+  ],
+  "2026-08"
+);
+assert.equal(fullIndicators.length, 6);
+assert.equal(fullIndicators[0].label, "Выручка");
+assert.equal(fullIndicators[0].value, 46676);
+assert.equal(fullIndicators[4].section, "Facebook");
+assert.equal(fullIndicators[5].section, "Расходы");
 
 const daily = parseSvodDailyLeads({
   paidSheet: [

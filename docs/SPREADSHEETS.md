@@ -67,15 +67,29 @@ Tabs: [business-os/ARCHITECTURE.md](./business-os/ARCHITECTURE.md) · [business-
 
 ---
 
-## СВОД (marketing)
+## Monthly plan / fact (CEO)
+
+| Field | Value |
+|-------|-------|
+| Spreadsheet ID | `16ocjHOlOjnJacYhlLxhdF-so5FclgIijImC_vsMlsLM` |
+| Tab / gid | `План/факт` / `2079098693` |
+| Env | `MONTHLY_PLAN_SPREADSHEET_ID` / `MONTHLY_PLAN_TAB` |
+| Purpose | Monthly plan for all indicators (ОБЩИЕ, Facebook, Яндекс, Органика, расходы) |
+| Status | **Primary** plan source for Analytics OS / predictive |
+| Manual | Yes — plan columns per month |
+| Automatic | Read-only |
+
+---
+
+## СВОД (marketing traffic)
 
 | Field | Value |
 |-------|-------|
 | Spreadsheet ID | `1nItFm1eqBMVBJF1ZSBuBKZX-g03wx5v60l7h7Pqey4M` |
 | Env | `GOOGLE_TRAFFIC_SHEET_ID` / `SVOD_PLAN_SPREADSHEET_ID` |
-| Purpose | `График`, `day`, `Органика`, plans |
+| Purpose | `График`, `day`, `Органика` (daily leads); legacy plan copy |
 | Status | Active source (read by OS) |
-| Manual | Plans / day rows (marketing) |
+| Manual | Day rows (marketing) |
 | Automatic | Read-only for OS |
 
 ---

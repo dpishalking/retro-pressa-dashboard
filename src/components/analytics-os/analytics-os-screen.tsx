@@ -15,6 +15,7 @@ import {
   OwnerIntelligencePanel,
   PipelinePanel,
   PlanFactForecast,
+  PlanIndicatorsPanel,
   ProductionPanel,
   ProductsPanel,
   ReconciliationPanel,
@@ -176,6 +177,7 @@ export function AnalyticsOsScreen() {
                 <>
                   <AnalyticsKpiRow snapshot={snapshot} />
                   <PlanFactForecast snapshot={snapshot} />
+                  <PlanIndicatorsPanel snapshot={snapshot} />
                 </>
               )}
 
