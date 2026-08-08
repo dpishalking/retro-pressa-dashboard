@@ -184,7 +184,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const runRate =
     daysElapsed > 0 ? (tree.revenue / daysElapsed) * calendarDays : null;
   const forecastValue = runRate;
-  const forecastSource = "run-rate (fact / elapsed × calendar days)";
+  const forecastSource = "темп факта × дни месяца";
 
   const revenueMetric = metricValue({
     metricId: "revenue",
@@ -195,7 +195,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     confidence: "high",
     plan: planRevenueTarget,
     unit: "eur",
-    decisionHint: "Основная CEO Revenue — Bitrix payments"
+    decisionHint: "Основная выручка — Bitrix оплаты"
   });
 
   const leadsMetric = metricValue({
@@ -234,7 +234,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     source: "paid_orders / leads (period snapshot)",
     unit: "pct",
     confidence: "medium",
-    decisionHint: "Периодная CR, не cohort"
+    decisionHint: "Конверсия за период"
   });
 
   const repeatMetric = metricValue({
@@ -327,8 +327,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     "pct"
   );
 
-  const productionLoad = noDataMetric("production_load", "Production OS", "Not connected", "pct");
-  const cashMetric = noDataMetric("cash", "07_Finance_Daily", "Manual cash_balance not loaded in Phase 1 facade", "eur");
+  const productionLoad = noDataMetric("production_load", "Производство", "Нет связи", "pct");
+  const cashMetric = noDataMetric("cash", "Финансы", "Касса пока не подключена", "eur");
 
   // Pipeline: open invoices still in progress (semantic P) from invoice deals list
   const openDeals = invoiceDeals.filter((d) => d.stageSemanticId === "P");
@@ -543,7 +543,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         source: "LTV proxy (period paid revenue / customers)",
         unit: "eur",
         confidence: "medium",
-        decisionHint: "PARTIAL LTV proxy"
+        decisionHint: "LTV частично"
       })
     },
     pipeline,
@@ -552,17 +552,17 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       cpl: cplMetric,
       cac: cacMetric,
       roas: roasMetric,
-      note: "Marketing KPIs PARTIAL until Ads API / Traffic→Mother cutover. See /ad-analytics for GA4 detail."
+      note: "Маркетинг частично. Детали — в разделе Реклама."
     },
     production: {
       status: "no_data",
-      message: "Production status tracking is not yet connected.",
-      available: ["Normative Product Hub SLA (04_PRODUCTION_DELIVERY)"],
+      message: "Статусы производства пока нет.",
+      available: ["Нормы сроков из Product Hub"],
       missing: [
-        "production_started_at",
-        "production_completed_at",
-        "shipment timestamps",
-        "delivery timestamps"
+        "старт производства",
+        "конец производства",
+        "дата отправки",
+        "дата доставки"
       ]
     },
     reconciliation: {
@@ -579,20 +579,20 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     },
     sources: [
       { id: "bitrix", name: "Bitrix24", connection: "connected", lastSync: asOf },
-      { id: "sales_os", name: "Sales OS", connection: "partial", lastSync: null, note: "Export reader optional" },
-      { id: "mother", name: "Mother OS", connection: "partial", lastSync: null, note: "Orders via Bitrix snapshot bridge" },
-      { id: "traffic_os", name: "Traffic OS", connection: "partial", lastSync: null, note: "Mother cutover blocked" },
-      { id: "ga4", name: "GA4", connection: "connected", lastSync: null, note: "Via /ad-analytics" },
-      { id: "svod", name: "СВОД", connection: "partial", lastSync: adSpendInfo.asOf, note: "Aggregate spend" },
+      { id: "sales_os", name: "Sales OS", connection: "partial", lastSync: null, note: "Экспорт опционально" },
+      { id: "mother", name: "Mother OS", connection: "partial", lastSync: null, note: "Заказы через Bitrix" },
+      { id: "traffic_os", name: "Traffic OS", connection: "partial", lastSync: null, note: "Cutover закрыт" },
+      { id: "ga4", name: "GA4", connection: "connected", lastSync: null, note: "Раздел Реклама" },
+      { id: "svod", name: "СВОД", connection: "partial", lastSync: adSpendInfo.asOf, note: "Расход сводно" },
       {
         id: "maria",
         name: "Maria",
         connection: mariaRevenueValue == null ? "partial" : "connected",
         lastSync: null,
-        note: mariaRevenueValue == null ? "Month total unavailable" : "Operational truth"
+        note: mariaRevenueValue == null ? "Месяц недоступен" : "Оперативный факт"
       },
       { id: "product_hub", name: "Product Hub", connection: "partial", lastSync: null },
-      { id: "open_lines", name: "Open Lines", connection: "connected", lastSync: null, note: "/rop/conversations" },
+      { id: "open_lines", name: "Open Lines", connection: "connected", lastSync: null, note: "Диалоги" },
       { id: "meta_ads", name: "Meta Ads API", connection: "not_connected", lastSync: null },
       { id: "google_ads", name: "Google Ads API", connection: "not_connected", lastSync: null }
     ],
@@ -716,13 +716,13 @@ function emptySnapshot(input: {
       cpl: no("cpl", "marketing", "eur"),
       cac: no("cac", "marketing", "eur"),
       roas: no("roas", "marketing", "ratio"),
-      note: "No Bitrix snapshot for this period."
+      note: "Нет снимка Bitrix за период."
     },
     production: {
       status: "no_data",
-      message: "Production status tracking is not yet connected.",
-      available: ["Normative Product Hub SLA"],
-      missing: ["production_started_at", "production_completed_at", "shipment timestamps", "delivery timestamps"]
+      message: "Статусы производства пока нет.",
+      available: ["Нормы сроков из Product Hub"],
+      missing: ["старт производства", "конец производства", "дата отправки", "дата доставки"]
     },
     reconciliation: {
       bitrixRevenue: no("revenue", "Bitrix WON", "eur"),
@@ -741,7 +741,7 @@ function emptySnapshot(input: {
       bitrixVsMariaDeltaPct: no("bitrix_vs_maria_delta_pct", "reconciliation", "pct")
     },
     sources: [
-      { id: "bitrix", name: "Bitrix24", connection: "partial", lastSync: null, note: `No snapshot for ${input.period}` },
+      { id: "bitrix", name: "Bitrix24", connection: "partial", lastSync: null, note: `Нет снимка за ${input.period}` },
       { id: "meta_ads", name: "Meta Ads API", connection: "not_connected", lastSync: null },
       { id: "google_ads", name: "Google Ads API", connection: "not_connected", lastSync: null }
     ],

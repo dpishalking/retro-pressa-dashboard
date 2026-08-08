@@ -181,7 +181,7 @@ export function aggregateFunnel(input: {
       label: "Сделки",
       count: dealsCount,
       status: "calculated",
-      note: "Proxy: unique invoice + paid deals in Bitrix snapshot (full created-deals list not in analytics snapshot)."
+      note: "Оценка: счета + оплаты из Bitrix."
     },
     { id: "invoices", label: "Счета", count: invoicesCount, status: "live" },
     { id: "paid", label: "Оплаты", count: paidCount, status: "live" }

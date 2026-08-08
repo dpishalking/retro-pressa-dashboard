@@ -71,21 +71,21 @@ export function AnalyticsOsScreen() {
     snapshot == null
       ? "—"
       : snapshot.asOf
-        ? "OK"
+        ? "ОК"
         : snapshot.metrics.revenue.status === "no_data"
-          ? "NO DATA"
-          : "PARTIAL";
+          ? "НЕТ ДАННЫХ"
+          : "ЧАСТИЧНО";
 
   return (
     <div className="aos-root">
       <header className="aos-topbar">
         <div>
           <div className="aos-topbar__title">RETRO PRESSA ANALYTICS OS</div>
-          <div className="aos-topbar__subtitle">CEO Control Center</div>
+          <div className="aos-topbar__subtitle">Центр управления</div>
         </div>
         <div className="aos-topbar__meta">
           <label>
-            Period
+            Период
             <select value={period} onChange={(event) => setPeriod(event.target.value)}>
               {(snapshot?.availablePeriods || []).map((item) => (
                 <option key={item} value={item}>
@@ -98,11 +98,11 @@ export function AnalyticsOsScreen() {
             </select>
           </label>
           <div className="aos-topbar__stat">
-            <span>Last Sync</span>
+            <span>Синк</span>
             <strong>{snapshot?.asOf ? new Date(snapshot.asOf).toLocaleString("ru-RU") : "—"}</strong>
           </div>
           <div className="aos-topbar__stat">
-            <span>Data Health</span>
+            <span>Данные</span>
             <strong>{health}</strong>
           </div>
           <a className="aos-topbar__hub" href="/hub">
@@ -117,9 +117,9 @@ export function AnalyticsOsScreen() {
         <main className="aos-main">
           <div className="aos-filters">
             <label>
-              Country
+              Страна
               <select value={country} onChange={(event) => setCountry(event.target.value)}>
-                <option value="">All</option>
+                <option value="">Все</option>
                 {(snapshot?.filterOptions.countries || []).map((item) => (
                   <option key={item} value={item}>
                     {item}
@@ -128,9 +128,9 @@ export function AnalyticsOsScreen() {
               </select>
             </label>
             <label>
-              Manager
+              Менеджер
               <select value={managerId} onChange={(event) => setManagerId(event.target.value)}>
-                <option value="">All</option>
+                <option value="">Все</option>
                 {(snapshot?.filterOptions.managers || []).map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -139,9 +139,9 @@ export function AnalyticsOsScreen() {
               </select>
             </label>
             <label>
-              Product
+              Продукт
               <select value={productId} onChange={(event) => setProductId(event.target.value)}>
-                <option value="">All</option>
+                <option value="">Все</option>
                 {(snapshot?.filterOptions.products || []).map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -159,7 +159,7 @@ export function AnalyticsOsScreen() {
                   setProductId("");
                 }}
               >
-                Сбросить фильтры
+                Сброс
               </button>
             )}
             {state === "loading" ? <StatusBadge status="calculated" /> : null}
@@ -168,7 +168,7 @@ export function AnalyticsOsScreen() {
 
           {!snapshot ? (
             <section className="aos-card">
-              <p>{state === "error" ? error : "Загрузка CEO Control Center…"}</p>
+              <p>{state === "error" ? error : "Загрузка…"}</p>
             </section>
           ) : (
             <>

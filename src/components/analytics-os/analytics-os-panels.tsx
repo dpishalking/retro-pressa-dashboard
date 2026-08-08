@@ -11,30 +11,30 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
     <section className="aos-card aos-plan">
       <div className="aos-section-head">
         <div>
-          <h2>Plan / Fact / Forecast</h2>
+          <h2>План / Факт / Прогноз</h2>
           <p>Источник прогноза: {plan.forecastSource}</p>
         </div>
         <StatusBadge status={plan.forecastRevenue.status} />
       </div>
       <div className="aos-plan__grid">
         <div>
-          <span>PLAN</span>
+          <span>ПЛАН</span>
           <strong>{formatMetricDisplay(plan.planRevenue)}</strong>
         </div>
         <div>
-          <span>FACT</span>
+          <span>ФАКТ</span>
           <strong>{formatMetricDisplay(plan.factRevenue)}</strong>
         </div>
         <div>
-          <span>FORECAST</span>
+          <span>ПРОГНОЗ</span>
           <strong>{formatMetricDisplay(plan.forecastRevenue)}</strong>
         </div>
         <div>
-          <span>GAP</span>
+          <span>РАЗРЫВ</span>
           <strong>{formatMetricDisplay(plan.gap)}</strong>
         </div>
         <div>
-          <span>PROGRESS</span>
+          <span>ПРОГРЕСС</span>
           <strong>{formatMetricDisplay(plan.planCompletion)}</strong>
         </div>
       </div>
@@ -47,7 +47,7 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
         />
       </div>
       <div className="aos-plan__days">
-        Дней прошло: {plan.daysElapsed} · Осталось: {plan.daysRemaining} · Календарь: {plan.calendarDays}
+        Дни: {plan.daysElapsed} · Остаток: {plan.daysRemaining} · Месяц: {plan.calendarDays}
       </div>
     </section>
   );
@@ -69,16 +69,16 @@ export function RevenueTreePanel({
     <section className="aos-card" id="aos-revenue">
       <div className="aos-section-head">
         <div>
-          <h2>Revenue Tree</h2>
-          <p>Bitrix WON → страны → продукты → менеджеры</p>
+          <h2>Выручка</h2>
+          <p>Bitrix → страны → продукты → менеджеры</p>
         </div>
         <StatusBadge status={revenueTree.total.status} />
       </div>
       <div className="aos-revenue-total">{formatMetricDisplay(revenueTree.total)}</div>
       <div className="aos-tree-grid">
-        <TreeColumn title="Top Countries" rows={revenueTree.countries} onClick={(id) => onFilterCountry(id)} />
-        <TreeColumn title="Top Products" rows={revenueTree.products} onClick={(id) => onFilterProduct(id)} />
-        <TreeColumn title="Top Managers" rows={revenueTree.managers} onClick={(id) => onFilterManager(id)} />
+        <TreeColumn title="Страны" rows={revenueTree.countries} onClick={(id) => onFilterCountry(id)} />
+        <TreeColumn title="Продукты" rows={revenueTree.products} onClick={(id) => onFilterProduct(id)} />
+        <TreeColumn title="Менеджеры" rows={revenueTree.managers} onClick={(id) => onFilterManager(id)} />
       </div>
     </section>
   );
@@ -121,8 +121,8 @@ export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }
     <section className="aos-card" id="aos-funnel">
       <div className="aos-section-head">
         <div>
-          <h2>Sales Funnel</h2>
-          <p>Leads → Deals → Invoices → Paid. Qualified Leads не как LIVE stage.</p>
+          <h2>Воронка</h2>
+          <p>Лиды → Сделки → Счета → Оплаты</p>
         </div>
       </div>
       <div className="aos-funnel">
@@ -134,9 +134,9 @@ export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }
             </div>
             <strong>{stage.count == null ? "—" : number(stage.count)}</strong>
             <div className="aos-muted">
-              CR prev: {stage.conversionFromPrevious == null ? "—" : pct(stage.conversionFromPrevious)}
+              Конверсия: {stage.conversionFromPrevious == null ? "—" : pct(stage.conversionFromPrevious)}
               {" · "}
-              Drop: {stage.dropOffFromPrevious == null ? "—" : number(stage.dropOffFromPrevious)}
+              Отсев: {stage.dropOffFromPrevious == null ? "—" : number(stage.dropOffFromPrevious)}
             </div>
             {stage.note ? <p className="aos-note">{stage.note}</p> : null}
           </div>
@@ -151,22 +151,22 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
     <section className="aos-card" id="aos-managers">
       <div className="aos-section-head">
         <div>
-          <h2>Managers</h2>
-          <p>TOP 20% по выручке отмечены</p>
+          <h2>Менеджеры</h2>
+          <p>Топ 20% по выручке</p>
         </div>
       </div>
       <div className="table-scroll">
         <table className="aos-table">
           <thead>
             <tr>
-              <th>Manager</th>
-              <th>Leads</th>
-              <th>Paid</th>
-              <th>Revenue</th>
-              <th>CR</th>
-              <th>AOV</th>
-              <th>Prod/Order</th>
-              <th>Response</th>
+              <th>Менеджер</th>
+              <th>Лиды</th>
+              <th>Оплаты</th>
+              <th>Выручка</th>
+              <th>Конверсия</th>
+              <th>Чек</th>
+              <th>Товары / заказ</th>
+              <th>Ответ</th>
             </tr>
           </thead>
           <tbody>
@@ -179,7 +179,7 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
                 <tr key={row.managerId}>
                   <td>
                     {row.managerName}
-                    {row.isTopPerformer ? <span className="aos-chip">TOP 20%</span> : null}
+                    {row.isTopPerformer ? <span className="aos-chip">ТОП 20%</span> : null}
                   </td>
                   <td>{number(row.leads)}</td>
                   <td>{number(row.paidOrders)}</td>
@@ -203,9 +203,9 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
     <section className="aos-card" id="aos-products">
       <div className="aos-section-head">
         <div>
-          <h2>Product Analytics</h2>
+          <h2>Продукты</h2>
           <p>
-            Primary product · Multi-product orders{" "}
+            Основной товар · Заказы с 2+ товарами:{" "}
             {formatMetricDisplay(snapshot.multiProductOrdersPct)} <StatusBadge status="partial" />
           </p>
         </div>
@@ -214,12 +214,12 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
         <table className="aos-table">
           <thead>
             <tr>
-              <th>Product</th>
-              <th>Orders</th>
-              <th>Revenue</th>
-              <th>AOV</th>
-              <th>Share</th>
-              <th>Prod/Order</th>
+              <th>Продукт</th>
+              <th>Заказы</th>
+              <th>Выручка</th>
+              <th>Чек</th>
+              <th>Доля</th>
+              <th>Товары / заказ</th>
             </tr>
           </thead>
           <tbody>
@@ -251,23 +251,21 @@ export function CountriesPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
     <section className="aos-card" id="aos-countries">
       <div className="aos-section-head">
         <div>
-          <h2>Countries</h2>
-          <p>
-            Revenue Country = order/deal country · Lead CR Country = lead country
-          </p>
+          <h2>Страны</h2>
+          <p>Выручка = страна заказа · Конверсия = страна лида</p>
         </div>
       </div>
       <div className="table-scroll">
         <table className="aos-table">
           <thead>
             <tr>
-              <th>Country</th>
-              <th>Revenue</th>
-              <th>Orders</th>
-              <th>AOV</th>
-              <th>Share</th>
-              <th>Leads</th>
-              <th>Lead CR</th>
+              <th>Страна</th>
+              <th>Выручка</th>
+              <th>Заказы</th>
+              <th>Чек</th>
+              <th>Доля</th>
+              <th>Лиды</th>
+              <th>Конверсия</th>
             </tr>
           </thead>
           <tbody>
@@ -301,17 +299,17 @@ export function CustomersPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
     <section className="aos-card" id="aos-customers">
       <div className="aos-section-head">
         <div>
-          <h2>Customers / Repeat</h2>
-          <p>customer_key identity · LTV = PARTIAL proxy</p>
+          <h2>Клиенты</h2>
+          <p>Повтор и средний LTV — частично</p>
         </div>
       </div>
       <div className="aos-stat-grid">
         {[
-          ["Customers", c.customers],
-          ["New", c.newCustomers],
-          ["Repeat", c.repeatCustomers],
-          ["Repeat Rate", c.repeatRate],
-          ["Avg Customer Revenue", c.avgCustomerRevenue]
+          ["Клиенты", c.customers],
+          ["Новые", c.newCustomers],
+          ["Повтор", c.repeatCustomers],
+          ["Доля повтора", c.repeatRate],
+          ["Средняя выручка", c.avgCustomerRevenue]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>
@@ -330,18 +328,18 @@ export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSna
     <section className="aos-card" id="aos-unit-economics">
       <div className="aos-section-head">
         <div>
-          <h2>Unit Economics</h2>
+          <h2>Юнит-экономика</h2>
           <p>{m.note}</p>
         </div>
       </div>
       <div className="aos-stat-grid">
         {[
-          ["AOV", snapshot.metrics.aov],
+          ["Средний чек", snapshot.metrics.aov],
           ["CPL", m.cpl],
           ["CAC", m.cac],
           ["ROAS", m.roas],
-          ["Gross Profit", snapshot.metrics.gross_profit],
-          ["Contribution Margin", snapshot.metrics.contribution_margin]
+          ["Валовая прибыль", snapshot.metrics.gross_profit],
+          ["Маржа вклада", snapshot.metrics.contribution_margin]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>
@@ -357,7 +355,7 @@ export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSna
         ))}
       </div>
       <p className="aos-note">
-        Order-level shipping, payment fees and full actual COGS are not yet available.
+        Доставка, комиссии и полная себестоимость по заказу пока нет.
       </p>
     </section>
   );
@@ -369,16 +367,16 @@ export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
     <section className="aos-card">
       <div className="aos-section-head">
         <div>
-          <h2>Pipeline</h2>
-          <p>Leading indicator — open deals</p>
+          <h2>Открытая воронка</h2>
+          <p>Открытые сделки</p>
         </div>
       </div>
       <div className="aos-stat-grid">
         {[
-          ["Open Deals", p.openDeals],
-          ["Pipeline Amount", p.pipelineAmount],
-          ["Weighted", p.weightedAmount],
-          ["Overdue", p.overdueDeals]
+          ["Сделки", p.openDeals],
+          ["Сумма", p.pipelineAmount],
+          ["С весом", p.weightedAmount],
+          ["Просрочка", p.overdueDeals]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>
@@ -397,14 +395,14 @@ export function ProductionPanel({ snapshot }: { snapshot: CeoControlCenterSnapsh
     <section className="aos-card aos-card--warn" id="aos-production">
       <div className="aos-section-head">
         <div>
-          <h2>Production Analytics</h2>
+          <h2>Производство</h2>
           <p>{p.message}</p>
         </div>
         <StatusBadge status={p.status} />
       </div>
       <div className="aos-two-col">
         <div>
-          <h3>Available</h3>
+          <h3>Есть</h3>
           <ul>
             {p.available.map((item) => (
               <li key={item}>{item}</li>
@@ -412,7 +410,7 @@ export function ProductionPanel({ snapshot }: { snapshot: CeoControlCenterSnapsh
           </ul>
         </div>
         <div>
-          <h3>Missing</h3>
+          <h3>Нет</h3>
           <ul>
             {p.missing.map((item) => (
               <li key={item}>{item}</li>
@@ -421,7 +419,7 @@ export function ProductionPanel({ snapshot }: { snapshot: CeoControlCenterSnapsh
         </div>
       </div>
       <button type="button" className="aos-cta" disabled>
-        Connect Production Source
+        Подключить источник
       </button>
     </section>
   );
@@ -433,17 +431,17 @@ export function ReconciliationPanel({ snapshot }: { snapshot: CeoControlCenterSn
     <section className="aos-card">
       <div className="aos-section-head">
         <div>
-          <h2>Revenue Reconciliation</h2>
-          <p>Не усредняем. Bitrix — primary CEO Revenue.</p>
+          <h2>Сверка выручки</h2>
+          <p>Без среднего. Основной источник — Bitrix.</p>
         </div>
       </div>
       <div className="aos-stat-grid">
         {[
-          ["Bitrix WON", r.bitrixRevenue],
+          ["Bitrix", r.bitrixRevenue],
           ["Maria", r.mariaRevenue],
-          ["СВОД attributed", r.svodAttributedRevenue],
-          ["Delta Bitrix−Maria", r.bitrixVsMariaDelta],
-          ["Delta %", r.bitrixVsMariaDeltaPct]
+          ["СВОД", r.svodAttributedRevenue],
+          ["Разница Bitrix−Maria", r.bitrixVsMariaDelta],
+          ["Разница %", r.bitrixVsMariaDeltaPct]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>
@@ -461,8 +459,8 @@ export function OwnerIntelligencePanel({ snapshot }: { snapshot: CeoControlCente
     <section className="aos-owner" id="aos-owner">
       <div className="aos-section-head">
         <div>
-          <h2>OWNER INTELLIGENCE</h2>
-          <p>Rule-based signals · не Gemini</p>
+          <h2>ДЛЯ СОБСТВЕННИКА</h2>
+          <p>Правила · не Gemini</p>
         </div>
       </div>
       <div className="aos-owner__grid">
@@ -475,7 +473,7 @@ export function OwnerIntelligencePanel({ snapshot }: { snapshot: CeoControlCente
             <p>{card.body}</p>
             {card.href ? (
               <Link href={card.href} className="aos-link">
-                Open Digital Twin →
+                Digital Twin →
               </Link>
             ) : null}
           </article>
@@ -490,8 +488,8 @@ export function DataFoundationPanel({ snapshot }: { snapshot: CeoControlCenterSn
     <section className="aos-foundation" id="aos-sources">
       <div className="aos-section-head">
         <div>
-          <h2>ONE DATA MODEL — ONE SOURCE OF TRUTH</h2>
-          <p>Data Foundation · freshness и connection status</p>
+          <h2>ОДНА МОДЕЛЬ ДАННЫХ</h2>
+          <p>Источники и свежесть</p>
         </div>
       </div>
       <div className="aos-sources-grid">
@@ -501,13 +499,13 @@ export function DataFoundationPanel({ snapshot }: { snapshot: CeoControlCenterSn
               <strong>{source.name}</strong>
               <span className={`aos-conn aos-conn--${source.connection}`}>
                 {source.connection === "connected"
-                  ? "Connected"
+                  ? "Есть"
                   : source.connection === "partial"
-                    ? "Partial"
-                    : "Not Connected"}
+                    ? "Частично"
+                    : "Нет"}
               </span>
             </div>
-            <div className="aos-muted">Last sync: {source.lastSync || "—"}</div>
+            <div className="aos-muted">Синк: {source.lastSync || "—"}</div>
             {source.note ? <div className="aos-note">{source.note}</div> : null}
           </article>
         ))}
@@ -522,9 +520,9 @@ export function DataQualityPanel({ snapshot }: { snapshot: CeoControlCenterSnaps
     <section className="aos-card" id="aos-quality">
       <div className="aos-section-head">
         <div>
-          <h2>Data Quality</h2>
+          <h2>Качество данных</h2>
           <p>
-            {q.label} · mode: {q.mode}
+            {q.label === "AUDIT BASELINE" ? "База аудита" : q.label}
           </p>
         </div>
       </div>
@@ -535,7 +533,19 @@ export function DataQualityPanel({ snapshot }: { snapshot: CeoControlCenterSnaps
       <div className="aos-quality-domains">
         {q.domains.map((domain) => (
           <div key={domain.id}>
-            <span>{domain.name}</span>
+            <span>
+              {domain.id === "sales"
+                ? "Продажи"
+                : domain.id === "marketing"
+                  ? "Маркетинг"
+                  : domain.id === "product"
+                    ? "Продукт"
+                    : domain.id === "finance"
+                      ? "Финансы"
+                      : domain.id === "operations"
+                        ? "Операции"
+                        : domain.name}
+            </span>
             <strong>{domain.score}</strong>
           </div>
         ))}
@@ -550,16 +560,16 @@ export function MarketingPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
     <section className="aos-card" id="aos-marketing">
       <div className="aos-section-head">
         <div>
-          <h2>Marketing</h2>
+          <h2>Маркетинг</h2>
           <p>{m.note}</p>
         </div>
         <Link href="/ad-analytics" className="aos-link">
-          Open Ad Analytics →
+          Реклама →
         </Link>
       </div>
       <div className="aos-stat-grid">
         {[
-          ["Ad Spend", m.adSpend],
+          ["Расход", m.adSpend],
           ["CPL", m.cpl],
           ["CAC", m.cac],
           ["ROAS", m.roas]

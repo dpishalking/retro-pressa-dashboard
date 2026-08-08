@@ -5,18 +5,18 @@ import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/form
 import { pct } from "@/lib/format";
 
 const KPI_ORDER: Array<{ id: string; label: string; priority?: boolean }> = [
-  { id: "revenue", label: "Revenue", priority: true },
-  { id: "gross_profit", label: "Gross Profit" },
-  { id: "leads", label: "Leads", priority: true },
-  { id: "paid_orders", label: "Paid Orders", priority: true },
-  { id: "conversion_rate", label: "Conversion", priority: true },
-  { id: "aov", label: "AOV", priority: true },
+  { id: "revenue", label: "Выручка", priority: true },
+  { id: "gross_profit", label: "Валовая прибыль" },
+  { id: "leads", label: "Лиды", priority: true },
+  { id: "paid_orders", label: "Оплаты", priority: true },
+  { id: "conversion_rate", label: "Конверсия", priority: true },
+  { id: "aov", label: "Средний чек", priority: true },
   { id: "cac", label: "CAC" },
-  { id: "repeat_rate", label: "Repeat" },
-  { id: "pipeline_amount", label: "Pipeline" },
-  { id: "production_load", label: "Production Load" },
-  { id: "overdue", label: "Overdue" },
-  { id: "cash", label: "Cash" }
+  { id: "repeat_rate", label: "Повтор" },
+  { id: "pipeline_amount", label: "Воронка €" },
+  { id: "production_load", label: "Производство" },
+  { id: "overdue", label: "Просрочка" },
+  { id: "cash", label: "Касса" }
 ];
 
 function KpiCard({ metric, label, priority }: { metric?: AnalyticsMetricValue; label: string; priority?: boolean }) {
@@ -32,7 +32,7 @@ function KpiCard({ metric, label, priority }: { metric?: AnalyticsMetricValue; l
       <div className="aos-kpi__meta">
         {metric.plan != null && metric.value != null && metric.status !== "no_data" ? (
           <span>
-            PLAN {metric.unit === "eur" ? formatMetricDisplay({ ...metric, value: metric.plan }) : metric.plan} ·{" "}
+            План {metric.unit === "eur" ? formatMetricDisplay({ ...metric, value: metric.plan }) : metric.plan} ·{" "}
             {pct(metric.value / metric.plan)}
           </span>
         ) : metric.decisionHint ? (

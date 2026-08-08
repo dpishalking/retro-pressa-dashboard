@@ -26,84 +26,84 @@ type NavGroup = { title: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
-    title: "Overview",
-    items: [{ id: "overview", label: "CEO Control Center", enabled: true, section: "overview" }]
+    title: "Обзор",
+    items: [{ id: "overview", label: "Главный экран", enabled: true, section: "overview" }]
   },
   {
-    title: "Growth",
+    title: "Рост",
     items: [
-      { id: "revenue", label: "Revenue Tree", enabled: true, section: "revenue" },
-      { id: "marketing", label: "Marketing", enabled: true, section: "marketing" },
-      { id: "stub", label: "Creatives", enabled: false }
+      { id: "revenue", label: "Выручка", enabled: true, section: "revenue" },
+      { id: "marketing", label: "Маркетинг", enabled: true, section: "marketing" },
+      { id: "stub", label: "Креативы", enabled: false }
     ]
   },
   {
-    title: "Sales",
+    title: "Продажи",
     items: [
-      { id: "funnel", label: "Funnel", enabled: true, section: "funnel" },
-      { id: "managers", label: "Managers", enabled: true, section: "managers" },
-      { id: "external", label: "Conversations", enabled: true, href: "/rop/conversations" }
+      { id: "funnel", label: "Воронка", enabled: true, section: "funnel" },
+      { id: "managers", label: "Менеджеры", enabled: true, section: "managers" },
+      { id: "external", label: "Диалоги", enabled: true, href: "/rop/conversations" }
     ]
   },
   {
-    title: "Products",
+    title: "Продукты",
     items: [
-      { id: "products", label: "Product Analytics", enabled: true, section: "products" },
-      { id: "stub", label: "Cross-sell", enabled: false }
+      { id: "products", label: "Продукты", enabled: true, section: "products" },
+      { id: "stub", label: "Допродажи", enabled: false }
     ]
   },
   {
-    title: "Customers",
+    title: "Клиенты",
     items: [
-      { id: "customers", label: "Customers", enabled: true, section: "customers" },
-      { id: "stub", label: "Cohorts", enabled: false },
-      { id: "stub", label: "Gift Graph", enabled: false }
+      { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
+      { id: "stub", label: "Когорты", enabled: false },
+      { id: "stub", label: "Подарки", enabled: false }
     ]
   },
   {
-    title: "Finance",
+    title: "Финансы",
     items: [
-      { id: "unit-economics", label: "Unit Economics", enabled: true, section: "unit-economics" },
+      { id: "unit-economics", label: "Юнит-экономика", enabled: true, section: "unit-economics" },
       { id: "external", label: "P&L", enabled: true, href: "/digital-twin" },
-      { id: "stub", label: "Costs", enabled: false }
+      { id: "stub", label: "Затраты", enabled: false }
     ]
   },
   {
-    title: "Operations",
+    title: "Операции",
     items: [
-      { id: "production", label: "Production", enabled: true, section: "production" },
-      { id: "stub", label: "Capacity", enabled: false },
-      { id: "stub", label: "Quality", enabled: false }
+      { id: "production", label: "Производство", enabled: true, section: "production" },
+      { id: "stub", label: "Мощность", enabled: false },
+      { id: "stub", label: "Качество", enabled: false }
     ]
   },
   {
-    title: "Markets",
-    items: [{ id: "countries", label: "Countries", enabled: true, section: "countries" }]
+    title: "Рынки",
+    items: [{ id: "countries", label: "Страны", enabled: true, section: "countries" }]
   },
   {
-    title: "AI Analyst",
+    title: "AI",
     items: [
-      { id: "stub", label: "Why", enabled: false },
-      { id: "stub", label: "What To Do", enabled: false },
-      { id: "stub", label: "What If", enabled: false },
-      { id: "stub", label: "Opportunities", enabled: false },
-      { id: "stub", label: "Scale Simulator", enabled: false }
+      { id: "stub", label: "Почему", enabled: false },
+      { id: "stub", label: "Что делать", enabled: false },
+      { id: "stub", label: "Что если", enabled: false },
+      { id: "stub", label: "Возможности", enabled: false },
+      { id: "stub", label: "×10", enabled: false }
     ]
   },
   {
-    title: "Management",
+    title: "Управление",
     items: [
-      { id: "stub", label: "Daily Brief", enabled: false },
-      { id: "stub", label: "Weekly Review", enabled: false },
-      { id: "stub", label: "Alerts", enabled: false }
+      { id: "stub", label: "День", enabled: false },
+      { id: "stub", label: "Неделя", enabled: false },
+      { id: "stub", label: "Алерты", enabled: false }
     ]
   },
   {
-    title: "Data",
+    title: "Данные",
     items: [
-      { id: "sources", label: "Sources", enabled: true, section: "sources" },
-      { id: "quality", label: "Data Quality", enabled: true, section: "quality" },
-      { id: "external", label: "Metric Definitions", enabled: true, href: "/md" }
+      { id: "sources", label: "Источники", enabled: true, section: "sources" },
+      { id: "quality", label: "Качество данных", enabled: true, section: "quality" },
+      { id: "external", label: "Метрики", enabled: true, href: "/md" }
     ]
   }
 ];
@@ -118,7 +118,7 @@ export function AnalyticsOsSidebar({
   return (
     <aside className="aos-sidebar">
       <div className="aos-sidebar__brand">
-        <div className="aos-sidebar__eyebrow">Navigation</div>
+        <div className="aos-sidebar__eyebrow">Меню</div>
       </div>
       <nav className="aos-sidebar__nav">
         {NAV.map((group) => (
@@ -132,7 +132,7 @@ export function AnalyticsOsSidebar({
                     <li key={key}>
                       <span className="aos-sidebar__link aos-sidebar__link--disabled">
                         {item.label}
-                        <em>soon</em>
+                        <em>скоро</em>
                       </span>
                     </li>
                   );
@@ -165,7 +165,7 @@ export function AnalyticsOsSidebar({
       </nav>
       <div className="aos-sidebar__footer">
         <a href="/analytics/legacy" className="aos-sidebar__legacy">
-          Legacy dashboard
+          Старый экран
         </a>
       </div>
     </aside>

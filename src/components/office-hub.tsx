@@ -22,7 +22,7 @@ const offices: OfficeCard[] = [
   {
     href: "/os",
     title: "Analytics OS",
-    description: "CEO Control Center: план/факт, выручка, воронка, менеджеры, страны, продукты и data trust.",
+    description: "Центр управления: план, факт, выручка, воронка, менеджеры, страны, продукты.",
     icon: BarChart3,
     status: "active",
     accent: "text-blue-600 bg-blue-50"

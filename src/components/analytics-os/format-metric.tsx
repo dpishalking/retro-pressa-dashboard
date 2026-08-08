@@ -22,16 +22,16 @@ export function formatMetricDisplay(metric: AnalyticsMetricValue | undefined): s
 export function StatusBadge({ status }: { status: AnalyticsMetricValue["status"] | "partial" }) {
   const label =
     status === "live"
-      ? "LIVE"
+      ? "ФАКТ"
       : status === "calculated"
-        ? "CALCULATED"
+        ? "РАСЧЁТ"
         : status === "manual"
-          ? "MANUAL"
+          ? "РУЧНОЙ"
           : status === "demo"
-            ? "DEMO"
+            ? "ДЕМО"
             : status === "partial"
-              ? "PARTIAL"
-              : "NO DATA";
+              ? "ЧАСТИЧНО"
+              : "НЕТ ДАННЫХ";
 
   return <span className={`aos-badge aos-badge--${status}`}>{label}</span>;
 }
