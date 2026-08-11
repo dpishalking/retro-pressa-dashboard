@@ -55,7 +55,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
       { title: "Менеджеры", description: "Эффективность команды и конверсия.", href: "/os/managers" },
       { title: "Диалоги", description: "Качество переписок, возражения и точки роста.", href: "/rop/conversations" },
       { title: "Мотивация", description: "Бонусы и фокус месяца для команды.", href: "/motivation" },
-      { title: "Обучение", description: "Онбординг, практика и контроль прогресса.", href: "/training" }
+      { title: "Обучение", description: "Продукты, CRM, база знаний и прогресс команды.", href: "/training" }
     ]
   },
   marketing: {
@@ -84,7 +84,6 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     modules: [
       { title: "Аналитика рекламы", description: "GA4, каналы, CRM-сверка и AI-анализ.", href: "/ad-analytics" },
       { title: "UTM-генератор", description: "Единая разметка ссылок для корректной атрибуции.", href: "/utm" },
-      { title: "Креативы", description: "Темы, хуки, удержание и лиды.", href: "/os/creatives" },
       { title: "Источники данных", description: "Подключения и качество данных маркетинга.", href: "/os/sources" }
     ]
   },
@@ -98,15 +97,9 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
       description: "SKU, выручка, маржа и доля продуктов в результате.",
       href: "/os/products"
     },
-    forecast: {
-      title: "Прогноз продукта",
-      description: "Прогноз спроса и выручки по SKU появится после согласования целевой модели.",
-      status: "soon"
-    },
     modules: [
       { title: "Продукты и выпуски", description: "Загрузка PDF, карточки и вечные ссылки для клиентов.", href: "/products" },
-      { title: "Клиенты", description: "Повторные покупки, средний чек и клиентская база.", href: "/os/customers" },
-      { title: "Производство", description: "Сроки, загрузка и качество выполнения.", href: "/os/production" }
+      { title: "Клиенты", description: "Повторные покупки, средний чек и клиентская база.", href: "/os/customers" }
     ]
   },
   finance: {

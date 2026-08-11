@@ -293,7 +293,7 @@ export function AnalyticsOsScreen() {
         <div>
           <p className="aos-hero__eyebrow">RETRO PRESSA</p>
           <h1>Аналитическая операционная система</h1>
-          <p className="aos-hero__lead">Полная картина бизнеса для роста к компании на миллиард</p>
+          <p className="aos-hero__lead">Ключевые показатели, отклонения и решения по бизнесу</p>
         </div>
         <div className="aos-topbar__meta">
           <label>
@@ -310,7 +310,7 @@ export function AnalyticsOsScreen() {
             </select>
           </label>
           <div className="aos-topbar__stat">
-            <span>Синк</span>
+            <span>Обновлено</span>
             <strong>{snapshot?.asOf ? new Date(snapshot.asOf).toLocaleString("ru-RU") : "—"}</strong>
           </div>
           <div className="aos-topbar__stat">
@@ -319,9 +319,6 @@ export function AnalyticsOsScreen() {
           </div>
           <a className="aos-topbar__hub" href="/hub">
             Кабинет
-          </a>
-          <a className="aos-topbar__hub" href="/analytics/legacy">
-            Legacy
           </a>
         </div>
       </header>

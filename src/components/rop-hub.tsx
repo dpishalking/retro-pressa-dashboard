@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, MessageSquare, Target, Trophy, Users, Workflow } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageSquare, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type RopTile = {
@@ -24,27 +24,6 @@ const tiles: RopTile[] = [
     description: "Бонусы месяца и фокус-продукты для команды — коротко, без личного трекинга.",
     icon: Trophy,
     status: "active"
-  },
-  {
-    href: "#",
-    title: "План-факт",
-    description: "Пока в сборке. Здесь будет управленческий обзор выполнения плана и отклонений.",
-    icon: Target,
-    status: "soon"
-  },
-  {
-    href: "#",
-    title: "Команда",
-    description: "Пока в сборке. Здесь будет сводка по менеджерам, активности и нагрузке.",
-    icon: Users,
-    status: "soon"
-  },
-  {
-    href: "#",
-    title: "Рабочие процессы",
-    description: "Пока в сборке. Здесь будут приоритеты РОПа и список задач по команде.",
-    icon: Workflow,
-    status: "soon"
   }
 ];
 
@@ -78,11 +57,13 @@ export function RopHub() {
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
       <header className="mb-8">
+        <Link href="/sales" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900">
+          <ArrowLeft size={16} />
+          К продажам
+        </Link>
         <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">Инструменты РОП</p>
         <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Кабинет руководителя отдела продаж</h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
-          Это плитка управленческих инструментов. Сюда попадают только рабочие разделы РОПа, а внутри каждого раздела открывается уже свой отдельный экран.
-        </p>
+        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">Переписки и мотивация команды.</p>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -234,7 +234,9 @@ const HUB_TILE_ORDER: ContourId[] = [
 
 export function hubTileContours(): ContourDef[] {
   const byId = new Map(ANALYTICS_CONTOURS.map((item) => [item.id, item]));
-  return HUB_TILE_ORDER.map((id) => byId.get(id)).filter((item): item is ContourDef => Boolean(item));
+  return HUB_TILE_ORDER.map((id) => byId.get(id)).filter(
+    (item): item is ContourDef => Boolean(item) && item?.status !== "stub"
+  );
 }
 
 export type BusinessContourId = "analytics" | "sales" | "marketing" | "product" | "finance";

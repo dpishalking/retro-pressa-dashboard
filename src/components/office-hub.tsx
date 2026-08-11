@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, Handshake, LogOut, Megaphone, Package, Settings, Target, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -93,6 +93,25 @@ const officeSections: OfficeSection[] = [
   }
 ];
 
+const managerServices: OfficeCard[] = [
+  {
+    href: "/training",
+    title: "Обучение",
+    description: "Продукты, CRM, база знаний и ваш прогресс.",
+    icon: BookOpen,
+    status: "active",
+    accent: "text-rose-600 bg-rose-50"
+  },
+  {
+    href: "/motivation",
+    title: "Мотивация",
+    description: "Бонусы и фокус текущего месяца.",
+    icon: Trophy,
+    status: "active",
+    accent: "text-orange-600 bg-orange-50"
+  }
+];
+
 function OfficeCardLink({ office, accessLevel }: { office: OfficeCard; accessLevel: AccessLevel }) {
   const Icon = office.icon;
   const canSee = canSeeOfficeSection(accessLevel, office.href);
@@ -135,12 +154,10 @@ export function OfficeHub() {
   const denied = searchParams.get("denied") === "1";
   if (!user) return null;
 
-  const visibleSections = officeSections
-    .map((section) => ({
-      ...section,
-      cards: section.cards.filter((office) => canSeeOfficeSection(user.accessLevel, office.href))
-    }))
-    .filter((section) => section.cards.length > 0);
+  const visibleCards = (user.accessLevel === "mop"
+    ? managerServices
+    : officeSections.flatMap((section) => section.cards)
+  ).filter((office) => canSeeOfficeSection(user.accessLevel, office.href));
 
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
@@ -186,7 +203,7 @@ export function OfficeHub() {
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visibleSections.flatMap((section) => section.cards).map((office) => (
+        {visibleCards.map((office) => (
           <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
         ))}
       </div>
