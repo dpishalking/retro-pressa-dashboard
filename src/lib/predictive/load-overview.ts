@@ -1,31 +1,41 @@
-import { getSalesOsSpreadsheetId, SALES_OS_SHEETS } from "@/config/sales-os";
+import { PREDICTIVE_UI } from "@/config/predictive-ui";
 import { periodToIsoMonth } from "@/lib/financial-report/period";
 import { buildCanonicalFinancialReport } from "@/lib/financial-report/build";
 import { readSheetValues } from "@/lib/google/sheets-client";
-import { loadMarketingFacts, monthTotals } from "@/lib/marketing-planning/facts";
-import { forecastAdditive } from "@/lib/marketing-planning/rules";
 import {
   DEPARTMENT_SCOPE_ID,
   PREDICTION_EXPORT_COLUMNS,
   type PredictionExportRow
 } from "@/lib/sales-os/prediction/contract";
-import {
-  completedDaysThrough,
-  datesInMonth,
-  resolveForecastAsOf
-} from "@/lib/sales-os/prediction/periods";
+import { resolveForecastAsOf } from "@/lib/sales-os/prediction/periods";
 import { quoteTab } from "@/lib/sales-os/predictive-model";
+import { pullSvodPaidOrganicPlans } from "@/lib/sales-os/svod-plans";
 import type { PeriodKey } from "@/types/metrics";
+import { readPredictiveFrontGrid } from "./read-front-grid";
 import type { PredictiveDomainBlock, PredictiveMetricRow, PredictiveOverview } from "./types";
 
+const SALES_METRIC_ORDER = [
+  "paid_revenue",
+  "payments",
+  "average_check",
+  "leads",
+  "deals",
+  "invoice_events",
+  "lead_to_payment_cr"
+];
+
 const SALES_METRIC_LABELS: Record<string, { label: string; unit: PredictiveMetricRow["unit"] }> = {
-  paid_revenue: { label: "Выручка (paid)", unit: "eur" },
+  paid_revenue: { label: "Выручка", unit: "eur" },
   payments: { label: "Оплаты", unit: "count" },
   average_check: { label: "Средний чек", unit: "eur" },
   leads: { label: "Лиды", unit: "count" },
   deals: { label: "Сделки", unit: "count" },
-  lead_to_payment_cr: { label: "CR лид → оплата", unit: "ratio" }
+  invoice_events: { label: "Счета", unit: "count" },
+  lead_to_payment_cr: { label: "CR лид → оплата", unit: "ratio" },
+  cpl: { label: "CPL", unit: "eur" }
 };
+
+const MARKETING_METRIC_ORDER = ["paid_revenue", "payments", "invoice_events", "leads", "cpl"];
 
 function todayIsoRiga(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -57,13 +67,125 @@ function asExportRows(values: string[][]): PredictionExportRow[] {
   });
 }
 
+/** CEO «План/факт» → metric_id map (ОБЩИЕ block). */
+async function loadCeoPlans(isoMonth: string): Promise<Map<string, number>> {
+  const bundle = await pullSvodPaidOrganicPlans({
+    month: isoMonth,
+    spreadsheetId: PREDICTIVE_UI.plans.spreadsheetId(),
+    tabTitle: PREDICTIVE_UI.plans.tabTitle()
+  });
+  const out = new Map<string, number>();
+  if (!bundle) return out;
+  const slice = bundle.obshie;
+  if (slice.revenue != null) out.set("paid_revenue", slice.revenue);
+  if (slice.sale != null) out.set("payments", slice.sale);
+  if (slice.leads != null) out.set("leads", slice.leads);
+  if (slice.invoices != null) out.set("invoice_events", slice.invoices);
+  if (slice.aov != null) out.set("average_check", slice.aov);
+  if (slice.crLeadSale != null) out.set("lead_to_payment_cr", slice.crLeadSale);
+  if (slice.crLeadInvoice != null) out.set("lead_to_deal_cr", slice.crLeadInvoice);
+  if (slice.cpl != null) out.set("cpl", slice.cpl);
+  if (slice.spend != null) out.set("spend", slice.spend);
+  return out;
+}
+
+async function loadSalesFromExport(
+  isoMonth: string,
+  plans: Map<string, number>
+): Promise<{ metrics: PredictiveMetricRow[]; updatedAt: string | null; asOf: string | null } | null> {
+  const spreadsheetId = PREDICTIVE_UI.sales.spreadsheetId();
+  const values = await readSheetValues({
+    spreadsheetId,
+    range: `${quoteTab(PREDICTIVE_UI.sales.exportTab)}!A1:Z`
+  });
+  const rows = asExportRows(values).filter(
+    (row) =>
+      row.period === isoMonth &&
+      row.scope_type === "department" &&
+      (row.scope_id === DEPARTMENT_SCOPE_ID || row.scope_id === "sales" || row.scope_id === "all" || row.scope_id === "")
+  );
+  if (!rows.length) return null;
+
+  const byMetric = new Map(rows.map((row) => [row.metric_id, row]));
+  const metrics = SALES_METRIC_ORDER.map((id) => {
+    const row = byMetric.get(id);
+    const meta = SALES_METRIC_LABELS[id] ?? { label: id, unit: "count" as const };
+    const plan = plans.get(id) ?? parseNum(row?.plan_value);
+    const fact = parseNum(row?.fact_value);
+    const forecast = parseNum(row?.run_rate_value);
+    const gap = plan != null && forecast != null ? forecast - plan : parseNum(row?.gap_to_plan);
+    return {
+      id,
+      label: meta.label,
+      unit: meta.unit,
+      plan,
+      fact,
+      forecast,
+      gapToPlan: gap,
+      status: row?.status || (plan == null ? "NO_PLAN" : "UNKNOWN"),
+      method: row?.forecast_method || "calendar_run_rate"
+    };
+  }).filter((m) => m.plan != null || m.fact != null || m.forecast != null);
+
+  const latest = rows
+    .map((row) => row.sync_updated_at || row.forecast_as_of)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  return {
+    metrics,
+    updatedAt: latest || null,
+    asOf: rows[0]?.forecast_as_of || null
+  };
+}
+
+async function loadSalesFromFront(
+  plans: Map<string, number>
+): Promise<{ metrics: PredictiveMetricRow[]; monthLabel: string; notes: string[] } | null> {
+  const grid = await readPredictiveFrontGrid({
+    spreadsheetId: PREDICTIVE_UI.sales.frontSpreadsheetId(),
+    tabTitle: PREDICTIVE_UI.sales.frontTabTitle()
+  });
+  if (!grid.ok) return null;
+
+  const byKey = new Map(grid.metrics.map((m) => [m.key, m]));
+  const metrics = SALES_METRIC_ORDER.map((id) => {
+    const row = byKey.get(id);
+    const meta = SALES_METRIC_LABELS[id] ?? { label: id, unit: "count" as const };
+    const plan = plans.get(id) ?? row?.plan ?? null;
+    const fact = row?.fact ?? null;
+    const forecast = row?.forecast ?? null;
+    return {
+      id,
+      label: meta.label,
+      unit: meta.unit,
+      plan,
+      fact,
+      forecast,
+      gapToPlan: plan != null && forecast != null ? forecast - plan : null,
+      status: row?.status || (plan == null ? "NO_PLAN" : "UNKNOWN"),
+      method: "calendar_run_rate"
+    };
+  }).filter((m) => m.plan != null || m.fact != null || m.forecast != null);
+
+  return {
+    metrics,
+    monthLabel: grid.monthLabel,
+    notes: [
+      `Источник front: ${grid.tabTitle}`,
+      ...grid.errors.slice(0, 3)
+    ]
+  };
+}
+
 async function loadSalesBlock(isoMonth: string, today: string): Promise<PredictiveDomainBlock> {
   const base: PredictiveDomainBlock = {
     domain: "sales",
     title: "Продажи",
-    subtitle: "Sales Prediction Layer: план / факт / run-rate по отделу.",
+    subtitle: "План из Finance «План/факт» · факт/прогноз из Sales Prediction / предиктивного фронта.",
     status: "blocked",
-    message: "Нет данных prediction export.",
+    message: "Нет данных продаж за период.",
     method: "calendar_run_rate",
     asOf: resolveForecastAsOf({ month: isoMonth, today }),
     updatedAt: null,
@@ -72,71 +194,70 @@ async function loadSalesBlock(isoMonth: string, today: string): Promise<Predicti
   };
 
   try {
-    const spreadsheetId = getSalesOsSpreadsheetId();
-    const values = await readSheetValues({
-      spreadsheetId,
-      range: `${quoteTab(SALES_OS_SHEETS.predictionExport)}!A1:Z`
-    });
-    const rows = asExportRows(values).filter(
-      (row) =>
-        row.period === isoMonth &&
-        row.scope_type === "department" &&
-        (row.scope_id === DEPARTMENT_SCOPE_ID || row.scope_id === "all" || row.scope_id === "")
-    );
-
-    if (!rows.length) {
-      base.status = "partial";
-      base.message = "Лист 98_PREDICTION_EXPORT пуст или без строк отдела за период. Запустите sync Sales Prediction.";
-      base.notes.push("Источник: Sales OS → 98_PREDICTION_EXPORT");
-      return base;
+    const plans = await loadCeoPlans(isoMonth);
+    const fromExport = await loadSalesFromExport(isoMonth, plans);
+    if (fromExport?.metrics.length) {
+      return {
+        ...base,
+        status: plans.size ? "ok" : "partial",
+        message: plans.size
+          ? "План из Finance «План/факт», факт/прогноз из 98_PREDICTION_EXPORT."
+          : "Факт/прогноз из 98_PREDICTION_EXPORT. План за период в «План/факт» не найден.",
+        asOf: fromExport.asOf || base.asOf,
+        updatedAt: fromExport.updatedAt,
+        metrics: fromExport.metrics,
+        notes: [
+          `Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()} (gid=${PREDICTIVE_UI.plans.sheetGid})`,
+          `Факт/прогноз: Sales OS → ${PREDICTIVE_UI.sales.exportTab}`
+        ]
+      };
     }
 
-    const preferred = [
-      "paid_revenue",
-      "payments",
-      "average_check",
-      "leads",
-      "deals",
-      "lead_to_payment_cr"
-    ];
-    const byMetric = new Map(rows.map((row) => [row.metric_id, row]));
-    const metrics: PredictiveMetricRow[] = preferred
-      .map((id) => byMetric.get(id))
-      .filter((row): row is PredictionExportRow => Boolean(row))
-      .map((row) => {
-        const meta = SALES_METRIC_LABELS[row.metric_id] ?? {
-          label: row.metric_id,
-          unit: "count" as const
-        };
-        return {
-          id: row.metric_id,
-          label: meta.label,
-          unit: meta.unit,
-          plan: parseNum(row.plan_value),
-          fact: parseNum(row.fact_value),
-          forecast: parseNum(row.run_rate_value),
-          gapToPlan: parseNum(row.gap_to_plan),
-          status: row.status || "UNKNOWN",
-          method: row.forecast_method || "calendar_run_rate"
-        };
-      });
+    const fromFront = await loadSalesFromFront(plans);
+    if (fromFront?.metrics.length) {
+      return {
+        ...base,
+        status: "partial",
+        message: `Export за ${isoMonth} пуст — показан фронт «${PREDICTIVE_UI.sales.frontTabTitle()}» (${fromFront.monthLabel || "месяц листа"}). Планы: Finance «План/факт».`,
+        metrics: fromFront.metrics,
+        notes: [
+          `Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()} (gid=${PREDICTIVE_UI.plans.sheetGid})`,
+          ...fromFront.notes
+        ]
+      };
+    }
 
-    const latest = rows
-      .map((row) => row.sync_updated_at || row.forecast_as_of)
-      .filter(Boolean)
-      .sort()
-      .at(-1);
+    if (plans.size) {
+      return {
+        ...base,
+        status: "partial",
+        message: `Есть план за ${isoMonth} в «План/факт», но нет факта/прогноза в export и на фронте.`,
+        metrics: [...plans.entries()].map(([id, plan]) => {
+          const meta = SALES_METRIC_LABELS[id] ?? { label: id, unit: "count" as const };
+          return {
+            id,
+            label: meta.label,
+            unit: meta.unit,
+            plan,
+            fact: null,
+            forecast: null,
+            gapToPlan: null,
+            status: "NO_PLAN",
+            method: "calendar_run_rate"
+          };
+        }),
+        notes: [`Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()} (gid=${PREDICTIVE_UI.plans.sheetGid})`]
+      };
+    }
 
     return {
       ...base,
-      status: metrics.length ? "ok" : "partial",
-      message: metrics.length
-        ? "Актуальный прогноз отдела из Sales Prediction Layer."
-        : "Строки есть, но ключевые метрики не найдены.",
-      asOf: rows[0]?.forecast_as_of || base.asOf,
-      updatedAt: latest || null,
-      metrics,
-      notes: ["Источник: Sales OS → 98_PREDICTION_EXPORT", `Метод: ${rows[0]?.forecast_method || "calendar_run_rate"}`]
+      status: "partial",
+      message: `Нет строк Sales Prediction за ${isoMonth}. Синхронизируйте Sales Prediction или обновите «Предиктивка продажи».`,
+      notes: [
+        `Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()}`,
+        `Front fallback: ${PREDICTIVE_UI.sales.frontTabTitle()}`
+      ]
     };
   } catch (error) {
     return {
@@ -148,105 +269,88 @@ async function loadSalesBlock(isoMonth: string, today: string): Promise<Predicti
 }
 
 async function loadMarketingBlock(isoMonth: string, today: string): Promise<PredictiveDomainBlock> {
-  const asOf = resolveForecastAsOf({ month: isoMonth, today });
-  const elapsedDays = completedDaysThrough(isoMonth, asOf).length;
-  const totalDays = datesInMonth(isoMonth).length;
-
   const base: PredictiveDomainBlock = {
     domain: "marketing",
     title: "Маркетинг",
-    subtitle: "Календарный run-rate по лидам, сессиям, расходам и атрибутированной выручке.",
+    subtitle: "Фронт «Маркетинг общий»: план / факт / прогноз (колонка МЕС).",
     status: "blocked",
-    message: "Нет маркетинговых фактов.",
+    message: "Нет данных маркетинга.",
     method: "calendar_run_rate",
-    asOf,
+    asOf: resolveForecastAsOf({ month: isoMonth, today }),
     updatedAt: null,
     metrics: [],
     notes: []
   };
 
   try {
-    const facts = await loadMarketingFacts({ month: isoMonth });
-    const totals = monthTotals(facts.dailyByDate);
-    const metricDefs: Array<{
-      id: string;
-      label: string;
-      unit: PredictiveMetricRow["unit"];
-      fact: number | null;
-      forecastAllowed: boolean;
-    }> = [
-      {
-        id: "sessions",
-        label: "Сессии",
-        unit: "count",
-        fact: totals.hasSessions ? totals.sessions : null,
-        forecastAllowed: totals.hasSessions
-      },
-      {
-        id: "leads",
-        label: "Лиды",
-        unit: "count",
-        fact: totals.leads || null,
-        forecastAllowed: totals.leads > 0
-      },
-      {
-        id: "paid_leads",
-        label: "Платные лиды",
-        unit: "count",
-        fact: totals.paid_leads || null,
-        forecastAllowed: totals.paid_leads > 0
-      },
-      {
-        id: "spend",
-        label: "Рекламный spend",
-        unit: "eur",
-        fact: totals.hasSpend ? totals.spend : null,
-        forecastAllowed: totals.hasSpend
-      },
-      {
-        id: "paid_revenue",
-        label: "Выручка (атриб.)",
-        unit: "eur",
-        fact: totals.paid_revenue_attr || totals.paid_revenue || null,
-        forecastAllowed: (totals.paid_revenue_attr || totals.paid_revenue) > 0
-      }
-    ];
+    const [grid, plans] = await Promise.all([
+      readPredictiveFrontGrid({
+        spreadsheetId: PREDICTIVE_UI.marketing.spreadsheetId(),
+        tabTitle: PREDICTIVE_UI.marketing.tabTitle
+      }),
+      loadCeoPlans(isoMonth)
+    ]);
 
-    const metrics: PredictiveMetricRow[] = metricDefs.map((def) => {
-      const forecast = def.forecastAllowed
-        ? forecastAdditive({
-            method: "calendar_run_rate",
-            factToDate: def.fact,
-            elapsedDays,
-            totalDays
-          })
-        : { value: null, status: "BLOCKED" as const, confidence: "unsupported" };
-
+    if (!grid.ok) {
       return {
-        id: def.id,
-        label: def.label,
-        unit: def.unit,
-        plan: null,
-        fact: def.fact,
-        forecast: forecast.value,
-        gapToPlan: null,
-        status: forecast.status,
+        ...base,
+        status: "partial",
+        message: grid.errors.join("; ") || "Лист «Маркетинг общий» не прочитан.",
+        notes: [
+          `Источник: ${PREDICTIVE_UI.marketing.tabTitle}`,
+          `gid=${PREDICTIVE_UI.marketing.sheetGid}`
+        ]
+      };
+    }
+
+    const byKey = new Map(grid.metrics.map((m) => [m.key, m]));
+    const metrics: PredictiveMetricRow[] = MARKETING_METRIC_ORDER.map((id) => {
+      const row = byKey.get(id);
+      const plan = plans.get(id) ?? row?.plan ?? null;
+      const fact = row?.fact ?? null;
+      const forecast = row?.forecast ?? null;
+      if (plan == null && fact == null && forecast == null) return null;
+      return {
+        id,
+        label: SALES_METRIC_LABELS[id]?.label ?? row?.label ?? id,
+        unit: row?.unit ?? SALES_METRIC_LABELS[id]?.unit ?? "count",
+        plan,
+        fact,
+        forecast,
+        gapToPlan: plan != null && forecast != null ? forecast - plan : null,
+        status: row?.status || (plan == null ? "NO_PLAN" : "UNKNOWN"),
         method: "calendar_run_rate"
       };
-    });
+    }).filter((m): m is PredictiveMetricRow => Boolean(m));
 
-    const hasAny = metrics.some((m) => m.fact != null);
+    // Include any extra ICE/other rows that have values
+    for (const row of grid.metrics) {
+      if (metrics.some((m) => m.id === row.key)) continue;
+      if (row.plan == null && row.fact == null && row.forecast == null) continue;
+      if (/^ice_/.test(row.key)) continue;
+      metrics.push({
+        id: row.key,
+        label: row.label,
+        unit: row.unit,
+        plan: row.plan,
+        fact: row.fact,
+        forecast: row.forecast,
+        gapToPlan: row.plan != null && row.forecast != null ? row.forecast - row.plan : null,
+        status: row.status,
+        method: "calendar_run_rate"
+      });
+    }
+
     return {
       ...base,
-      status: hasAny ? (facts.warnings.length ? "partial" : "ok") : "partial",
-      message: hasAny
-        ? "Прогноз marketing planning (calendar run-rate). Воронка CR в v1 заблокирована."
-        : "Факты за период не собрались — проверьте Traffic OS / Sales OS.",
+      status: metrics.length ? "ok" : "partial",
+      message: `Лист «${grid.tabTitle}» · ${grid.monthLabel || isoMonth}. План из Finance «План/факт», факт/прогноз из МЕС.`,
       updatedAt: new Date().toISOString(),
       metrics,
       notes: [
-        "Источник: Traffic OS + Sales OS daily facts",
-        ...facts.warnings.slice(0, 3)
+        `Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()} (gid=${PREDICTIVE_UI.plans.sheetGid})`,
+        `Факт/прогноз: Marketing ROM → ${grid.tabTitle} (gid=${PREDICTIVE_UI.marketing.sheetGid})`,
+        ...grid.errors.slice(0, 3)
       ]
     };
   } catch (error) {
@@ -275,37 +379,11 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
   try {
     const report = await buildCanonicalFinancialReport({ period, mode: "FACT" });
     const points = report.forecast?.points ?? [];
-    const metrics: PredictiveMetricRow[] = points.flatMap((point) => [
-      {
-        id: `revenue_${point.horizonDays}d`,
-        label: `Выручка · ${point.horizonDays}д`,
-        unit: "eur",
-        plan: null,
-        fact: report.summary?.revenue ?? null,
-        forecast: point.revenue,
-        gapToPlan: null,
-        status: "FORECAST",
-        method: point.method
-      },
-      {
-        id: `profit_${point.horizonDays}d`,
-        label: `Чистая прибыль · ${point.horizonDays}д`,
-        unit: "eur",
-        plan: null,
-        fact: report.summary?.netProfit ?? null,
-        forecast: point.netProfit,
-        gapToPlan: null,
-        status: "FORECAST",
-        method: point.method
-      }
-    ]);
-
-    // Keep a compact set: 30d focus + daily rates
-    const compact = [
+    const metrics: PredictiveMetricRow[] = [
       {
         id: "daily_revenue_rate",
         label: "Дневной темп выручки",
-        unit: "eur" as const,
+        unit: "eur",
         plan: null,
         fact: report.forecast?.dailyRunRateRevenue ?? null,
         forecast: report.forecast?.dailyRunRateRevenue ?? null,
@@ -316,7 +394,7 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
       {
         id: "daily_profit_rate",
         label: "Дневной темп прибыли",
-        unit: "eur" as const,
+        unit: "eur",
         plan: null,
         fact: report.forecast?.dailyRunRateProfit ?? null,
         forecast: report.forecast?.dailyRunRateProfit ?? null,
@@ -324,17 +402,42 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
         status: "FORECAST",
         method: "trailing_daily_run_rate"
       },
-      ...metrics.filter((m) => m.id.includes("_30d") || m.id.includes("_90d"))
+      ...points
+        .filter((point) => point.horizonDays === 30 || point.horizonDays === 90)
+        .flatMap((point) => [
+          {
+            id: `revenue_${point.horizonDays}d`,
+            label: `Выручка · ${point.horizonDays}д`,
+            unit: "eur" as const,
+            plan: null,
+            fact: report.summary?.revenue ?? null,
+            forecast: point.revenue,
+            gapToPlan: null,
+            status: "FORECAST",
+            method: point.method
+          },
+          {
+            id: `profit_${point.horizonDays}d`,
+            label: `Чистая прибыль · ${point.horizonDays}д`,
+            unit: "eur" as const,
+            plan: null,
+            fact: report.summary?.netProfit ?? null,
+            forecast: point.netProfit,
+            gapToPlan: null,
+            status: "FORECAST",
+            method: point.method
+          }
+        ])
     ];
 
     return {
       ...base,
-      status: compact.length ? "ok" : "partial",
+      status: metrics.length ? "ok" : "partial",
       message: "Финансовый прогноз на основе company snapshot (trailing run-rate).",
       asOf: report.builtAt?.slice(0, 10) ?? null,
       updatedAt: report.builtAt ?? null,
-      metrics: compact,
-      notes: ["Источник: Financial Report / company snapshot", "Это не сценарий digital twin — только fact → run-rate"]
+      metrics,
+      notes: ["Источник: Financial Report / company snapshot"]
     };
   } catch (error) {
     return {
