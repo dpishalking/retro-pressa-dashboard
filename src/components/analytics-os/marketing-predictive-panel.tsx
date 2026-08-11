@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
+import { MarketingGeneralPmView } from "@/components/marketing-general-pm-view";
 import { readJsonResponse } from "@/lib/api-response";
 import { eur, number, pct } from "@/lib/format";
 import type { PredictiveDayRow, PredictiveDomainBlock, PredictiveMetricRow } from "@/lib/predictive/types";
@@ -179,9 +180,10 @@ export function MarketingPredictivePanel({ period }: { period: string }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/predictive/overview?period=${encodeURIComponent(period)}`, {
-        cache: "no-store"
-      });
+      const response = await fetch(
+        `/api/predictive/overview?period=${encodeURIComponent(period)}&scope=general`,
+        { cache: "no-store" }
+      );
       const payload = await readJsonResponse<
         | { ok: true; domains: { marketing: PredictiveDomainBlock } }
         | { ok: false; error: string }
@@ -219,5 +221,6 @@ export function MarketingPredictivePanel({ period }: { period: string }) {
   }
 
   if (!block) return null;
+  if (block.diagnosis) return <MarketingGeneralPmView block={block} />;
   return <MarketingPredictiveMonthDays block={block} />;
 }

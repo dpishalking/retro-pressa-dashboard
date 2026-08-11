@@ -1,0 +1,53 @@
+---
+description: Predictive Model (ПМ) engine — diagnosis, driver tree, PlanToDate, Required Pace
+globs: src/lib/predictive/**,src/lib/marketing-planning/**,src/lib/sales-os/prediction/**,src/components/predictive*.tsx,src/components/analytics-os/**predictive**,src/app/**/predictive/**
+alwaysApply: false
+---
+
+# Predictive Business Model Engine (ПМ)
+
+«ПМ» / predictive model / «кредитная модель» (если контекст BI) = предиктивная управленческая модель, не обычный план-факт дашборд.
+
+## Цель экрана
+
+За ~10 секунд: итог → Forecast EOM → GAP → first broken driver → owner → Required Pace. Не заставлять искать причину в длинной таблице.
+
+## Driver chain (обязательно)
+
+Activity/Capacity → Lead_2 → Lead_1 → Lag → Outcome.  
+Метрики без причинной связи в primary PM не класть. Типы: `LAG | LEAD_1 | LEAD_2 | ACTIVITY | CAPACITY | GUARDRAIL`. Direction: `HIGHER_IS_BETTER | LOWER_IS_BETTER | TARGET_RANGE`.
+
+## Обязательные поля результата
+
+`plan`, **`plan_to_date`**, `fact_to_date`, `pace`, `forecast_eom`, `gap_eom`, `required_pace`, `required_pace_multiplier`, `status`, `data_status`, `owner` (или `NO_DATA`), `forecast_method`, `forecast_confidence`.
+
+Никогда не диагностировать середину месяца через `Fact MTD / Full Month Plan`. Нужен Plan To Date (weekly/day plan → historical/seasonal → business-days → linear fallback с `plan_distribution_method=LINEAR_FALLBACK`).
+
+## Pace / Forecast / Status
+
+- Cumulative volume: pace = FactToDate/PlanToDate; forecast = run-rate / seasonal / driver-based (предпочтительно driver).
+- Rate metrics (CR, CPL, CAC, AOV, ROAS): не линейная экстраполяция % во времени; rolling/weighted; pace = факт vs target.
+- Status: `ON_TRACK | RISK | OFF_TRACK | OUTPERFORMING | NO_PLAN | NO_DATA | DATA_ISSUE` (не только BELOW/ABOVE). Учитывать leading-indicator risk.
+- `NO_PLAN ≠ NO_DATA`. Планы/owners/stages не выдумывать. Derived plan → `plan_source=DERIVED`.
+
+## UI зоны primary PM
+
+A) 4–6 executive cards · B) driver chain с цветом · C) root-cause + required pace · D) drill-down. Primary ≈ 8–15 метрик; остальное в drill-down.
+
+## Контуры по умолчанию
+
+- Marketing: General / Paid / Organic (+ campaign/creative drill-down при данных).
+- Sales: General / Managers / Source-quality / Cohorts если цикл кросс-периодный.
+- Event view ≠ Cohort view — не смешивать.
+
+## Техника
+
+Формулы (pace, forecast, gap, status, required pace, root cause) — в централизованном metric engine/service; UI только рендерит. Не hardcode планов месяца. Не молча чинить input data. Glossary = те же definitions, что engine.
+
+## Definition of Done (кратко)
+
+Lag + ≥2 lead levels + activity/capacity · driver tree · PlanToDate · Forecast · GAP · Required Pace · Status · owner/NO_DATA · DQ · first broken driver · drill-down · formulas centralized · no invented plans.
+
+## При старте новой/переработке ПМ
+
+Кратко: Lag-цель → driver tree → views → чего нет (`NO_DATA`/`NO_PLAN`) → потом код. Не гадать при двух разных бизнес-смыслах метрики — спросить или найти в системе.

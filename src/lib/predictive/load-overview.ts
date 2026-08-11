@@ -284,7 +284,10 @@ async function loadMarketingBlock(
   const base: PredictiveDomainBlock = {
     domain: "marketing",
     title: scopeTitles[scope],
-    subtitle: "План · факт по дням · прогноз calendar_run_rate. Месяц можно развернуть по дням.",
+    subtitle:
+      scope === "general"
+        ? "Marketing General PM: Plan To Date · Pace · Forecast EOM · GAP · Required Pace · driver chain."
+        : "План · факт по дням · прогноз calendar_run_rate. Месяц можно развернуть по дням.",
     status: "blocked",
     message: "Нет данных маркетинга.",
     method: "calendar_run_rate",
@@ -313,7 +316,19 @@ async function loadMarketingBlock(
         forecast: m.forecast,
         gapToPlan: m.gapToPlan,
         status: m.status,
-        method: model.method
+        method: m.forecastMethod || model.method,
+        planToDate: m.planToDate,
+        pace: m.pace,
+        requiredPace: m.requiredPace,
+        requiredPaceMultiplier: m.requiredPaceMultiplier,
+        currentPace: m.currentPace,
+        metricType: m.metricType,
+        direction: m.direction,
+        dataStatus: m.dataStatus,
+        planSource: m.planSource,
+        forecastConfidence: m.forecastConfidence,
+        owner: m.owner,
+        primary: m.primary
       })),
       days: model.days.map((d) => ({
         date: d.date,
@@ -328,7 +343,23 @@ async function loadMarketingBlock(
         leadToPaymentCr: d.leadToPaymentCr,
         completeness: d.completeness
       })),
-      notes: model.notes
+      notes: model.notes,
+      driverChain: model.generalPm?.driverChain.map((m) => ({
+        id: m.id,
+        label: m.label,
+        unit: m.unit,
+        plan: m.plan,
+        planToDate: m.planToDate,
+        fact: m.factToDate,
+        forecast: m.forecast,
+        pace: m.pace,
+        status: m.status,
+        metricType: m.metricType
+      })),
+      diagnosis: model.generalPm?.diagnosis,
+      elapsedDays: model.generalPm?.elapsedDays,
+      remainingDays: model.generalPm?.remainingDays,
+      planDistributionMethod: model.generalPm?.planDistributionMethod
     };
   } catch (error) {
     return {

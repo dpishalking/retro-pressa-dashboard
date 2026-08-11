@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LineChart, Megaphone, RefreshCcw, Wallet } from "lucide-react";
 import { OfficeHubBackLink } from "@/components/office-hub";
+import { MarketingGeneralPmView } from "@/components/marketing-general-pm-view";
 import { readJsonResponse } from "@/lib/api-response";
 import { eur, number, pct } from "@/lib/format";
 import {
@@ -342,7 +343,11 @@ export function PredictiveModelsScreen() {
       {status.state === "loading" && !active ? (
         <p className="text-sm text-slate-500">Загрузка…</p>
       ) : active ? (
-        <DomainPanel block={active} />
+        tab === "marketing" && marketingScope === "general" && active.diagnosis ? (
+          <MarketingGeneralPmView block={active} />
+        ) : (
+          <DomainPanel block={active} />
+        )
       ) : (
         <p className="text-sm text-slate-500">Нет данных для выбранного раздела.</p>
       )}

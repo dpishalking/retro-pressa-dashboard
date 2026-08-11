@@ -17,38 +17,15 @@ import { quoteTab } from "@/lib/sales-os/predictive-model";
 import {
   completedDaysThrough,
   datesInMonth,
+  remainingDaysAfter,
   resolveForecastAsOf
 } from "@/lib/sales-os/prediction/periods";
-import {
-  type MarketingPredictiveScope
-} from "@/lib/marketing-planning/scope";
+import { buildMarketingGeneralPm } from "@/lib/marketing-planning/marketing-general-pm";
+import type { PmDiagnosis, PmMetricResult } from "@/lib/marketing-planning/pm-engine";
+import type { MarketingPredictiveScope } from "@/lib/marketing-planning/scope";
 
 export type { MarketingPredictiveScope } from "@/lib/marketing-planning/scope";
 export { normalizeMarketingPredictiveScope } from "@/lib/marketing-planning/scope";
-
-const SCOPE_META: Record<
-  MarketingPredictiveScope,
-  { trafficType: string; frontTab: string; frontGid: number; label: string }
-> = {
-  general: {
-    trafficType: "all",
-    frontTab: MARKETING_PLANNING_SHEETS.marketingGeneral,
-    frontGid: PREDICTIVE_UI.marketing.sheetGid,
-    label: "Общая"
-  },
-  organic: {
-    trafficType: "organic",
-    frontTab: MARKETING_PLANNING_SHEETS.organicMarketing,
-    frontGid: 0,
-    label: "Органика"
-  },
-  paid: {
-    trafficType: "paid",
-    frontTab: MARKETING_PLANNING_SHEETS.marketingPerformance,
-    frontGid: 0,
-    label: "Платный трафик"
-  }
-};
 
 export type MarketingPredictiveMetric = {
   id: string;
@@ -59,6 +36,19 @@ export type MarketingPredictiveMetric = {
   forecast: number | null;
   gapToPlan: number | null;
   status: string;
+  planToDate?: number | null;
+  pace?: number | null;
+  requiredPace?: number | null;
+  requiredPaceMultiplier?: number | null;
+  currentPace?: number | null;
+  metricType?: string;
+  direction?: string;
+  dataStatus?: string;
+  planSource?: string;
+  forecastMethod?: string;
+  forecastConfidence?: string;
+  owner?: string;
+  primary?: boolean;
 };
 
 export type MarketingPredictiveDay = {
@@ -91,6 +81,15 @@ export type MarketingPredictiveModel = {
   metrics: MarketingPredictiveMetric[];
   days: MarketingPredictiveDay[];
   notes: string[];
+  /** Full Marketing General PM payload (scope=general). */
+  generalPm?: {
+    driverChain: PmMetricResult[];
+    diagnosis: PmDiagnosis;
+    elapsedDays: number;
+    remainingDays: number;
+    totalDays: number;
+    planDistributionMethod: string;
+  };
   sources: {
     plansTab: string;
     plansGid: number;
@@ -99,6 +98,30 @@ export type MarketingPredictiveModel = {
     dailyTab: string;
     trafficType: string;
   };
+};
+
+const SCOPE_META: Record<
+  MarketingPredictiveScope,
+  { trafficType: string; frontTab: string; frontGid: number; label: string }
+> = {
+  general: {
+    trafficType: "all",
+    frontTab: MARKETING_PLANNING_SHEETS.marketingGeneral,
+    frontGid: PREDICTIVE_UI.marketing.sheetGid,
+    label: "Общая"
+  },
+  organic: {
+    trafficType: "organic",
+    frontTab: MARKETING_PLANNING_SHEETS.organicMarketing,
+    frontGid: 0,
+    label: "Органика"
+  },
+  paid: {
+    trafficType: "paid",
+    frontTab: MARKETING_PLANNING_SHEETS.marketingPerformance,
+    frontGid: 0,
+    label: "Платный трафик"
+  }
 };
 
 const LIST2_TAB = "Лист2";
@@ -323,150 +346,207 @@ export async function loadMarketingPredictiveModel(input: {
     const factInvoices = sum(completedFacts.map((d) => d.invoiceEvents));
 
     const frontByKey = new Map(front.metrics.map((m) => [m.key, m]));
+    const remaining = remainingDaysAfter(input.isoMonth, asOf).length;
+    const totalDays = monthDays.length;
 
-    const metricDefs: Array<{
-      id: string;
-      label: string;
-      unit: MarketingPredictiveMetric["unit"];
-      fact: number | null;
-      forecast: number | null;
-      additive: boolean;
-    }> = [
-      {
-        id: "paid_revenue",
-        label: "Выручка",
-        unit: "eur",
-        fact: factRevenue ?? frontByKey.get("paid_revenue")?.fact ?? null,
-        forecast: runRate(factRevenue, elapsed, monthDays.length),
-        additive: true
-      },
-      {
-        id: "payments",
-        label: "Оплаты",
-        unit: "count",
-        fact: factPayments ?? frontByKey.get("payments")?.fact ?? null,
-        forecast: runRate(factPayments, elapsed, monthDays.length),
-        additive: true
-      },
-      {
-        id: "leads",
-        label: "Лиды",
-        unit: "count",
-        fact: factLeads ?? frontByKey.get("leads")?.fact ?? null,
-        forecast: runRate(factLeads, elapsed, monthDays.length),
-        additive: true
-      },
-      {
-        id: "deals",
-        label: "Сделки",
-        unit: "count",
-        fact: factDeals ?? frontByKey.get("deals")?.fact ?? null,
-        forecast: runRate(factDeals, elapsed, monthDays.length),
-        additive: true
-      },
-      {
-        id: "invoice_events",
-        label: "Счета",
-        unit: "count",
-        fact: factInvoices ?? frontByKey.get("invoice_events")?.fact ?? null,
-        forecast: runRate(factInvoices, elapsed, monthDays.length),
-        additive: true
-      },
-      {
-        id: "spend",
-        label: "Paid media budget",
-        unit: "eur",
-        fact: factSpend,
-        forecast: runRate(factSpend, elapsed, monthDays.length),
-        additive: true
-      }
-    ];
+    const planFor = (id: string): number | null =>
+      plans.get(id)?.plan ?? frontByKey.get(id)?.plan ?? null;
 
-    const forecastPayments = runRate(factPayments, elapsed, monthDays.length);
-    const forecastRevenue = runRate(factRevenue, elapsed, monthDays.length);
-    const forecastLeads = runRate(factLeads, elapsed, monthDays.length);
-    const aovForecast =
-      forecastPayments != null && forecastPayments > 0 && forecastRevenue != null
-        ? forecastRevenue / forecastPayments
-        : null;
     const aovFact =
       factPayments != null && factPayments > 0 && factRevenue != null ? factRevenue / factPayments : null;
     const cplFact =
       factSpend != null && factLeads != null && factLeads > 0 ? factSpend / factLeads : null;
-    const cplForecast =
-      factSpend != null && forecastLeads != null && forecastLeads > 0
-        ? (runRate(factSpend, elapsed, monthDays.length) ?? factSpend) / forecastLeads
-        : null;
     const crFact =
       factLeads != null && factLeads > 0 && factPayments != null ? factPayments / factLeads : null;
-    const crForecast =
-      forecastLeads != null && forecastLeads > 0 && forecastPayments != null
-        ? forecastPayments / forecastLeads
-        : null;
 
-    metricDefs.push(
-      {
-        id: "average_check",
-        label: "Средний чек",
-        unit: "eur",
-        fact: aovFact ?? frontByKey.get("average_check")?.fact ?? null,
-        forecast: aovForecast,
-        additive: false
-      },
-      {
-        id: "cpl",
-        label: "CPL",
-        unit: "eur",
-        fact: cplFact ?? frontByKey.get("cpl")?.fact ?? null,
-        forecast: cplForecast,
-        additive: false
-      },
-      {
-        id: "lead_to_payment_cr",
-        label: "CR лид → оплата",
-        unit: "ratio",
-        fact: crFact ?? frontByKey.get("lead_to_payment_cr")?.fact ?? null,
-        forecast: crForecast,
-        additive: false
+    let metrics: MarketingPredictiveMetric[] = [];
+    let generalPm: MarketingPredictiveModel["generalPm"];
+
+    if (scope === "general") {
+      const pm = buildMarketingGeneralPm({
+        facts: {
+          paid_revenue: factRevenue ?? frontByKey.get("paid_revenue")?.fact ?? null,
+          payments: factPayments ?? frontByKey.get("payments")?.fact ?? null,
+          invoice_events: factInvoices ?? frontByKey.get("invoice_events")?.fact ?? null,
+          leads: factLeads ?? frontByKey.get("leads")?.fact ?? null,
+          spend: factSpend,
+          average_check: aovFact ?? frontByKey.get("average_check")?.fact ?? null,
+          cpl: cplFact ?? frontByKey.get("cpl")?.fact ?? null,
+          lead_to_payment_cr: crFact ?? frontByKey.get("lead_to_payment_cr")?.fact ?? null,
+          qualified_leads: null
+        },
+        plans: {
+          paid_revenue: planFor("paid_revenue"),
+          payments: planFor("payments"),
+          invoice_events: planFor("invoice_events"),
+          leads: planFor("leads"),
+          spend: planFor("spend"),
+          average_check: planFor("average_check"),
+          cpl: planFor("cpl") ?? planFor("facebook_cpl"),
+          lead_to_payment_cr: planFor("lead_to_payment_cr"),
+          qualified_leads: planFor("qualified_leads")
+        },
+        elapsedDays: elapsed,
+        remainingDays: remaining,
+        totalDays
+      });
+
+      generalPm = {
+        driverChain: pm.driverChain,
+        diagnosis: pm.diagnosis,
+        elapsedDays: pm.elapsedDays,
+        remainingDays: pm.remainingDays,
+        totalDays: pm.totalDays,
+        planDistributionMethod: pm.planDistributionMethod
+      };
+
+      metrics = pm.metrics.map((m) => ({
+        id: m.id,
+        label: m.label,
+        unit: m.unit,
+        plan: m.plan,
+        fact: m.factToDate,
+        forecast: m.forecast,
+        gapToPlan: m.gapToPlan,
+        status: m.status,
+        planToDate: m.planToDate,
+        pace: m.pace,
+        requiredPace: m.requiredPace,
+        requiredPaceMultiplier: m.requiredPaceMultiplier,
+        currentPace: m.currentPace,
+        metricType: m.metricType,
+        direction: m.direction,
+        dataStatus: m.dataStatus,
+        planSource: m.planSource,
+        forecastMethod: m.forecastMethod,
+        forecastConfidence: m.forecastConfidence,
+        owner: m.owner,
+        primary: m.primary
+      }));
+
+      // Extra List2 rows (Facebook / organic / ROAS…) outside primary tree
+      const primaryIds = new Set(metrics.map((m) => m.id));
+      for (const [id, row] of plans.entries()) {
+        if (primaryIds.has(id)) continue;
+        metrics.push({
+          id,
+          label: row.label,
+          unit: row.unit,
+          plan: row.plan,
+          fact: null,
+          forecast: null,
+          gapToPlan: null,
+          status: row.plan == null ? "NO_DATA" : "NO_PLAN",
+          dataStatus: row.plan == null ? "NO_DATA" : "NO_PLAN",
+          primary: false,
+          owner: "NO_DATA"
+        });
       }
-    );
+    } else {
+      const forecastPayments = runRate(factPayments, elapsed, totalDays);
+      const forecastRevenue = runRate(factRevenue, elapsed, totalDays);
+      const forecastLeads = runRate(factLeads, elapsed, totalDays);
+      const aovForecast =
+        forecastPayments != null && forecastPayments > 0 && forecastRevenue != null
+          ? forecastRevenue / forecastPayments
+          : null;
+      const cplForecast =
+        factSpend != null && forecastLeads != null && forecastLeads > 0
+          ? (runRate(factSpend, elapsed, totalDays) ?? factSpend) / forecastLeads
+          : null;
+      const crForecast =
+        forecastLeads != null && forecastLeads > 0 && forecastPayments != null
+          ? forecastPayments / forecastLeads
+          : null;
 
-    const metrics: MarketingPredictiveMetric[] = [];
-    const seen = new Set<string>();
+      const metricDefs: Array<{
+        id: string;
+        label: string;
+        unit: MarketingPredictiveMetric["unit"];
+        fact: number | null;
+        forecast: number | null;
+      }> = [
+        {
+          id: "paid_revenue",
+          label: "Выручка",
+          unit: "eur",
+          fact: factRevenue ?? frontByKey.get("paid_revenue")?.fact ?? null,
+          forecast: forecastRevenue
+        },
+        {
+          id: "payments",
+          label: "Оплаты",
+          unit: "count",
+          fact: factPayments ?? frontByKey.get("payments")?.fact ?? null,
+          forecast: forecastPayments
+        },
+        {
+          id: "leads",
+          label: "Лиды",
+          unit: "count",
+          fact: factLeads ?? frontByKey.get("leads")?.fact ?? null,
+          forecast: forecastLeads
+        },
+        {
+          id: "deals",
+          label: "Сделки",
+          unit: "count",
+          fact: factDeals ?? frontByKey.get("deals")?.fact ?? null,
+          forecast: runRate(factDeals, elapsed, totalDays)
+        },
+        {
+          id: "invoice_events",
+          label: "Счета",
+          unit: "count",
+          fact: factInvoices ?? frontByKey.get("invoice_events")?.fact ?? null,
+          forecast: runRate(factInvoices, elapsed, totalDays)
+        },
+        {
+          id: "spend",
+          label: "Paid media budget",
+          unit: "eur",
+          fact: factSpend,
+          forecast: runRate(factSpend, elapsed, totalDays)
+        },
+        {
+          id: "average_check",
+          label: "Средний чек",
+          unit: "eur",
+          fact: aovFact ?? frontByKey.get("average_check")?.fact ?? null,
+          forecast: aovForecast
+        },
+        {
+          id: "cpl",
+          label: "CPL",
+          unit: "eur",
+          fact: cplFact ?? frontByKey.get("cpl")?.fact ?? null,
+          forecast: cplForecast
+        },
+        {
+          id: "lead_to_payment_cr",
+          label: "CR лид → оплата",
+          unit: "ratio",
+          fact: crFact ?? frontByKey.get("lead_to_payment_cr")?.fact ?? null,
+          forecast: crForecast
+        }
+      ];
 
-    for (const def of metricDefs) {
-      const planFromList = plans.get(def.id)?.plan ?? null;
-      const planFromFront = frontByKey.get(def.id)?.plan ?? null;
-      const plan = planFromList ?? planFromFront;
-      const fact = def.fact;
-      const forecast = def.forecast ?? frontByKey.get(def.id)?.forecast ?? null;
-      if (plan == null && fact == null && forecast == null) continue;
-      metrics.push({
-        id: def.id,
-        label: def.label,
-        unit: def.unit,
-        plan,
-        fact,
-        forecast,
-        gapToPlan: plan != null && forecast != null ? forecast - plan : null,
-        status: statusFrom(plan, fact, forecast)
-      });
-      seen.add(def.id);
-    }
-
-    // Extra plan-only rows from Лист2 (Facebook / organic / ROAS…)
-    for (const [id, row] of plans.entries()) {
-      if (seen.has(id)) continue;
-      metrics.push({
-        id,
-        label: row.label,
-        unit: row.unit,
-        plan: row.plan,
-        fact: null,
-        forecast: null,
-        gapToPlan: null,
-        status: row.plan == null ? "UNKNOWN" : "NO_PLAN"
-      });
+      for (const def of metricDefs) {
+        const plan = planFor(def.id);
+        const fact = def.fact;
+        const forecast = def.forecast ?? frontByKey.get(def.id)?.forecast ?? null;
+        if (plan == null && fact == null && forecast == null) continue;
+        metrics.push({
+          id: def.id,
+          label: def.label,
+          unit: def.unit,
+          plan,
+          fact,
+          forecast,
+          gapToPlan: plan != null && forecast != null ? forecast - plan : null,
+          status: statusFrom(plan, fact, forecast)
+        });
+      }
     }
 
     const hasFacts = days.some((d) => d.payments != null || d.leads != null || d.paidRevenue != null);
@@ -477,6 +557,11 @@ export async function loadMarketingPredictiveModel(input: {
         ? `план из «${LIST2_TAB}» / МЕС «${sources.frontTab}»`
         : `план из МЕС «${sources.frontTab}»`;
 
+    const diagnosisNote =
+      scope === "general" && generalPm?.diagnosis
+        ? generalPm.diagnosis.summary
+        : null;
+
     return {
       isoMonth: input.isoMonth,
       scope,
@@ -485,16 +570,27 @@ export async function loadMarketingPredictiveModel(input: {
       asOf,
       today,
       status: hasFacts ? (hasPlans ? "ok" : "partial") : hasPlans ? "partial" : "blocked",
-      message: hasFacts
-        ? `Месяц ${input.isoMonth} · ${meta.label}: факт по дням из ${sources.dailyTab}, ${planSourceNote}, прогноз = run-rate.`
-        : hasPlans
-          ? `Есть план (${meta.label}), но дневных фактов за ${input.isoMonth} ещё нет.`
-          : `Нет плана и факта маркетинга (${meta.label}) за ${input.isoMonth}.`,
-      method: "calendar_run_rate",
+      message:
+        diagnosisNote ||
+        (hasFacts
+          ? `Месяц ${input.isoMonth} · ${meta.label}: факт по дням из ${sources.dailyTab}, ${planSourceNote}, прогноз = run-rate.`
+          : hasPlans
+            ? `Есть план (${meta.label}), но дневных фактов за ${input.isoMonth} ещё нет.`
+            : `Нет плана и факта маркетинга (${meta.label}) за ${input.isoMonth}.`),
+      method: scope === "general" ? "pm_engine_linear_ptd" : "calendar_run_rate",
       metrics,
       days,
+      generalPm,
       notes: [
-        ...(scope === "general" ? [`План-доска: ${LIST2_TAB} (gid=${LIST2_GID})`] : []),
+        ...(scope === "general"
+          ? [
+              `План-доска: ${LIST2_TAB} (gid=${LIST2_GID})`,
+              `Plan To Date: ${generalPm?.planDistributionMethod ?? "LINEAR_FALLBACK"}`,
+              generalPm?.diagnosis.firstBrokenDriverLabel
+                ? `First broken driver: ${generalPm.diagnosis.firstBrokenDriverLabel}`
+                : "First broken driver: —"
+            ]
+          : []),
         `Фронт: ${sources.frontTab}`,
         `Дни: ${sources.dailyTab} · traffic_type=${meta.trafficType}`,
         asOf ? `As of (закрытый день): ${asOf}` : "As of: нет завершённых дней месяца",
