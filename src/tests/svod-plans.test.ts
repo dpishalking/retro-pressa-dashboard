@@ -6,7 +6,8 @@ import {
   parseSvodDayDate,
   parseSvodObshiePlans,
   parseSvodPaidOrganicPlans,
-  parseSvodPlanNumber
+  parseSvodPlanNumber,
+  sumSvodVerifiedLeads
 } from "@/lib/sales-os/svod-plans";
 
 assert.equal(parseSvodPlanNumber("€36 274"), 36274);
@@ -130,5 +131,12 @@ assert.equal(daily.get("2026-07-21")?.paid, 53);
 assert.equal(daily.get("2026-07-21")?.organic, 4);
 assert.equal(daily.get("2026-07-21")?.total, 57);
 assert.equal(daily.get("2026-07-22")?.total, 50);
+
+const verifiedMtd = sumSvodVerifiedLeads(daily, { month: "2026-07", throughDate: "2026-07-21" });
+assert.equal(verifiedMtd.total, 57);
+assert.equal(verifiedMtd.paid, 53);
+assert.equal(verifiedMtd.organic, 4);
+assert.equal(verifiedMtd.days, 1);
+assert.equal(verifiedMtd.lastDay, "2026-07-21");
 
 console.log("svod-plans tests ok");

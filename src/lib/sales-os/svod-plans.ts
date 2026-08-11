@@ -250,6 +250,34 @@ export async function pullSvodDailyLeads(input?: {
   return parseSvodDailyLeads({ paidSheet, organicSheet, month: input?.month });
 }
 
+/** Month-to-date verified CRM leads from СВОД `day` + `Органика` («Лиды CRM»). */
+export function sumSvodVerifiedLeads(
+  daily: Map<string, SvodDayLeads>,
+  input: { month: string; throughDate?: string | null }
+): {
+  total: number;
+  paid: number;
+  organic: number;
+  days: number;
+  lastDay: string | null;
+} {
+  let total = 0;
+  let paid = 0;
+  let organic = 0;
+  let days = 0;
+  let lastDay: string | null = null;
+  for (const [iso, row] of daily) {
+    if (!iso.startsWith(input.month)) continue;
+    if (input.throughDate && iso > input.throughDate) continue;
+    paid += row.paid;
+    organic += row.organic;
+    total += row.total;
+    days += 1;
+    if (!lastDay || iso > lastDay) lastDay = iso;
+  }
+  return { total, paid, organic, days, lastDay };
+}
+
 export async function pullSvodMonthPlans(input: {
   month: string;
   spreadsheetId?: string;

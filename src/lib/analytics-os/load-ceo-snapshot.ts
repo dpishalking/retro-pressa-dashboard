@@ -29,13 +29,14 @@ import {
 import { metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
   analyticsPeriodToLegacy,
+  currentAnalyticsPeriod,
   daysElapsedInPeriod,
   defaultAnalyticsPeriod,
   knownLegacyAnalyticsPeriods,
   parseAnalyticsPeriod,
   periodCalendarBounds
 } from "@/lib/analytics-os/period";
-import { pullMonthlyPlanIndicators } from "@/lib/sales-os/svod-plans";
+import { pullMonthlyPlanIndicators, pullSvodDailyLeads, sumSvodVerifiedLeads } from "@/lib/sales-os/svod-plans";
 import {
   aggregateMargins,
   aggregateProductMargins,
@@ -52,6 +53,25 @@ import type {
 import type { PeriodKey } from "@/types/metrics";
 
 const MONTHLY_PLAN_SOURCE_LABEL = "Таблица «План/факт»";
+const SVOD_VERIFIED_LEADS_SOURCE = "СВОД day + Органика · Лиды CRM";
+
+function rigaDateIso(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Riga",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
+}
+
+/** Calendar yesterday in Europe/Riga (СВОД usually closes the previous day). */
+function rigaYesterdayIso(now = new Date()): string {
+  const today = rigaDateIso(now);
+  const [y, m, d] = today.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() - 1);
+  return utc.toISOString().slice(0, 10);
+}
 
 function mapPlanIndicators(
   indicators: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>>["indicators"]
@@ -298,18 +318,41 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const uniqueCr =
     uniqueLeadStats.unique > 0 ? paidDeals.length / uniqueLeadStats.unique : null;
 
-  // KPI «Лиды» = все карточки Bitrix за период (источник правды).
-  // Уникальные и дубли — в подписи; конверсия ниже считается от уникальных.
+  // KPI «Лиды» = verified СВОД «Лиды CRM» (day + Органика), не сырые карточки Bitrix.
+  // Bitrix cards / unique remain in the subtitle for reconciliation.
+  const currentMonth = currentAnalyticsPeriod(now);
+  const throughDate = period >= currentMonth ? rigaYesterdayIso(now) : null;
+  let svodVerified: Awaited<ReturnType<typeof pullSvodDailyLeads>> | null = null;
+  try {
+    svodVerified = await pullSvodDailyLeads({ month: period });
+  } catch {
+    svodVerified = null;
+  }
+  const verifiedLeads = svodVerified
+    ? sumSvodVerifiedLeads(svodVerified, { month: period, throughDate })
+    : null;
+  const yesterdayKey = rigaYesterdayIso(now);
+  const yesterdayVerified = svodVerified?.get(yesterdayKey)?.total ?? null;
+
   const leadsMetric = metricValue({
     metricId: "leads",
-    value: leads.length,
-    status: "live",
-    asOf,
-    source: "Bitrix leads snapshot (DATE_CREATE in period)",
+    value: verifiedLeads && verifiedLeads.total > 0 ? verifiedLeads.total : leads.length,
+    status: verifiedLeads && verifiedLeads.total > 0 ? "live" : "calculated",
+    asOf: verifiedLeads?.lastDay ?? asOf,
+    source: verifiedLeads && verifiedLeads.total > 0 ? SVOD_VERIFIED_LEADS_SOURCE : "Bitrix leads snapshot (fallback)",
     unit: "count",
-    confidence: "high",
+    confidence: verifiedLeads && verifiedLeads.total > 0 ? "high" : "medium",
     plan: planLeads,
-    decisionHint: `Уникальные ≈ ${uniqueLeadStats.unique} · дубли ≈ ${uniqueLeadStats.duplicateApprox}`
+    decisionHint:
+      verifiedLeads && verifiedLeads.total > 0
+        ? [
+            yesterdayVerified != null ? `Вчера (СВОД): ${yesterdayVerified}` : null,
+            `Bitrix карточек: ${leads.length}`,
+            `уникальные ≈ ${uniqueLeadStats.unique}`
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        : `Уникальные ≈ ${uniqueLeadStats.unique} · дубли ≈ ${uniqueLeadStats.duplicateApprox}`
   });
 
   const ordersMetric = metricValue({
