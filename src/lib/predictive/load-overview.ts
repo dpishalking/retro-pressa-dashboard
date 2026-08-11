@@ -304,13 +304,14 @@ async function loadMarketingBlock(isoMonth: string, today: string): Promise<Pred
     }
 
     const byKey = new Map(grid.metrics.map((m) => [m.key, m]));
-    const metrics: PredictiveMetricRow[] = MARKETING_METRIC_ORDER.map((id) => {
+    const metrics: PredictiveMetricRow[] = [];
+    for (const id of MARKETING_METRIC_ORDER) {
       const row = byKey.get(id);
       const plan = plans.get(id) ?? row?.plan ?? null;
       const fact = row?.fact ?? null;
       const forecast = row?.forecast ?? null;
-      if (plan == null && fact == null && forecast == null) return null;
-      return {
+      if (plan == null && fact == null && forecast == null) continue;
+      metrics.push({
         id,
         label: SALES_METRIC_LABELS[id]?.label ?? row?.label ?? id,
         unit: row?.unit ?? SALES_METRIC_LABELS[id]?.unit ?? "count",
@@ -320,8 +321,8 @@ async function loadMarketingBlock(isoMonth: string, today: string): Promise<Pred
         gapToPlan: plan != null && forecast != null ? forecast - plan : null,
         status: row?.status || (plan == null ? "NO_PLAN" : "UNKNOWN"),
         method: "calendar_run_rate"
-      };
-    }).filter((m): m is PredictiveMetricRow => Boolean(m));
+      });
+    }
 
     // Include any extra ICE/other rows that have values
     for (const row of grid.metrics) {
