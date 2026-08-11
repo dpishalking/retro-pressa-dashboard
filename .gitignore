@@ -13,6 +13,7 @@ retro-pressa-deploy.tar.gz
 runtime-env.json
 ecosystem.config.cjs
 data/bitrix-snapshots/
+data/sales-cycle-cache/
 data/google-snapshots/
 data/ga4-snapshots/
 data/auth/
