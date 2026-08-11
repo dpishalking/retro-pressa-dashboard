@@ -3,7 +3,7 @@ import { BusinessContourScreen } from "@/components/business-contour-screen";
 
 export const metadata: Metadata = {
   title: "Маркетинг и трафик — Retro Pressa",
-  description: "Контур маркетинга: сводка, прогноз и инструменты привлечения"
+  description: "Контур маркетинга: эффективность лендингов и инструменты привлечения"
 };
 
 export default function MarketingPage() {

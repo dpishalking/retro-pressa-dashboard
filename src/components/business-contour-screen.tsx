@@ -29,6 +29,10 @@ type ContourConfig = {
   forecast?: ModuleCard;
   /** Marketing-style predictive model tiles. */
   predictiveModels?: ModuleCard[];
+  /** Landing efficiency tiles (payback / ROAS). */
+  landingEfficiency?: ModuleCard[];
+  landingEfficiencyTitle?: string;
+  landingEfficiencySubtitle?: string;
   modules: ModuleCard[];
 };
 
@@ -61,24 +65,46 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
   marketing: {
     title: "Маркетинг и трафик",
     eyebrow: "Контур BI",
-    description: "Предиктивные модели привлечения, рекламные каналы и атрибуция трафика.",
+    description: "Эффективность лендингов в работе, рекламные каналы и атрибуция трафика.",
     icon: Megaphone,
     hideKpiSummary: true,
-    predictiveModels: [
+    landingEfficiencyTitle: "Эффективность лендингов",
+    landingEfficiencySubtitle: "7 лендингов в работе (ALX): расход, выручка, ROAS, CPL, CPQL.",
+    landingEfficiency: [
       {
-        title: "Общая",
-        description: "План, факт и прогноз по всему маркетингу. Месяц с разворотом по дням.",
-        href: "/predictive?domain=marketing&scope=general"
+        title: "Главная RU",
+        description: "retro-pressa.com/ru/ — окупаемость и дневная динамика.",
+        href: "/marketing/landings/ru"
       },
       {
-        title: "Органика",
-        description: "Предиктивная модель органического трафика и лидов.",
-        href: "/predictive?domain=marketing&scope=organic"
+        title: "RU /new",
+        description: "retro-pressa.com/ru/new — ROAS, CPL, лиды и заказы.",
+        href: "/marketing/landings/ru-new"
       },
       {
-        title: "Платный трафик",
-        description: "Предиктивная модель платных каналов: spend, CPL, ROAS.",
-        href: "/predictive?domain=marketing&scope=paid"
+        title: "Life",
+        description: "retro-pressa.com/life — ключевые метрики окупаемости.",
+        href: "/marketing/landings/life"
+      },
+      {
+        title: "EST /new",
+        description: "retro-pressa.com/est/new — spend, лиды, ROAS.",
+        href: "/marketing/landings/est-new"
+      },
+      {
+        title: "DE /new",
+        description: "retro-pressa.com/de/new — окупаемость DE-лендинга.",
+        href: "/marketing/landings/de-new"
+      },
+      {
+        title: "ES /new",
+        description: "retro-pressa.com/es/new — окупаемость ES-лендинга.",
+        href: "/marketing/landings/es-new"
+      },
+      {
+        title: "Песня",
+        description: "giftboost.website/pesnya — окупаемость лендинга песни.",
+        href: "/marketing/landings/pesnya"
       }
     ],
     modules: [
@@ -154,6 +180,7 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
   const modules = contour.modules.filter((module) => !module.adminOnly || user?.accessLevel === "admin");
   const showDashboardPair = Boolean(contour.dashboard || contour.forecast);
   const showPredictive = Boolean(contour.predictiveModels?.length);
+  const showLandings = Boolean(contour.landingEfficiency?.length);
 
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
@@ -180,6 +207,24 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
           ) : (
             <p className="text-sm text-slate-500">{state === "error" ? error : "Загрузка сводки…"}</p>
           )}
+        </section>
+      ) : null}
+
+      {showLandings ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">
+              {contour.landingEfficiencyTitle || "Эффективность лендингов"}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {contour.landingEfficiencySubtitle || "Ключевые метрики окупаемости по лендингам в работе."}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {contour.landingEfficiency!.map((module) => (
+              <ContourCard key={module.title} module={module} />
+            ))}
+          </div>
         </section>
       ) : null}
 
