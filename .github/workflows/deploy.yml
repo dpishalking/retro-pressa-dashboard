@@ -510,20 +510,21 @@ jobs:
           PERIOD="$(node -e 'const d=new Date(); const m=d.getUTCMonth()+1; const names={5:"may",6:"june",7:"july",8:"august"}; console.log((names[m]||"august")+"-"+d.getUTCFullYear())')"
           SECRET="$(node -e 'const e=require("./runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||e.AUTH_SECRET||"").trim())')"
           if [ -n "$SECRET" ]; then
-            curl -f -sS -X POST http://127.0.0.1:4174/api/sync/bitrix \
+            # Keep deploy light: Bitrix refresh with a hard timeout so nginx/app stay up.
+            curl -f -sS --max-time 120 -X POST http://127.0.0.1:4174/api/sync/bitrix \
               -H "content-type: application/json" \
               -H "x-cron-secret: ${SECRET}" \
               -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" \
               | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);console.log("bitrix sync",j.summary?.dataSource||"?", "paid", j.summary?.paidDealsLoaded, "leads", j.summary?.leadsLoaded);}catch{console.log(s.slice(0,300));}})' \
               || echo "WARNING: Bitrix period sync failed for ${PERIOD}"
 
-            # Precompute cohort tables so /os/cohorts is instant after deploy.
-            curl -f -sS --max-time 280 -X POST http://127.0.0.1:4174/api/sync/sales-cycle \
+            # Cohort warm is heavy (full snapshot merge) — never block deploy / kill the app.
+            nohup curl -sS --max-time 300 -X POST http://127.0.0.1:4174/api/sync/sales-cycle \
               -H "content-type: application/json" \
               -H "x-cron-secret: ${SECRET}" \
               -d '{"grains":["month","week"]}' \
-              | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);console.log("sales-cycle warm", (j.built||[]).length, "ok,", (j.errors||[]).length, "errors");}catch{console.log(s.slice(0,300));}})' \
-              || echo "WARNING: sales-cycle cache warm failed"
+              > /tmp/sales-cycle-warm.log 2>&1 &
+            echo "sales-cycle warm started in background (pid $!)"
           else
             echo "WARNING: no CRON/AUTH secret for Bitrix period sync"
           fi
