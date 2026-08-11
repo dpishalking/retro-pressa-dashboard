@@ -25,7 +25,10 @@ jobs:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
@@ -35,7 +38,7 @@ jobs:
             exit 1
           fi
           MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
-          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/predictive-front \
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4174/api/sync/predictive-front \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d "{\"month\":\"${MONTH}\"}"

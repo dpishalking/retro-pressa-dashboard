@@ -3,7 +3,7 @@ import { rejectUnlessCronOrStaff } from "@/lib/auth/cron-auth";
 import { syncSalesOsModel } from "@/lib/sales-os/sync";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 export async function POST(request: Request) {
   const denied = rejectUnlessCronOrStaff(request);

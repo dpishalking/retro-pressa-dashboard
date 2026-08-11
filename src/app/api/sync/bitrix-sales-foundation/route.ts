@@ -7,7 +7,7 @@ import {
 import { syncBitrixSalesFoundation } from "@/lib/bitrix/sales-foundation/sync";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 const allowedModules = new Set<SalesFoundationModule>([...SALES_FOUNDATION_SYNC_ORDER, "all"]);
 

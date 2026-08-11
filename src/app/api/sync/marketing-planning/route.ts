@@ -6,7 +6,7 @@ import {
 } from "@/lib/marketing-planning/sync";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 export async function POST(request: Request) {
   const denied = rejectUnlessCronOrStaff(request);
