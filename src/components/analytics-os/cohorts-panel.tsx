@@ -112,12 +112,14 @@ export function CohortsPanel({
   useEffect(() => {
     if (!period) return;
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 90_000);
     setState("loading");
     const params = new URLSearchParams({ period, cohort_grain: grain });
     if (managerId) params.set("managerId", managerId);
     if (country) params.set("country", country);
     if (productId) params.set("productId", productId);
-    fetch(`/api/analytics/sales-cycle?${params}`)
+    fetch(`/api/analytics/sales-cycle?${params}`, { signal: controller.signal })
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Ошибка загрузки");
@@ -128,12 +130,23 @@ export function CohortsPanel({
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Ошибка");
+          const message =
+            err instanceof DOMException && err.name === "AbortError"
+              ? "Таймаут загрузки когорт (90с). Нужен прогрев: POST /api/sync/sales-cycle"
+              : err instanceof Error
+                ? err.message
+                : "Ошибка";
+          setError(message);
           setState("error");
         }
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeout);
     };
   }, [period, grain, managerId, country, productId]);
 

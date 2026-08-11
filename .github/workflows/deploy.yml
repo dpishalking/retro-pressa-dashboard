@@ -356,7 +356,7 @@ jobs:
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
           AUTH_STAGING="/tmp/retro-pressa-auth-staging"
-          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/products" "$APP_DATA_DIR/product-passports" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
+          mkdir -p "$APP_DIR" "$APP_DATA_DIR/bitrix-snapshots" "$APP_DATA_DIR/sales-cycle-cache" "$APP_DATA_DIR/google-snapshots" "$APP_DATA_DIR/ga4-snapshots" "$APP_DATA_DIR/company-snapshots" "$APP_DATA_DIR/plans" "$APP_DATA_DIR/scenarios" "$APP_DATA_DIR/conversation-snapshots" "$APP_DATA_DIR/conversation-exports" "$APP_DATA_DIR/manager-dialogs-sheet-state" "$APP_DATA_DIR/training" "$APP_DATA_DIR/products" "$APP_DATA_DIR/product-passports" "$APP_DATA_DIR/auth" "$APP_SHARED_DIR/auth-catalog"
           AUTH_FILE="$APP_DATA_DIR/auth/users.json"
           AUTH_BACKUP="$APP_DATA_DIR/auth/users.json.bak"
           AUTH_PERSISTENT="$APP_SHARED_DIR/auth-catalog/users.json"
@@ -516,6 +516,14 @@ jobs:
               -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" \
               | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);console.log("bitrix sync",j.summary?.dataSource||"?", "paid", j.summary?.paidDealsLoaded, "leads", j.summary?.leadsLoaded);}catch{console.log(s.slice(0,300));}})' \
               || echo "WARNING: Bitrix period sync failed for ${PERIOD}"
+
+            # Precompute cohort tables so /os/cohorts is instant after deploy.
+            curl -f -sS --max-time 280 -X POST http://127.0.0.1:4174/api/sync/sales-cycle \
+              -H "content-type: application/json" \
+              -H "x-cron-secret: ${SECRET}" \
+              -d '{"grains":["month","week"]}' \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);console.log("sales-cycle warm", (j.built||[]).length, "ok,", (j.errors||[]).length, "errors");}catch{console.log(s.slice(0,300));}})' \
+              || echo "WARNING: sales-cycle cache warm failed"
           else
             echo "WARNING: no CRON/AUTH secret for Bitrix period sync"
           fi

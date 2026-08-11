@@ -8,6 +8,7 @@ import {
   type CycleLead,
   type CyclePaidDeal
 } from "./build-facts";
+import { readSalesCycleCache, writeSalesCycleCache } from "./cache-store";
 import type { CohortGrain, SalesCyclePayload } from "./types";
 
 export type LoadSalesCycleOptions = {
@@ -18,6 +19,8 @@ export type LoadSalesCycleOptions = {
   country?: string | null;
   sourceId?: string | null;
   now?: Date;
+  /** Skip disk cache and rewrite it after compute. */
+  forceRefresh?: boolean;
 };
 
 const LEGACY_TO_ISO: Record<string, string> = {
@@ -76,14 +79,29 @@ function parseGrain(value: string | null | undefined): CohortGrain {
 
 export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promise<SalesCyclePayload> {
   const now = options.now ?? new Date();
-  const corpus = await loadCorpus();
   const period = parseAnalyticsPeriod(options.period, now);
+  const cohortGrain = parseGrain(options.cohortGrain);
+  const cacheKey = {
+    period,
+    cohortGrain,
+    managerId: options.managerId || null,
+    productId: options.productId || null,
+    country: options.country || null,
+    sourceId: options.sourceId || null
+  };
+
+  if (!options.forceRefresh) {
+    const cached = await readSalesCycleCache(cacheKey);
+    if (cached) return cached;
+  }
+
+  const corpus = await loadCorpus();
   const facts = buildFactsFromCorpus({
     leads: corpus.leads,
     paidDeals: corpus.paidDeals
   });
 
-  return aggregateSalesCycle({
+  const payload = aggregateSalesCycle({
     facts,
     cohortLeads: corpus.leads.map((lead) => ({
       id: lead.id,
@@ -98,7 +116,7 @@ export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promi
       emails: lead.emails || []
     })),
     period,
-    cohortGrain: parseGrain(options.cohortGrain),
+    cohortGrain,
     asOf: now,
     filters: {
       managerId: options.managerId || null,
@@ -108,6 +126,81 @@ export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promi
     },
     availablePeriods: corpus.availablePeriods
   });
+
+  await writeSalesCycleCache(cacheKey, payload).catch(() => {
+    // Cache is best-effort — UI still gets a live payload.
+  });
+  return payload;
+}
+
+export async function warmSalesCycleCaches(options: {
+  periods?: string[];
+  grains?: CohortGrain[];
+} = {}): Promise<{
+  built: Array<{ period: string; grain: CohortGrain; ms: number; cohorts: number }>;
+  errors: Array<{ period: string; grain: CohortGrain; error: string }>;
+}> {
+  const now = new Date();
+  const corpus = await loadCorpus();
+  const facts = buildFactsFromCorpus({
+    leads: corpus.leads,
+    paidDeals: corpus.paidDeals
+  });
+  const cohortLeads = corpus.leads.map((lead) => ({
+    id: lead.id,
+    dateCreate: lead.dateCreate,
+    sourceId: lead.sourceId,
+    utmSource: lead.utmSource,
+    utmMedium: lead.utmMedium,
+    country: lead.country,
+    assignedById: lead.assignedById,
+    contactId: lead.contactId ?? null,
+    phones: lead.phones || [],
+    emails: lead.emails || []
+  }));
+  const periods = options.periods?.length
+    ? options.periods.map((item) => parseAnalyticsPeriod(item, now))
+    : corpus.availablePeriods;
+  const grains: CohortGrain[] = options.grains?.length ? options.grains : ["month", "week"];
+  const built: Array<{ period: string; grain: CohortGrain; ms: number; cohorts: number }> = [];
+  const errors: Array<{ period: string; grain: CohortGrain; error: string }> = [];
+
+  for (const period of periods) {
+    for (const grain of grains) {
+      const started = Date.now();
+      try {
+        const payload = aggregateSalesCycle({
+          facts,
+          cohortLeads,
+          period,
+          cohortGrain: grain,
+          asOf: now,
+          filters: {
+            managerId: null,
+            productId: null,
+            country: null,
+            sourceId: null
+          },
+          availablePeriods: corpus.availablePeriods
+        });
+        await writeSalesCycleCache({ period, cohortGrain: grain }, payload);
+        built.push({
+          period,
+          grain,
+          ms: Date.now() - started,
+          cohorts: payload.cohorts.length
+        });
+      } catch (error) {
+        errors.push({
+          period,
+          grain,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+  }
+
+  return { built, errors };
 }
 
 export async function loadSalesCycleCompact(options: LoadSalesCycleOptions = {}) {

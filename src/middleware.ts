@@ -31,6 +31,7 @@ const CRON_API_PREFIXES = [
   "/api/sync/bitrix",
   "/api/sync/bitrix-sales-foundation",
   "/api/sync/sales-os",
+  "/api/sync/sales-cycle",
   "/api/sync/marketing-planning"
 ];
 

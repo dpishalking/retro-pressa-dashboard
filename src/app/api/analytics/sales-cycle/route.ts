@@ -3,10 +3,11 @@ import { loadSalesCycle } from "@/lib/analytics-os/sales-cycle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 /**
  * GET /api/analytics/sales-cycle?period=YYYY-MM&cohort_grain=day|week|month&managerId=&productId=&country=&source=
- * Auth: session required (middleware). Read-only — uses Bitrix JSON snapshots.
+ * Auth: session required (middleware). Prefers data/sales-cycle-cache, else Bitrix snapshots.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
       managerId: searchParams.get("managerId"),
       productId: searchParams.get("productId"),
       country: searchParams.get("country"),
-      sourceId: searchParams.get("source") || searchParams.get("sourceId")
+      sourceId: searchParams.get("source") || searchParams.get("sourceId"),
+      forceRefresh: searchParams.get("refresh") === "1"
     });
     return NextResponse.json(payload);
   } catch (error) {
