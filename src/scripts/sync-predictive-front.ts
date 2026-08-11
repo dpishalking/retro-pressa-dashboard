@@ -1,21 +1,18 @@
-import { moscowPeriodKey } from "@/lib/moscow-time";
+import { moscowIsoMonth, periodKeyToIsoMonth } from "@/lib/moscow-time";
 import { refreshPredictiveSalesFrontFromWorkbook } from "@/lib/sales-os/sync-predictive";
 import type { PeriodKey } from "@/types/metrics";
-
-function isoMonthFromPeriodKey(period: PeriodKey): string {
-  if (period === "may-2026") return "2026-05";
-  if (period === "june-2026") return "2026-06";
-  return "2026-07";
-}
 
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run") || args.includes("--dry");
   const monthFlag = args.find((a) => a.startsWith("--month="));
+  const periodFlag = args.find((a) => a.startsWith("--period="));
+  const period = periodFlag?.slice("--period=".length) as PeriodKey | undefined;
   const month =
     monthFlag?.slice("--month=".length) ||
     args.find((a) => /^\d{4}-\d{2}$/.test(a)) ||
-    isoMonthFromPeriodKey(moscowPeriodKey());
+    (period ? periodKeyToIsoMonth(period) : null) ||
+    moscowIsoMonth();
 
   const result = await refreshPredictiveSalesFrontFromWorkbook({ month, dryRun });
   console.log(JSON.stringify(result, null, 2));
