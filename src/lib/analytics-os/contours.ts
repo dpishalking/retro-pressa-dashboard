@@ -10,6 +10,7 @@ export type ContourId =
   | "unit-economics"
   | "products"
   | "cohorts"
+  | "sales-cycle"
   | "customers"
   | "marketing"
   | "creatives"
@@ -73,13 +74,24 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
   {
     id: "cohorts",
     number: 4,
-    title: "Когорты / LTV",
+    title: "Когорты",
     shortTitle: "Когорты",
-    subtitle: "Удержание 30–365 дней",
+    subtitle: "Месяц / неделя создания лида · страны · оплаты когорты",
     href: "/os/cohorts",
-    status: "stub",
-    accent: "slate",
+    status: "live",
+    accent: "blue",
     onWheel: true
+  },
+  {
+    id: "sales-cycle",
+    number: 0,
+    title: "Sales Cycle",
+    shortTitle: "Цикл сделки",
+    subtitle: "Lead → WON · D0–D30 · менеджеры / источники",
+    href: "/os/sales-cycle",
+    status: "partial",
+    accent: "blue",
+    onWheel: false
   },
   {
     id: "customers",
@@ -119,7 +131,7 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
     number: 8,
     title: "Воронка продаж",
     shortTitle: "Воронка",
-    subtitle: "Лид → счёт → оплата",
+    subtitle: "Лид → счёт → оплата · цикл сделки",
     href: "/os/funnel",
     status: "live",
     accent: "blue",
@@ -200,6 +212,29 @@ export function getContour(id: string): ContourDef | null {
 
 export function wheelContours(): ContourDef[] {
   return ANALYTICS_CONTOURS.filter((item) => item.onWheel).sort((a, b) => a.number - b.number);
+}
+
+/** Home hub tiles — work modules only (sources live in their own band). */
+const HUB_TILE_ORDER: ContourId[] = [
+  "revenue",
+  "unit-economics",
+  "products",
+  "cohorts",
+  "sales-cycle",
+  "customers",
+  "marketing",
+  "creatives",
+  "funnel",
+  "managers",
+  "conversations",
+  "geography",
+  "production",
+  "plan"
+];
+
+export function hubTileContours(): ContourDef[] {
+  const byId = new Map(ANALYTICS_CONTOURS.map((item) => [item.id, item]));
+  return HUB_TILE_ORDER.map((id) => byId.get(id)).filter((item): item is ContourDef => Boolean(item));
 }
 
 export function contourStatusLabel(status: ContourStatus): string {

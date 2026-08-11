@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LineChart, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH, PARTNERS_PATH } from "@/lib/auth/routes";
@@ -46,6 +46,14 @@ const officeSections: OfficeSection[] = [
         icon: Megaphone,
         status: "active",
         accent: "text-emerald-600 bg-emerald-50"
+      },
+      {
+        href: "/predictive",
+        title: "Предиктивные модели",
+        description: "Прогнозы продаж, маркетинга и финансов: план, факт и run-rate в одном кабинете.",
+        icon: LineChart,
+        status: "active",
+        accent: "text-indigo-600 bg-indigo-50"
       },
       {
         href: "/digital-twin",

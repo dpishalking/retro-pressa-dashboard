@@ -8,8 +8,7 @@ import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
 import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/format-metric";
 import {
   contourStatusLabel,
-  getContour,
-  wheelContours,
+  hubTileContours,
   type ContourDef
 } from "@/lib/analytics-os/contours";
 import { eur, number, pct } from "@/lib/format";
@@ -58,45 +57,146 @@ function ModuleCard({
   );
 }
 
-function ContoursWheel() {
-  const items = wheelContours();
+function tilePreview(contour: ContourDef, snapshot: CeoControlCenterSnapshot): ReactNode {
+  const topCountry = snapshot.countries[0];
+  const topManager = snapshot.managers[0];
+  const topProduct = snapshot.products[0];
+
+  switch (contour.id) {
+    case "revenue":
+      return (
+        <>
+          <strong>{formatMetricDisplay(snapshot.metrics.revenue)}</strong>
+          <span>
+            План {formatMetricDisplay(snapshot.plan.planRevenue)} · прогресс{" "}
+            {formatMetricDisplay(snapshot.plan.planCompletion)}
+          </span>
+        </>
+      );
+    case "unit-economics":
+      return (
+        <>
+          <strong>Маржа {formatMetricDisplay(snapshot.productMargin.marginRate)}</strong>
+          <span>
+            Валовая {formatMetricDisplay(snapshot.productMargin.grossProfit)} · себестоимость{" "}
+            {formatMetricDisplay(snapshot.productMargin.cogs)} · средний чек{" "}
+            {formatMetricDisplay(snapshot.metrics.aov)}
+          </span>
+        </>
+      );
+    case "products":
+      return topProduct ? (
+        <>
+          <strong>{topProduct.productName}</strong>
+          <span>
+            {eur(topProduct.revenue)}
+            {topProduct.marginRate == null ? "" : ` · маржа ${pct(topProduct.marginRate)}`} ·{" "}
+            {pct(topProduct.share)}
+          </span>
+        </>
+      ) : (
+        <span>Нет данных по SKU</span>
+      );
+    case "cohorts":
+      return <span>Когорты · Lead→WON maturity · касса vs когорта</span>;
+    case "sales-cycle":
+      return <span>Lead → WON · D0–D30 · менеджеры и источники</span>;
+    case "customers":
+      return (
+        <>
+          <strong>{formatMetricDisplay(snapshot.metrics.repeat_rate)} повтор</strong>
+          <span>
+            Клиенты {formatMetricDisplay(snapshot.customers.customers)} · новые{" "}
+            {formatMetricDisplay(snapshot.customers.newCustomers)}
+          </span>
+        </>
+      );
+    case "marketing":
+      return (
+        <>
+          <strong>{formatMetricDisplay(snapshot.metrics.ad_spend)}</strong>
+          <span>{snapshot.marketing.note}</span>
+        </>
+      );
+    case "creatives":
+      return <span>Ads API / креативы ещё не подключены</span>;
+    case "funnel":
+      return (
+        <span>
+          {snapshot.funnel
+            .map((stage) => `${stage.label} ${stage.count == null ? "—" : number(stage.count)}`)
+            .join(" → ")}
+        </span>
+      );
+    case "managers":
+      return topManager ? (
+        <>
+          <strong>{topManager.managerName}</strong>
+          <span>
+            {eur(topManager.revenue)} · CR{" "}
+            {topManager.conversionRate == null ? "—" : pct(topManager.conversionRate)}
+          </span>
+        </>
+      ) : (
+        <span>Нет менеджеров в снимке</span>
+      );
+    case "conversations":
+      return <span>Открывает раздел диалогов РОП</span>;
+    case "geography":
+      return topCountry ? (
+        <>
+          <strong>{topCountry.country}</strong>
+          <span>
+            {eur(topCountry.revenue)} · {pct(topCountry.share)}
+          </span>
+        </>
+      ) : (
+        <span>Нет стран в снимке</span>
+      );
+    case "production":
+      return <span>{snapshot.production.message}</span>;
+    case "plan":
+      return (
+        <>
+          <strong>{formatMetricDisplay(snapshot.plan.planRevenue)}</strong>
+          <span>
+            Факт {formatMetricDisplay(snapshot.plan.factRevenue)} · прогноз{" "}
+            {formatMetricDisplay(snapshot.plan.forecastRevenue)} · {snapshot.plan.indicatorCount}{" "}
+            показателей
+          </span>
+        </>
+      );
+    default:
+      return <span>{contour.subtitle}</span>;
+  }
+}
+
+function ContourTiles({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const tiles = hubTileContours();
   return (
-    <section className="aos-wheel" aria-label="12 аналитических контуров">
-      <div className="aos-wheel__ring">
-        {items.map((item, index) => {
-          const angle = (360 / items.length) * index - 90;
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`aos-wheel__node aos-wheel__node--${item.status}`}
-              style={{
-                ["--a" as string]: `${angle}deg`
-              }}
-              title={item.subtitle}
-            >
-              <em>{item.number}</em>
-              <span>{item.shortTitle}</span>
-            </Link>
-          );
-        })}
-        <div className="aos-wheel__core">
-          <strong>12</strong>
-          <span>аналитических контуров</span>
-          <small>нажмите блок</small>
+    <section className="aos-tiles-band" aria-label="Модули аналитики">
+      <div className="aos-tiles-band__head">
+        <div>
+          <h2>С чем работать</h2>
+          <p>Выручка, юнит, продукты, когорты и остальные контуры — выберите блок.</p>
         </div>
+      </div>
+      <div className="aos-tiles-grid">
+        {tiles.map((contour) => (
+          <ModuleCard key={contour.id} contour={contour} preview={tilePreview(contour, snapshot)} />
+        ))}
       </div>
     </section>
   );
 }
 
-function OwnerScenarios({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+function ScenarioWorkshop({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const cards = snapshot.ownerIntelligence;
   return (
     <section className="aos-ai-band">
       <div className="aos-ai-band__head">
         <div>
-          <h2>5 сценариев собственника</h2>
+          <h2>Мастерская сценариев</h2>
           <p>AI-аналитик · честные статусы, без выдуманных цифр</p>
         </div>
         <Link href="/os/revenue" className="aos-ai-band__link">
@@ -123,11 +223,14 @@ function OwnerScenarios({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   );
 }
 
-function DataSourcesFooter({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+function DataSourcesBand({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   return (
     <section className="aos-sources-band">
       <div className="aos-sources-band__head">
-        <h2>Единая модель данных — один источник правды</h2>
+        <div>
+          <h2>Источники правды</h2>
+          <p className="aos-sources-band__lead">Единая модель данных — что подключено и что ещё нет</p>
+        </div>
         <Link href="/os/sources">Качество и источники →</Link>
       </div>
       <div className="aos-sources-band__grid">
@@ -145,160 +248,6 @@ function DataSourcesFooter({ snapshot }: { snapshot: CeoControlCenterSnapshot })
         ))}
       </div>
     </section>
-  );
-}
-
-function HubPreviews({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
-  const byId = Object.fromEntries(wheelContours().map((c) => [c.id, c])) as Record<string, ContourDef>;
-  const topCountry = snapshot.countries[0];
-  const topManager = snapshot.managers[0];
-  const topProduct = snapshot.products[0];
-
-  return (
-    <div className="aos-hub-grid">
-      <div className="aos-hub-col">
-        <ModuleCard
-          contour={byId.revenue}
-          preview={
-            <>
-              <strong>{formatMetricDisplay(snapshot.metrics.revenue)}</strong>
-              <span>
-                План {formatMetricDisplay(snapshot.plan.planRevenue)} · прогресс{" "}
-                {formatMetricDisplay(snapshot.plan.planCompletion)}
-              </span>
-            </>
-          }
-        />
-        <ModuleCard
-          contour={byId["unit-economics"]}
-          preview={
-            <>
-              <strong>Маржа {formatMetricDisplay(snapshot.productMargin.marginRate)}</strong>
-              <span>
-                Валовая {formatMetricDisplay(snapshot.productMargin.grossProfit)} · COGS{" "}
-                {formatMetricDisplay(snapshot.productMargin.cogs)} · AOV{" "}
-                {formatMetricDisplay(snapshot.metrics.aov)}
-              </span>
-            </>
-          }
-        />
-        <ModuleCard
-          contour={byId.products}
-          preview={
-            topProduct ? (
-              <>
-                <strong>{topProduct.productName}</strong>
-                <span>
-                  {eur(topProduct.revenue)}
-                  {topProduct.marginRate == null ? "" : ` · маржа ${pct(topProduct.marginRate)}`} ·{" "}
-                  {pct(topProduct.share)}
-                </span>
-              </>
-            ) : (
-              <span>Нет данных по SKU</span>
-            )
-          }
-        />
-        <ModuleCard contour={byId.cohorts} preview={<span>Когорты и LTV — контур зарезервирован</span>} />
-      </div>
-
-      <div className="aos-hub-col aos-hub-col--center">
-        <ContoursWheel />
-        <ModuleCard
-          contour={byId.customers}
-          preview={
-            <>
-              <strong>{formatMetricDisplay(snapshot.metrics.repeat_rate)} повтор</strong>
-              <span>
-                Клиенты {formatMetricDisplay(snapshot.customers.customers)} · новые{" "}
-                {formatMetricDisplay(snapshot.customers.newCustomers)}
-              </span>
-            </>
-          }
-        />
-      </div>
-
-      <div className="aos-hub-col">
-        <ModuleCard
-          contour={byId.marketing}
-          preview={
-            <>
-              <strong>{formatMetricDisplay(snapshot.metrics.ad_spend)}</strong>
-              <span>{snapshot.marketing.note}</span>
-            </>
-          }
-        />
-        <ModuleCard
-          contour={byId.creatives}
-          preview={<span>Ads API / креативы ещё не подключены</span>}
-        />
-        <ModuleCard
-          contour={byId.funnel}
-          preview={
-            <span>
-              {snapshot.funnel
-                .map((stage) => `${stage.label} ${stage.count == null ? "—" : number(stage.count)}`)
-                .join(" → ")}
-            </span>
-          }
-        />
-        <ModuleCard
-          contour={byId.managers}
-          preview={
-            topManager ? (
-              <>
-                <strong>{topManager.managerName}</strong>
-                <span>
-                  {eur(topManager.revenue)} · CR{" "}
-                  {topManager.conversionRate == null ? "—" : pct(topManager.conversionRate)}
-                </span>
-              </>
-            ) : (
-              <span>Нет менеджеров в снимке</span>
-            )
-          }
-        />
-      </div>
-
-      <div className="aos-hub-bottom">
-        <ModuleCard
-          contour={byId.conversations}
-          preview={<span>Открывает раздел диалогов РОП</span>}
-        />
-        <ModuleCard
-          contour={byId.geography}
-          preview={
-            topCountry ? (
-              <>
-                <strong>{topCountry.country}</strong>
-                <span>
-                  {eur(topCountry.revenue)} · {pct(topCountry.share)}
-                </span>
-              </>
-            ) : (
-              <span>Нет стран в снимке</span>
-            )
-          }
-        />
-        <ModuleCard
-          contour={byId.production}
-          preview={<span>{snapshot.production.message}</span>}
-        />
-        <ModuleCard
-          contour={getContour("plan")!}
-          preview={
-            <>
-              <strong>{formatMetricDisplay(snapshot.plan.planRevenue)}</strong>
-              <span>
-                Факт {formatMetricDisplay(snapshot.plan.factRevenue)} · прогноз{" "}
-                {formatMetricDisplay(snapshot.plan.forecastRevenue)} · {snapshot.plan.indicatorCount}{" "}
-                показателей
-              </span>
-            </>
-          }
-        />
-      </div>
-    </div>
   );
 }
 
@@ -429,9 +378,9 @@ export function AnalyticsOsScreen() {
         </section>
       ) : (
         <>
-          <HubPreviews snapshot={snapshot} />
-          <OwnerScenarios snapshot={snapshot} />
-          <DataSourcesFooter snapshot={snapshot} />
+          <ContourTiles snapshot={snapshot} />
+          <ScenarioWorkshop snapshot={snapshot} />
+          <DataSourcesBand snapshot={snapshot} />
         </>
       )}
     </div>
