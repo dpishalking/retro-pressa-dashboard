@@ -14,7 +14,7 @@ import {
 } from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/products/public", PARTNERS_REGISTER_API, WEBINAR_REGISTER_API];
+const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/health", "/api/products/public", PARTNERS_REGISTER_API, WEBINAR_REGISTER_API];
 const PUBLIC_PAGE_PREFIXES = [
   UTM_GENERATOR_PUBLIC_PATH,
   PRODUCT_VIEW_PUBLIC_PREFIX,
@@ -34,6 +34,7 @@ const CRON_API_PREFIXES = [
   "/api/sync/sales-cycle",
   "/api/sync/marketing-planning"
 ];
+const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -43,8 +44,12 @@ function isCronApi(pathname: string): boolean {
   return CRON_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+function isHeavyApi(pathname: string): boolean {
+  return HEAVY_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function hasValidCronSecret(request: NextRequest): boolean {
-  const expected = process.env.CRON_SYNC_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  const expected = process.env.CRON_SYNC_SECRET?.trim();
   if (!expected) return false;
   const provided = request.headers.get("x-cron-secret")?.trim();
   return Boolean(provided && provided === expected);
@@ -84,6 +89,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
+    if (isHeavyApi(pathname) && process.env.RPBI_PROCESS_ROLE !== "worker") {
+      return NextResponse.json(
+        { error: "Синхронизация выполняется фоновым процессом" },
+        { status: 503, headers: { "retry-after": "30" } }
+      );
+    }
+
     if (isCronApi(pathname) && hasValidCronSecret(request)) {
       return NextResponse.next();
     }
@@ -100,6 +112,10 @@ export async function middleware(request: NextRequest) {
       } else if (session.accessLevel !== "admin") {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
+    }
+
+    if (isHeavyApi(pathname) && session.accessLevel !== "admin" && session.accessLevel !== "rop") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.next();

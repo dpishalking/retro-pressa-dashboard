@@ -6,7 +6,7 @@ import { readSessionCookie } from "@/lib/auth/session";
  * Returns null when authorized; otherwise a ready JSON 401/403 response.
  */
 export function rejectUnlessCronOrStaff(request: Request): NextResponse | null {
-  const cronSecret = process.env.CRON_SYNC_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  const cronSecret = process.env.CRON_SYNC_SECRET?.trim();
   const provided = request.headers.get("x-cron-secret")?.trim();
   const isCron = Boolean(cronSecret && provided && provided === cronSecret);
   if (isCron) return null;
