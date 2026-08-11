@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LineChart, LogOut, Megaphone, Newspaper, Settings, Target, Trophy, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LineChart, LogOut, Megaphone, MessageSquareText, Newspaper, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH, PARTNERS_PATH } from "@/lib/auth/routes";
@@ -28,13 +28,13 @@ type OfficeSection = {
 const officeSections: OfficeSection[] = [
   {
     id: "analytics",
-    title: "Аналитика и решения",
-    subtitle: "Картина бизнеса, каналы привлечения и сценарии для собственника.",
+    title: "Аналитика",
+    subtitle: "Управленческая картина бизнеса, прогнозы и решения на стыке всех контуров.",
     cards: [
       {
         href: "/os",
         title: "Analytics OS",
-        description: "Центр управления: план, факт, выручка, воронка, менеджеры, страны, продукты.",
+        description: "Центр управления: пять контуров BI, KPI, сигналы и детализация по бизнес-направлениям.",
         icon: BarChart3,
         status: "active",
         accent: "text-blue-600 bg-blue-50"
@@ -54,21 +54,13 @@ const officeSections: OfficeSection[] = [
         icon: LineChart,
         status: "active",
         accent: "text-indigo-600 bg-indigo-50"
-      },
-      {
-        href: "/digital-twin",
-        title: "Цифровой двойник",
-        description: "Decision Engine: управление драйверами бизнеса, сценарии, ограничения и AI-рекомендации для собственника.",
-        icon: Brain,
-        status: "active",
-        accent: "text-violet-600 bg-violet-50"
       }
     ]
   },
   {
     id: "sales",
-    title: "Продажи и команда",
-    subtitle: "Ежедневный контур РОП, фокус месяца и развитие менеджеров.",
+    title: "Продажи",
+    subtitle: "Воронка, команда, диалоги, качество работы и развитие менеджеров.",
     cards: [
       {
         href: "/rop",
@@ -77,6 +69,14 @@ const officeSections: OfficeSection[] = [
         icon: Target,
         status: "active",
         accent: "text-amber-600 bg-amber-50"
+      },
+      {
+        href: "/rop/conversations",
+        title: "Диалоги",
+        description: "Переписки с клиентами: качество коммуникации, возражения и точки роста менеджеров.",
+        icon: MessageSquareText,
+        status: "active",
+        accent: "text-violet-600 bg-violet-50"
       },
       {
         href: "/motivation",
@@ -97,9 +97,32 @@ const officeSections: OfficeSection[] = [
     ]
   },
   {
+    id: "marketing",
+    title: "Маркетинг и трафик",
+    subtitle: "Привлечение, рекламные каналы, UTM-разметка и окупаемость.",
+    cards: [
+      {
+        href: "/ad-analytics",
+        title: "Аналитика рекламы",
+        description: "GA4, каналы привлечения, сверка веб-трафика с CRM-лидами и ответы на вопросы через Gemini.",
+        icon: Megaphone,
+        status: "active",
+        accent: "text-emerald-600 bg-emerald-50"
+      },
+      {
+        href: "/utm",
+        title: "UTM-генератор",
+        description: "Единая разметка ссылок для рекламных кампаний и корректная атрибуция трафика.",
+        icon: Target,
+        status: "active",
+        accent: "text-blue-600 bg-blue-50"
+      }
+    ]
+  },
+  {
     id: "product",
-    title: "Продукт и каналы",
-    subtitle: "Клиентские выпуски и партнёрский контур.",
+    title: "Продукт",
+    subtitle: "Клиентские выпуски, ассортимент и партнёрский контур.",
     cards: [
       {
         href: "/products",
@@ -116,6 +139,37 @@ const officeSections: OfficeSection[] = [
         icon: Handshake,
         status: "active",
         accent: "text-emerald-700 bg-emerald-50"
+      }
+    ]
+  },
+  {
+    id: "finance",
+    title: "Финансы",
+    subtitle: "План, факт, экономика заказов и сценарии для управления результатом.",
+    cards: [
+      {
+        href: "/os/plan",
+        title: "План / факт / прогноз",
+        description: "Выручка, выполнение месячного плана и прогноз до конца периода.",
+        icon: WalletCards,
+        status: "active",
+        accent: "text-emerald-600 bg-emerald-50"
+      },
+      {
+        href: "/os/unit-economics",
+        title: "Юнит-экономика",
+        description: "Маржа заказа, средний чек, CPL, ROAS и ключевые драйверы прибыльности.",
+        icon: BarChart3,
+        status: "active",
+        accent: "text-blue-600 bg-blue-50"
+      },
+      {
+        href: "/digital-twin",
+        title: "Цифровой двойник",
+        description: "Сценарии, ограничения и AI-рекомендации для управления финансовым результатом.",
+        icon: Brain,
+        status: "active",
+        accent: "text-violet-600 bg-violet-50"
       }
     ]
   }

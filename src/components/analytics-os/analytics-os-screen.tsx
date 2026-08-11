@@ -7,8 +7,8 @@ import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
 import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/format-metric";
 import {
+  businessContourGroups,
   contourStatusLabel,
-  hubTileContours,
   type ContourDef
 } from "@/lib/analytics-os/contours";
 import { eur, number, pct } from "@/lib/format";
@@ -172,18 +172,30 @@ function tilePreview(contour: ContourDef, snapshot: CeoControlCenterSnapshot): R
 }
 
 function ContourTiles({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
-  const tiles = hubTileContours();
+  const groups = businessContourGroups();
   return (
     <section className="aos-tiles-band" aria-label="Модули аналитики">
       <div className="aos-tiles-band__head">
         <div>
-          <h2>С чем работать</h2>
-          <p>Выручка, юнит, продукты, когорты и остальные контуры — выберите блок.</p>
+          <h2>Пять контуров BI</h2>
+          <p>Выберите бизнес-направление, затем нужный модуль.</p>
         </div>
       </div>
-      <div className="aos-tiles-grid">
-        {tiles.map((contour) => (
-          <ModuleCard key={contour.id} contour={contour} preview={tilePreview(contour, snapshot)} />
+      <div className="space-y-8">
+        {groups.map((group) => (
+          <section key={group.id} aria-labelledby={`business-contour-${group.id}`}>
+            <div className="mb-4">
+              <h3 id={`business-contour-${group.id}`} className="text-xl font-black text-slate-950">
+                {group.title}
+              </h3>
+              <p className="aos-muted">{group.subtitle}</p>
+            </div>
+            <div className="aos-tiles-grid">
+              {group.contours.map((contour) => (
+                <ModuleCard key={contour.id} contour={contour} preview={tilePreview(contour, snapshot)} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </section>
