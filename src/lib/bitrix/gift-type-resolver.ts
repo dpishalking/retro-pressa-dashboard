@@ -134,7 +134,21 @@ const NEWSPAPER_TITLE_MARKERS = [
   "moscow news",
   "светлы шлях",
   "горняк",
-  "полесск"
+  "полесск",
+  "вечерн",
+  "минск",
+  "мінск",
+  "neatkar",
+  "telegraaf",
+  "витебск",
+  "віцебск",
+  "караганд",
+  "индустриальн",
+  "рабочы",
+  "рабочий",
+  "cīņa",
+  "cinia",
+  "padomju"
 ];
 
 export function inferProductFromDealTitle(title: string | null | undefined): string | null {
@@ -187,32 +201,46 @@ export function isMissingProductLabel(name: string | null | undefined): boolean 
   return !n || n === "без продукта" || n === "не заполнен в crm" || n === "crm_missing_product" || n === "no_product" || n === "unknown";
 }
 
+function firstRealProductLine(products?: Array<{ productName?: string; productId?: string }>) {
+  return products?.find(
+    (item) =>
+      (!!item.productName && !isMissingProductLabel(item.productName)) ||
+      (!!item.productId && !isMissingProductLabel(item.productId))
+  );
+}
+
 /** Resolve display product for a deal: catalog rows → gift SPA → title inference. */
 export function resolveDealProductName(deal: {
   products?: Array<{ productName?: string; productId?: string }>;
   giftTypes?: string[];
   title?: string | null;
 }): string | null {
-  const line = deal.products?.find((item) => item.productName || item.productId);
-  if (line?.productName) return line.productName;
-  if (line?.productId) return line.productId;
-  const gift = deal.giftTypes?.find((item) => item.trim());
+  const line = firstRealProductLine(deal.products);
+  if (line?.productName && !isMissingProductLabel(line.productName)) return line.productName;
+  if (line?.productId && !isMissingProductLabel(line.productId)) return line.productId;
+  const gift = deal.giftTypes?.find((item) => item.trim() && !isMissingProductLabel(item));
   if (gift) return gift;
   return inferProductFromDealTitle(deal.title);
 }
 
-/** Fill empty productrows from gift SPA / title so analytics never invents a fake «Без продукта» bucket. */
+/** Fill empty / placeholder productrows from gift SPA / title so «Без продукта» never sticks. */
 export function hydrateDealProducts<T extends {
   products: BitrixSnapshotProductRow[];
   giftTypes?: string[];
   title?: string | null;
 }>(deal: T): T {
-  if (deal.products?.some((item) => item.productName || item.productId)) return deal;
-  const name = resolveDealProductName(deal);
-  if (!name) return deal;
+  if (firstRealProductLine(deal.products)) return deal;
+  const name = resolveDealProductName({
+    ...deal,
+    // Ignore placeholder rows when resolving — force gift/title path.
+    products: []
+  });
+  if (!name || isMissingProductLabel(name)) return { ...deal, products: [] };
   return {
     ...deal,
-    giftTypes: deal.giftTypes?.length ? deal.giftTypes : [name],
+    giftTypes: deal.giftTypes?.some((item) => item.trim() && !isMissingProductLabel(item))
+      ? deal.giftTypes
+      : [name],
     products: productRowsFromGiftTypes([name])
   };
 }

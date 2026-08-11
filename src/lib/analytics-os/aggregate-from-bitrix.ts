@@ -37,7 +37,11 @@ function leadMatchesFilters(lead: BitrixSnapshotLead, filters: AnalyticsFilters)
 
 function primaryProduct(deal: BitrixSnapshotDeal) {
   const hydrated = hydrateDealProducts(deal);
-  const product = hydrated.products.find((item) => item.productName || item.productId);
+  const product = hydrated.products.find(
+    (item) =>
+      (item.productName && !isMissingProductLabel(item.productName)) ||
+      (item.productId && !isMissingProductLabel(item.productId))
+  );
   const inferred = resolveDealProductName(hydrated);
   const rawName = product?.productName || product?.productId || inferred || "Не заполнен в CRM";
   const name = isMissingProductLabel(rawName) ? "Не заполнен в CRM" : rawName;
@@ -45,7 +49,8 @@ function primaryProduct(deal: BitrixSnapshotDeal) {
   return {
     id,
     name,
-    rows: hydrated.products.length
+    rows: hydrated.products.length,
+    missing: isMissingProductLabel(name)
   };
 }
 
@@ -132,10 +137,12 @@ export function aggregateRevenueTree(
     byCountry.set(country, countryAgg);
 
     const product = primaryProduct(deal);
-    const productAgg = byProduct.get(product.id) || { name: product.name, revenue: 0, orders: 0 };
-    productAgg.revenue += amount;
-    productAgg.orders += 1;
-    byProduct.set(product.id, productAgg);
+    if (!product.missing) {
+      const productAgg = byProduct.get(product.id) || { name: product.name, revenue: 0, orders: 0 };
+      productAgg.revenue += amount;
+      productAgg.orders += 1;
+      byProduct.set(product.id, productAgg);
+    }
 
     const managerAgg = byManager.get(deal.assignedById) || {
       name: deal.managerName || deal.assignedById || "Без менеджера",
@@ -281,16 +288,26 @@ export function aggregateProducts(
   marginByProduct?: Map<string, { cogs: number; revenue: number; orders: number; mapped: boolean }>
 ): {
   rows: AnalyticsProductRow[];
+  missingOrders: number;
+  missingRevenue: number;
   multiProductOrdersPct: number | null;
 } {
   const byProduct = new Map<string, { name: string; orders: number; revenue: number; rowsSum: number }>();
   let multi = 0;
+  let missingOrders = 0;
+  let missingRevenue = 0;
   for (const deal of paidDeals) {
     if (deal.products.length > 1) multi += 1;
     const product = primaryProduct(deal);
+    const amount = Number(deal.opportunity) || 0;
+    if (product.missing) {
+      missingOrders += 1;
+      missingRevenue += amount;
+      continue;
+    }
     const agg = byProduct.get(product.id) || { name: product.name, orders: 0, revenue: 0, rowsSum: 0 };
     agg.orders += 1;
-    agg.revenue += Number(deal.opportunity) || 0;
+    agg.revenue += amount;
     agg.rowsSum += Math.max(1, deal.products.length);
     byProduct.set(product.id, agg);
   }
@@ -317,6 +334,8 @@ export function aggregateProducts(
 
   return {
     rows,
+    missingOrders,
+    missingRevenue,
     multiProductOrdersPct: paidDeals.length ? multi / paidDeals.length : null
   };
 }

@@ -47,4 +47,15 @@ const hydrated = hydrateDealProducts({
 assert.equal(hydrated.products[0]?.productName, "Поздравительная газета");
 assert.deepEqual(hydrated.giftTypes, ["Поздравительная газета"]);
 
+const overwritten = hydrateDealProducts({
+  id: "1",
+  title: "8319 реп Правда 05.08.1973",
+  products: [{ productId: "", productName: "Без продукта", quantity: 1, price: 0 }],
+  giftTypes: ["Без продукта"]
+});
+assert.equal(overwritten.products[0]?.productName, "Репродукция");
+
+assert.equal(inferProductFromDealTitle("89762 / Ирина самовывоз Віцебскі рабочы - 13.09.1971"), "Оригинал");
+assert.equal(inferProductFromDealTitle("88022 - Эльвира 11.12.1990 -Вечерний Минск"), "Оригинал");
+
 console.log("gift-type-resolver.test.ts: ok");

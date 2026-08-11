@@ -42,7 +42,7 @@ import {
   loadProductHubMarginCatalog
 } from "@/lib/product-hub/sku-margin-catalog";
 import { buildUnitEconomicsUnits } from "@/lib/analytics-os/unit-economics-units";
-import { hydrateDealProducts } from "@/lib/bitrix/gift-type-resolver";
+import { hydrateDealProducts, isMissingProductLabel } from "@/lib/bitrix/gift-type-resolver";
 import type {
   AnalyticsPlanIndicator,
   AnalyticsProductMargin,
@@ -801,12 +801,16 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     revenueTree: {
       total: revenueMetric,
       countries: tree.countries.slice(0, 8),
-      products: tree.products.slice(0, 8),
+      products: tree.products.filter((row) => !isMissingProductLabel(row.name)).slice(0, 8),
       managers: tree.managers.slice(0, 8)
     },
     funnel,
     managers,
-    products: products.rows.slice(0, 20),
+    products: products.rows.filter((row) => !isMissingProductLabel(row.productName)).slice(0, 20),
+    crmMissingProducts: {
+      orders: products.missingOrders,
+      revenue: products.missingRevenue
+    },
     countries: countries.slice(0, 20),
     customers: {
       customers: metricValue({
@@ -1050,6 +1054,7 @@ function emptySnapshot(input: {
     ],
     managers: [],
     products: [],
+    crmMissingProducts: { orders: 0, revenue: 0 },
     countries: [],
     customers: {
       customers: no("customers", "Bitrix", "count"),

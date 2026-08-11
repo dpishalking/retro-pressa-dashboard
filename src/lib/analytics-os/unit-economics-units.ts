@@ -56,12 +56,16 @@ function addDeal(bucket: Bucket, deal: BitrixSnapshotDeal, catalog: ProductHubMa
 
 function primaryProduct(deal: BitrixSnapshotDeal): { id: string; name: string } {
   const hydrated = hydrateDealProducts(deal);
-  const line = hydrated.products.find((item) => item.productId || item.productName) || hydrated.products[0];
+  const line = hydrated.products.find(
+    (item) =>
+      (item.productName && !isMissingProductLabel(item.productName)) ||
+      (item.productId && !isMissingProductLabel(item.productId))
+  );
   const inferred = resolveDealProductName(hydrated);
   const name = line?.productName || line?.productId || inferred || "Не заполнен в CRM";
   if (isMissingProductLabel(name)) return { id: "crm_missing_product", name: "Не заполнен в CRM" };
   return {
-    id: line?.productId || name,
+    id: (line?.productId && !isMissingProductLabel(line.productId) ? line.productId : name) || name,
     name
   };
 }

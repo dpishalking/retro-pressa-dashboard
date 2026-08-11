@@ -295,6 +295,8 @@ export type CeoControlCenterSnapshot = {
   funnel: AnalyticsFunnelStage[];
   managers: AnalyticsManagerRow[];
   products: AnalyticsProductRow[];
+  /** Paid deals with no catalog/SPA/title product — not shown in products table. */
+  crmMissingProducts: { orders: number; revenue: number };
   countries: AnalyticsCountryRow[];
   customers: AnalyticsCustomers;
   pipeline: AnalyticsPipeline;

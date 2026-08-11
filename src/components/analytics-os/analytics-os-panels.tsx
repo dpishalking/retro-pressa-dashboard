@@ -280,13 +280,10 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
 
 export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const catalogProducts = snapshot.products.filter(
-    (row) => !/^(без продукта|не заполнен в crm)$/i.test(row.productName.trim())
+    (row) => !/^(без продукта|не заполнен в crm|crm_missing_product|no_product|unknown)$/i.test(row.productName.trim())
   );
-  const missingProduct = snapshot.products.filter((row) =>
-    /^(без продукта|не заполнен в crm)$/i.test(row.productName.trim())
-  );
-  const missingOrders = missingProduct.reduce((sum, row) => sum + row.orders, 0);
-  const missingRevenue = missingProduct.reduce((sum, row) => sum + row.revenue, 0);
+  const missingOrders = snapshot.crmMissingProducts?.orders ?? 0;
+  const missingRevenue = snapshot.crmMissingProducts?.revenue ?? 0;
 
   return (
     <>
