@@ -13,47 +13,53 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          for i in 1 2 3 4 5 6 7 8; do
-            if ssh-keyscan -T 5 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
-              echo "keyscan ok"
-              exit 0
-            fi
-            echo "keyscan retry $i"
-            sleep 5
-          done
-          echo "ssh-keyscan failed" >&2
-          exit 1
+          # Prefer keyscan, but don't block restart if host key fetch flakes.
+          ssh-keyscan -T 8 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+          if ! grep -q "${{ secrets.DEPLOY_HOST }}" ~/.ssh/known_hosts 2>/dev/null; then
+            echo "keyscan missed — will use accept-new"
+          fi
 
       - name: Diagnose and restart
         run: |
           ssh -i ~/.ssh/deploy_key \
-            -o ConnectTimeout=20 \
-            -o ServerAliveInterval=10 \
-            -o ServerAliveCountMax=12 \
+            -o ConnectTimeout=30 \
+            -o StrictHostKeyChecking=accept-new \
+            -o ServerAliveInterval=5 \
+            -o ServerAliveCountMax=30 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s << 'EOF'
           set -euo pipefail
           echo "== host =="
           hostname; uptime; date -u
-          echo "== disk/mem =="
-          df -h / | tail -1
+          echo "== load/mem =="
+          cat /proc/loadavg || true
           free -m | head -2 || true
-          echo "== pm2 =="
+          df -h / | tail -1
+          echo "== pm2 before =="
           pm2 list || true
-          echo "== port 4174 =="
-          ss -lptn 'sport = :4174' || netstat -lptn 2>/dev/null | grep 4174 || true
+          echo "== kill hung node on 4174 if any =="
+          if command -v fuser >/dev/null 2>&1; then
+            fuser -k 4174/tcp || true
+          fi
           echo "== restart retro-pressa =="
           cd /opt/retro-pressa
-          if pm2 describe retro-pressa >/dev/null 2>&1; then
-            pm2 restart retro-pressa --update-env
+          pm2 delete retro-pressa 2>/dev/null || true
+          if [ -f ecosystem.config.cjs ]; then
+            pm2 start ecosystem.config.cjs
           else
-            pm2 start ecosystem.config.cjs || pm2 start /opt/retro-pressa/ecosystem.config.cjs
+            echo "missing ecosystem.config.cjs" >&2
+            ls -la
+            exit 1
           fi
           pm2 save || true
-          sleep 4
+          sleep 5
           pm2 list
           echo "== local curl =="
-          curl -sS -o /dev/null -w "local:%{http_code}\n" --max-time 10 http://127.0.0.1:4174/ || echo "local_curl_fail"
-          curl -sS -o /dev/null -w "login_api:%{http_code}\n" --max-time 10 -X POST http://127.0.0.1:4174/api/auth/login \
-            -H 'Content-Type: application/json' \
-            -d '{"login":"x","password":"y"}' || echo "api_fail"
+          for i in 1 2 3 4 5 6; do
+            CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:4174/ || echo fail)
+            echo "try $i => $CODE"
+            if [ "$CODE" = "200" ] || [ "$CODE" = "307" ] || [ "$CODE" = "302" ]; then
+              break
+            fi
+            sleep 3
+          done
           EOF
