@@ -298,18 +298,18 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const uniqueCr =
     uniqueLeadStats.unique > 0 ? paidDeals.length / uniqueLeadStats.unique : null;
 
-  // KPI «Лиды» = уникальные люди (телефон/email/контакт). Карточки Bitrix — в подписи.
-  // Иначе дубли WhatsApp/Telegram раздувают лиды и занижают конверсию vs таблица трафика.
+  // KPI «Лиды» = все карточки Bitrix за период (источник правды).
+  // Уникальные и дубли — в подписи; конверсия ниже считается от уникальных.
   const leadsMetric = metricValue({
     metricId: "leads",
-    value: uniqueLeadStats.unique,
-    status: "calculated",
+    value: leads.length,
+    status: "live",
     asOf,
-    source: "Bitrix unique leads (phone/email/contact · history May→prior)",
+    source: "Bitrix leads snapshot (DATE_CREATE in period)",
     unit: "count",
-    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
+    confidence: "high",
     plan: planLeads,
-    decisionHint: `Карточек в Bitrix: ${leads.length}`
+    decisionHint: `Уникальные ≈ ${uniqueLeadStats.unique} · дубли ≈ ${uniqueLeadStats.duplicateApprox}`
   });
 
   const ordersMetric = metricValue({
