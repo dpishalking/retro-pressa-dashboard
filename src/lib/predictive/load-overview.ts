@@ -2,11 +2,11 @@ import { PREDICTIVE_UI } from "@/config/predictive-ui";
 import { periodToIsoMonth } from "@/lib/financial-report/period";
 import { buildCanonicalFinancialReport } from "@/lib/financial-report/build";
 import { readSheetValues } from "@/lib/google/sheets-client";
+import { loadMarketingPredictiveModel } from "@/lib/marketing-planning/load-marketing-predictive";
 import {
-  loadMarketingPredictiveModel,
   normalizeMarketingPredictiveScope,
   type MarketingPredictiveScope
-} from "@/lib/marketing-planning/load-marketing-predictive";
+} from "@/lib/marketing-planning/scope";
 import {
   DEPARTMENT_SCOPE_ID,
   PREDICTION_EXPORT_COLUMNS,

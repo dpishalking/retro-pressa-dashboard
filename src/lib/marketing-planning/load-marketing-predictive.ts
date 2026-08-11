@@ -19,8 +19,12 @@ import {
   datesInMonth,
   resolveForecastAsOf
 } from "@/lib/sales-os/prediction/periods";
+import {
+  type MarketingPredictiveScope
+} from "@/lib/marketing-planning/scope";
 
-export type MarketingPredictiveScope = "general" | "organic" | "paid";
+export type { MarketingPredictiveScope } from "@/lib/marketing-planning/scope";
+export { normalizeMarketingPredictiveScope } from "@/lib/marketing-planning/scope";
 
 const SCOPE_META: Record<
   MarketingPredictiveScope,
@@ -45,11 +49,6 @@ const SCOPE_META: Record<
     label: "Платный трафик"
   }
 };
-
-export function normalizeMarketingPredictiveScope(raw: string | null | undefined): MarketingPredictiveScope {
-  if (raw === "organic" || raw === "paid" || raw === "general") return raw;
-  return "general";
-}
 
 export type MarketingPredictiveMetric = {
   id: string;

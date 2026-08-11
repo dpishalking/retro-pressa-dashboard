@@ -9,7 +9,7 @@ import { eur, number, pct } from "@/lib/format";
 import {
   normalizeMarketingPredictiveScope,
   type MarketingPredictiveScope
-} from "@/lib/marketing-planning/load-marketing-predictive";
+} from "@/lib/marketing-planning/scope";
 import type { PredictiveDomain, PredictiveDomainBlock, PredictiveOverview } from "@/lib/predictive/types";
 import { PERIOD_KEYS, type PeriodKey } from "@/types/metrics";
 import { currentPeriodKey } from "@/lib/conversation-periods";
