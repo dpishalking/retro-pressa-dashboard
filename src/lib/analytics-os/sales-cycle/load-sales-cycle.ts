@@ -89,6 +89,8 @@ export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promi
       id: lead.id,
       dateCreate: lead.dateCreate,
       sourceId: lead.sourceId,
+      utmSource: lead.utmSource,
+      utmMedium: lead.utmMedium,
       country: lead.country,
       assignedById: lead.assignedById,
       contactId: lead.contactId ?? null,

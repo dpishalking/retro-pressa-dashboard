@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SalesCyclePayload } from "@/lib/analytics-os/sales-cycle";
+import type { BreakdownRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
 import { eur, number, pct } from "@/lib/format";
 
-type CohortTab = "month" | "week" | "country";
+type CohortTab =
+  | "month"
+  | "week"
+  | "country"
+  | "manager"
+  | "channel"
+  | "product"
+  | "gift"
+  | "customer"
+  | "traffic";
 
 const TABS: Array<{ id: CohortTab; label: string; hint: string }> = [
   {
@@ -22,21 +31,63 @@ const TABS: Array<{ id: CohortTab; label: string; hint: string }> = [
     id: "country",
     label: "Страны",
     hint: "По каждой стране: сколько лидов завели и сколько из них дошли до оплаты."
+  },
+  {
+    id: "manager",
+    label: "Менеджер",
+    hint: "Чьи лиды быстрее и чаще доходят до оплаты — вход в когорту по ответственному на лиде."
+  },
+  {
+    id: "channel",
+    label: "Источник / канал",
+    hint: "Форма, WhatsApp, реклама, органика и другие каналы входа лида."
+  },
+  {
+    id: "product",
+    label: "Продукт первой оплаты",
+    hint: "Что реально купили при первой оплате из когорты (среди оплативших)."
+  },
+  {
+    id: "gift",
+    label: "Тип подарка",
+    hint: "Оригинал, репродукция, поздравительная и другие типы по первой оплате."
+  },
+  {
+    id: "customer",
+    label: "Новый / повторный",
+    hint: "Новый клиент — первая оплата контакта. Повторный — уже был платёж раньше."
+  },
+  {
+    id: "traffic",
+    label: "Платный / органика",
+    hint: "Платный vs органический лид по UTM и источнику Bitrix — для оценки окупаемости когорты."
   }
-];
-
-const NEXT_IDEAS = [
-  "Менеджер — чьи лиды быстрее и чаще доходят до оплаты",
-  "Источник / канал — форма, WhatsApp, реклама, органика",
-  "Продукт первой оплаты — что реально покупают из когорты",
-  "Тип подарка — оригинал, репродукция, поздравительная",
-  "Новый vs повторный клиент — повторные продажи по когорте входа",
-  "Платный vs органический лид — окупаемость рекламы по когорте"
 ];
 
 function cr(paid: number, leads: number): number | null {
   if (!leads) return null;
   return paid / leads;
+}
+
+function breakdownForTab(data: SalesCyclePayload, tab: CohortTab): BreakdownRow[] | null {
+  switch (tab) {
+    case "country":
+      return data.breakdowns.countries;
+    case "manager":
+      return data.breakdowns.managers;
+    case "channel":
+      return data.breakdowns.channels;
+    case "product":
+      return data.breakdowns.products;
+    case "gift":
+      return data.breakdowns.gifts;
+    case "customer":
+      return data.breakdowns.customers;
+    case "traffic":
+      return data.breakdowns.traffic;
+    default:
+      return null;
+  }
 }
 
 export function CohortsPanel({
@@ -94,6 +145,8 @@ export function CohortsPanel({
     );
   }
 
+  const breakdownRows = data ? breakdownForTab(data, tab) : null;
+
   return (
     <div className="aos-cohorts">
       <section className="aos-card">
@@ -126,14 +179,18 @@ export function CohortsPanel({
 
         {!data || state === "loading" ? (
           <p className="aos-muted">Загрузка когорт…</p>
-        ) : tab === "country" ? (
-          <CountryTable rows={data.breakdowns.countries} />
+        ) : breakdownRows ? (
+          <BreakdownTable
+            rows={breakdownRows}
+            nameHeader={tabMeta.label}
+            leadHeader={tab === "product" || tab === "gift" ? "Первые оплаты" : "Лиды"}
+          />
         ) : (
-          <TimeCohortTable rows={data.cohorts} grain={tab} />
+          <TimeCohortTable rows={data.cohorts} grain={tab === "week" ? "week" : "month"} />
         )}
       </section>
 
-      {data && tab !== "country" ? (
+      {data && (tab === "month" || tab === "week") ? (
         <section className="aos-card">
           <div className="aos-section-head">
             <div>
@@ -164,20 +221,6 @@ export function CohortsPanel({
           </div>
         </section>
       ) : null}
-
-      <section className="aos-card">
-        <div className="aos-section-head">
-          <div>
-            <h2>Ещё варианты когорт</h2>
-            <p>Можно добавить следующим шагом — логика та же: вход в когорту + продажи по ней</p>
-          </div>
-        </div>
-        <ul className="aos-cohort-ideas">
-          {NEXT_IDEAS.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 }
@@ -228,33 +271,53 @@ function TimeCohortTable({
   );
 }
 
-function CountryTable({ rows }: { rows: SalesCyclePayload["breakdowns"]["countries"] }) {
+function BreakdownTable({
+  rows,
+  nameHeader,
+  leadHeader
+}: {
+  rows: BreakdownRow[];
+  nameHeader: string;
+  leadHeader: string;
+}) {
   return (
     <div className="table-scroll">
       <table className="aos-table">
         <thead>
           <tr>
-            <th>Страна</th>
-            <th>Лиды</th>
+            <th>{nameHeader}</th>
+            <th>{leadHeader}</th>
             <th>Оплаты</th>
             <th>Конверсия</th>
             <th>Выручка</th>
             <th>€ / лид</th>
             <th>Медиана до оплаты</th>
+            <th>CR 7д</th>
+            <th>CR 30д</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.key}>
-              <td>{row.label === "—" ? "Не указана" : row.label}</td>
-              <td>{number(row.leads)}</td>
-              <td>{number(row.paid)}</td>
-              <td>{cr(row.paid, row.leads) == null ? "—" : pct(cr(row.paid, row.leads)!)}</td>
-              <td>{eur(row.revenue)}</td>
-              <td>{row.revenuePerLead == null ? "—" : eur(row.revenuePerLead)}</td>
-              <td>{row.medianLeadToWonDays == null ? "—" : `${row.medianLeadToWonDays} дн.`}</td>
+          {rows.length ? (
+            rows.map((row) => (
+              <tr key={row.key}>
+                <td>{row.label === "—" ? "Не указан" : row.label}</td>
+                <td>{number(row.leads)}</td>
+                <td>{number(row.paid)}</td>
+                <td>{cr(row.paid, row.leads) == null ? "—" : pct(cr(row.paid, row.leads)!)}</td>
+                <td>{eur(row.revenue)}</td>
+                <td>{row.revenuePerLead == null ? "—" : eur(row.revenuePerLead)}</td>
+                <td>{row.medianLeadToWonDays == null ? "—" : `${row.medianLeadToWonDays} дн.`}</td>
+                <td>{row.d7Cr == null ? "—" : `${row.d7Cr}%`}</td>
+                <td>{row.d30Cr == null ? "—" : `${row.d30Cr}%`}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={9} className="aos-muted">
+                Нет строк для этой когорты
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

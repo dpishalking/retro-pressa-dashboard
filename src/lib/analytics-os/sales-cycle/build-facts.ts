@@ -1,4 +1,5 @@
 import type { BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
+import { classifyAcquisitionChannel, resolveGiftTypeLabel } from "./cohort-dims";
 import { LEAD_MATCH_LOOKBACK_DAYS } from "./config";
 import { daysFromHours, hoursBetween } from "./math";
 import type { JoinConfidence, JoinMethod, SalesCycleFact } from "./types";
@@ -22,6 +23,7 @@ export type CyclePaidDeal = {
   id: string;
   leadId: string | null;
   contactId: string | null;
+  title: string | null;
   dateCreate: string;
   closeDate: string;
   opportunity: number;
@@ -33,6 +35,7 @@ export type CyclePaidDeal = {
   utmCampaign: string | null;
   productId: string | null;
   productName: string | null;
+  giftTypes: string[];
 };
 
 function parseTs(iso: string): number {
@@ -64,6 +67,7 @@ export function paidDealFromSnapshot(deal: BitrixSnapshotDeal): CyclePaidDeal | 
     id: String(deal.id),
     leadId: deal.leadId ? String(deal.leadId) : null,
     contactId: deal.contactId ? String(deal.contactId) : null,
+    title: deal.title ?? null,
     dateCreate: deal.dateCreate,
     closeDate: deal.closeDate,
     opportunity: Number(deal.opportunity) || 0,
@@ -74,7 +78,8 @@ export function paidDealFromSnapshot(deal: BitrixSnapshotDeal): CyclePaidDeal | 
     sourceId: deal.sourceId,
     utmCampaign: deal.utmCampaign,
     productId: primary?.productId || null,
-    productName: primary?.productName || null
+    productName: primary?.productName || null,
+    giftTypes: deal.giftTypes || []
   };
 }
 
@@ -132,6 +137,17 @@ export function buildSalesCycleFact(deal: CyclePaidDeal, match: ReturnType<typeo
   // Invalid: payment before lead
   const safeLeadHours = leadHours != null && leadHours >= 0 ? leadHours : null;
 
+  const channel = classifyAcquisitionChannel({
+    sourceId: lead?.sourceId ?? deal.sourceId,
+    utmSource: lead?.utmSource ?? null,
+    utmMedium: lead?.utmMedium ?? null
+  });
+  const giftType = resolveGiftTypeLabel({
+    giftTypes: deal.giftTypes,
+    productName: deal.productName,
+    title: deal.title
+  });
+
   return {
     leadId: lead?.id ?? deal.leadId,
     dealId: deal.id,
@@ -150,10 +166,15 @@ export function buildSalesCycleFact(deal: CyclePaidDeal, match: ReturnType<typeo
     country: deal.country || lead?.country || null,
     productId: deal.productId,
     productName: deal.productName,
+    giftType,
     sourceId: lead?.sourceId ?? deal.sourceId,
     utmSource: lead?.utmSource ?? null,
     utmMedium: lead?.utmMedium ?? null,
     utmCampaign: lead?.utmCampaign ?? deal.utmCampaign,
+    channelKey: channel.key,
+    channelLabel: channel.label,
+    trafficKind: channel.trafficKind,
+    customerKind: "unknown",
     joinMethod: match.joinMethod,
     joinConfidence: match.joinConfidence
   };
@@ -190,6 +211,25 @@ export function indexLeadsForJoin(
   return { leadsById, leadsByContact };
 }
 
+/** First paidAt per contact — used to mark new vs returning at lead entry. */
+export function annotateCustomerKinds(facts: SalesCycleFact[]): SalesCycleFact[] {
+  const firstPaidByContact = new Map<string, string>();
+  for (const fact of facts) {
+    if (!fact.customerKey || !fact.paidAt) continue;
+    const prev = firstPaidByContact.get(fact.customerKey);
+    if (!prev || fact.paidAt < prev) firstPaidByContact.set(fact.customerKey, fact.paidAt);
+  }
+
+  return facts.map((fact) => {
+    if (!fact.customerKey) return { ...fact, customerKind: "unknown" as const };
+    const firstPaid = firstPaidByContact.get(fact.customerKey);
+    if (!firstPaid) return { ...fact, customerKind: "unknown" as const };
+    // Returning = contact already had an earlier payment than this one.
+    const customerKind = firstPaid < fact.paidAt ? ("returning" as const) : ("new" as const);
+    return { ...fact, customerKind };
+  });
+}
+
 export function buildFactsFromCorpus(input: {
   leads: CycleLead[];
   paidDeals: CyclePaidDeal[];
@@ -201,5 +241,5 @@ export function buildFactsFromCorpus(input: {
     const match = resolveLeadForDeal(deal, leadsById, leadsByContact, input.lookbackDays);
     facts.push(buildSalesCycleFact(deal, match));
   }
-  return facts;
+  return annotateCustomerKinds(facts);
 }

@@ -40,6 +40,7 @@ function deal(partial: Partial<CyclePaidDeal> & Pick<CyclePaidDeal, "id" | "date
   return {
     leadId: null,
     contactId: null,
+    title: null,
     opportunity: 100,
     currencyId: "EUR",
     assignedById: "1",
@@ -49,6 +50,7 @@ function deal(partial: Partial<CyclePaidDeal> & Pick<CyclePaidDeal, "id" | "date
     utmCampaign: null,
     productId: "P1",
     productName: "Газета",
+    giftTypes: [],
     ...partial
   };
 }

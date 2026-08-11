@@ -2,6 +2,13 @@ import { countUniqueLeads, countUniqueLeadsWithHistory } from "@/lib/analytics-o
 import { daysElapsedInPeriod } from "@/lib/analytics-os/period";
 import type { AnalyticsPeriod } from "@/types/analytics-os";
 import {
+  classifyAcquisitionChannel,
+  customerKindLabel,
+  trafficKindLabel,
+  type CustomerKind,
+  type TrafficKind
+} from "./cohort-dims";
+import {
   FINAL_REVENUE_HOURS,
   MATURITY_CHECKPOINTS,
   MIN_MATURE_COHORTS_FOR_FORECAST,
@@ -39,6 +46,8 @@ export type AggregateInput = {
     id: string;
     dateCreate: string;
     sourceId: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
     country: string | null;
     assignedById: string | null;
     contactId?: string | null;
@@ -52,6 +61,49 @@ export type AggregateInput = {
   availablePeriods: string[];
 };
 
+type EnrichedLead = AggregateInput["cohortLeads"][number] & {
+  channelKey: string;
+  channelLabel: string;
+  trafficKind: TrafficKind;
+  customerKind: CustomerKind;
+};
+
+function enrichLeads(
+  leads: AggregateInput["cohortLeads"],
+  facts: SalesCycleFact[]
+): EnrichedLead[] {
+  const firstPaidByContact = new Map<string, string>();
+  for (const fact of facts) {
+    if (!fact.customerKey || !fact.paidAt) continue;
+    const prev = firstPaidByContact.get(fact.customerKey);
+    if (!prev || fact.paidAt < prev) firstPaidByContact.set(fact.customerKey, fact.paidAt);
+  }
+
+  return leads.map((lead) => {
+    const channel = classifyAcquisitionChannel({
+      sourceId: lead.sourceId,
+      utmSource: lead.utmSource ?? null,
+      utmMedium: lead.utmMedium ?? null
+    });
+    let customerKind: CustomerKind = "unknown";
+    if (lead.contactId) {
+      const firstPaid = firstPaidByContact.get(lead.contactId);
+      if (firstPaid) {
+        customerKind = firstPaid < lead.dateCreate ? "returning" : "new";
+      } else {
+        customerKind = "new";
+      }
+    }
+    return {
+      ...lead,
+      channelKey: channel.key,
+      channelLabel: channel.label,
+      trafficKind: channel.trafficKind,
+      customerKind
+    };
+  });
+}
+
 function applyFilters(facts: SalesCycleFact[], filters: AggregateInput["filters"]): SalesCycleFact[] {
   return facts.filter((fact) => {
     if (filters.managerId && fact.managerId !== filters.managerId) return false;
@@ -62,10 +114,10 @@ function applyFilters(facts: SalesCycleFact[], filters: AggregateInput["filters"
   });
 }
 
-function filterLeads(
-  leads: AggregateInput["cohortLeads"],
+function filterLeads<T extends AggregateInput["cohortLeads"][number]>(
+  leads: T[],
   filters: AggregateInput["filters"]
-): AggregateInput["cohortLeads"] {
+): T[] {
   return leads.filter((lead) => {
     if (filters.managerId && lead.assignedById !== filters.managerId) return false;
     if (filters.country && lead.country !== filters.country) return false;
@@ -257,38 +309,66 @@ function buildCohortRows(
   return rows;
 }
 
+type BreakdownDim =
+  | "manager"
+  | "product"
+  | "country"
+  | "source"
+  | "channel"
+  | "gift"
+  | "customer"
+  | "traffic";
+
 function breakdown(
-  leads: AggregateInput["cohortLeads"],
+  leads: EnrichedLead[],
   facts: SalesCycleFact[],
-  dim: "manager" | "product" | "country" | "source",
+  dim: BreakdownDim,
   asOf: Date
 ): BreakdownRow[] {
   const firstPay = firstPaymentByLead(facts);
   const keys = new Map<string, string>();
+  const dealOnlyDims: BreakdownDim[] = ["product", "gift"];
 
-  const leadKey = (lead: AggregateInput["cohortLeads"][number]) => {
+  const leadKey = (lead: EnrichedLead) => {
     if (dim === "manager") return lead.assignedById || "unknown";
     if (dim === "country") return lead.country || "—";
     if (dim === "source") return lead.sourceId || "—";
+    if (dim === "channel") return lead.channelKey || "unknown";
+    if (dim === "traffic") return lead.trafficKind;
+    if (dim === "customer") return lead.customerKind;
     return "all";
+  };
+  const leadLabel = (lead: EnrichedLead, key: string) => {
+    if (dim === "channel") return lead.channelLabel || key;
+    if (dim === "traffic") return trafficKindLabel(lead.trafficKind);
+    if (dim === "customer") return customerKindLabel(lead.customerKind);
+    return key;
   };
   const factKey = (fact: SalesCycleFact) => {
     if (dim === "manager") return fact.managerId || "unknown";
     if (dim === "product") return fact.productId || fact.productName || "—";
+    if (dim === "gift") return fact.giftType || "—";
     if (dim === "country") return fact.country || "—";
     if (dim === "source") return fact.sourceId || "—";
+    if (dim === "channel") return fact.channelKey || "unknown";
+    if (dim === "traffic") return fact.trafficKind;
+    if (dim === "customer") return fact.customerKind;
     return "—";
   };
   const factLabel = (fact: SalesCycleFact, key: string) => {
     if (dim === "manager") return fact.managerName || key;
     if (dim === "product") return fact.productName || key;
+    if (dim === "gift") return fact.giftType || key;
+    if (dim === "channel") return fact.channelLabel || key;
+    if (dim === "traffic") return trafficKindLabel(fact.trafficKind);
+    if (dim === "customer") return customerKindLabel(fact.customerKind);
     return key;
   };
 
-  if (dim !== "product") {
+  if (!dealOnlyDims.includes(dim)) {
     for (const lead of leads) {
       const key = leadKey(lead);
-      keys.set(key, key);
+      keys.set(key, leadLabel(lead, key));
     }
   }
   for (const fact of facts) {
@@ -298,14 +378,14 @@ function breakdown(
 
   const rows: BreakdownRow[] = [];
   for (const [key, label] of keys) {
-    const dimLeads = dim === "product" ? [] : leads.filter((l) => leadKey(l) === key);
+    const dimLeads = dealOnlyDims.includes(dim) ? [] : leads.filter((l) => leadKey(l) === key);
     const dimFacts = facts.filter((f) => factKey(f) === key);
     const paidFirst = [...firstPay.values()].filter((f) => factKey(f) === key);
     const leadHours = paidFirst.map((f) => f.leadToWonHours!).filter((h) => h >= 0);
     const dealHours = dimFacts.map((f) => f.dealToWonHours).filter((h) => h >= 0);
-    const leadCount = dim === "product" ? paidFirst.length : dimLeads.length;
-  const crAt = (hours: number) => {
-      if (dim === "product" || !leadCount) return null;
+    const leadCount = dealOnlyDims.includes(dim) ? paidFirst.length : dimLeads.length;
+    const crAt = (hours: number) => {
+      if (dealOnlyDims.includes(dim) || !leadCount) return null;
       const paid = paidFirst.filter((f) => f.leadToWonHours != null && f.leadToWonHours <= hours).length;
       return roundPct(paid, leadCount);
     };
@@ -314,7 +394,7 @@ function breakdown(
       key,
       label,
       leads: leadCount,
-      paid: dim === "product" ? dimFacts.length : paidFirst.length,
+      paid: dealOnlyDims.includes(dim) ? paidFirst.length : paidFirst.length,
       revenue: Math.round(revenue * 100) / 100,
       medianLeadToWonDays: roundDays(median(leadHours)),
       medianDealToWonDays: roundDays(median(dealHours)),
@@ -389,7 +469,7 @@ function buildForecast(cohorts: CohortRow[], focusMonth: string): SalesCyclePayl
 
 export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
   const facts = applyFilters(input.facts, input.filters);
-  const leads = filterLeads(input.cohortLeads, input.filters);
+  const leads = filterLeads(enrichLeads(input.cohortLeads, input.facts), input.filters);
   const withLeadHours = facts.filter((f) => f.leadToWonHours != null && f.leadToWonHours >= 0);
   const leadHours = withLeadHours.map((f) => f.leadToWonHours!);
   const dealHours = facts.map((f) => f.dealToWonHours).filter((h) => h >= 0);
@@ -515,7 +595,11 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
       managers: breakdown(leads, facts, "manager", input.asOf),
       products: breakdown(leads, facts, "product", input.asOf),
       countries: breakdown(leads, facts, "country", input.asOf),
-      sources: breakdown(leads, facts, "source", input.asOf)
+      sources: breakdown(leads, facts, "source", input.asOf),
+      channels: breakdown(leads, facts, "channel", input.asOf),
+      gifts: breakdown(leads, facts, "gift", input.asOf),
+      customers: breakdown(leads, facts, "customer", input.asOf),
+      traffic: breakdown(leads, facts, "traffic", input.asOf)
     },
     dataQuality,
     availablePeriods: input.availablePeriods

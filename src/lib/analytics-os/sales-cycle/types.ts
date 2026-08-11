@@ -20,10 +20,15 @@ export type SalesCycleFact = {
   country: string | null;
   productId: string | null;
   productName: string | null;
+  giftType: string | null;
   sourceId: string | null;
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
+  channelKey: string | null;
+  channelLabel: string | null;
+  trafficKind: "paid" | "organic" | "unknown";
+  customerKind: "new" | "returning" | "unknown";
   joinMethod: JoinMethod;
   joinConfidence: JoinConfidence;
 };
@@ -171,6 +176,10 @@ export type SalesCyclePayload = {
     products: BreakdownRow[];
     countries: BreakdownRow[];
     sources: BreakdownRow[];
+    channels: BreakdownRow[];
+    gifts: BreakdownRow[];
+    customers: BreakdownRow[];
+    traffic: BreakdownRow[];
   };
   dataQuality: SalesCycleDataQuality;
   availablePeriods: string[];
