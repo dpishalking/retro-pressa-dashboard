@@ -78,10 +78,11 @@ Dry run reads Bitrix only. Production uses `safeReplaceSheet` on staging tabs; f
 **Sales + Marketing close:** GitHub Action `sales-predictive-daily-close.yml` at **12:00 Europe/Moscow**
 (calls Next APIs with `x-cron-secret` — standalone deploy has no `tsx`/scripts):
 
-1. `POST /api/sync/bitrix-sales-foundation` (current month)
-2. `POST /api/sync/sales-os` → Sales OS `1Zj_j…`
-3. `POST /api/sync/marketing-planning` → Marketing ROM `1Ru9H…`
-4. `POST /api/sync/predictive-front` → «Предиктивка продажи»
+1. `POST /api/sync/sales-os` → Sales OS `1Zj_j…`
+2. `POST /api/sync/marketing-planning` → Marketing ROM `1Ru9H…`
+3. `POST /api/sync/predictive-front` → «Предиктивка продажи`
+
+Heavy `bitrix-sales-foundation` stays on `os-daily` / manual `npm run` — in-process API OOMs the Node server.
 
 **Hourly predictive:** `predictive-hourly-sync.yml` every hour (`:05` UTC) → `POST /api/sync/predictive-front`.
 
