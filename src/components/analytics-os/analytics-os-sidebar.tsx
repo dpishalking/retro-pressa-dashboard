@@ -26,15 +26,14 @@ type NavGroup = { title: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
-    title: "Обзор",
-    items: [{ id: "overview", label: "Главный экран", enabled: true, section: "overview" }]
-  },
-  {
-    title: "Рост",
+    title: "Аналитика",
     items: [
-      { id: "revenue", label: "Выручка", enabled: true, section: "revenue" },
-      { id: "marketing", label: "Маркетинг", enabled: true, section: "marketing" },
-      { id: "stub", label: "Креативы", enabled: false }
+      { id: "overview", label: "Главный экран", enabled: true, section: "overview" },
+      { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
+      { id: "countries", label: "Страны", enabled: true, section: "countries" },
+      { id: "sources", label: "Источники", enabled: true, section: "sources" },
+      { id: "quality", label: "Качество данных", enabled: true, section: "quality" },
+      { id: "external", label: "Метрики", enabled: true, href: "/md" }
     ]
   },
   {
@@ -42,70 +41,36 @@ const NAV: NavGroup[] = [
     items: [
       { id: "funnel", label: "Воронка", enabled: true, section: "funnel" },
       { id: "managers", label: "Менеджеры", enabled: true, section: "managers" },
-      { id: "external", label: "Диалоги", enabled: true, href: "/rop/conversations" }
+      { id: "external", label: "Диалоги", enabled: true, href: "/rop/conversations" },
+      { id: "external", label: "Когорты", enabled: true, href: "/os/cohorts" },
+      { id: "external", label: "Цикл сделки", enabled: true, href: "/os/sales-cycle" }
     ]
   },
   {
-    title: "Продукты",
+    title: "Маркетинг и трафик",
+    items: [
+      { id: "marketing", label: "Маркетинг", enabled: true, section: "marketing" },
+      { id: "stub", label: "Креативы", enabled: false }
+    ]
+  },
+  {
+    title: "Продукт",
     items: [
       { id: "products", label: "Продукты", enabled: true, section: "products" },
+      { id: "production", label: "Производство", enabled: true, section: "production" },
       { id: "stub", label: "Допродажи", enabled: false }
-    ]
-  },
-  {
-    title: "Клиенты",
-    items: [
-      { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
-      { id: "external", label: "Когорты", enabled: true, href: "/os/cohorts" },
-      { id: "stub", label: "Подарки", enabled: false }
     ]
   },
   {
     title: "Финансы",
     items: [
+      { id: "revenue", label: "Выручка", enabled: true, section: "revenue" },
       { id: "unit-economics", label: "Юнит-экономика", enabled: true, section: "unit-economics" },
+      { id: "external", label: "План / факт / прогноз", enabled: true, href: "/os/plan" },
       { id: "external", label: "P&L", enabled: true, href: "/digital-twin" },
       { id: "stub", label: "Затраты", enabled: false }
     ]
   },
-  {
-    title: "Операции",
-    items: [
-      { id: "production", label: "Производство", enabled: true, section: "production" },
-      { id: "stub", label: "Мощность", enabled: false },
-      { id: "stub", label: "Качество", enabled: false }
-    ]
-  },
-  {
-    title: "Рынки",
-    items: [{ id: "countries", label: "Страны", enabled: true, section: "countries" }]
-  },
-  {
-    title: "AI",
-    items: [
-      { id: "stub", label: "Почему", enabled: false },
-      { id: "stub", label: "Что делать", enabled: false },
-      { id: "stub", label: "Что если", enabled: false },
-      { id: "stub", label: "Возможности", enabled: false },
-      { id: "stub", label: "×10", enabled: false }
-    ]
-  },
-  {
-    title: "Управление",
-    items: [
-      { id: "stub", label: "День", enabled: false },
-      { id: "stub", label: "Неделя", enabled: false },
-      { id: "stub", label: "Алерты", enabled: false }
-    ]
-  },
-  {
-    title: "Данные",
-    items: [
-      { id: "sources", label: "Источники", enabled: true, section: "sources" },
-      { id: "quality", label: "Качество данных", enabled: true, section: "quality" },
-      { id: "external", label: "Метрики", enabled: true, href: "/md" }
-    ]
-  }
 ];
 
 export function AnalyticsOsSidebar({

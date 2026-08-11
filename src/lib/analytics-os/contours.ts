@@ -237,6 +237,65 @@ export function hubTileContours(): ContourDef[] {
   return HUB_TILE_ORDER.map((id) => byId.get(id)).filter((item): item is ContourDef => Boolean(item));
 }
 
+export type BusinessContourId = "analytics" | "sales" | "marketing" | "product" | "finance";
+
+export type BusinessContourGroup = {
+  id: BusinessContourId;
+  title: string;
+  subtitle: string;
+  contours: ContourDef[];
+};
+
+const BUSINESS_CONTOUR_ORDER: Array<{
+  id: BusinessContourId;
+  title: string;
+  subtitle: string;
+  contourIds: ContourId[];
+}> = [
+  {
+    id: "analytics",
+    title: "Аналитика",
+    subtitle: "Общая картина бизнеса и клиентская база",
+    contourIds: ["revenue", "customers", "geography"]
+  },
+  {
+    id: "sales",
+    title: "Продажи",
+    subtitle: "Воронка, когорты, команда и качество диалогов",
+    contourIds: ["funnel", "cohorts", "sales-cycle", "managers", "conversations"]
+  },
+  {
+    id: "marketing",
+    title: "Маркетинг и трафик",
+    subtitle: "Бюджет, привлечение и креативы",
+    contourIds: ["marketing", "creatives"]
+  },
+  {
+    id: "product",
+    title: "Продукт",
+    subtitle: "Ассортимент, спрос и производство",
+    contourIds: ["products", "production"]
+  },
+  {
+    id: "finance",
+    title: "Финансы",
+    subtitle: "План, экономика и итоговый результат",
+    contourIds: ["plan", "unit-economics"]
+  }
+];
+
+export function businessContourGroups(): BusinessContourGroup[] {
+  const byId = new Map(hubTileContours().map((item) => [item.id, item]));
+  return BUSINESS_CONTOUR_ORDER.map((group) => ({
+    id: group.id,
+    title: group.title,
+    subtitle: group.subtitle,
+    contours: group.contourIds
+      .map((id) => byId.get(id))
+      .filter((item): item is ContourDef => Boolean(item))
+  }));
+}
+
 export function contourStatusLabel(status: ContourStatus): string {
   if (status === "live") return "ФАКТ";
   if (status === "partial") return "ЧАСТИЧНО";
