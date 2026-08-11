@@ -19,28 +19,29 @@ const KPI_ORDER: Array<{ id: string; label: string; priority?: boolean }> = [
   { id: "cash", label: "Касса" }
 ];
 
+function kpiMeta(metric: AnalyticsMetricValue): string | null {
+  const parts: string[] = [];
+  if (metric.plan != null && metric.value != null && metric.status !== "no_data") {
+    const planLabel =
+      metric.unit === "eur" ? formatMetricDisplay({ ...metric, value: metric.plan }) : String(metric.plan);
+    parts.push(`План ${planLabel} · ${pct(metric.value / metric.plan)}`);
+  }
+  if (metric.decisionHint) parts.push(metric.decisionHint);
+  return parts.length ? parts.join(" · ") : null;
+}
+
 function KpiCard({ metric, label, priority }: { metric?: AnalyticsMetricValue; label: string; priority?: boolean }) {
   if (!metric) return null;
   const showPartial = metric.confidence === "low" && metric.status === "calculated";
+  const meta = kpiMeta(metric);
   return (
-    <article className={`aos-kpi ${priority ? "aos-kpi--priority" : ""}`} title={`${metric.source}${metric.asOf ? ` · ${metric.asOf}` : ""}`}>
+    <article className={`aos-kpi ${priority ? "aos-kpi--priority" : ""}`}>
       <div className="aos-kpi__head">
         <span className="aos-kpi__label">{label}</span>
         <StatusBadge status={showPartial ? "partial" : metric.status} />
       </div>
       <div className="aos-kpi__value">{formatMetricDisplay(metric)}</div>
-      <div className="aos-kpi__meta">
-        {metric.plan != null && metric.value != null && metric.status !== "no_data" ? (
-          <span>
-            План {metric.unit === "eur" ? formatMetricDisplay({ ...metric, value: metric.plan }) : metric.plan} ·{" "}
-            {pct(metric.value / metric.plan)}
-          </span>
-        ) : metric.decisionHint ? (
-          <span>{metric.decisionHint}</span>
-        ) : (
-          <span>{metric.source}</span>
-        )}
-      </div>
+      {meta ? <div className="aos-kpi__meta">{meta}</div> : null}
     </article>
   );
 }

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PeriodKey } from "@/types/metrics";
 
@@ -10,6 +10,11 @@ export type BitrixSnapshotLead = {
   assignedById: string;
   managerName: string;
   country: string;
+  /** Present on new syncs; older snapshots may omit. */
+  contactId?: string | null;
+  /** Present on new syncs; used for unique-lead CR. */
+  phones?: string[];
+  emails?: string[];
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
@@ -39,8 +44,14 @@ export type BitrixSnapshotDeal = {
   currencyId: string | null;
   /** Prefer «Сумма для счета», fallback to opportunity. */
   invoiceAmount: number;
+  /** «Доставка цена»; null on older snapshots / missing field. */
+  deliveryPrice?: number | null;
   stageId: string | null;
+  /** Human stage name from crm.dealcategory.stage.list; optional on older snaps. */
+  stageName?: string | null;
   stageSemanticId: string | null;
+  /** Bitrix LAST_ACTIVITY_TIME; used for idle/stuck pipeline. */
+  lastActivityAt?: string | null;
   sourceId: string | null;
   assignedById: string;
   managerName: string;
@@ -49,6 +60,8 @@ export type BitrixSnapshotDeal = {
   landingPage: string | null;
   phone: string | null;
   email: string | null;
+  /** Resolved SPA «Тип подарка» names (Оригинал, Репродукция, …). */
+  giftTypes?: string[];
   products: BitrixSnapshotProductRow[];
   /** How this deal entered the invoice set. */
   invoiceSource?: "invoice_date_field" | "stage_history";
@@ -69,6 +82,8 @@ export type BitrixSnapshot = {
   deals: BitrixSnapshotDeal[];
   /** Calendar paid deals (CLOSEDATE in period, won). */
   paidDeals: BitrixSnapshotDeal[];
+  /** Open sales-funnel deals (STAGE_SEMANTIC_ID=P); present on new syncs. */
+  openPipeline?: BitrixSnapshotDeal[];
 };
 
 const snapshotDir = path.join(process.cwd(), "data", "bitrix-snapshots");
@@ -79,6 +94,21 @@ export function snapshotFilePath(period: PeriodKey) {
 
 async function ensureSnapshotDir() {
   await mkdir(snapshotDir, { recursive: true });
+}
+
+const KNOWN_SNAPSHOT_PERIODS: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
+
+export async function listBitrixSnapshotPeriods(): Promise<PeriodKey[]> {
+  try {
+    const files = await readdir(snapshotDir);
+    const found = files
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => file.replace(/\.json$/, "") as PeriodKey)
+      .filter((period) => KNOWN_SNAPSHOT_PERIODS.includes(period));
+    return found.length ? found.sort() : [...KNOWN_SNAPSHOT_PERIODS];
+  } catch {
+    return [...KNOWN_SNAPSHOT_PERIODS];
+  }
 }
 
 export async function readBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot | null> {

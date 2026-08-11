@@ -13,11 +13,19 @@ import {
   aggregateRevenueTree,
   aovFromBitrix,
   buildMonthlyFromBitrix,
-  conversionFromBitrix,
   filterSnapshot,
   type AnalyticsFilters
 } from "@/lib/analytics-os/aggregate-from-bitrix";
 import { buildOwnerIntelligence } from "@/lib/analytics-os/owner-intelligence";
+import {
+  compareListVsSold,
+  countUniqueLeadsWithHistory,
+  managerBenchmark,
+  opportunityGaps,
+  pipelineAgeAnalysis,
+  sumDelivery,
+  type LeadIdentity
+} from "@/lib/analytics-os/decision-extras";
 import { metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
   analyticsPeriodToLegacy,
@@ -33,6 +41,8 @@ import {
   aggregateProductMargins,
   loadProductHubMarginCatalog
 } from "@/lib/product-hub/sku-margin-catalog";
+import { buildUnitEconomicsUnits } from "@/lib/analytics-os/unit-economics-units";
+import { hydrateDealProducts } from "@/lib/bitrix/gift-type-resolver";
 import type {
   AnalyticsPlanIndicator,
   AnalyticsProductMargin,
@@ -41,8 +51,7 @@ import type {
 } from "@/types/analytics-os";
 import type { PeriodKey } from "@/types/metrics";
 
-const MONTHLY_PLAN_SOURCE_LABEL =
-  "Google Sheets · План/факт (16ocjHOl… gid=2079098693)";
+const MONTHLY_PLAN_SOURCE_LABEL = "Таблица «План/факт»";
 
 function mapPlanIndicators(
   indicators: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>>["indicators"]
@@ -123,16 +132,38 @@ async function loadAdSpend(legacy: PeriodKey | null): Promise<{ value: number | 
         source: "company-snapshot (Sheets/СВОД)"
       };
     }
-    const live = await getCompanySnapshot({ period: legacy, forceRebuild: false });
+    // Open month often has stale €0 cache — rebuild once from Google/СВОД.
+    const live = await getCompanySnapshot({
+      period: legacy,
+      forceRebuild: !cached || !(cached.canonical?.adSpend > 0)
+    });
     const spend = live.snapshot.canonical.adSpend ?? null;
     return {
-      value: spend && spend > 0 ? spend : spend,
+      value: spend != null && spend > 0 ? spend : null,
       asOf: live.snapshot.meta?.builtAt ?? null,
       source: "company-snapshot (Sheets/СВОД)"
     };
   } catch {
     return { value: null, asOf: null, source: "company-snapshot" };
   }
+}
+
+async function loadPriorLeadIdentities(period: AnalyticsPeriod): Promise<LeadIdentity[]> {
+  const prior = (await listAvailablePeriods()).filter((p) => p < period);
+  const out: LeadIdentity[] = [];
+  for (const p of prior) {
+    const snap = await loadBitrixForPeriod(p);
+    if (!snap) continue;
+    for (const lead of snap.leads || []) {
+      out.push({
+        id: lead.id,
+        phones: lead.phones || [],
+        emails: lead.emails || [],
+        contactId: lead.contactId ?? null
+      });
+    }
+  }
+  return out;
 }
 
 async function loadMariaMonthRevenue(period: AnalyticsPeriod): Promise<number | null> {
@@ -213,10 +244,18 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     });
   }
 
-  const { paidDeals, invoiceDeals, leads } = filterSnapshot(snapshot, filters);
+  const filtered = filterSnapshot(snapshot, filters);
+  const paidDeals = filtered.paidDeals.map(hydrateDealProducts);
+  const invoiceDeals = filtered.invoiceDeals.map(hydrateDealProducts);
+  const openPipeline = filtered.openPipeline.map(hydrateDealProducts);
+  const { leads } = filtered;
   const tree = aggregateRevenueTree(paidDeals);
   const funnel = aggregateFunnel({ leads, invoiceDeals, paidDeals });
   const managers = aggregateManagers({ leads, paidDeals });
+  const historyLeads = await loadPriorLeadIdentities(period);
+  const uniqueLeadStats = countUniqueLeadsWithHistory(leads, historyLeads);
+  const deliveryStats = sumDelivery(paidDeals);
+  const bench = managerBenchmark(leads, paidDeals);
 
   let marginCatalog: Awaited<ReturnType<typeof loadProductHubMarginCatalog>> | null = null;
   try {
@@ -229,8 +268,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const products = aggregateProducts(paidDeals, productMarginMap);
   const countries = aggregateCountries({ paidDeals, leads });
   const customers = aggregateCustomers(paidDeals);
-  const conversion = conversionFromBitrix(leads.length, paidDeals.length);
   const aov = aovFromBitrix(tree.revenue, tree.orders);
+  const productAov = aovFromBitrix(deliveryStats.productRevenue, tree.orders);
 
   const monthly = buildMonthlyFromBitrix({
     paidDeals,
@@ -243,7 +282,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const runRate =
     daysElapsed > 0 ? (tree.revenue / daysElapsed) * calendarDays : null;
   const forecastValue = runRate;
-  const forecastSource = "темп факта × дни месяца";
+  const forecastSource = "если текущий темп сохранится";
 
   const revenueMetric = metricValue({
     metricId: "revenue",
@@ -253,18 +292,24 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     source: "Bitrix WON (CLOSEDATE + STAGE_SEMANTIC_ID=S)",
     confidence: "high",
     plan: planRevenueTarget,
-    unit: "eur",
-    decisionHint: "Основная выручка — Bitrix оплаты"
+    unit: "eur"
   });
 
+  const uniqueCr =
+    uniqueLeadStats.unique > 0 ? paidDeals.length / uniqueLeadStats.unique : null;
+
+  // KPI «Лиды» = уникальные люди (телефон/email/контакт). Карточки Bitrix — в подписи.
+  // Иначе дубли WhatsApp/Telegram раздувают лиды и занижают конверсию vs таблица трафика.
   const leadsMetric = metricValue({
     metricId: "leads",
-    value: leads.length,
-    status: "live",
+    value: uniqueLeadStats.unique,
+    status: "calculated",
     asOf,
-    source: "Bitrix leads (DATE_CREATE in period snapshot)",
+    source: "Bitrix unique leads (phone/email/contact · history May→prior)",
     unit: "count",
-    plan: planLeads
+    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
+    plan: planLeads,
+    decisionHint: `Карточек в Bitrix: ${leads.length}`
   });
 
   const ordersMetric = metricValue({
@@ -282,22 +327,58 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     value: aov,
     status: aov == null ? "no_data" : "calculated",
     asOf,
-    source: "metrics-engine averagePaidCheck / Bitrix",
+    source: "cash / paid orders (incl. delivery)",
     unit: "eur",
     confidence: "high",
     plan: planAov
   });
 
+  const productAovMetric = metricValue({
+    metricId: "product_aov",
+    value: productAov,
+    status: productAov == null ? "no_data" : "calculated",
+    asOf,
+    source: "(cash − delivery) / paid orders",
+    unit: "eur",
+    confidence: "high",
+    decisionHint: "Средний чек продукта без доставки"
+  });
+
   const crMetric = metricValue({
     metricId: "conversion_rate",
-    value: conversion,
-    status: conversion == null ? "no_data" : "calculated",
+    value: uniqueCr,
+    status: uniqueCr == null ? "no_data" : "calculated",
     asOf,
-    source: "paid_orders / leads (period snapshot)",
+    source: "paid_orders / unique_leads",
     unit: "pct",
-    confidence: "medium",
-    decisionHint: "Конверсия за период",
+    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
+    decisionHint: "Оплаты / уникальные люди",
     plan: planCrSale
+  });
+
+  const uniqueLeadsMetric = metricValue({
+    metricId: "unique_leads",
+    value: uniqueLeadStats.unique,
+    status: "calculated",
+    asOf,
+    source: "Bitrix leads · phone/email/contact · history May→prior",
+    unit: "count",
+    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
+    decisionHint:
+      uniqueLeadStats.coverageWithIdentity > 0.3
+        ? `Повторные ≈ ${uniqueLeadStats.duplicateApprox} · с телефоном/email ${Math.round(uniqueLeadStats.coverageWithIdentity * 100)}%`
+        : "Мало телефонов и email — обновите синк Битрикс"
+  });
+
+  const uniqueCrMetric = metricValue({
+    metricId: "unique_conversion_rate",
+    value: uniqueCr,
+    status: uniqueCr == null ? "no_data" : "calculated",
+    asOf,
+    source: "paid_orders / unique_leads",
+    unit: "pct",
+    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
+    decisionHint: "Оплаты / уникальные люди"
   });
 
   const repeatMetric = metricValue({
@@ -307,7 +388,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     asOf,
     source: "customer_key from paid deals",
     unit: "pct",
-    confidence: "medium"
+    confidence: "medium",
+    decisionHint: "Доля повторных покупателей за период"
   });
 
   const adSpendMetric =
@@ -362,7 +444,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
 
   const cacMetric =
     adSpendInfo.value == null || customers.newCustomers <= 0
-      ? noDataMetric("cac", "ad_spend / new customers", "Нужны spend и new customers", "eur")
+      ? noDataMetric("cac", "marketing", "Нужны реклама и новые покупатели", "eur")
       : metricValue({
           metricId: "cac",
           value: adSpendInfo.value / customers.newCustomers,
@@ -370,7 +452,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           asOf: adSpendInfo.asOf,
           source: "ad_spend / new paid customers — PARTIAL",
           confidence: "low",
-          unit: "eur"
+          unit: "eur",
+          decisionHint: "Реклама / новые покупатели"
         });
 
   const roasMetric =
@@ -398,7 +481,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
 
   const grossProfitMetric =
     marginAgg?.grossProfit == null
-      ? noDataMetric("gross_profit", "Product Hub COGS", "Нет COGS по позициям заказа", "eur")
+      ? noDataMetric("gross_profit", "Product Hub", "Нет себестоимости по позициям заказа", "eur")
       : metricValue({
           metricId: "gross_profit",
           value: marginAgg.grossProfit,
@@ -407,7 +490,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           source: marginAgg.source,
           confidence: marginConfidence,
           unit: "eur",
-          decisionHint: `На выручке с COGS €${Math.round(marginAgg.mappedRevenue)} из €${Math.round(marginAgg.revenue)} · линии ${Math.round(marginCoverage * 100)}% · сделки ${marginAgg.dealsWithProducts}/${marginAgg.dealsTotal}`
+          decisionHint: `€${Math.round(marginAgg.mappedRevenue).toLocaleString("ru-RU")} из €${Math.round(marginAgg.revenue).toLocaleString("ru-RU")} с себестоимостью · ${marginAgg.dealsWithProducts} из ${marginAgg.dealsTotal} оплат`
         });
 
   const contributionMetric =
@@ -415,7 +498,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       ? noDataMetric(
           "contribution_margin",
           "Product Hub COGS − ad spend",
-          "Нужен COGS; доставка/комиссии ещё не вычтены",
+          "Нужен COGS; комиссии платёжек ещё не вычтены",
           "pct"
         )
       : metricValue({
@@ -426,10 +509,10 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
               : null,
           status: "calculated",
           asOf: marginCatalog?.loadedAt ?? asOf,
-          source: "Валовая (паспорт COGS) − реклама / выручка с COGS — без доставки и комиссий",
+          source: "Валовая на (cash−доставка) − реклама / product cash с COGS",
           confidence: "medium",
           unit: "pct",
-          decisionHint: "Частичная маржа вклада"
+          decisionHint: "Доставка уже вне базы выручки; комиссии ещё нет"
         });
 
   const productMarginBlock: AnalyticsProductMargin = {
@@ -465,12 +548,59 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     source: marginAgg?.source || "Product Hub unavailable"
   };
 
-  const productionLoad = noDataMetric("production_load", "Производство", "Нет связи", "pct");
+  const productionLoad = noDataMetric("production_load", "Производство", "Пока нет данных по загрузке", "pct");
   const cashMetric = noDataMetric("cash", "Финансы", "Касса пока не подключена", "eur");
 
-  // Pipeline: open invoices still in progress (semantic P) from invoice deals list
-  const openDeals = invoiceDeals.filter((d) => d.stageSemanticId === "P");
+  const deliveryHasField = (deliveryStats.fieldCoveragePct || 0) > 0;
+  const deliveryBlock = {
+    deliveryRevenue: metricValue({
+      metricId: "delivery_revenue",
+      value: deliveryHasField ? deliveryStats.delivery : null,
+      status: deliveryHasField ? "live" : "no_data",
+      asOf,
+      source: "Bitrix UF «Доставка цена»",
+      unit: "eur" as const,
+      confidence: "high" as const,
+      decisionHint: deliveryHasField
+        ? `${deliveryStats.dealsWithDelivery} сделок с доставкой > 0`
+        : "Поле не в снапшоте — обновите Bitrix sync"
+    }),
+    productRevenue: metricValue({
+      metricId: "product_revenue_net",
+      value: deliveryHasField ? deliveryStats.productRevenue : null,
+      status: deliveryHasField ? "calculated" : "no_data",
+      asOf,
+      source: "cash − delivery",
+      unit: "eur" as const,
+      confidence: "high" as const,
+      decisionHint: "Касса без доставки"
+    }),
+    deliverySharePct: metricValue({
+      metricId: "delivery_share_pct",
+      value: deliveryHasField ? deliveryStats.deliverySharePct : null,
+      status: deliveryHasField ? "calculated" : "no_data",
+      asOf,
+      source: "delivery / cash",
+      unit: "pct" as const,
+      confidence: "high" as const
+    }),
+    dealsWithDelivery: deliveryStats.dealsWithDelivery,
+    fieldCoveragePct: deliveryStats.fieldCoveragePct
+  };
+
+  const pricingCompare = compareListVsSold(paidDeals, marginCatalog).slice(0, 15);
+
+  // Prefer full open pipeline from snapshot; fallback to invoice deals still in P
+  const openDeals =
+    openPipeline.length > 0
+      ? openPipeline
+      : invoiceDeals.filter((d) => d.stageSemanticId === "P");
   const pipelineAmount = openDeals.reduce((s, d) => s + (d.opportunity || 0), 0);
+  const age = pipelineAgeAnalysis(openDeals, now);
+  const pipelineSource =
+    openPipeline.length > 0
+      ? "Bitrix openPipeline STAGE_SEMANTIC_ID=P"
+      : "Bitrix invoice deals STAGE_SEMANTIC_ID=P (fallback)";
 
   const pipeline = {
     openDeals: metricValue({
@@ -478,22 +608,46 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       value: openDeals.length,
       status: "live",
       asOf,
-      source: "Bitrix invoice deals STAGE_SEMANTIC_ID=P",
+      source: pipelineSource,
       unit: "count",
-      confidence: "medium"
+      confidence: openPipeline.length > 0 ? "high" : "medium"
     }),
     pipelineAmount: metricValue({
       metricId: "pipeline_amount",
       value: pipelineAmount,
       status: "live",
       asOf,
-      source: "Sum OPPORTUNITY open invoice deals",
+      source: `Sum OPPORTUNITY · ${pipelineSource}`,
       unit: "eur",
-      confidence: "medium"
+      confidence: openPipeline.length > 0 ? "high" : "medium",
+      decisionHint: "Сумма открытых сделок"
     }),
-    weightedAmount: noDataMetric("pipeline_weighted", "Bitrix foundation pipeline", "Weighted amount not in analytics snapshot"),
-    overdueDeals: noDataMetric("pipeline_overdue", "Bitrix foundation pipeline", "Overdue flags not in analytics snapshot")
+    weightedAmount: noDataMetric("pipeline_weighted", "Bitrix", "Нет взвешенной суммы воронки"),
+    overdueDeals: metricValue({
+      metricId: "pipeline_stuck_over_7d",
+      value: age.stuckOver7d.deals,
+      status: openDeals.length ? "calculated" : "no_data",
+      asOf,
+      source:
+        (age.activityCoveragePct || 0) > 0.5
+          ? "Open deals idle ≥ 8 days since LAST_ACTIVITY_TIME"
+          : "Open deals idle ≥ 8 days (LAST_ACTIVITY fallback DATE_CREATE)",
+      unit: "count",
+      confidence: (age.activityCoveragePct || 0) > 0.5 ? "high" : "medium",
+      decisionHint:
+        age.stuckOver7d.deals > 0
+          ? `Без ответа ≥ 8 дней · €${Math.round(age.stuckOver7d.amount).toLocaleString("ru-RU")}`
+          : "Нет сделок без ответа дольше 8 дней"
+    }),
+    age
   };
+
+  const opportunities = opportunityGaps({
+    countries,
+    managers: bench.rows,
+    medianCountryCr: null,
+    medianManagerRpl: bench.medianRevenuePerLead
+  });
 
   const planCompletionValue = revenuePlanCompletion(tree.revenue, planRevenueTarget);
   const gapValue = tree.revenue - planRevenueTarget;
@@ -580,9 +734,12 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       revenue: revenueMetric,
       gross_profit: grossProfitMetric,
       leads: leadsMetric,
+      unique_leads: uniqueLeadsMetric,
       paid_orders: ordersMetric,
       conversion_rate: crMetric,
+      unique_conversion_rate: uniqueCrMetric,
       aov: aovMetric,
+      product_aov: productAovMetric,
       cac: cacMetric,
       repeat_rate: repeatMetric,
       pipeline_amount: pipeline.pipelineAmount,
@@ -592,7 +749,10 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       cpl: cplMetric,
       roas: roasMetric,
       contribution_margin: contributionMetric,
-      ad_spend: adSpendMetric
+      ad_spend: adSpendMetric,
+      delivery_revenue: deliveryBlock.deliveryRevenue,
+      product_revenue_net: deliveryBlock.productRevenue,
+      delivery_share_pct: deliveryBlock.deliverySharePct
     },
     plan: {
       planRevenue: metricValue({
@@ -696,6 +856,28 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       note: "Маркетинг частично. Детали — в разделе Реклама."
     },
     productMargin: productMarginBlock,
+    unitEconomics: {
+      units: buildUnitEconomicsUnits({
+        paidDeals,
+        leads,
+        catalog: marginCatalog,
+        adSpend: adSpendInfo.value,
+        cpl: cplMetric.value,
+        cac: cacMetric.value
+      }),
+      adSpend: adSpendInfo.value,
+      cpl: cplMetric.value,
+      cac: cacMetric.value
+    },
+    delivery: deliveryBlock,
+    pricingCompare,
+    managerBenchmark: {
+      medianCr: bench.medianCr,
+      p80Cr: bench.p80Cr,
+      medianRevenuePerLead: bench.medianRevenuePerLead,
+      p80RevenuePerLead: bench.p80RevenuePerLead
+    },
+    opportunities,
     production: {
       status: "no_data",
       message: "Статусы производства пока нет.",
@@ -786,7 +968,7 @@ function emptySnapshot(input: {
   adSpendInfo: { value: number | null; asOf: string | null; source: string };
 }): CeoControlCenterSnapshot {
   const no = (id: string, source: string, unit?: "eur" | "count" | "pct" | "ratio") =>
-    noDataMetric(id, source, "Bitrix snapshot missing for period", unit);
+    noDataMetric(id, source, "Нет данных за период", unit);
 
   const pipeline = {
     openDeals: no("pipeline_open_deals", "Bitrix", "count"),
@@ -894,6 +1076,27 @@ function emptySnapshot(input: {
       lineCoverage: 0,
       source: "Product Hub unavailable"
     },
+    unitEconomics: {
+      units: [],
+      adSpend: input.adSpendInfo.value,
+      cpl: null,
+      cac: null
+    },
+    delivery: {
+      deliveryRevenue: no("delivery_revenue", "Bitrix", "eur"),
+      productRevenue: no("product_revenue_net", "Bitrix", "eur"),
+      deliverySharePct: no("delivery_share_pct", "Bitrix", "pct"),
+      dealsWithDelivery: 0,
+      fieldCoveragePct: null
+    },
+    pricingCompare: [],
+    managerBenchmark: {
+      medianCr: null,
+      p80Cr: null,
+      medianRevenuePerLead: null,
+      p80RevenuePerLead: null
+    },
+    opportunities: [],
     production: {
       status: "no_data",
       message: "Статусы производства пока нет.",

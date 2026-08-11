@@ -23,6 +23,7 @@ data/products/
 data/motivation/
 data/partners/partners-runtime.json
 data/partners/partners-runtime.json.*
+data/webinar/
 data/product-passports/*
 !data/product-passports/dashboard.json
 tsconfig.tsbuildinfo

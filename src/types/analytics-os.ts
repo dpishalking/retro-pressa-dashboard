@@ -47,10 +47,66 @@ export type AnalyticsManagerRow = {
   revenue: number;
   conversionRate: number | null;
   aov: number | null;
+  revenuePerLead: number | null;
   productsPerOrder: number | null;
   responseMinutes: number | null;
   responseConfidence: MetricConfidence;
   isTopPerformer: boolean;
+};
+
+export type AnalyticsPricingRow = {
+  productName: string;
+  orders: number;
+  listPrice: number | null;
+  soldAvg: number | null;
+  soldMedian: number | null;
+  deltaPct: number | null;
+};
+
+export type AnalyticsDeliveryBlock = {
+  deliveryRevenue: AnalyticsMetricValue;
+  productRevenue: AnalyticsMetricValue;
+  deliverySharePct: AnalyticsMetricValue;
+  dealsWithDelivery: number;
+  fieldCoveragePct: number | null;
+};
+
+export type AnalyticsPipelineAgeBucket = {
+  id: string;
+  label: string;
+  deals: number;
+  amount: number;
+};
+
+export type AnalyticsPipelineStageRow = {
+  stageId: string;
+  stageName: string;
+  deals: number;
+  amount: number;
+};
+
+export type AnalyticsPipelineAge = {
+  /** Days since last activity (fallback: DATE_CREATE). */
+  buckets: AnalyticsPipelineAgeBucket[];
+  stuckOver7d: { deals: number; amount: number };
+  totalAmount: number;
+  byStage: AnalyticsPipelineStageRow[];
+  /** true when lastActivityAt present on most open deals */
+  activityCoveragePct: number | null;
+};
+
+export type AnalyticsManagerBenchmark = {
+  medianCr: number | null;
+  p80Cr: number | null;
+  medianRevenuePerLead: number | null;
+  p80RevenuePerLead: number | null;
+};
+
+export type AnalyticsOpportunityGap = {
+  id: string;
+  title: string;
+  body: string;
+  euroImpact: number | null;
 };
 
 export type AnalyticsProductRow = {
@@ -116,6 +172,7 @@ export type AnalyticsPipeline = {
   pipelineAmount: AnalyticsMetricValue;
   weightedAmount: AnalyticsMetricValue;
   overdueDeals: AnalyticsMetricValue;
+  age?: AnalyticsPipelineAge;
 };
 
 export type AnalyticsCustomers = {
@@ -143,6 +200,43 @@ export type AnalyticsProductMargin = {
   dealsTotal: number;
   lineCoverage: number;
   source: string;
+};
+
+/** Lens for unit economics: one average sale, product, manager, country, gift type, or single deal. */
+export type UnitEconomicsKind =
+  | "average"
+  | "product"
+  | "manager"
+  | "country"
+  | "gift_type"
+  | "deal";
+
+export type UnitEconomicsUnit = {
+  kind: UnitEconomicsKind;
+  id: string;
+  name: string;
+  orders: number;
+  leads: number | null;
+  /** Product cash (opportunity − delivery). */
+  revenue: number;
+  aov: number;
+  cogs: number | null;
+  grossProfit: number | null;
+  marginRate: number | null;
+  /** Estimated acquisition cost of one sale in this unit. */
+  saleCost: number | null;
+  saleCostNote: string;
+  /** Gross profit minus saleCost × orders. */
+  profitAfterSaleCost: number | null;
+  mapped: boolean;
+  closeDate?: string | null;
+};
+
+export type AnalyticsUnitEconomics = {
+  units: UnitEconomicsUnit[];
+  adSpend: number | null;
+  cpl: number | null;
+  cac: number | null;
 };
 
 export type AnalyticsProduction = {
@@ -206,10 +300,15 @@ export type CeoControlCenterSnapshot = {
   pipeline: AnalyticsPipeline;
   marketing: AnalyticsMarketing;
   productMargin: AnalyticsProductMargin;
+  unitEconomics: AnalyticsUnitEconomics;
   production: AnalyticsProduction;
   reconciliation: AnalyticsReconciliation;
   sources: AnalyticsSourceCard[];
   dataQuality: AnalyticsDataQuality;
   ownerIntelligence: OwnerIntelligenceCard[];
   multiProductOrdersPct: AnalyticsMetricValue;
+  delivery: AnalyticsDeliveryBlock;
+  pricingCompare: AnalyticsPricingRow[];
+  managerBenchmark: AnalyticsManagerBenchmark;
+  opportunities: AnalyticsOpportunityGap[];
 };

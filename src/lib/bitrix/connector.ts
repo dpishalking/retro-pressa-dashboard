@@ -1,6 +1,8 @@
 import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
 import { extractBitrixWebValue } from "@/lib/utm-standards";
 import {
+  BITRIX_DEAL_GIFT_LINKS_FIELD,
+  BITRIX_DELIVERY_PRICE_FIELD,
   BITRIX_INVOICE_AMOUNT_FIELD,
   BITRIX_INVOICE_DATE_FIELD,
   BITRIX_INVOICE_STAGE_ID,
@@ -11,6 +13,15 @@ import {
   buildKnownGaps,
   type BitrixKnownGap
 } from "@/lib/bitrix/metric-definitions";
+import {
+  giftTypesFromDealField,
+  parseDealGiftLinkIds,
+  inferProductFromDealTitle,
+  productRowsFromGiftTypes,
+  resolveGiftTypeNamesByItemIds
+} from "@/lib/bitrix/gift-type-resolver";
+import { multiValue } from "@/lib/bitrix/sales-foundation/customer-key";
+import { fetchStagesRaw } from "@/lib/bitrix/sales-foundation/stages";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -44,6 +55,9 @@ type BitrixLead = {
   STATUS_ID?: string;
   SOURCE_ID?: string;
   ASSIGNED_BY_ID?: string;
+  CONTACT_ID?: string;
+  PHONE?: unknown;
+  EMAIL?: unknown;
   UF_CRM_1737995147?: string | string[];
   UTM_SOURCE?: string;
   UTM_MEDIUM?: string;
@@ -61,6 +75,7 @@ type BitrixDeal = {
   CONTACT_ID?: string;
   DATE_CREATE?: string;
   CLOSEDATE?: string;
+  LAST_ACTIVITY_TIME?: string;
   OPPORTUNITY?: string;
   CURRENCY_ID?: string;
   CATEGORY_ID?: string;
@@ -73,6 +88,10 @@ type BitrixDeal = {
   WEB?: unknown;
   UF_CRM_1758618010118?: string;
   UF_CRM_1739982211?: string | number | null;
+  /** «Доставка цена» — shipping amount on deal. */
+  UF_CRM_1739981844877?: string | number | null;
+  /** SPA «Вид подарка» links (entity 1038). */
+  UF_CRM_1784794322?: string | string[] | false | null;
 };
 
 type BitrixProductRow = {
@@ -154,6 +173,9 @@ const selectLead = [
   "STATUS_ID",
   "SOURCE_ID",
   "ASSIGNED_BY_ID",
+  "CONTACT_ID",
+  "PHONE",
+  "EMAIL",
   leadCountryField,
   "UTM_SOURCE",
   "UTM_MEDIUM",
@@ -170,6 +192,7 @@ const selectDeal = [
   "CONTACT_ID",
   "DATE_CREATE",
   "CLOSEDATE",
+  "LAST_ACTIVITY_TIME",
   "OPPORTUNITY",
   "CURRENCY_ID",
   "CATEGORY_ID",
@@ -181,7 +204,9 @@ const selectDeal = [
   "UTM_CAMPAIGN",
   "WEB",
   BITRIX_INVOICE_DATE_FIELD,
-  BITRIX_INVOICE_AMOUNT_FIELD
+  BITRIX_INVOICE_AMOUNT_FIELD,
+  BITRIX_DELIVERY_PRICE_FIELD,
+  BITRIX_DEAL_GIFT_LINKS_FIELD
 ];
 const selectUser = ["ID", "NAME", "LAST_NAME"];
 const excludedLeadStatusSet = new Set<string>(EXCLUDED_LEAD_STATUS_IDS);
@@ -467,6 +492,9 @@ function normalizeSnapshotLead(lead: BitrixLead, userNames: Map<string, string>,
     assignedById,
     managerName: userNames.get(assignedById) ?? `ID ${assignedById}`,
     country: enumValueName(enumMaps.leadCountries, lead[leadCountryField]),
+    contactId: lead.CONTACT_ID ? String(lead.CONTACT_ID) : null,
+    phones: multiValue(lead.PHONE),
+    emails: multiValue(lead.EMAIL),
     utmSource: lead.UTM_SOURCE?.trim() || null,
     utmMedium: lead.UTM_MEDIUM?.trim() || null,
     utmCampaign: lead.UTM_CAMPAIGN?.trim() || null,
@@ -506,26 +534,49 @@ function normalizeSnapshotDeal(
   enumMaps: BitrixEnumMaps,
   products: BitrixProductRow[],
   leadLookup: Map<string, BitrixSnapshotLead>,
-  invoiceSource?: BitrixSnapshotDeal["invoiceSource"]
+  invoiceSource?: BitrixSnapshotDeal["invoiceSource"],
+  giftTypes: string[] = [],
+  stageNameById?: Map<string, string>
 ): BitrixSnapshotDeal {
   const assignedById = deal.ASSIGNED_BY_ID || "unknown";
   const leadId = deal.LEAD_ID ? String(deal.LEAD_ID) : null;
   const linkedLead = leadId ? leadLookup.get(leadId) : undefined;
   const country = enumValueName(enumMaps.dealCountries, deal[dealCountryField]) || linkedLead?.country || "";
   const opportunity = numberValue(deal.OPPORTUNITY);
+  const deliveryRaw = deal[BITRIX_DELIVERY_PRICE_FIELD as keyof BitrixDeal];
+  const deliveryPrice =
+    deliveryRaw === undefined || deliveryRaw === null || deliveryRaw === ""
+      ? null
+      : numberValue(deliveryRaw as string | number | null | undefined);
+  const catalogProducts = products
+    .map(normalizeProductRow)
+    .filter((row) => row.productName);
+  const title = deal.TITLE?.trim() || null;
+  // Fallback chain: catalog rows → SPA «Вид подарка» → product keywords in TITLE
+  const inferredFromTitle =
+    !catalogProducts.length && !giftTypes.length ? inferProductFromDealTitle(title) : null;
+  const resolvedGiftTypes =
+    giftTypes.length > 0 ? giftTypes : inferredFromTitle ? [inferredFromTitle] : [];
+  const resolvedProducts = catalogProducts.length
+    ? catalogProducts
+    : productRowsFromGiftTypes(resolvedGiftTypes);
+  const stageId = deal.STAGE_ID ?? null;
 
   return {
     id: String(deal.ID),
-    title: deal.TITLE?.trim() || null,
+    title,
     leadId,
     contactId: deal.CONTACT_ID ? String(deal.CONTACT_ID) : null,
     dateCreate: deal.DATE_CREATE ?? null,
     closeDate: deal.CLOSEDATE ?? null,
+    lastActivityAt: deal.LAST_ACTIVITY_TIME ?? null,
     invoiceDate,
     opportunity,
     currencyId: deal.CURRENCY_ID?.trim() || null,
     invoiceAmount: dealInvoiceAmount(deal),
-    stageId: deal.STAGE_ID ?? null,
+    deliveryPrice,
+    stageId,
+    stageName: stageId && stageNameById?.get(stageId) ? stageNameById.get(stageId)! : null,
     stageSemanticId: deal.STAGE_SEMANTIC_ID ?? null,
     sourceId: deal.SOURCE_ID ?? linkedLead?.sourceId ?? null,
     assignedById,
@@ -535,9 +586,8 @@ function normalizeSnapshotDeal(
     landingPage: extractBitrixWebValue(deal.WEB) || linkedLead?.landingPage || null,
     phone: null,
     email: null,
-    products: products
-      .map(normalizeProductRow)
-      .filter((row) => row.productName),
+    giftTypes: resolvedGiftTypes,
+    products: resolvedProducts,
     invoiceSource
   };
 }
@@ -570,7 +620,7 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
   const periodStartDate = dayKey(periodStart);
   const factualEndDate = dayKey(factualEndIso);
 
-  const [periodLeadsRaw, recentLeadsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, users, countryMetadata] = await Promise.all([
+  const [periodLeadsRaw, recentLeadsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, users, countryMetadata, stagesBundle] = await Promise.all([
     listAll<BitrixLead>("crm.lead.list", {
       order: { DATE_CREATE: "ASC" },
       filter: { ">=DATE_CREATE": periodStart, "<=DATE_CREATE": factualEndIso },
@@ -611,17 +661,27 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
       },
       select: selectDeal
     }),
+    listAll<BitrixDeal>("crm.deal.list", {
+      order: { ID: "ASC" },
+      filter: {
+        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID,
+        STAGE_SEMANTIC_ID: "P"
+      },
+      select: selectDeal
+    }),
     listAll<BitrixUser>("user.get", {
       sort: "ID",
       order: "ASC",
       FILTER: { ACTIVE: true },
       SELECT: selectUser
     }, 500),
-    loadCountryMetadata()
+    loadCountryMetadata(),
+    fetchStagesRaw(new Date().toISOString())
   ]);
 
   const { countryOptions: metadataCountryOptions, enumMaps } = countryMetadata;
   const userNames = buildUserNameMap(users);
+  const stageNameById = stagesBundle.stageNameById;
   const leads = periodLeadsRaw.map((lead) => normalizeSnapshotLead(lead, userNames, enumMaps));
   const recentLeads = recentLeadsRaw.map((lead) => normalizeSnapshotLead(lead, userNames, enumMaps));
   const leadLookup = new Map(leads.map((lead) => [lead.id, lead]));
@@ -641,11 +701,23 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
   }
 
   const paidRawById = new Map(paidDealsRaw.map((deal) => [String(deal.ID), deal]));
+  const openRawById = new Map(openPipelineRaw.map((deal) => [String(deal.ID), deal]));
   const allDealIds = Array.from(new Set([
     ...invoiceRawById.keys(),
-    ...paidRawById.keys()
+    ...paidRawById.keys(),
+    ...openRawById.keys()
   ]));
   const productRows = await listDealProductRows(allDealIds);
+
+  const allRawDeals = [...invoiceRawById.values(), ...paidRawById.values(), ...openRawById.values()];
+  const giftItemIds = Array.from(
+    new Set(
+      allRawDeals.flatMap((deal) =>
+        parseDealGiftLinkIds(deal[BITRIX_DEAL_GIFT_LINKS_FIELD as keyof BitrixDeal])
+      )
+    )
+  );
+  const giftItemToType = await resolveGiftTypeNamesByItemIds(giftItemIds);
 
   const deals: BitrixSnapshotDeal[] = Array.from(invoiceRawById.values()).map((deal) => {
     const id = String(deal.ID);
@@ -654,6 +726,10 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     const invoiceDate = fromDateField
       ? (fieldDate ?? null)
       : (invoiceStageEntries.get(id)?.CREATED_TIME ?? fieldDate ?? null);
+    const giftTypes = giftTypesFromDealField(
+      deal[BITRIX_DEAL_GIFT_LINKS_FIELD as keyof BitrixDeal],
+      giftItemToType
+    );
     return normalizeSnapshotDeal(
       deal,
       invoiceDate,
@@ -661,20 +737,49 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
       enumMaps,
       productRows.get(id) ?? [],
       leadLookup,
-      fromDateField ? "invoice_date_field" : "stage_history"
+      fromDateField ? "invoice_date_field" : "stage_history",
+      giftTypes,
+      stageNameById
     );
   });
 
   const paidDeals: BitrixSnapshotDeal[] = Array.from(paidRawById.values()).map((deal) => {
     const id = String(deal.ID);
     const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
+    const giftTypes = giftTypesFromDealField(
+      deal[BITRIX_DEAL_GIFT_LINKS_FIELD as keyof BitrixDeal],
+      giftItemToType
+    );
     return normalizeSnapshotDeal(
       deal,
       fieldDate ?? null,
       userNames,
       enumMaps,
       productRows.get(id) ?? [],
-      leadLookup
+      leadLookup,
+      undefined,
+      giftTypes,
+      stageNameById
+    );
+  });
+
+  const openPipeline: BitrixSnapshotDeal[] = Array.from(openRawById.values()).map((deal) => {
+    const id = String(deal.ID);
+    const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
+    const giftTypes = giftTypesFromDealField(
+      deal[BITRIX_DEAL_GIFT_LINKS_FIELD as keyof BitrixDeal],
+      giftItemToType
+    );
+    return normalizeSnapshotDeal(
+      deal,
+      fieldDate ?? null,
+      userNames,
+      enumMaps,
+      productRows.get(id) ?? [],
+      leadLookup,
+      undefined,
+      giftTypes,
+      stageNameById
     );
   });
 
@@ -682,7 +787,8 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     ...leads.map((lead) => lead.country),
     ...recentLeads.map((lead) => lead.country),
     ...deals.map((deal) => deal.country),
-    ...paidDeals.map((deal) => deal.country)
+    ...paidDeals.map((deal) => deal.country),
+    ...openPipeline.map((deal) => deal.country)
   ];
   const productOptions = uniqueSorted([
     ...deals.flatMap((deal) => deal.products.map((product) => product.productName)),
@@ -701,7 +807,8 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     leads,
     recentLeads,
     deals,
-    paidDeals
+    paidDeals,
+    openPipeline
   };
 }
 
@@ -794,7 +901,7 @@ function sortProductInvoices(items: ProductInvoiceMetrics[]) {
 
 function dominantProductName(deal: BitrixSnapshotDeal) {
   const [topProduct] = [...deal.products].sort((a, b) => (b.quantity * b.price) - (a.quantity * a.price) || b.price - a.price || a.productName.localeCompare(b.productName, "ru"));
-  return topProduct?.productName || "Без продукта";
+  return topProduct?.productName || inferProductFromDealTitle(deal.title) || "Не заполнен в CRM";
 }
 
 function filterDeal(deal: BitrixSnapshotDeal, options: BitrixSyncOptions) {
@@ -1040,7 +1147,7 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   const periodStartDate = dayKey(periodStart);
   const factualEndDate = dayKey(factualEndIso);
 
-  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, periodLeadsRaw, users, countryMetadata] = await Promise.all([
+  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, periodLeadsRaw, users, countryMetadata, stagesBundle] = await Promise.all([
     listAll<BitrixDeal>("crm.deal.list", {
       order: { ID: "ASC" },
       filter: {
@@ -1099,11 +1206,13 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       FILTER: { ACTIVE: true },
       SELECT: selectUser
     }, 500),
-    loadCountryMetadata()
+    loadCountryMetadata(),
+    fetchStagesRaw(new Date().toISOString())
   ]);
 
   const { enumMaps } = countryMetadata;
   const userNames = buildUserNameMap(users);
+  const stageNameById = stagesBundle.stageNameById;
   const leads = periodLeadsRaw.map((lead) => normalizeSnapshotLead(lead, userNames, enumMaps));
   const leadLookup = new Map(leads.map((lead) => [lead.id, lead]));
 
@@ -1138,7 +1247,9 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       enumMaps,
       productRows.get(id) ?? [],
       leadLookup,
-      fromDateField ? "invoice_date_field" : (invoiceStageEntries.has(id) ? "stage_history" : undefined)
+      fromDateField ? "invoice_date_field" : (invoiceStageEntries.has(id) ? "stage_history" : undefined),
+      [],
+      stageNameById
     );
     // Prefer paid deal CLOSEDATE / semantic when available.
     if (paidIds.has(id)) {
@@ -1151,7 +1262,9 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
           enumMaps,
           productRows.get(id) ?? [],
           leadLookup,
-          normalized.invoiceSource
+          normalized.invoiceSource,
+          [],
+          stageNameById
         );
       }
     }

@@ -98,9 +98,9 @@ function tilePreview(contour: ContourDef, snapshot: CeoControlCenterSnapshot): R
         <span>Нет данных по SKU</span>
       );
     case "cohorts":
-      return <span>Когорты · Lead→WON maturity · касса vs когорта</span>;
+      return <span>Месяц / неделя лида · страны · лиды и оплаты в одной когорте</span>;
     case "sales-cycle":
-      return <span>Lead → WON · D0–D30 · менеджеры и источники</span>;
+      return <span>От лида до оплаты · зрелость когорты · менеджеры и источники</span>;
     case "customers":
       return (
         <>

@@ -10,6 +10,30 @@ export const BITRIX_INVOICE_FLAG_YES = "2752";
 export const BITRIX_INVOICE_STAGE_ID = "1"; // «Выставление счета»
 export const BITRIX_SALES_CATEGORY_ID = 0; // воронка «Продажа»
 
+/** Deal ↔ SPA «Вид подарка» (entityTypeId 1038). Used when productrows are empty. */
+export const BITRIX_DEAL_GIFT_LINKS_FIELD = "UF_CRM_1784794322";
+/** Shipping amount on deal (not a product row). */
+export const BITRIX_DELIVERY_PRICE_FIELD = "UF_CRM_1739981844877";
+export const BITRIX_GIFT_SPA_ENTITY_TYPE_ID = 1038;
+/** SPA field «Тип подарка» on entity 1038. */
+export const BITRIX_GIFT_SPA_TYPE_FIELD = "ufCrm8_1777620552";
+
+/** Stable enum IDs for SPA «Тип подарка» (crm.item.fields entityTypeId=1038). */
+export const BITRIX_GIFT_TYPE_ENUM: Record<string, string> = {
+  "2728": "Оригинал",
+  "2730": "Репродукция",
+  "2732": "Поздравительная газета",
+  "2734": "Персонализированный журнал",
+  "2736": "Персонализированная газета",
+  "2738": "Оживи",
+  "2740": "Книга жизни",
+  "2750": "Дигитальная версия",
+  "2790": "Наклейка",
+  "2792": "Песня",
+  "2794": "Поздравительный журнал",
+  "2796": "Упаковка"
+};
+
 /** Lead statuses excluded from operational lead totals. */
 export const EXCLUDED_LEAD_STATUS_IDS = ["1", "3"] as const; // СПАМ, Отзывы
 

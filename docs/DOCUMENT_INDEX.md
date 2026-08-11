@@ -55,7 +55,7 @@ Hub: [00_START_HERE.md](./00_START_HERE.md)
 
 ## Analytics OS (audit — pre-build)
 
-[analytics-os-audit.md](./analytics-os-audit.md) · [analytics-os-metrics.md](./analytics-os-metrics.md) · [analytics-os-data-map.md](./analytics-os-data-map.md) · [analytics-os-phase1.md](./analytics-os-phase1.md)
+[analytics-os-audit.md](./analytics-os-audit.md) · [analytics-os-metrics.md](./analytics-os-metrics.md) · [analytics-os-data-map.md](./analytics-os-data-map.md) · [analytics-os-phase1.md](./analytics-os-phase1.md) · [analytics-os-connections-audit-for-gpt.md](./analytics-os-connections-audit-for-gpt.md) · [analytics-sales-cycle.md](./analytics-sales-cycle.md) · [analytics-next-opportunities.md](./analytics-next-opportunities.md)
 
 ## Other / older
 

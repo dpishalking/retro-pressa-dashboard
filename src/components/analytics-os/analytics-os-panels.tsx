@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
+import { useEffect, useMemo, useState } from "react";
+import type { CeoControlCenterSnapshot, UnitEconomicsKind, UnitEconomicsUnit } from "@/types/analytics-os";
 import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/format-metric";
 import { eur, number, pct } from "@/lib/format";
 
@@ -12,11 +13,7 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
       <div className="aos-section-head">
         <div>
           <h2>План / Факт / Прогноз</h2>
-          <p>
-            План: {plan.planSource || "—"} · показателей: {plan.indicatorCount ?? plan.indicators?.length ?? 0}
-            <br />
-            Прогноз: {plan.forecastSource}
-          </p>
+          <p>План из таблицы · прогноз, если текущий темп сохранится</p>
         </div>
         <StatusBadge status={plan.forecastRevenue.status} />
       </div>
@@ -65,9 +62,7 @@ export function PlanIndicatorsPanel({ snapshot }: { snapshot: CeoControlCenterSn
       <div className="aos-section-head">
         <div>
           <h2>План месяца</h2>
-          <p>
-            {snapshot.plan.planSource || "Google Sheets · План/факт"} · {indicators.length} показателей
-          </p>
+          <p>Таблица «План/факт» · {indicators.length} показателей</p>
         </div>
         <StatusBadge status={indicators.length > 0 ? "live" : "no_data"} />
       </div>
@@ -129,7 +124,7 @@ export function RevenueTreePanel({
       <div className="aos-section-head">
         <div>
           <h2>Выручка</h2>
-          <p>Bitrix → страны → продукты → менеджеры</p>
+          <p>По странам, продуктам и менеджерам</p>
         </div>
         <StatusBadge status={revenueTree.total.status} />
       </div>
@@ -176,12 +171,18 @@ function TreeColumn({
 }
 
 export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const uniqueLeads = snapshot.metrics.unique_leads;
+  const uniqueCr = snapshot.metrics.unique_conversion_rate;
   return (
     <section className="aos-card" id="aos-funnel">
       <div className="aos-section-head">
         <div>
           <h2>Воронка</h2>
-          <p>Лиды → Сделки → Счета → Оплаты</p>
+          <p>
+            Лиды → сделки → счета → оплаты · уникальные люди:{" "}
+            {uniqueLeads ? formatMetricDisplay(uniqueLeads) : "—"} · конверсия уникальных:{" "}
+            {uniqueCr ? formatMetricDisplay(uniqueCr) : "—"}
+          </p>
         </div>
       </div>
       <div className="aos-funnel">
@@ -201,17 +202,37 @@ export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }
           </div>
         ))}
       </div>
+      {uniqueLeads?.decisionHint ? <p className="aos-note">{uniqueLeads.decisionHint}</p> : null}
     </section>
   );
 }
 
 export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const b = snapshot.managerBenchmark;
   return (
     <section className="aos-card" id="aos-managers">
       <div className="aos-section-head">
         <div>
           <h2>Менеджеры</h2>
-          <p>Топ 20% по выручке</p>
+          <p>Топ 20% по €/лид (от 10 лидов)</p>
+        </div>
+      </div>
+      <div className="aos-stat-grid" style={{ marginBottom: 16 }}>
+        <div className="aos-stat">
+          <span>Медиана CR</span>
+          <strong>{b.medianCr == null ? "—" : pct(b.medianCr)}</strong>
+        </div>
+        <div className="aos-stat">
+          <span>P80 CR</span>
+          <strong>{b.p80Cr == null ? "—" : pct(b.p80Cr)}</strong>
+        </div>
+        <div className="aos-stat">
+          <span>Медиана €/лид</span>
+          <strong>{b.medianRevenuePerLead == null ? "—" : eur(b.medianRevenuePerLead)}</strong>
+        </div>
+        <div className="aos-stat">
+          <span>P80 €/лид</span>
+          <strong>{b.p80RevenuePerLead == null ? "—" : eur(b.p80RevenuePerLead)}</strong>
         </div>
       </div>
       <div className="table-scroll">
@@ -222,10 +243,10 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
               <th>Лиды</th>
               <th>Оплаты</th>
               <th>Выручка</th>
+              <th>€ / лид</th>
               <th>Конверсия</th>
               <th>Чек</th>
               <th>Товары / заказ</th>
-              <th>Ответ</th>
             </tr>
           </thead>
           <tbody>
@@ -243,10 +264,10 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
                   <td>{number(row.leads)}</td>
                   <td>{number(row.paidOrders)}</td>
                   <td>{eur(row.revenue)}</td>
+                  <td>{row.revenuePerLead == null ? "—" : eur(row.revenuePerLead)}</td>
                   <td>{row.conversionRate == null ? "—" : pct(row.conversionRate)}</td>
                   <td>{row.aov == null ? "—" : eur(row.aov)}</td>
                   <td>{row.productsPerOrder == null ? "—" : number(row.productsPerOrder, 2)}</td>
-                  <td>{row.responseMinutes == null ? "—" : `${number(row.responseMinutes)} мин`}</td>
                 </tr>
               ))
             )}
@@ -258,55 +279,116 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
 }
 
 export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const catalogProducts = snapshot.products.filter(
+    (row) => !/^(без продукта|не заполнен в crm)$/i.test(row.productName.trim())
+  );
+  const missingProduct = snapshot.products.filter((row) =>
+    /^(без продукта|не заполнен в crm)$/i.test(row.productName.trim())
+  );
+  const missingOrders = missingProduct.reduce((sum, row) => sum + row.orders, 0);
+  const missingRevenue = missingProduct.reduce((sum, row) => sum + row.revenue, 0);
+
   return (
-    <section className="aos-card" id="aos-products">
-      <div className="aos-section-head">
-        <div>
-          <h2>Продукты</h2>
-          <p>
-            Основной товар · 2+ в заказе: {formatMetricDisplay(snapshot.multiProductOrdersPct)} · валовая{" "}
-            {formatMetricDisplay(snapshot.productMargin.marginRate)}{" "}
-            <StatusBadge status={snapshot.productMargin.marginRate.status} />
-          </p>
+    <>
+      <section className="aos-card" id="aos-products">
+        <div className="aos-section-head">
+          <div>
+            <h2>Продукты</h2>
+            <p>
+              Основной товар · 2+ в заказе: {formatMetricDisplay(snapshot.multiProductOrdersPct)} · валовая{" "}
+              {formatMetricDisplay(snapshot.productMargin.marginRate)}{" "}
+              <StatusBadge status={snapshot.productMargin.marginRate.status} />
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="table-scroll">
-        <table className="aos-table">
-          <thead>
-            <tr>
-              <th>Продукт</th>
-              <th>Заказы</th>
-              <th>Выручка</th>
-              <th>COGS</th>
-              <th>Валовая</th>
-              <th>Маржа</th>
-              <th>Чек</th>
-              <th>Доля</th>
-            </tr>
-          </thead>
-          <tbody>
-            {snapshot.products.length === 0 ? (
+        <div className="table-scroll">
+          <table className="aos-table">
+            <thead>
               <tr>
-                <td colSpan={8}>—</td>
+                <th>Продукт</th>
+                <th>Заказы</th>
+                <th>Выручка</th>
+                <th>COGS</th>
+                <th>Валовая</th>
+                <th>Маржа</th>
+                <th>Чек</th>
+                <th>Доля</th>
               </tr>
-            ) : (
-              snapshot.products.map((row) => (
-                <tr key={row.productId}>
-                  <td>{row.productName}</td>
-                  <td>{number(row.orders)}</td>
-                  <td>{eur(row.revenue)}</td>
-                  <td>{row.cogs == null ? "—" : eur(row.cogs)}</td>
-                  <td>{row.grossProfit == null ? "—" : eur(row.grossProfit)}</td>
-                  <td>{row.marginRate == null ? "—" : pct(row.marginRate)}</td>
-                  <td>{eur(row.aov)}</td>
-                  <td>{pct(row.share)}</td>
+            </thead>
+            <tbody>
+              {catalogProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>—</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
+              ) : (
+                catalogProducts.map((row) => (
+                  <tr key={row.productId}>
+                    <td>{row.productName}</td>
+                    <td>{number(row.orders)}</td>
+                    <td>{eur(row.revenue)}</td>
+                    <td>{row.cogs == null ? "—" : eur(row.cogs)}</td>
+                    <td>{row.grossProfit == null ? "—" : eur(row.grossProfit)}</td>
+                    <td>{row.marginRate == null ? "—" : pct(row.marginRate)}</td>
+                    <td>{eur(row.aov)}</td>
+                    <td>{pct(row.share)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {missingOrders > 0 ? (
+          <p className="aos-note">
+            В Bitrix без товара в карточке: {number(missingOrders)} оплат · {eur(missingRevenue)}. В таблице
+            продуктов их нет — это дыра заполнения CRM, не отдельный продукт.
+          </p>
+        ) : null}
+      </section>
+      <section className="aos-card" id="aos-pricing">
+        <div className="aos-section-head">
+          <div>
+            <h2>Цена витрины vs продажа</h2>
+            <p>Product Hub retail vs средняя цена строки Bitrix</p>
+          </div>
+        </div>
+        <div className="table-scroll">
+          <table className="aos-table">
+            <thead>
+              <tr>
+                <th>Продукт</th>
+                <th>Продаж</th>
+                <th>Витрина</th>
+                <th>Средняя продажа</th>
+                <th>Медиана</th>
+                <th>Δ к витрине</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(snapshot.pricingCompare || []).length === 0 ? (
+                <tr>
+                  <td colSpan={6}>Нет сопоставления (нужен Product Hub + цены строк)</td>
+                </tr>
+              ) : (
+                snapshot.pricingCompare.map((row) => (
+                  <tr key={row.productName}>
+                    <td>{row.productName}</td>
+                    <td>{number(row.orders)}</td>
+                    <td>{row.listPrice == null ? "—" : eur(row.listPrice)}</td>
+                    <td>{row.soldAvg == null ? "—" : eur(row.soldAvg)}</td>
+                    <td>{row.soldMedian == null ? "—" : eur(row.soldMedian)}</td>
+                    <td>
+                      {row.deltaPct == null
+                        ? "—"
+                        : `${row.deltaPct > 0 ? "+" : ""}${number(row.deltaPct, 1)}%`}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -386,61 +468,215 @@ export function CustomersPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
   );
 }
 
+const UNIT_KIND_OPTIONS: Array<{ id: UnitEconomicsKind; label: string; hint: string }> = [
+  { id: "average", label: "Средняя оплата", hint: "Вся компания как один юнит" },
+  { id: "product", label: "Продукт", hint: "Конкретный товар в заказе" },
+  { id: "manager", label: "Менеджер", hint: "Продавец и его воронка" },
+  { id: "country", label: "Страна", hint: "География продаж" },
+  { id: "gift_type", label: "Тип подарка", hint: "Оригинал, репродукция и др." },
+  { id: "deal", label: "Одна продажа", hint: "Конкретная оплаченная сделка" }
+];
+
+function UnitStat({
+  label,
+  value,
+  tone
+}: {
+  label: string;
+  value: string;
+  tone?: "ok" | "warn" | "bad";
+}) {
+  return (
+    <div className={`aos-stat${tone ? ` aos-stat--${tone}` : ""}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function unitTone(value: number | null, goodIfPositive = true): "ok" | "warn" | "bad" | undefined {
+  if (value == null) return undefined;
+  if (goodIfPositive) return value > 0 ? "ok" : value < 0 ? "bad" : "warn";
+  return undefined;
+}
+
 export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
-  const m = snapshot.marketing;
-  const pm = snapshot.productMargin;
+  const units = snapshot.unitEconomics?.units || [];
+  const [kind, setKind] = useState<UnitEconomicsKind>("average");
+  const [unitId, setUnitId] = useState("average");
+
+  const options = useMemo(() => units.filter((unit) => unit.kind === kind), [units, kind]);
+
+  useEffect(() => {
+    if (!options.length) return;
+    if (!options.some((unit) => unit.id === unitId)) {
+      setUnitId(options[0].id);
+    }
+  }, [options, unitId]);
+
+  const selected: UnitEconomicsUnit | null =
+    options.find((unit) => unit.id === unitId) || options[0] || null;
+  const kindMeta = UNIT_KIND_OPTIONS.find((item) => item.id === kind);
+
   return (
     <section className="aos-card" id="aos-unit-economics">
       <div className="aos-section-head">
         <div>
           <h2>Юнит-экономика</h2>
-          <p>
-            {pm.source} · покрытие линий {pct(pm.lineCoverage)} · сделки с товарами {pm.dealsWithProducts}/
-            {pm.dealsTotal}
-          </p>
+          <p>Выберите юнит → смотрите маржу и стоимость продажи</p>
         </div>
-        <StatusBadge status={pm.grossProfit.status} />
+        <StatusBadge status={selected?.mapped ? "calculated" : "partial"} />
       </div>
-      <div className="aos-stat-grid">
-        {[
-          ["Средний чек", snapshot.metrics.aov],
-          ["COGS", pm.cogs],
-          ["Валовая прибыль", pm.grossProfit],
-          ["Валовая маржа", pm.marginRate],
-          ["CPL", m.cpl],
-          ["CAC", m.cac],
-          ["ROAS", m.roas],
-          ["Маржа вклада", snapshot.metrics.contribution_margin]
-        ].map(([label, metric]) => (
-          <div key={String(label)} className="aos-stat">
-            <span>{label as string}</span>
-            <strong>{formatMetricDisplay(metric as typeof m.cpl)}</strong>
-            <StatusBadge
-              status={
-                (metric as typeof m.cpl).confidence === "low" && (metric as typeof m.cpl).status === "calculated"
-                  ? "partial"
-                  : (metric as typeof m.cpl).status
-              }
-            />
-          </div>
+
+      <div className="aos-unit-kinds" role="tablist" aria-label="Тип юнита">
+        {UNIT_KIND_OPTIONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={kind === item.id}
+            className={`aos-unit-kind${kind === item.id ? " is-active" : ""}`}
+            onClick={() => {
+              setKind(item.id);
+            }}
+          >
+            {item.label}
+          </button>
         ))}
       </div>
-      <p className="aos-note">
-        COGS из Product Hub (00_INDEX + SKU_MAP). Доставка и комиссии платёжек в марже вклада ещё не вычтены.
-        Заказы без товарных строк в Bitrix не дают COGS.
-      </p>
+
+      {kind !== "average" ? (
+        <label className="aos-unit-pick">
+          <span>{kindMeta?.label || "Юнит"}</span>
+          <select value={selected?.id || ""} onChange={(event) => setUnitId(event.target.value)}>
+            {options.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+                {kind === "deal" && unit.closeDate ? ` · ${unit.closeDate.slice(0, 10)}` : ""}
+                {kind !== "deal" ? ` · ${unit.orders} опл.` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {!selected ? (
+        <p className="aos-muted">Нет оплат за период для выбранного юнита.</p>
+      ) : (
+        <>
+          <p className="aos-unit-selected">
+            <strong>{selected.name}</strong>
+            <span>{kindMeta?.hint}</span>
+          </p>
+
+          <div className="aos-stat-grid">
+            <UnitStat
+              label={kind === "deal" ? "Выручка продажи" : "Выручка юнита"}
+              value={eur(selected.revenue)}
+            />
+            <UnitStat
+              label={kind === "deal" ? "Оплата" : "Оплат"}
+              value={kind === "deal" ? "1" : number(selected.orders)}
+            />
+            <UnitStat label="Средний чек без доставки" value={eur(selected.aov)} />
+            <UnitStat
+              label="Себестоимость"
+              value={selected.cogs == null ? "—" : eur(selected.cogs)}
+              tone={selected.cogs == null ? "warn" : undefined}
+            />
+            <UnitStat
+              label="Валовая прибыль"
+              value={selected.grossProfit == null ? "—" : eur(selected.grossProfit)}
+              tone={unitTone(selected.grossProfit)}
+            />
+            <UnitStat
+              label="Валовая маржа"
+              value={selected.marginRate == null ? "—" : pct(selected.marginRate)}
+              tone={
+                selected.marginRate == null
+                  ? "warn"
+                  : selected.marginRate >= 0.5
+                    ? "ok"
+                    : selected.marginRate >= 0.3
+                      ? "warn"
+                      : "bad"
+              }
+            />
+            <UnitStat
+              label="Стоимость 1 продажи"
+              value={selected.saleCost == null ? "—" : eur(selected.saleCost)}
+              tone={selected.saleCost == null ? "warn" : undefined}
+            />
+            <UnitStat
+              label="После стоимости продажи"
+              value={selected.profitAfterSaleCost == null ? "—" : eur(selected.profitAfterSaleCost)}
+              tone={unitTone(selected.profitAfterSaleCost)}
+            />
+            {selected.leads != null ? (
+              <UnitStat label="Лиды юнита" value={number(selected.leads)} />
+            ) : null}
+          </div>
+
+          <p className="aos-note">
+            {selected.saleCostNote}. Себестоимость — из каталога по позициям заказа; доставка из выручки
+            уже вычтена. Комиссии платёжек ещё не вычтены.
+            {selected.mapped ? "" : " У этого юнита нет полной себестоимости по товарам."}
+          </p>
+
+          {kind !== "average" && kind !== "deal" && options.length > 1 ? (
+            <div className="table-scroll" style={{ marginTop: "1rem" }}>
+              <table className="aos-table">
+                <thead>
+                  <tr>
+                    <th>{kindMeta?.label}</th>
+                    <th>Оплат</th>
+                    <th>Чек</th>
+                    <th>Маржа</th>
+                    <th>Стоимость продажи</th>
+                    <th>После затрат</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {options.slice(0, 20).map((unit) => (
+                    <tr
+                      key={unit.id}
+                      className={unit.id === selected.id ? "aos-row-active" : undefined}
+                      onClick={() => setUnitId(unit.id)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{unit.name}</td>
+                      <td>{number(unit.orders)}</td>
+                      <td>{eur(unit.aov)}</td>
+                      <td>{unit.marginRate == null ? "—" : pct(unit.marginRate)}</td>
+                      <td>{unit.saleCost == null ? "—" : eur(unit.saleCost)}</td>
+                      <td>{unit.profitAfterSaleCost == null ? "—" : eur(unit.profitAfterSaleCost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }
 
 export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const p = snapshot.pipeline;
+  const age = p.age;
   return (
     <section className="aos-card">
       <div className="aos-section-head">
         <div>
           <h2>Открытая воронка</h2>
-          <p>Открытые сделки</p>
+          <p>
+            Без касания &gt;7 дн.: {age ? number(age.stuckOver7d.deals) : "—"} ·{" "}
+            {age ? eur(age.stuckOver7d.amount) : "—"}
+            {age?.activityCoveragePct != null
+              ? ` · LAST_ACTIVITY ${Math.round(age.activityCoveragePct * 100)}%`
+              : ""}
+          </p>
         </div>
       </div>
       <div className="aos-stat-grid">
@@ -448,7 +684,7 @@ export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
           ["Сделки", p.openDeals],
           ["Сумма", p.pipelineAmount],
           ["С весом", p.weightedAmount],
-          ["Просрочка", p.overdueDeals]
+          ["Без касания >7 дн.", p.overdueDeals]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>
@@ -457,6 +693,88 @@ export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
           </div>
         ))}
       </div>
+      {age?.byStage?.length ? (
+        <div className="table-scroll" style={{ marginTop: 16 }}>
+          <table className="aos-table">
+            <thead>
+              <tr>
+                <th>Стадия</th>
+                <th>Сделки</th>
+                <th>Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {age.byStage.slice(0, 10).map((row) => (
+                <tr key={row.stageId}>
+                  <td>{row.stageName}</td>
+                  <td>{number(row.deals)}</td>
+                  <td>{eur(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {age?.buckets?.length ? (
+        <div className="table-scroll" style={{ marginTop: 16 }}>
+          <table className="aos-table">
+            <thead>
+              <tr>
+                <th>Простой (с касания)</th>
+                <th>Сделки</th>
+                <th>Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {age.buckets.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.label}</td>
+                  <td>{number(row.deals)}</td>
+                  <td>{eur(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+export function OpportunitiesPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const rows = snapshot.opportunities || [];
+  return (
+    <section className="aos-card" id="aos-opportunities">
+      <div className="aos-section-head">
+        <div>
+          <h2>Где теряем деньги</h2>
+          <p>Разрывы vs медиана CR / €/лид · оценка upside</p>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="aos-note">Пока нет значимых разрывов (нужно ≥40 лидов в сегменте).</p>
+      ) : (
+        <div className="table-scroll">
+          <table className="aos-table">
+            <thead>
+              <tr>
+                <th>Сегмент</th>
+                <th>Деталь</th>
+                <th>Upside ≈</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.title}</td>
+                  <td>{row.body}</td>
+                  <td>{row.euroImpact == null ? "—" : eur(row.euroImpact)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

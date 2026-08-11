@@ -88,6 +88,48 @@ function resolveModules(modules?: SalesFoundationModule[]): Exclude<SalesFoundat
   return SALES_FOUNDATION_SYNC_ORDER.filter((module) => set.has(module));
 }
 
+/** Merge sheet history by primary key so period sync does not wipe older lead/deal rows. */
+async function mergeRowsByKey(input: {
+  spreadsheetId: string;
+  tabTitle: string;
+  columns: readonly string[];
+  rows: Array<Array<string | number>>;
+  keyColumn: string;
+}): Promise<Array<Array<string | number>>> {
+  const keyIndex = input.columns.indexOf(input.keyColumn);
+  if (keyIndex < 0) return input.rows;
+  let existing: string[][] = [];
+  try {
+    existing = await readSheetValues({
+      spreadsheetId: input.spreadsheetId,
+      range: `${quoteTab(input.tabTitle)}!A1:ZZ`
+    });
+  } catch {
+    return input.rows;
+  }
+  if (!existing.length) return input.rows;
+  const header = existing[0]?.map((cell) => String(cell ?? "").trim()) || [];
+  const existingKeyIndex = header.indexOf(input.keyColumn);
+  if (existingKeyIndex < 0) return input.rows;
+
+  const byKey = new Map<string, Array<string | number>>();
+  for (const row of existing.slice(1)) {
+    const key = String(row[existingKeyIndex] ?? "").trim();
+    if (!key) continue;
+    const normalized = input.columns.map((col) => {
+      const idx = header.indexOf(col);
+      return idx >= 0 ? (row[idx] ?? "") : "";
+    });
+    byKey.set(key, normalized);
+  }
+  for (const row of input.rows) {
+    const key = String(row[keyIndex] ?? "").trim();
+    if (!key) continue;
+    byKey.set(key, row);
+  }
+  return [...byKey.values()];
+}
+
 async function writeOrDry(input: {
   dryRun: boolean;
   spreadsheetId: string;
@@ -96,6 +138,8 @@ async function writeOrDry(input: {
   rows: Array<Array<string | number>>;
   syncName: string;
   source: string;
+  /** When set, upsert into existing sheet history by this column before replace. */
+  upsertKey?: string;
 }) {
   if (input.dryRun) {
     return { rowsWritten: 0, rowsRead: input.rows.length };
@@ -109,15 +153,24 @@ async function writeOrDry(input: {
     schemaVersion: SALES_FOUNDATION_CONTRACT_VERSION,
     triggerType: "script"
   }, async () => {
+    const rows = input.upsertKey
+      ? await mergeRowsByKey({
+          spreadsheetId: input.spreadsheetId,
+          tabTitle: input.tabTitle,
+          columns: input.columns,
+          rows: input.rows,
+          keyColumn: input.upsertKey
+        })
+      : input.rows;
     const written = await safeReplaceSheet({
       spreadsheetId: input.spreadsheetId,
       tabTitle: input.tabTitle,
       expectedColumns: input.columns,
-      rows: input.rows,
+      rows,
       clearRange: `${quoteTab(input.tabTitle)}!A:ZZ`,
       schemaVersion: SALES_FOUNDATION_CONTRACT_VERSION
     });
-    return { rowsWritten: written.rowsWritten, rowsRead: input.rows.length };
+    return { rowsWritten: written.rowsWritten, rowsRead: rows.length };
   });
 }
 
@@ -323,7 +376,8 @@ export async function syncBitrixSalesFoundation(options: {
             columns: LEADS_RAW_COLUMNS,
             rows: leadsToSheetRows(rows),
             syncName: "bitrix_sales_foundation_leads",
-            source: "crm.lead.list"
+            source: "crm.lead.list",
+            upsertKey: "lead_id"
           });
           return { status: "success", rows_read: rows.length, rows_written: written.rowsWritten, warnings: w };
         });
@@ -340,7 +394,8 @@ export async function syncBitrixSalesFoundation(options: {
             columns: DEALS_RAW_COLUMNS,
             rows: dealsToSheetRows(rows),
             syncName: "bitrix_sales_foundation_deals",
-            source: "crm.deal.list"
+            source: "crm.deal.list",
+            upsertKey: "deal_id"
           });
           return { status: "success", rows_read: rows.length, rows_written: written.rowsWritten, warnings: w };
         });

@@ -236,8 +236,15 @@ export function resolveLineCogs(
   return { cogsUnit: null, entry: byId || null };
 }
 
+/** Product cash for margin: opportunity minus delivery UF when present. */
+export function dealProductRevenue(deal: BitrixSnapshotDeal): number {
+  const opportunity = Number(deal.opportunity) || 0;
+  const delivery = deal.deliveryPrice == null ? 0 : Number(deal.deliveryPrice) || 0;
+  return Math.max(0, opportunity - delivery);
+}
+
 export function computeDealMargin(deal: BitrixSnapshotDeal, catalog: ProductHubMarginCatalog): DealMarginBreakdown {
-  const revenue = Number(deal.opportunity) || 0;
+  const revenue = dealProductRevenue(deal);
   const lines = deal.products || [];
   if (!lines.length) {
     return {
@@ -301,7 +308,7 @@ export function aggregateMargins(paidDeals: BitrixSnapshotDeal[], catalog: Produ
   let totalLines = 0;
 
   for (const deal of paidDeals) {
-    revenue += Number(deal.opportunity) || 0;
+    revenue += dealProductRevenue(deal);
     const row = computeDealMargin(deal, catalog);
     totalLines += row.totalLines;
     mappedLines += row.mappedLines;
@@ -344,7 +351,7 @@ export function aggregateProductMargins(
     const key = primary.productId || primary.productName || "unknown";
     const row = out.get(key) || { cogs: 0, revenue: 0, orders: 0, mapped: false };
     row.orders += 1;
-    row.revenue += Number(deal.opportunity) || 0;
+    row.revenue += dealProductRevenue(deal);
     const margin = computeDealMargin(deal, catalog);
     if (margin.cogs != null) {
       row.cogs += margin.cogs;

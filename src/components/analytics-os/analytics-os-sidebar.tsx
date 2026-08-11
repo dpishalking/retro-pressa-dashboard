@@ -56,7 +56,7 @@ const NAV: NavGroup[] = [
     title: "Клиенты",
     items: [
       { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
-      { id: "stub", label: "Когорты", enabled: false },
+      { id: "external", label: "Когорты", enabled: true, href: "/os/cohorts" },
       { id: "stub", label: "Подарки", enabled: false }
     ]
   },

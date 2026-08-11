@@ -1,4 +1,5 @@
 import type { BitrixSnapshot, BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
+import { hydrateDealProducts, isMissingProductLabel, resolveDealProductName } from "@/lib/bitrix/gift-type-resolver";
 import { resolveCustomerIdentity } from "@/lib/os-sheets/customer-identity";
 import { averagePaidCheck, salesConversion } from "@/lib/metrics-engine";
 import type { MonthlyMetrics } from "@/types/metrics";
@@ -35,11 +36,16 @@ function leadMatchesFilters(lead: BitrixSnapshotLead, filters: AnalyticsFilters)
 }
 
 function primaryProduct(deal: BitrixSnapshotDeal) {
-  const product = deal.products.find((item) => item.productName || item.productId);
+  const hydrated = hydrateDealProducts(deal);
+  const product = hydrated.products.find((item) => item.productName || item.productId);
+  const inferred = resolveDealProductName(hydrated);
+  const rawName = product?.productName || product?.productId || inferred || "Не заполнен в CRM";
+  const name = isMissingProductLabel(rawName) ? "Не заполнен в CRM" : rawName;
+  const id = product?.productId && !isMissingProductLabel(product.productId) ? product.productId : name;
   return {
-    id: product?.productId || product?.productName || "unknown",
-    name: product?.productName || product?.productId || "Без продукта",
-    rows: deal.products.length
+    id,
+    name,
+    rows: hydrated.products.length
   };
 }
 
@@ -63,7 +69,8 @@ export function filterSnapshot(snapshot: BitrixSnapshot, filters: AnalyticsFilte
   const paidDeals = snapshot.paidDeals.filter((d) => dealMatchesFilters(d, filters));
   const invoiceDeals = snapshot.deals.filter((d) => dealMatchesFilters(d, filters));
   const leads = snapshot.leads.filter((l) => leadMatchesFilters(l, filters));
-  return { paidDeals, invoiceDeals, leads };
+  const openPipeline = (snapshot.openPipeline || []).filter((d) => dealMatchesFilters(d, filters));
+  return { paidDeals, invoiceDeals, leads, openPipeline };
 }
 
 export function sumPaidRevenue(paidDeals: BitrixSnapshotDeal[]): number {
@@ -245,6 +252,7 @@ export function aggregateManagers(input: {
       revenue,
       conversionRate: leads > 0 ? paidOrders / leads : null,
       aov: paidOrders > 0 ? revenue / paidOrders : null,
+      revenuePerLead: leads > 0 ? revenue / leads : null,
       productsPerOrder: paidOrders > 0 ? (paid?.productRows || 0) / paidOrders : null,
       responseMinutes: null,
       responseConfidence: "low" as const,
@@ -253,9 +261,17 @@ export function aggregateManagers(input: {
   });
 
   rows.sort((a, b) => b.revenue - a.revenue);
-  const topCount = Math.max(1, Math.ceil(rows.length * 0.2));
-  rows.forEach((row, index) => {
-    row.isTopPerformer = index < topCount && row.revenue > 0;
+  const eligible = rows.filter((r) => r.leads >= 10 && (r.revenuePerLead || 0) > 0);
+  const ranked = (eligible.length ? eligible : rows.filter((r) => r.revenue > 0)).sort(
+    (a, b) =>
+      eligible.length
+        ? (b.revenuePerLead || 0) - (a.revenuePerLead || 0)
+        : b.revenue - a.revenue
+  );
+  const topCount = Math.max(1, Math.ceil(ranked.length * 0.2));
+  const topIds = new Set(ranked.slice(0, topCount).map((r) => r.managerId));
+  rows.forEach((row) => {
+    row.isTopPerformer = topIds.has(row.managerId);
   });
   return rows;
 }

@@ -67,16 +67,18 @@ type RopReportPayload = {
   error?: string;
 };
 
-const archivePeriodMap: Record<"may" | "june" | "july", PeriodKey> = {
+const archivePeriodMap: Record<"may" | "june" | "july" | "august", PeriodKey> = {
   may: "may-2026",
   june: "june-2026",
-  july: "july-2026"
+  july: "july-2026",
+  august: "august-2026"
 };
 
-const archiveLabelMap: Record<"may" | "june" | "july", string> = {
+const archiveLabelMap: Record<"may" | "june" | "july" | "august", string> = {
   may: "майский",
   june: "июньский",
-  july: "июльский"
+  july: "июльский",
+  august: "августовский"
 };
 const periodOptions: Array<{ value: PeriodKey; label: string }> = [
   { value: "august-2026", label: "Август 2026" },
@@ -120,13 +122,13 @@ function ropMetricValue(metric: ConversationRopReport["metrics"][number]) {
 
 export function RopConversationsScreen() {
   const archiveInputRef = useRef<HTMLInputElement | null>(null);
-  const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | "july" | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<"may" | "june" | "july" | "august" | null>(null);
   const [geminiSummary, setGeminiSummary] = useState<GeminiConversationSummary | null>(null);
   const [history, setHistory] = useState<ConversationHistoryItem[]>([]);
   const [ropReport, setRopReport] = useState<ConversationRopReport | null>(null);
   const [ropReportError, setRopReportError] = useState<string>("");
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("july-2026");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("august-2026");
   const [status, setStatus] = useState<SyncStatus>({ state: "idle", message: "" });
 
   useEffect(() => {
@@ -221,24 +223,35 @@ export function RopConversationsScreen() {
   const selectedPeriodLabel = periodOptions.find((item) => item.value === selectedPeriod)?.label ?? selectedPeriod;
 
   const refreshFromBitrix = async (attempt = 0) => {
-    if (selectedPeriod !== "july-2026") {
-      setStatus({ state: "error", message: "Bitrix-синк доступен только для текущего месяца (июль)." });
+    const syncable = selectedPeriod === "july-2026" || selectedPeriod === "august-2026";
+    if (!syncable) {
+      setStatus({
+        state: "error",
+        message: "Свежий срез из Битрикс доступен для июля и августа. Май и июнь загружайте файлом."
+      });
       return;
     }
-    setStatus({ state: "loading", message: "Проверяю свежие переписки июля в Bitrix..." });
+    const periodLabel = selectedPeriod === "august-2026" ? "августа" : "июля";
+    setStatus({ state: "loading", message: `Проверяю свежие переписки ${periodLabel} в Битрикс...` });
     try {
       const response = await fetch("/api/conversations/sync-bitrix", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ period: "july-2026", dialogLimit: 5, daysBack: 1, incremental: true })
+        body: JSON.stringify({
+          period: selectedPeriod,
+          dialogLimit: selectedPeriod === "august-2026" ? 80 : 5,
+          daysBack: selectedPeriod === "august-2026" ? 3 : 1,
+          incremental: true
+        })
       });
       const data = await readJsonResponse<BitrixSyncPayload>(response);
-      if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Bitrix");
+      if (!response.ok) throw new Error(data.error || "Не удалось обновить переписки из Битрикс");
+      const monthName = selectedPeriod === "august-2026" ? "Август" : "Июль";
       setStatus({
         state: "ok",
         message: data.summary.incremental
-          ? `Июль обновлён быстрым срезом: +${number(data.summary.dialogsAdded ?? data.summary.dialogsLoaded)} диалогов сегодня, всего ${number(data.summary.totalDialogs ?? data.summary.dialogsLoaded)}. Большой импорт идёт автоматически утром.`
-          : `Июль обновлён из Bitrix: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
+          ? `${monthName} обновлён быстрым срезом: +${number(data.summary.dialogsAdded ?? data.summary.dialogsLoaded)} диалогов, всего ${number(data.summary.totalDialogs ?? data.summary.dialogsLoaded)}. Полный импорт также идёт утром автоматически.`
+          : `${monthName} обновлён из Битрикс: ${number(data.summary.dialogsLoaded)} диалогов и ${number(data.summary.messagesLoaded)} сообщений.`
       });
 
       const historyResponse = await fetch("/api/conversations/history?limit=30");
@@ -407,9 +420,19 @@ export function RopConversationsScreen() {
               Загрузить июль
             </button>
             <button
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              disabled={status.state === "loading"}
+              onClick={() => {
+                setArchiveTarget("august");
+                archiveInputRef.current?.click();
+              }}
+            >
+              Загрузить август
+            </button>
+            <button
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
               onClick={() => void refreshFromBitrix()}
-              disabled={status.state === "loading" || selectedPeriod !== "july-2026"}
+              disabled={status.state === "loading" || (selectedPeriod !== "july-2026" && selectedPeriod !== "august-2026")}
             >
               <RefreshCcw size={16} />
               {status.state === "loading" ? "Проверяю..." : "Свежий срез Bitrix"}
@@ -578,7 +601,16 @@ export function RopConversationsScreen() {
                 {item.importedDay} · {item.label}
               </button>
             );
-          }) : <p className="text-sm text-slate-500">Для {selectedPeriodLabel.toLowerCase()} ещё нет архива. {selectedPeriod === "july-2026" ? "Нажми «Загрузить июль» и выбери уже скачанный JSON/CSV — или «Обновить июль из Bitrix»." : `Нажми «Загрузить ${selectedPeriod === "may-2026" ? "май" : "июнь"}» и выбери файл.`}</p>}
+          }) : (
+            <p className="text-sm text-slate-500">
+              Для {selectedPeriodLabel.toLowerCase()} ещё нет архива.{" "}
+              {selectedPeriod === "august-2026"
+                ? "Нажми «Свежий срез Bitrix» или «Загрузить август»."
+                : selectedPeriod === "july-2026"
+                  ? "Нажми «Загрузить июль» или «Свежий срез Bitrix»."
+                  : `Нажми «Загрузить ${selectedPeriod === "may-2026" ? "май" : "июнь"}» и выбери файл.`}
+            </p>
+          )}
         </div>
       </section>
 
@@ -723,7 +755,15 @@ export function RopConversationsScreen() {
         </div>
       ) : (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-slate-500">
-          Пока нет сохранённого среза переписок. Загрузите уже скачанный архив кнопкой «Загрузить {selectedPeriod === "july-2026" ? "июль" : selectedPeriod === "may-2026" ? "май" : "июнь"}» — или обновите июль из Bitrix.
+          Пока нет сохранённого среза переписок. Загрузите архив кнопкой «Загрузить{" "}
+          {selectedPeriod === "august-2026"
+            ? "август"
+            : selectedPeriod === "july-2026"
+              ? "июль"
+              : selectedPeriod === "may-2026"
+                ? "май"
+                : "июнь"}
+          » — или возьмите свежий срез из Битрикс для июля/августа.
         </section>
       )}
     </main>

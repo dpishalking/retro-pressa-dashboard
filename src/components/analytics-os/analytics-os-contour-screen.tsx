@@ -14,6 +14,7 @@ import {
   FunnelPanel,
   ManagersPanel,
   MarketingPanel,
+  OpportunitiesPanel,
   OwnerIntelligencePanel,
   PipelinePanel,
   PlanFactForecast,
@@ -24,6 +25,8 @@ import {
   RevenueTreePanel,
   UnitEconomicsPanel
 } from "@/components/analytics-os/analytics-os-panels";
+import { CohortsPanel } from "@/components/analytics-os/cohorts-panel";
+import { SalesCyclePanel } from "@/components/analytics-os/sales-cycle-panel";
 
 function StubPanel({ contour }: { contour: ContourDef }) {
   return (
@@ -191,10 +194,27 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
                 <>
                   <FunnelPanel snapshot={snapshot} />
                   <PipelinePanel snapshot={snapshot} />
+                  <OpportunitiesPanel snapshot={snapshot} />
+                  <SalesCyclePanel
+                    period={period}
+                    managerId={managerId || undefined}
+                    country={country || undefined}
+                    productId={productId || undefined}
+                  />
                 </>
               )}
-              {contour.id === "managers" && <ManagersPanel snapshot={snapshot} />}
-              {contour.id === "geography" && <CountriesPanel snapshot={snapshot} />}
+              {contour.id === "managers" && (
+                <>
+                  <ManagersPanel snapshot={snapshot} />
+                  <OpportunitiesPanel snapshot={snapshot} />
+                </>
+              )}
+              {contour.id === "geography" && (
+                <>
+                  <CountriesPanel snapshot={snapshot} />
+                  <OpportunitiesPanel snapshot={snapshot} />
+                </>
+              )}
               {contour.id === "production" && <ProductionPanel snapshot={snapshot} />}
               {contour.id === "sources" && (
                 <>
@@ -202,7 +222,23 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
                   <DataQualityPanel snapshot={snapshot} />
                 </>
               )}
-              {(contour.id === "cohorts" || contour.id === "creatives") && <StubPanel contour={contour} />}
+              {contour.id === "cohorts" && (
+                <CohortsPanel
+                  period={period}
+                  managerId={managerId || undefined}
+                  country={country || undefined}
+                  productId={productId || undefined}
+                />
+              )}
+              {contour.id === "sales-cycle" && (
+                <SalesCyclePanel
+                  period={period}
+                  managerId={managerId || undefined}
+                  country={country || undefined}
+                  productId={productId || undefined}
+                />
+              )}
+              {contour.id === "creatives" && <StubPanel contour={contour} />}
               {(contour.id === "revenue" || contour.id === "funnel" || contour.id === "managers") && (
                 <OwnerIntelligencePanel snapshot={snapshot} />
               )}
