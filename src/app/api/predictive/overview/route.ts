@@ -18,7 +18,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const period = parsePeriodParam(searchParams.get("period"));
-    const overview = await loadPredictiveOverview(period);
+    const overview = await loadPredictiveOverview(period, {
+      marketingScope: searchParams.get("scope") ?? searchParams.get("marketingScope")
+    });
     return NextResponse.json({ ok: true, ...overview });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось загрузить предиктивные модели";

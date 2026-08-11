@@ -2,7 +2,11 @@ import { PREDICTIVE_UI } from "@/config/predictive-ui";
 import { periodToIsoMonth } from "@/lib/financial-report/period";
 import { buildCanonicalFinancialReport } from "@/lib/financial-report/build";
 import { readSheetValues } from "@/lib/google/sheets-client";
-import { loadMarketingPredictiveModel } from "@/lib/marketing-planning/load-marketing-predictive";
+import {
+  loadMarketingPredictiveModel,
+  normalizeMarketingPredictiveScope,
+  type MarketingPredictiveScope
+} from "@/lib/marketing-planning/load-marketing-predictive";
 import {
   DEPARTMENT_SCOPE_ID,
   PREDICTION_EXPORT_COLUMNS,
@@ -267,11 +271,20 @@ async function loadSalesBlock(isoMonth: string, today: string): Promise<Predicti
   }
 }
 
-async function loadMarketingBlock(isoMonth: string, today: string): Promise<PredictiveDomainBlock> {
+async function loadMarketingBlock(
+  isoMonth: string,
+  today: string,
+  scope: MarketingPredictiveScope = "general"
+): Promise<PredictiveDomainBlock> {
+  const scopeTitles: Record<MarketingPredictiveScope, string> = {
+    general: "Маркетинг · общая",
+    organic: "Маркетинг · органика",
+    paid: "Маркетинг · платный трафик"
+  };
   const base: PredictiveDomainBlock = {
     domain: "marketing",
-    title: "Маркетинг",
-    subtitle: "План (Лист2) · факт по дням · прогноз calendar_run_rate. Месяц можно развернуть по дням.",
+    title: scopeTitles[scope],
+    subtitle: "План · факт по дням · прогноз calendar_run_rate. Месяц можно развернуть по дням.",
     status: "blocked",
     message: "Нет данных маркетинга.",
     method: "calendar_run_rate",
@@ -283,7 +296,7 @@ async function loadMarketingBlock(isoMonth: string, today: string): Promise<Pred
   };
 
   try {
-    const model = await loadMarketingPredictiveModel({ isoMonth });
+    const model = await loadMarketingPredictiveModel({ isoMonth, scope });
     return {
       ...base,
       status: model.status,
@@ -412,12 +425,16 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
   }
 }
 
-export async function loadPredictiveOverview(period: PeriodKey): Promise<PredictiveOverview> {
+export async function loadPredictiveOverview(
+  period: PeriodKey,
+  options?: { marketingScope?: MarketingPredictiveScope | string | null }
+): Promise<PredictiveOverview> {
   const isoMonth = periodToIsoMonth(period);
   const today = todayIsoRiga();
+  const marketingScope = normalizeMarketingPredictiveScope(options?.marketingScope);
   const [sales, marketing, finance] = await Promise.all([
     loadSalesBlock(isoMonth, today),
-    loadMarketingBlock(isoMonth, today),
+    loadMarketingBlock(isoMonth, today, marketingScope),
     loadFinanceBlock(period)
   ]);
 

@@ -1,7 +1,7 @@
 /**
  * Marketing predictive month + day series from Marketing Planning ROM.
- * Plans: «Лист2» (gid 470078609) + МЕС on «Маркетинг общий».
- * Facts: 06_Marketing_Daily (traffic_type=all).
+ * Plans: «Лист2» (gid 470078609) + МЕС front tab by scope.
+ * Facts: 06_Marketing_Daily (traffic_type by scope).
  * Forecast: calendar_run_rate on completed days (Europe/Riga).
  */
 
@@ -19,6 +19,37 @@ import {
   datesInMonth,
   resolveForecastAsOf
 } from "@/lib/sales-os/prediction/periods";
+
+export type MarketingPredictiveScope = "general" | "organic" | "paid";
+
+const SCOPE_META: Record<
+  MarketingPredictiveScope,
+  { trafficType: string; frontTab: string; frontGid: number; label: string }
+> = {
+  general: {
+    trafficType: "all",
+    frontTab: MARKETING_PLANNING_SHEETS.marketingGeneral,
+    frontGid: PREDICTIVE_UI.marketing.sheetGid,
+    label: "Общая"
+  },
+  organic: {
+    trafficType: "organic",
+    frontTab: MARKETING_PLANNING_SHEETS.organicMarketing,
+    frontGid: 0,
+    label: "Органика"
+  },
+  paid: {
+    trafficType: "paid",
+    frontTab: MARKETING_PLANNING_SHEETS.marketingPerformance,
+    frontGid: 0,
+    label: "Платный трафик"
+  }
+};
+
+export function normalizeMarketingPredictiveScope(raw: string | null | undefined): MarketingPredictiveScope {
+  if (raw === "organic" || raw === "paid" || raw === "general") return raw;
+  return "general";
+}
 
 export type MarketingPredictiveMetric = {
   id: string;
@@ -50,6 +81,8 @@ export type MarketingPredictiveDay = {
 
 export type MarketingPredictiveModel = {
   isoMonth: string;
+  scope: MarketingPredictiveScope;
+  scopeLabel: string;
   monthLabel: string;
   asOf: string | null;
   today: string;
@@ -65,6 +98,7 @@ export type MarketingPredictiveModel = {
     frontTab: string;
     frontGid: number;
     dailyTab: string;
+    trafficType: string;
   };
 };
 
@@ -159,17 +193,18 @@ type DailyFact = {
   dataQualityStatus: string | null;
 };
 
-function parseDailySheet(values: string[][], isoMonth: string): DailyFact[] {
+function parseDailySheet(values: string[][], isoMonth: string, trafficType: string): DailyFact[] {
   if (!values.length) return [];
   const header = values[0].map((c) => String(c ?? "").trim());
   const idx = Object.fromEntries(MARKETING_DAILY_COLUMNS.map((col) => [col, header.indexOf(col)]));
   if ((idx.date ?? -1) < 0 || (idx.traffic_type ?? -1) < 0) return [];
+  const wantTraffic = trafficType.toLowerCase();
 
   const out: DailyFact[] = [];
   for (const raw of values.slice(1)) {
     const date = String(raw[idx.date!] ?? "").trim();
     const traffic = String(raw[idx.traffic_type!] ?? "").trim().toLowerCase();
-    if (!date.startsWith(isoMonth) || traffic !== "all") continue;
+    if (!date.startsWith(isoMonth) || traffic !== wantTraffic) continue;
     const num = (col: (typeof MARKETING_DAILY_COLUMNS)[number]) => {
       const i = idx[col];
       return i == null || i < 0 ? null : parseNum(raw[i]);
@@ -211,8 +246,11 @@ function runRate(factToDate: number | null, elapsedDays: number, monthDays: numb
 
 export async function loadMarketingPredictiveModel(input: {
   isoMonth: string;
+  scope?: MarketingPredictiveScope;
   now?: Date;
 }): Promise<MarketingPredictiveModel> {
+  const scope = input.scope ?? "general";
+  const meta = SCOPE_META[scope];
   const spreadsheetId = getMarketingPlanningSpreadsheetId();
   const today = todayIsoRiga(input.now);
   const asOf = resolveForecastAsOf({ month: input.isoMonth, today });
@@ -221,29 +259,32 @@ export async function loadMarketingPredictiveModel(input: {
   const sources = {
     plansTab: LIST2_TAB,
     plansGid: LIST2_GID,
-    frontTab: PREDICTIVE_UI.marketing.tabTitle,
-    frontGid: PREDICTIVE_UI.marketing.sheetGid,
-    dailyTab: MARKETING_PLANNING_SHEETS.marketingDaily
+    frontTab: meta.frontTab,
+    frontGid: meta.frontGid || PREDICTIVE_UI.marketing.sheetGid,
+    dailyTab: MARKETING_PLANNING_SHEETS.marketingDaily,
+    trafficType: meta.trafficType
   };
 
   try {
     const [list2Values, dailyValues, front] = await Promise.all([
-      readSheetValues({
-        spreadsheetId,
-        range: `${quoteTab(LIST2_TAB)}!A1:K80`
-      }),
+      scope === "general"
+        ? readSheetValues({
+            spreadsheetId,
+            range: `${quoteTab(LIST2_TAB)}!A1:K80`
+          })
+        : Promise.resolve([] as string[][]),
       readSheetValues({
         spreadsheetId,
         range: `${quoteTab(MARKETING_PLANNING_SHEETS.marketingDaily)}!A1:Z`
       }),
       readPredictiveFrontGrid({
         spreadsheetId: PREDICTIVE_UI.marketing.spreadsheetId(),
-        tabTitle: PREDICTIVE_UI.marketing.tabTitle
+        tabTitle: meta.frontTab
       })
     ]);
 
-    const plans = parseList2Plans(list2Values);
-    const daily = parseDailySheet(dailyValues, input.isoMonth);
+    const plans = scope === "general" ? parseList2Plans(list2Values) : new Map();
+    const daily = parseDailySheet(dailyValues, input.isoMonth, meta.trafficType);
     const byDate = new Map(daily.map((d) => [d.date, d]));
 
     const days: MarketingPredictiveDay[] = monthDays.map((date) => {
@@ -432,24 +473,31 @@ export async function loadMarketingPredictiveModel(input: {
     const hasFacts = days.some((d) => d.payments != null || d.leads != null || d.paidRevenue != null);
     const hasPlans = metrics.some((m) => m.plan != null);
 
+    const planSourceNote =
+      scope === "general"
+        ? `план из «${LIST2_TAB}» / МЕС «${sources.frontTab}»`
+        : `план из МЕС «${sources.frontTab}»`;
+
     return {
       isoMonth: input.isoMonth,
+      scope,
+      scopeLabel: meta.label,
       monthLabel: front.monthLabel || input.isoMonth,
       asOf,
       today,
       status: hasFacts ? (hasPlans ? "ok" : "partial") : hasPlans ? "partial" : "blocked",
       message: hasFacts
-        ? `Месяц ${input.isoMonth}: факт по дням из ${sources.dailyTab}, план из «${LIST2_TAB}» / МЕС «${sources.frontTab}», прогноз = run-rate.`
+        ? `Месяц ${input.isoMonth} · ${meta.label}: факт по дням из ${sources.dailyTab}, ${planSourceNote}, прогноз = run-rate.`
         : hasPlans
-          ? `Есть план в «${LIST2_TAB}», но дневных фактов за ${input.isoMonth} ещё нет.`
-          : `Нет плана и факта маркетинга за ${input.isoMonth}.`,
+          ? `Есть план (${meta.label}), но дневных фактов за ${input.isoMonth} ещё нет.`
+          : `Нет плана и факта маркетинга (${meta.label}) за ${input.isoMonth}.`,
       method: "calendar_run_rate",
       metrics,
       days,
       notes: [
-        `План-доска: ${LIST2_TAB} (gid=${LIST2_GID})`,
-        `Фронт: ${sources.frontTab} (gid=${sources.frontGid})`,
-        `Дни: ${sources.dailyTab} · traffic_type=all`,
+        ...(scope === "general" ? [`План-доска: ${LIST2_TAB} (gid=${LIST2_GID})`] : []),
+        `Фронт: ${sources.frontTab}`,
+        `Дни: ${sources.dailyTab} · traffic_type=${meta.trafficType}`,
         asOf ? `As of (закрытый день): ${asOf}` : "As of: нет завершённых дней месяца",
         ...front.errors.slice(0, 2)
       ],
@@ -458,6 +506,8 @@ export async function loadMarketingPredictiveModel(input: {
   } catch (error) {
     return {
       isoMonth: input.isoMonth,
+      scope,
+      scopeLabel: meta.label,
       monthLabel: input.isoMonth,
       asOf,
       today,

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Brain, Megaphone, Package, Target, type LucideIcon, WalletCards } from "lucide-react";
+import { Megaphone, Package, Target, type LucideIcon, WalletCards } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
@@ -22,8 +22,13 @@ type ContourConfig = {
   eyebrow: string;
   description: string;
   icon: LucideIcon;
-  dashboard: ModuleCard;
-  forecast: ModuleCard;
+  /** Hide company-wide KPI strip (already on main dashboard). */
+  hideKpiSummary?: boolean;
+  /** Classic dashboard + forecast pair. Omit when contour uses predictiveModels. */
+  dashboard?: ModuleCard;
+  forecast?: ModuleCard;
+  /** Marketing-style predictive model tiles. */
+  predictiveModels?: ModuleCard[];
   modules: ModuleCard[];
 };
 
@@ -56,18 +61,26 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
   marketing: {
     title: "Маркетинг и трафик",
     eyebrow: "Контур BI",
-    description: "Сводка привлечения, прогноз, рекламные каналы и атрибуция трафика.",
+    description: "Предиктивные модели привлечения, рекламные каналы и атрибуция трафика.",
     icon: Megaphone,
-    dashboard: {
-      title: "Дашборд маркетинга",
-      description: "Бюджет, CPL, CAC, ROAS и связка с продажами.",
-      href: "/os/marketing"
-    },
-    forecast: {
-      title: "Прогноз маркетинга",
-      description: "План, факт и run-rate рекламных расходов и результата.",
-      href: "/predictive?domain=marketing"
-    },
+    hideKpiSummary: true,
+    predictiveModels: [
+      {
+        title: "Общая",
+        description: "План, факт и прогноз по всему маркетингу. Месяц с разворотом по дням.",
+        href: "/predictive?domain=marketing&scope=general"
+      },
+      {
+        title: "Органика",
+        description: "Предиктивная модель органического трафика и лидов.",
+        href: "/predictive?domain=marketing&scope=organic"
+      },
+      {
+        title: "Платный трафик",
+        description: "Предиктивная модель платных каналов: spend, CPL, ROAS.",
+        href: "/predictive?domain=marketing&scope=paid"
+      }
+    ],
     modules: [
       { title: "Аналитика рекламы", description: "GA4, каналы, CRM-сверка и AI-анализ.", href: "/ad-analytics" },
       { title: "UTM-генератор", description: "Единая разметка ссылок для корректной атрибуции.", href: "/utm" },
@@ -139,6 +152,8 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
   const contour = CONTOURS[contourId];
   const Icon = contour.icon;
   const modules = contour.modules.filter((module) => !module.adminOnly || user?.accessLevel === "admin");
+  const showDashboardPair = Boolean(contour.dashboard || contour.forecast);
+  const showPredictive = Boolean(contour.predictiveModels?.length);
 
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
@@ -154,30 +169,56 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
         </div>
       </header>
 
-      <section className="mb-8">
-        <div className="mb-4">
-          <h2 className="text-2xl font-black text-slate-950">Общая сводка</h2>
-          <p className="mt-1 text-sm text-slate-600">Актуальные ключевые показатели из Analytics OS.</p>
-        </div>
-        {snapshot ? <AnalyticsKpiRow snapshot={snapshot} /> : <p className="text-sm text-slate-500">{state === "error" ? error : "Загрузка сводки…"}</p>}
-      </section>
+      {!contour.hideKpiSummary ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">Общая сводка</h2>
+            <p className="mt-1 text-sm text-slate-600">Актуальные ключевые показатели из Analytics OS.</p>
+          </div>
+          {snapshot ? (
+            <AnalyticsKpiRow snapshot={snapshot} />
+          ) : (
+            <p className="text-sm text-slate-500">{state === "error" ? error : "Загрузка сводки…"}</p>
+          )}
+        </section>
+      ) : null}
 
-      <section className="mb-8">
-        <div className="mb-4">
-          <h2 className="text-2xl font-black text-slate-950">Дашборд и прогноз</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <ContourCard module={contour.dashboard} />
-          <ContourCard module={contour.forecast} />
-        </div>
-      </section>
+      {showPredictive ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">Предиктивные модели</h2>
+            <p className="mt-1 text-sm text-slate-600">План / факт / прогноз по срезам маркетинга.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {contour.predictiveModels!.map((module) => (
+              <ContourCard key={module.title} module={module} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {showDashboardPair ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">Дашборд и прогноз</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {contour.dashboard ? <ContourCard module={contour.dashboard} /> : null}
+            {contour.forecast ? <ContourCard module={contour.forecast} /> : null}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <div className="mb-4">
-          <h2 className="text-2xl font-black text-slate-950">Все модули контура</h2>
+          <h2 className="text-2xl font-black text-slate-950">
+            {contourId === "marketing" ? "Дополнительные модули" : "Все модули контура"}
+          </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {modules.map((module) => <ContourCard key={module.title} module={module} />)}
+          {modules.map((module) => (
+            <ContourCard key={module.title} module={module} />
+          ))}
         </div>
       </section>
     </main>

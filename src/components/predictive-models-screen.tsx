@@ -6,6 +6,10 @@ import { LineChart, Megaphone, RefreshCcw, Wallet } from "lucide-react";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { readJsonResponse } from "@/lib/api-response";
 import { eur, number, pct } from "@/lib/format";
+import {
+  normalizeMarketingPredictiveScope,
+  type MarketingPredictiveScope
+} from "@/lib/marketing-planning/load-marketing-predictive";
 import type { PredictiveDomain, PredictiveDomainBlock, PredictiveOverview } from "@/lib/predictive/types";
 import { PERIOD_KEYS, type PeriodKey } from "@/types/metrics";
 import { currentPeriodKey } from "@/lib/conversation-periods";
@@ -22,6 +26,12 @@ const DOMAIN_TABS: Array<{
   { id: "sales", label: "Продажи", icon: LineChart },
   { id: "marketing", label: "Маркетинг", icon: Megaphone },
   { id: "finance", label: "Финансы", icon: Wallet }
+];
+
+const MARKETING_SCOPES: Array<{ id: MarketingPredictiveScope; label: string }> = [
+  { id: "general", label: "Общая" },
+  { id: "organic", label: "Органика" },
+  { id: "paid", label: "Платный трафик" }
 ];
 
 function formatValue(unit: string, value: number | null): string {
@@ -182,37 +192,56 @@ function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
 export function PredictiveModelsScreen() {
   const searchParams = useSearchParams();
   const requestedDomain = searchParams.get("domain");
+  const requestedScope = normalizeMarketingPredictiveScope(searchParams.get("scope"));
   const [period, setPeriod] = useState<PeriodKey>(currentPeriodKey());
   const [tab, setTab] = useState<PredictiveDomain>(
     requestedDomain === "marketing" || requestedDomain === "finance" ? requestedDomain : "sales"
   );
+  const [marketingScope, setMarketingScope] = useState<MarketingPredictiveScope>(requestedScope);
   const [overview, setOverview] = useState<PredictiveOverview | null>(null);
   const [status, setStatus] = useState<LoadStatus>({ state: "idle", message: "" });
 
-  const load = useCallback(async (nextPeriod: PeriodKey) => {
-    setStatus({ state: "loading", message: "Загружаю предиктивные модели…" });
-    try {
-      const response = await fetch(`/api/predictive/overview?period=${encodeURIComponent(nextPeriod)}`, {
-        cache: "no-store"
-      });
-      const payload = await readJsonResponse<OverviewResponse | { ok: false; error: string }>(response);
-      if (!response.ok || !("ok" in payload) || payload.ok !== true) {
-        throw new Error("error" in payload ? payload.error : "Не удалось загрузить обзор");
-      }
-      setOverview(payload);
-      setStatus({ state: "ok", message: "Обновлено" });
-    } catch (error) {
-      setOverview(null);
-      setStatus({
-        state: "error",
-        message: error instanceof Error ? error.message : "Ошибка загрузки"
-      });
+  useEffect(() => {
+    if (requestedDomain === "marketing" || requestedDomain === "finance" || requestedDomain === "sales") {
+      setTab(requestedDomain);
     }
-  }, []);
+  }, [requestedDomain]);
 
   useEffect(() => {
-    void load(period);
-  }, [load, period]);
+    setMarketingScope(requestedScope);
+  }, [requestedScope]);
+
+  const load = useCallback(
+    async (nextPeriod: PeriodKey, nextScope: MarketingPredictiveScope) => {
+      setStatus({ state: "loading", message: "Загружаю предиктивные модели…" });
+      try {
+        const qs = new URLSearchParams({
+          period: nextPeriod,
+          scope: nextScope
+        });
+        const response = await fetch(`/api/predictive/overview?${qs.toString()}`, {
+          cache: "no-store"
+        });
+        const payload = await readJsonResponse<OverviewResponse | { ok: false; error: string }>(response);
+        if (!response.ok || !("ok" in payload) || payload.ok !== true) {
+          throw new Error("error" in payload ? payload.error : "Не удалось загрузить обзор");
+        }
+        setOverview(payload);
+        setStatus({ state: "ok", message: "Обновлено" });
+      } catch (error) {
+        setOverview(null);
+        setStatus({
+          state: "error",
+          message: error instanceof Error ? error.message : "Ошибка загрузки"
+        });
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    void load(period, marketingScope);
+  }, [load, period, marketingScope]);
 
   const active = overview?.domains[tab] ?? null;
 
@@ -243,7 +272,7 @@ export function PredictiveModelsScreen() {
             <button
               type="button"
               disabled={status.state === "loading"}
-              onClick={() => void load(period)}
+              onClick={() => void load(period, marketingScope)}
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
             >
               <RefreshCcw size={16} className={status.state === "loading" ? "animate-spin" : undefined} />
@@ -287,6 +316,28 @@ export function PredictiveModelsScreen() {
           );
         })}
       </div>
+
+      {tab === "marketing" ? (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {MARKETING_SCOPES.map((item) => {
+            const activeScope = marketingScope === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setMarketingScope(item.id)}
+                className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                  activeScope
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-[var(--line)] bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {status.state === "loading" && !active ? (
         <p className="text-sm text-slate-500">Загрузка…</p>
