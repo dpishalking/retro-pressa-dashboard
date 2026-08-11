@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readSessionCookie } from "@/lib/auth/session";
+import { rejectUnlessCronOrStaff } from "@/lib/auth/cron-auth";
 import {
   SALES_FOUNDATION_SYNC_ORDER,
   type SalesFoundationModule
@@ -12,13 +12,8 @@ export const maxDuration = 300;
 const allowedModules = new Set<SalesFoundationModule>([...SALES_FOUNDATION_SYNC_ORDER, "all"]);
 
 export async function POST(request: Request) {
-  const session = readSessionCookie(request.headers.get("cookie"));
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (session.accessLevel !== "admin" && session.accessLevel !== "rop") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const denied = rejectUnlessCronOrStaff(request);
+  if (denied) return denied;
 
   try {
     const body = await request.json().catch(() => ({})) as {

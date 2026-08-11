@@ -1,6 +1,6 @@
 name: Predictive Front Hourly Sync
 
-# Every hour — refresh «Предиктивка продажи» from current Sales OS + СВОД.
+# Every hour — refresh «Предиктивка продажи» via Next API (standalone has no tsx/scripts).
 # Full Bitrix close for yesterday: sales-predictive-daily-close.yml at 12:00 Moscow.
 on:
   schedule:
@@ -34,14 +34,9 @@ jobs:
             echo "CRON_SYNC_SECRET/AUTH_SECRET is empty"
             exit 1
           fi
-          # Prefer local script if deployed; else HTTP API
-          if [ -f /opt/retro-pressa/package.json ] && grep -q 'sync:predictive-front' /opt/retro-pressa/package.json; then
-            cd /opt/retro-pressa
-            npm run sync:predictive-front
-          else
-            curl -f -sS -X POST http://127.0.0.1:4174/api/sync/predictive-front \
-              -H "Content-Type: application/json" \
-              -H "x-cron-secret: ${SECRET}" \
-              -d '{}'
-          fi
+          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/predictive-front \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"month\":\"${MONTH}\"}"
           EOF

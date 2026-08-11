@@ -75,16 +75,21 @@ Dry run reads Bitrix only. Production uses `safeReplaceSheet` on staging tabs; f
 
 `POST /api/sync/os-daily` — **12:00 Europe/Moscow** (Mother OS sheets).
 
-**Sales predictive close (yesterday):** GitHub Action `sales-predictive-daily-close.yml` at **12:00 Europe/Moscow**:
+**Sales + Marketing close:** GitHub Action `sales-predictive-daily-close.yml` at **12:00 Europe/Moscow**
+(calls Next APIs with `x-cron-secret` — standalone deploy has no `tsx`/scripts):
 
-1. `sync:bitrix-sales-foundation` (current month)
-2. `sync:sales-os` (rebuild + write «Предиктивка продажи»)
+1. `POST /api/sync/bitrix-sales-foundation` (current month)
+2. `POST /api/sync/sales-os` → Sales OS `1Zj_j…`
+3. `POST /api/sync/marketing-planning` → Marketing ROM `1Ru9H…`
+4. `POST /api/sync/predictive-front` → «Предиктивка продажи»
 
-**Hourly predictive:** `predictive-hourly-sync.yml` every hour (`:05` UTC) — light refresh from Sales OS + СВОД leads.
+**Hourly predictive:** `predictive-hourly-sync.yml` every hour (`:05` UTC) → `POST /api/sync/predictive-front`.
 
 ```bash
-npm run sync:bitrix-sales-foundation -- --periods=2026-07
-npm run sync:sales-os -- --periods=2026-07
+# Local / ops (not used by production cron)
+npm run sync:bitrix-sales-foundation -- --periods=2026-08
+npm run sync:sales-os -- --periods=2026-08
+npm run sync:marketing-planning -- --period=2026-08
 npm run sync:predictive-front
 ```
 

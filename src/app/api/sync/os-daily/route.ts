@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { moscowPeriodKey, moscowYesterdayIso } from "@/lib/moscow-time";
+import { moscowPeriodKey, moscowYesterdayIso, periodKeyToIsoMonth } from "@/lib/moscow-time";
 import { syncOsOrdersToSheet } from "@/lib/os-sheets/orders-sync";
 import { syncOsTrafficToSheet } from "@/lib/os-sheets/traffic-sync";
 import { syncOsSalesToSheet } from "@/lib/os-sheets/sales-sync";
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     const customers = await runStep("customers", () => syncOsCustomersToSheet({ triggerType: "cron" }));
     const payments = await runStep("payments", () => syncOsPaymentsToSheet({ triggerType: "cron" }));
 
-    const isoPeriod = period === "may-2026" ? "2026-05" : period === "june-2026" ? "2026-06" : "2026-07";
+    const isoPeriod = periodKeyToIsoMonth(period);
     const salesOsCandidate = body.skipSalesOsCandidate
       ? { name: "sales_os_candidate", ok: true as const, result: { status: "skipped" } }
       : await runStep("sales_os_candidate", () => runSalesOsDualRun({

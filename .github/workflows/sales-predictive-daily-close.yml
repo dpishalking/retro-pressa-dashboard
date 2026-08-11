@@ -1,7 +1,7 @@
 name: Sales Predictive Daily Close
 
-# 12:00 Europe/Moscow = 09:00 UTC — close previous day:
-# Bitrix foundation → Sales OS rebuild → Предиктивка продажи
+# 12:00 Europe/Moscow = 09:00 UTC — close previous day into:
+# Sales OS (1Zj_j…) + Marketing ROM (1Ru9H…) via Next API (no tsx on standalone).
 on:
   schedule:
     - cron: "0 9 * * *"
@@ -10,7 +10,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - name: Configure SSH
@@ -20,14 +20,47 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Foundation + Sales OS + Predictive
+      - name: Foundation + Sales OS + Marketing Planning
+        env:
+          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s << 'EOF'
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            bash -s << 'EOF'
           set -euo pipefail
-          APP_DIR="/opt/retro-pressa"
-          cd "$APP_DIR"
+          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          if [ -z "$SECRET" ]; then
+            echo "CRON_SYNC_SECRET/AUTH_SECRET is empty"
+            exit 1
+          fi
           MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
-          echo "Closing predictive month=${MONTH} Europe/Moscow in ${APP_DIR}"
-          npm run sync:bitrix-sales-foundation -- --periods="${MONTH}"
-          npm run sync:sales-os -- --periods="${MONTH}"
+          echo "Closing predictive month=${MONTH} Europe/Moscow via API"
+
+          echo "== bitrix-sales-foundation =="
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/bitrix-sales-foundation \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"periods\":[\"${MONTH}\"],\"modules\":[\"all\"]}"
+
+          echo
+          echo "== sales-os =="
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/sales-os \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"periods\":[\"${MONTH}\"]}"
+
+          echo
+          echo "== marketing-planning =="
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/marketing-planning \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"periods\":[\"${MONTH}\"]}"
+
+          echo
+          echo "== predictive-front =="
+          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/predictive-front \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"month\":\"${MONTH}\"}"
           EOF

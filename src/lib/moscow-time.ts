@@ -7,6 +7,23 @@ const periodByMonth: Record<number, PeriodKey> = {
   8: "august-2026"
 };
 
+const isoMonthByPeriod: Record<PeriodKey, string> = {
+  "may-2026": "2026-05",
+  "june-2026": "2026-06",
+  "july-2026": "2026-07",
+  "august-2026": "2026-08"
+};
+
+/** PeriodKey → calendar month YYYY-MM. */
+export function periodKeyToIsoMonth(period: PeriodKey): string {
+  return isoMonthByPeriod[period];
+}
+
+/** Current calendar month in Europe/Moscow as YYYY-MM. */
+export function moscowIsoMonth(now = new Date()): string {
+  return periodKeyToIsoMonth(moscowPeriodKey(now));
+}
+
 function moscowParts(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Moscow",
