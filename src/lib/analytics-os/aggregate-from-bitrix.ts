@@ -189,7 +189,13 @@ export function aggregateFunnel(input: {
   const paidCount = input.paidDeals.length;
 
   const stages: Array<{ id: string; label: string; count: number; status: AnalyticsFunnelStage["status"]; note?: string }> = [
-    { id: "leads", label: "Лиды", count: leadsCount, status: "live" },
+    {
+      id: "leads",
+      label: "Карточки CRM",
+      count: leadsCount,
+      status: "live",
+      note: "Все карточки Bitrix; верифицированные лиды показаны в KPI выше."
+    },
     {
       id: "deals",
       label: "Сделки",
