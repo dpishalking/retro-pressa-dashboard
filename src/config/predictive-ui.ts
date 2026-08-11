@@ -8,6 +8,7 @@
  * Marketing front:
  * https://docs.google.com/spreadsheets/d/1Ru9H24Hs2WPNcP2TEGpvIEcRtjnDV8l-UyBnWNFakN4
  *   gid=966367597 → «Маркетинг общий»
+ *   gid=470078609 → «Лист2» (plan board: выручка, лиды, ROAS, budget…)
  *
  * Sales fact/forecast:
  * Sales OS → 98_PREDICTION_EXPORT, fallback «Предиктивка продажи»
@@ -31,7 +32,9 @@ export const PREDICTIVE_UI = {
   marketing: {
     spreadsheetId: () => getMarketingPlanningSpreadsheetId(),
     tabTitle: MARKETING_PLANNING_SHEETS.marketingGeneral,
-    sheetGid: 966367597
+    sheetGid: 966367597,
+    planBoardTab: "Лист2",
+    planBoardGid: 470078609
   },
   sales: {
     spreadsheetId: () => getSalesOsSpreadsheetId(),

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { BreakdownRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
+import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { eur, number, pct } from "@/lib/format";
 
 type CohortTab =
@@ -201,6 +202,13 @@ export function CohortsPanel({
         ) : (
           <TimeCohortTable rows={data.cohorts} grain={tab === "week" ? "week" : "month"} />
         )}
+        <DecisionBrief
+          body={
+            data
+              ? "Когорта отвечает: «лиды этой волны сколько уже принесли?» Не путайте с кассой месяца. Если когорта слабая — чините скрипт и оффер той недели/канала, а не общий план."
+              : null
+          }
+        />
       </section>
 
       {data && (tab === "month" || tab === "week") ? (
@@ -232,6 +240,13 @@ export function CohortsPanel({
               <strong>{eur(data.cashVsCohort.fromOlder)}</strong>
             </div>
           </div>
+          <DecisionBrief
+            body={
+              data.cashVsCohort.cashRevenue > 0
+                ? `Касса месяца ≠ когорта лидов: из ${eur(data.cashVsCohort.cashRevenue)} только ${eur(data.cashVsCohort.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых лидов. Не смешивайте эти цифры в одном плане.`
+                : null
+            }
+          />
         </section>
       ) : null}
     </div>

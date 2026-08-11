@@ -12,6 +12,20 @@ export type PredictiveMetricRow = {
   method?: string | null;
 };
 
+export type PredictiveDayRow = {
+  date: string;
+  leads: number | null;
+  deals: number | null;
+  invoiceEvents: number | null;
+  payments: number | null;
+  paidRevenue: number | null;
+  spend: number | null;
+  averageCheck: number | null;
+  cpl: number | null;
+  leadToPaymentCr: number | null;
+  completeness: "complete" | "partial" | "future" | "missing_data";
+};
+
 export type PredictiveDomainBlock = {
   domain: PredictiveDomain;
   title: string;
@@ -23,6 +37,8 @@ export type PredictiveDomainBlock = {
   updatedAt: string | null;
   metrics: PredictiveMetricRow[];
   notes: string[];
+  /** Present for marketing: calendar days inside the selected month. */
+  days?: PredictiveDayRow[];
 };
 
 export type PredictiveOverview = {

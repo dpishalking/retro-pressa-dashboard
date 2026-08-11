@@ -27,6 +27,8 @@ import {
 } from "@/components/analytics-os/analytics-os-panels";
 import { CohortsPanel } from "@/components/analytics-os/cohorts-panel";
 import { SalesCyclePanel } from "@/components/analytics-os/sales-cycle-panel";
+import { DecisionBrief } from "@/components/analytics-os/decision-brief";
+import { MarketingPredictivePanel } from "@/components/analytics-os/marketing-predictive-panel";
 
 function StubPanel({ contour }: { contour: ContourDef }) {
   return (
@@ -42,6 +44,7 @@ function StubPanel({ contour }: { contour: ContourDef }) {
         Контур заложен в карту Analytics OS, но живых данных для него пока нет. На главном экране блок
         кликабелен — сюда можно наращивать источник без смены навигации.
       </p>
+      <DecisionBrief empty />
     </section>
   );
 }
@@ -189,7 +192,12 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
               {contour.id === "unit-economics" && <UnitEconomicsPanel snapshot={snapshot} />}
               {contour.id === "products" && <ProductsPanel snapshot={snapshot} />}
               {contour.id === "customers" && <CustomersPanel snapshot={snapshot} />}
-              {contour.id === "marketing" && <MarketingPanel snapshot={snapshot} />}
+              {contour.id === "marketing" && (
+                <>
+                  <MarketingPredictivePanel period={period} />
+                  <MarketingPanel snapshot={snapshot} />
+                </>
+              )}
               {contour.id === "funnel" && (
                 <>
                   <FunnelPanel snapshot={snapshot} />

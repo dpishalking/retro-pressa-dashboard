@@ -2,6 +2,7 @@ import { PREDICTIVE_UI } from "@/config/predictive-ui";
 import { periodToIsoMonth } from "@/lib/financial-report/period";
 import { buildCanonicalFinancialReport } from "@/lib/financial-report/build";
 import { readSheetValues } from "@/lib/google/sheets-client";
+import { loadMarketingPredictiveModel } from "@/lib/marketing-planning/load-marketing-predictive";
 import {
   DEPARTMENT_SCOPE_ID,
   PREDICTION_EXPORT_COLUMNS,
@@ -34,8 +35,6 @@ const SALES_METRIC_LABELS: Record<string, { label: string; unit: PredictiveMetri
   lead_to_payment_cr: { label: "CR лид → оплата", unit: "ratio" },
   cpl: { label: "CPL", unit: "eur" }
 };
-
-const MARKETING_METRIC_ORDER = ["paid_revenue", "payments", "invoice_events", "leads", "cpl"];
 
 function todayIsoRiga(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -272,87 +271,51 @@ async function loadMarketingBlock(isoMonth: string, today: string): Promise<Pred
   const base: PredictiveDomainBlock = {
     domain: "marketing",
     title: "Маркетинг",
-    subtitle: "Фронт «Маркетинг общий»: план / факт / прогноз (колонка МЕС).",
+    subtitle: "План (Лист2) · факт по дням · прогноз calendar_run_rate. Месяц можно развернуть по дням.",
     status: "blocked",
     message: "Нет данных маркетинга.",
     method: "calendar_run_rate",
     asOf: resolveForecastAsOf({ month: isoMonth, today }),
     updatedAt: null,
     metrics: [],
-    notes: []
+    notes: [],
+    days: []
   };
 
   try {
-    const [grid, plans] = await Promise.all([
-      readPredictiveFrontGrid({
-        spreadsheetId: PREDICTIVE_UI.marketing.spreadsheetId(),
-        tabTitle: PREDICTIVE_UI.marketing.tabTitle
-      }),
-      loadCeoPlans(isoMonth)
-    ]);
-
-    if (!grid.ok) {
-      return {
-        ...base,
-        status: "partial",
-        message: grid.errors.join("; ") || "Лист «Маркетинг общий» не прочитан.",
-        notes: [
-          `Источник: ${PREDICTIVE_UI.marketing.tabTitle}`,
-          `gid=${PREDICTIVE_UI.marketing.sheetGid}`
-        ]
-      };
-    }
-
-    const byKey = new Map(grid.metrics.map((m) => [m.key, m]));
-    const metrics: PredictiveMetricRow[] = [];
-    for (const id of MARKETING_METRIC_ORDER) {
-      const row = byKey.get(id);
-      const plan = plans.get(id) ?? row?.plan ?? null;
-      const fact = row?.fact ?? null;
-      const forecast = row?.forecast ?? null;
-      if (plan == null && fact == null && forecast == null) continue;
-      metrics.push({
-        id,
-        label: SALES_METRIC_LABELS[id]?.label ?? row?.label ?? id,
-        unit: row?.unit ?? SALES_METRIC_LABELS[id]?.unit ?? "count",
-        plan,
-        fact,
-        forecast,
-        gapToPlan: plan != null && forecast != null ? forecast - plan : null,
-        status: row?.status || (plan == null ? "NO_PLAN" : "UNKNOWN"),
-        method: "calendar_run_rate"
-      });
-    }
-
-    // Include any extra ICE/other rows that have values
-    for (const row of grid.metrics) {
-      if (metrics.some((m) => m.id === row.key)) continue;
-      if (row.plan == null && row.fact == null && row.forecast == null) continue;
-      if (/^ice_/.test(row.key)) continue;
-      metrics.push({
-        id: row.key,
-        label: row.label,
-        unit: row.unit,
-        plan: row.plan,
-        fact: row.fact,
-        forecast: row.forecast,
-        gapToPlan: row.plan != null && row.forecast != null ? row.forecast - row.plan : null,
-        status: row.status,
-        method: "calendar_run_rate"
-      });
-    }
-
+    const model = await loadMarketingPredictiveModel({ isoMonth });
     return {
       ...base,
-      status: metrics.length ? "ok" : "partial",
-      message: `Лист «${grid.tabTitle}» · ${grid.monthLabel || isoMonth}. План из Finance «План/факт», факт/прогноз из МЕС.`,
+      status: model.status,
+      message: model.message,
+      asOf: model.asOf || base.asOf,
       updatedAt: new Date().toISOString(),
-      metrics,
-      notes: [
-        `Планы: RP | Finance → ${PREDICTIVE_UI.plans.tabTitle()} (gid=${PREDICTIVE_UI.plans.sheetGid})`,
-        `Факт/прогноз: Marketing ROM → ${grid.tabTitle} (gid=${PREDICTIVE_UI.marketing.sheetGid})`,
-        ...grid.errors.slice(0, 3)
-      ]
+      method: model.method,
+      metrics: model.metrics.map((m) => ({
+        id: m.id,
+        label: m.label,
+        unit: m.unit,
+        plan: m.plan,
+        fact: m.fact,
+        forecast: m.forecast,
+        gapToPlan: m.gapToPlan,
+        status: m.status,
+        method: model.method
+      })),
+      days: model.days.map((d) => ({
+        date: d.date,
+        leads: d.leads,
+        deals: d.deals,
+        invoiceEvents: d.invoiceEvents,
+        payments: d.payments,
+        paidRevenue: d.paidRevenue,
+        spend: d.spend,
+        averageCheck: d.averageCheck,
+        cpl: d.cpl,
+        leadToPaymentCr: d.leadToPaymentCr,
+        completeness: d.completeness
+      })),
+      notes: model.notes
     };
   } catch (error) {
     return {

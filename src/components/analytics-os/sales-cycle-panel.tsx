@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SalesCyclePayload } from "@/lib/analytics-os/sales-cycle";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
+import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 
 function eur(value: number) {
   return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
@@ -134,6 +135,13 @@ export function SalesCyclePanel({
             <strong>{fmt(s.directJoinCoverage, "%")}</strong>
           </div>
         </div>
+        <DecisionBrief
+          body={
+            s.medianLeadToWonDays != null
+              ? `Медиана Lead→оплата ≈ ${s.medianLeadToWonDays} дн. Ускоряйте ответ и дожим на ранних стадиях — каждый лишний день раздувает хвост кассы.`
+              : null
+          }
+        />
       </section>
 
       <section className="aos-card">
@@ -512,6 +520,13 @@ export function SalesCycleCeoCard({ period }: { period: string }) {
           </div>
         ))}
       </div>
+      <DecisionBrief
+        body={
+          card.medianLeadToWonDays != null
+            ? `Медиана до оплаты ≈ ${card.medianLeadToWonDays} дн. Если хвост кассы большой — часть плана этого месяца уже «заработана» прошлыми лидами; давите скорость Lead→WON, а не только новые лиды.`
+            : null
+        }
+      />
     </section>
   );
 }

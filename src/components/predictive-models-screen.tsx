@@ -58,6 +58,9 @@ function statusLabel(status: PredictiveDomainBlock["status"]): string {
 }
 
 function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
+  const [daysOpen, setDaysOpen] = useState(false);
+  const days = block.days || [];
+
   return (
     <div className="space-y-4">
       <div className="card p-5">
@@ -114,6 +117,56 @@ function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
           </table>
         </div>
       </div>
+
+      {days.length ? (
+        <div className="card overflow-hidden">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-900 hover:bg-slate-50"
+            onClick={() => setDaysOpen((v) => !v)}
+            aria-expanded={daysOpen}
+          >
+            <span>{daysOpen ? "Свернуть дни месяца" : `Развернуть по дням (${days.length})`}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {daysOpen ? "скрыть" : "показать"}
+            </span>
+          </button>
+          {daysOpen ? (
+            <div className="table-scroll border-t border-[var(--line)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">День</th>
+                    <th className="px-4 py-3 font-bold">Лиды</th>
+                    <th className="px-4 py-3 font-bold">Сделки</th>
+                    <th className="px-4 py-3 font-bold">Оплаты</th>
+                    <th className="px-4 py-3 font-bold">Выручка</th>
+                    <th className="px-4 py-3 font-bold">Чек</th>
+                    <th className="px-4 py-3 font-bold">CR</th>
+                    <th className="px-4 py-3 font-bold">Статус</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {days.map((day) => (
+                    <tr key={day.date} className="border-t border-[var(--line)]">
+                      <td className="px-4 py-2 font-semibold text-slate-900">{day.date}</td>
+                      <td className="px-4 py-2">{day.leads == null ? "—" : number(day.leads)}</td>
+                      <td className="px-4 py-2">{day.deals == null ? "—" : number(day.deals)}</td>
+                      <td className="px-4 py-2">{day.payments == null ? "—" : number(day.payments)}</td>
+                      <td className="px-4 py-2">{day.paidRevenue == null ? "—" : eur(day.paidRevenue)}</td>
+                      <td className="px-4 py-2">{day.averageCheck == null ? "—" : eur(day.averageCheck)}</td>
+                      <td className="px-4 py-2">
+                        {day.leadToPaymentCr == null ? "—" : pct(day.leadToPaymentCr)}
+                      </td>
+                      <td className="px-4 py-2 text-xs uppercase text-slate-500">{day.completeness}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {block.notes.length ? (
         <ul className="space-y-1 text-xs text-slate-500">

@@ -4,6 +4,26 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { CeoControlCenterSnapshot, UnitEconomicsKind, UnitEconomicsUnit } from "@/types/analytics-os";
 import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/format-metric";
+import { DecisionBrief } from "@/components/analytics-os/decision-brief";
+import {
+  decisionCountries,
+  decisionCustomers,
+  decisionDataFoundation,
+  decisionDataQuality,
+  decisionFunnel,
+  decisionManagers,
+  decisionMarketing,
+  decisionOpportunities,
+  decisionPipeline,
+  decisionPlanFact,
+  decisionPlanIndicators,
+  decisionPricing,
+  decisionProduction,
+  decisionProducts,
+  decisionReconciliation,
+  decisionRevenueTree,
+  decisionUnitEconomics
+} from "@/lib/analytics-os/block-decisions";
 import { eur, number, pct } from "@/lib/format";
 
 export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
@@ -50,6 +70,7 @@ export function PlanFactForecast({ snapshot }: { snapshot: CeoControlCenterSnaps
       <div className="aos-plan__days">
         Дни: {plan.daysElapsed} · Остаток: {plan.daysRemaining} · Месяц: {plan.calendarDays}
       </div>
+      <DecisionBrief body={decisionPlanFact(snapshot)} />
     </section>
   );
 }
@@ -103,6 +124,7 @@ export function PlanIndicatorsPanel({ snapshot }: { snapshot: CeoControlCenterSn
           Блоки: {sections.join(" · ")}
         </p>
       ) : null}
+      <DecisionBrief body={decisionPlanIndicators(snapshot)} />
     </section>
   );
 }
@@ -134,6 +156,7 @@ export function RevenueTreePanel({
         <TreeColumn title="Продукты" rows={revenueTree.products} onClick={(id) => onFilterProduct(id)} />
         <TreeColumn title="Менеджеры" rows={revenueTree.managers} onClick={(id) => onFilterManager(id)} />
       </div>
+      <DecisionBrief body={decisionRevenueTree(snapshot)} />
     </section>
   );
 }
@@ -203,6 +226,7 @@ export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }
         ))}
       </div>
       {uniqueLeads?.decisionHint ? <p className="aos-note">{uniqueLeads.decisionHint}</p> : null}
+      <DecisionBrief body={decisionFunnel(snapshot)} />
     </section>
   );
 }
@@ -274,6 +298,7 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
           </tbody>
         </table>
       </div>
+      <DecisionBrief body={decisionManagers(snapshot)} />
     </section>
   );
 }
@@ -340,6 +365,7 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
             продуктов их нет — это дыра заполнения CRM, не отдельный продукт.
           </p>
         ) : null}
+        <DecisionBrief body={decisionProducts(snapshot)} />
       </section>
       <section className="aos-card" id="aos-pricing">
         <div className="aos-section-head">
@@ -384,6 +410,7 @@ export function ProductsPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
             </tbody>
           </table>
         </div>
+        <DecisionBrief body={decisionPricing(snapshot)} />
       </section>
     </>
   );
@@ -432,6 +459,7 @@ export function CountriesPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
           </tbody>
         </table>
       </div>
+      <DecisionBrief body={decisionCountries(snapshot)} />
     </section>
   );
 }
@@ -461,6 +489,7 @@ export function CustomersPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
           </div>
         ))}
       </div>
+      <DecisionBrief body={decisionCustomers(snapshot)} />
     </section>
   );
 }
@@ -655,6 +684,7 @@ export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSna
           ) : null}
         </>
       )}
+      <DecisionBrief body={decisionUnitEconomics(snapshot)} />
     </section>
   );
 }
@@ -734,6 +764,7 @@ export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
           </table>
         </div>
       ) : null}
+      <DecisionBrief body={decisionPipeline(snapshot)} />
     </section>
   );
 }
@@ -772,6 +803,7 @@ export function OpportunitiesPanel({ snapshot }: { snapshot: CeoControlCenterSna
           </table>
         </div>
       )}
+      <DecisionBrief body={decisionOpportunities(snapshot)} />
     </section>
   );
 }
@@ -808,6 +840,7 @@ export function ProductionPanel({ snapshot }: { snapshot: CeoControlCenterSnapsh
       <button type="button" className="aos-cta" disabled>
         Подключить источник
       </button>
+      <DecisionBrief body={decisionProduction(snapshot)} />
     </section>
   );
 }
@@ -837,6 +870,7 @@ export function ReconciliationPanel({ snapshot }: { snapshot: CeoControlCenterSn
           </div>
         ))}
       </div>
+      <DecisionBrief body={decisionReconciliation(snapshot)} />
     </section>
   );
 }
@@ -866,6 +900,7 @@ export function OwnerIntelligencePanel({ snapshot }: { snapshot: CeoControlCente
           </article>
         ))}
       </div>
+      <DecisionBrief body="Пять карточек выше — порядок решений на неделю. Серые (нет данных) не масштабируйте, пока не загорится источник." />
     </section>
   );
 }
@@ -897,6 +932,7 @@ export function DataFoundationPanel({ snapshot }: { snapshot: CeoControlCenterSn
           </article>
         ))}
       </div>
+      <DecisionBrief body={decisionDataFoundation(snapshot)} />
     </section>
   );
 }
@@ -937,6 +973,7 @@ export function DataQualityPanel({ snapshot }: { snapshot: CeoControlCenterSnaps
           </div>
         ))}
       </div>
+      <DecisionBrief body={decisionDataQuality(snapshot)} />
     </section>
   );
 }
@@ -974,6 +1011,7 @@ export function MarketingPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
           </div>
         ))}
       </div>
+      <DecisionBrief body={decisionMarketing(snapshot)} />
     </section>
   );
 }
