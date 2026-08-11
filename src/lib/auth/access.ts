@@ -6,7 +6,7 @@ import { USER_MANAGEMENT_PATH, canAccessUserManagement } from "@/lib/auth/admin-
 export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   admin: "*",
   rop: [HUB_PATH, "/analytics", "/os", "/ad-analytics", "/predictive", "/rop", "/training", "/products", "/motivation", USER_MANAGEMENT_PATH],
-  mop: [HUB_PATH, "/training", "/products", "/motivation"],
+  mop: [HUB_PATH, "/training", "/motivation"],
   partner: [PARTNERS_PATH]
 };
 
@@ -75,7 +75,7 @@ export function accessLevelScope(level: AccessLevel): string {
     case "rop":
       return "аналитика, аналитика рекламы, предиктивные модели, инструменты РОП, обучение менеджеров, продукты, мотивация";
     case "mop":
-      return "обучение менеджеров, продукты, мотивация";
+      return "обучение менеджеров, мотивация";
     case "partner":
       return "кабинет партнёрской программы";
   }
