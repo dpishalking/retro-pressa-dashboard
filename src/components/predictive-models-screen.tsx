@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { LineChart, Megaphone, RefreshCcw, Wallet } from "lucide-react";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { readJsonResponse } from "@/lib/api-response";
@@ -126,8 +127,12 @@ function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
 }
 
 export function PredictiveModelsScreen() {
+  const searchParams = useSearchParams();
+  const requestedDomain = searchParams.get("domain");
   const [period, setPeriod] = useState<PeriodKey>(currentPeriodKey());
-  const [tab, setTab] = useState<PredictiveDomain>("sales");
+  const [tab, setTab] = useState<PredictiveDomain>(
+    requestedDomain === "marketing" || requestedDomain === "finance" ? requestedDomain : "sales"
+  );
   const [overview, setOverview] = useState<PredictiveOverview | null>(null);
   const [status, setStatus] = useState<LoadStatus>({ state: "idle", message: "" });
 

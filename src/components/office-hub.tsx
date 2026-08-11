@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Brain, Handshake, LineChart, LogOut, Megaphone, MessageSquareText, Newspaper, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, Handshake, LogOut, Megaphone, Package, Settings, Target, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
-import { HUB_PATH, PARTNERS_PATH } from "@/lib/auth/routes";
+import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel } from "@/types/auth";
 
@@ -29,149 +29,67 @@ const officeSections: OfficeSection[] = [
   {
     id: "analytics",
     title: "Аналитика",
-    subtitle: "Управленческая картина бизнеса, прогнозы и решения на стыке всех контуров.",
-    cards: [
-      {
-        href: "/os",
-        title: "Analytics OS",
-        description: "Центр управления: пять контуров BI, KPI, сигналы и детализация по бизнес-направлениям.",
-        icon: BarChart3,
-        status: "active",
-        accent: "text-blue-600 bg-blue-50"
-      },
-      {
-        href: "/ad-analytics",
-        title: "Аналитика рекламы",
-        description: "GA4, каналы привлечения, сверка веб-трафика с CRM-лидами и ответы на вопросы через Gemini.",
-        icon: Megaphone,
-        status: "active",
-        accent: "text-emerald-600 bg-emerald-50"
-      },
-      {
-        href: "/predictive",
-        title: "Предиктивные модели",
-        description: "Прогнозы продаж, маркетинга и финансов: план, факт и run-rate в одном кабинете.",
-        icon: LineChart,
-        status: "active",
-        accent: "text-indigo-600 bg-indigo-50"
-      }
-    ]
+    subtitle: "Общая картина бизнеса, KPI, сигналы и управленческие решения.",
+    cards: [{
+      href: "/os",
+      title: "Аналитика",
+      description: "Общий CEO-дашборд для всех пяти контуров BI.",
+      icon: BarChart3,
+      status: "active",
+      accent: "text-blue-600 bg-blue-50"
+    }]
   },
   {
     id: "sales",
     title: "Продажи",
-    subtitle: "Воронка, команда, диалоги, качество работы и развитие менеджеров.",
-    cards: [
-      {
-        href: "/rop",
-        title: "Инструменты РОП",
-        description: "Кабинет РОП: ежедневный импорт Bitrix, качество переписок, план-факт, команда и управленческие решения.",
-        icon: Target,
-        status: "active",
-        accent: "text-amber-600 bg-amber-50"
-      },
-      {
-        href: "/rop/conversations",
-        title: "Диалоги",
-        description: "Переписки с клиентами: качество коммуникации, возражения и точки роста менеджеров.",
-        icon: MessageSquareText,
-        status: "active",
-        accent: "text-violet-600 bg-violet-50"
-      },
-      {
-        href: "/motivation",
-        title: "Мотивация",
-        description: "Бонусы текущего месяца и продукты, на которых сейчас стоит сфокусироваться в продажах.",
-        icon: Trophy,
-        status: "active",
-        accent: "text-orange-600 bg-orange-50"
-      },
-      {
-        href: "/training",
-        title: "Обучение менеджеров",
-        description: "Онбординг и тренировочный кабинет: материалы, практика, симуляции и контроль прогресса.",
-        icon: BookOpen,
-        status: "active",
-        accent: "text-rose-600 bg-rose-50"
-      }
-    ]
+    subtitle: "Общий дашборд, прогноз, воронка, команда и качество коммуникации.",
+    cards: [{
+      href: "/sales",
+      title: "Продажи",
+      description: "Сводка продаж, прогноз и все рабочие модули РОП.",
+      icon: Target,
+      status: "active",
+      accent: "text-amber-600 bg-amber-50"
+    }]
   },
   {
     id: "marketing",
     title: "Маркетинг и трафик",
-    subtitle: "Привлечение, рекламные каналы, UTM-разметка и окупаемость.",
-    cards: [
-      {
-        href: "/ad-analytics",
-        title: "Аналитика рекламы",
-        description: "GA4, каналы привлечения, сверка веб-трафика с CRM-лидами и ответы на вопросы через Gemini.",
-        icon: Megaphone,
-        status: "active",
-        accent: "text-emerald-600 bg-emerald-50"
-      },
-      {
-        href: "/utm",
-        title: "UTM-генератор",
-        description: "Единая разметка ссылок для рекламных кампаний и корректная атрибуция трафика.",
-        icon: Target,
-        status: "active",
-        accent: "text-blue-600 bg-blue-50"
-      }
-    ]
+    subtitle: "Привлечение, реклама, прогноз, каналы и атрибуция трафика.",
+    cards: [{
+      href: "/marketing",
+      title: "Маркетинг и трафик",
+      description: "Сводка маркетинга, прогноз и инструменты рекламных каналов.",
+      icon: Megaphone,
+      status: "active",
+      accent: "text-emerald-600 bg-emerald-50"
+    }]
   },
   {
     id: "product",
     title: "Продукт",
-    subtitle: "Клиентские выпуски, ассортимент и партнёрский контур.",
-    cards: [
-      {
-        href: "/products",
-        title: "Продукты",
-        description: "Загрузка PDF-выпусков и вечные ссылки для клиентов: полистать готовое издание без входа в кабинет.",
-        icon: Newspaper,
-        status: "active",
-        accent: "text-sky-600 bg-sky-50"
-      },
-      {
-        href: PARTNERS_PATH,
-        title: "Партнёрская программа",
-        description: "Кабинет партнёра: промокод, материалы, продажи и начисления (без реферальных ссылок). Для admin — предпросмотр.",
-        icon: Handshake,
-        status: "active",
-        accent: "text-emerald-700 bg-emerald-50"
-      }
-    ]
+    subtitle: "Продуктовый дашборд, спрос по SKU, выпуски и партнёрский контур.",
+    cards: [{
+      href: "/product",
+      title: "Продукт",
+      description: "Продуктовая сводка, выпуски, ассортимент и партнёрский контур.",
+      icon: Package,
+      status: "active",
+      accent: "text-sky-600 bg-sky-50"
+    }]
   },
   {
     id: "finance",
     title: "Финансы",
-    subtitle: "План, факт, экономика заказов и сценарии для управления результатом.",
-    cards: [
-      {
-        href: "/os/plan",
-        title: "План / факт / прогноз",
-        description: "Выручка, выполнение месячного плана и прогноз до конца периода.",
-        icon: WalletCards,
-        status: "active",
-        accent: "text-emerald-600 bg-emerald-50"
-      },
-      {
-        href: "/os/unit-economics",
-        title: "Юнит-экономика",
-        description: "Маржа заказа, средний чек, CPL, ROAS и ключевые драйверы прибыльности.",
-        icon: BarChart3,
-        status: "active",
-        accent: "text-blue-600 bg-blue-50"
-      },
-      {
-        href: "/digital-twin",
-        title: "Цифровой двойник",
-        description: "Сценарии, ограничения и AI-рекомендации для управления финансовым результатом.",
-        icon: Brain,
-        status: "active",
-        accent: "text-violet-600 bg-violet-50"
-      }
-    ]
+    subtitle: "План, факт, финансовый прогноз, юнит-экономика и сценарии.",
+    cards: [{
+      href: "/finance",
+      title: "Финансы",
+      description: "Финансовая сводка, прогноз и инструменты управления результатом.",
+      icon: WalletCards,
+      status: "active",
+      accent: "text-violet-600 bg-violet-50"
+    }]
   }
 ];
 
@@ -267,19 +185,9 @@ export function OfficeHub() {
         ) : null}
       </header>
 
-      <div className="space-y-6">
-        {visibleSections.map((section) => (
-          <section key={section.id} className="rounded-2xl border border-[var(--line)] bg-slate-50/80 p-5 sm:p-6">
-            <div className="mb-5 border-b border-[var(--line)] pb-4">
-              <h2 className="text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">{section.title}</h2>
-              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{section.subtitle}</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {section.cards.map((office) => (
-                <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
-              ))}
-            </div>
-          </section>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleSections.flatMap((section) => section.cards).map((office) => (
+          <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
         ))}
       </div>
     </main>
