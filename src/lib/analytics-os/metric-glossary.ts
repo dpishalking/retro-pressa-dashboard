@@ -26,6 +26,16 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
     label: "Лиды",
     definition: "Проверенные лиды CRM из СВОД (день + органика), не сырые карточки Bitrix."
   },
+  bitrix_cards: {
+    id: "bitrix_cards",
+    label: "Карточки Bitrix",
+    definition: "Все созданные лиды в CRM за период, включая повторные чаты."
+  },
+  unique_leads: {
+    id: "unique_leads",
+    label: "Уникальные лиды",
+    definition: "Карточки Bitrix без повторов по телефону/email/контакту (с учётом истории)."
+  },
   paid_orders: {
     id: "paid_orders",
     label: "Оплаты",
@@ -35,6 +45,11 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
     id: "conversion_rate",
     label: "Конверсия",
     definition: "Оплаты / проверенные лиды СВОД за тот же период и cutoff."
+  },
+  unique_conversion_rate: {
+    id: "unique_conversion_rate",
+    label: "Конверсия уник.",
+    definition: "Оплаты / уникальные люди (без повторных чатов WhatsApp/Telegram)."
   },
   aov: {
     id: "aov",
@@ -78,18 +93,18 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   },
   overdue: {
     id: "overdue",
-    label: "Просрочка",
-    definition: "Открытые сделки без активности дольше порога."
+    label: "Без касания",
+    definition: "Число открытых сделок без активности ≥ 8 дней."
+  },
+  pipeline_stuck_amount: {
+    id: "pipeline_stuck_amount",
+    label: "Зависшие €",
+    definition: "Сумма открытых сделок без касания ≥ 8 дней — фокус РОП."
   },
   cash: {
     id: "cash",
     label: "Касса",
     definition: "Денежный остаток из финансового снимка."
-  },
-  bitrix_cards: {
-    id: "bitrix_cards",
-    label: "Карточки Bitrix",
-    definition: "Все созданные лиды в CRM за день, включая повторные чаты."
   }
 };
 

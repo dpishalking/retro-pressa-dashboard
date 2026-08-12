@@ -435,6 +435,17 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     plan: leadsSliced ? null : planCrSale
   });
 
+  const bitrixCardsMetric = metricValue({
+    metricId: "bitrix_cards",
+    value: leads.length,
+    status: "live",
+    asOf: reportingAsOf,
+    source: "Bitrix leads DATE_CREATE in period",
+    unit: "count",
+    confidence: "high",
+    decisionHint: "Все карточки CRM, включая повторные чаты"
+  });
+
   const uniqueLeadsMetric = metricValue({
     metricId: "unique_leads",
     value: uniqueLeadStats.unique,
@@ -715,6 +726,20 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     age
   };
 
+  const pipelineStuckAmountMetric = metricValue({
+    metricId: "pipeline_stuck_amount",
+    value: age.stuckOver7d.amount,
+    status: openDeals.length ? "calculated" : "no_data",
+    asOf,
+    source: pipeline.overdueDeals.source,
+    unit: "eur",
+    confidence: pipeline.overdueDeals.confidence,
+    decisionHint:
+      age.stuckOver7d.deals > 0
+        ? `${age.stuckOver7d.deals} сделок без касания ≥ 8 дней`
+        : "Нет зависших сделок"
+  });
+
   const opportunities = opportunityGaps({
     countries,
     managers: bench.rows,
@@ -813,6 +838,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       revenue: revenueMetric,
       gross_profit: grossProfitMetric,
       leads: leadsMetric,
+      bitrix_cards: bitrixCardsMetric,
       unique_leads: uniqueLeadsMetric,
       paid_orders: ordersMetric,
       conversion_rate: crMetric,
@@ -822,6 +848,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       cac: cacMetric,
       repeat_rate: repeatMetric,
       pipeline_amount: pipeline.pipelineAmount,
+      pipeline_stuck_amount: pipelineStuckAmountMetric,
       production_load: productionLoad,
       overdue: pipeline.overdueDeals,
       cash: cashMetric,
@@ -1075,12 +1102,16 @@ function emptySnapshot(input: {
       revenue: no("revenue", "Bitrix WON", "eur"),
       gross_profit: no("gross_profit", "Finance", "eur"),
       leads: no("leads", "Bitrix", "count"),
+      bitrix_cards: no("bitrix_cards", "Bitrix", "count"),
+      unique_leads: no("unique_leads", "Bitrix", "count"),
       paid_orders: no("paid_orders", "Bitrix", "count"),
       conversion_rate: no("conversion_rate", "calculated", "pct"),
+      unique_conversion_rate: no("unique_conversion_rate", "calculated", "pct"),
       aov: no("aov", "calculated", "eur"),
       cac: no("cac", "marketing", "eur"),
       repeat_rate: no("repeat_rate", "customers", "pct"),
       pipeline_amount: pipeline.pipelineAmount,
+      pipeline_stuck_amount: no("pipeline_stuck_amount", "Bitrix", "eur"),
       production_load: no("production_load", "Production", "pct"),
       overdue: pipeline.overdueDeals,
       cash: no("cash", "Finance", "eur"),

@@ -194,18 +194,41 @@ function TreeColumn({
 }
 
 export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+  const svodLeads = snapshot.metrics.leads;
+  const bitrixCards = snapshot.metrics.bitrix_cards;
   const uniqueLeads = snapshot.metrics.unique_leads;
   const uniqueCr = snapshot.metrics.unique_conversion_rate;
+  const svodCr = snapshot.metrics.conversion_rate;
   return (
     <section className="aos-card" id="aos-funnel">
       <div className="aos-section-head">
         <div>
           <h2>Воронка</h2>
-          <p>
-            Лиды → сделки → счета → оплаты · уникальные люди:{" "}
-            {uniqueLeads ? formatMetricDisplay(uniqueLeads) : "—"} · конверсия уникальных:{" "}
-            {uniqueCr ? formatMetricDisplay(uniqueCr) : "—"}
-          </p>
+          <p>Лиды → сделки → счета → оплаты</p>
+        </div>
+      </div>
+      <div className="aos-stat-grid" style={{ marginBottom: 16 }}>
+        <div className="aos-stat">
+          <span>Лиды СВОД</span>
+          <strong>{formatMetricDisplay(svodLeads)}</strong>
+          <StatusBadge status={svodLeads?.status ?? "no_data"} />
+        </div>
+        <div className="aos-stat">
+          <span>Карточки Bitrix</span>
+          <strong>{formatMetricDisplay(bitrixCards)}</strong>
+          <StatusBadge status={bitrixCards?.status ?? "no_data"} />
+        </div>
+        <div className="aos-stat">
+          <span>Уникальные</span>
+          <strong>{formatMetricDisplay(uniqueLeads)}</strong>
+          <StatusBadge status={uniqueLeads?.status ?? "no_data"} />
+        </div>
+        <div className="aos-stat">
+          <span>CR СВОД / уник.</span>
+          <strong>
+            {formatMetricDisplay(svodCr)} / {formatMetricDisplay(uniqueCr)}
+          </strong>
+          <StatusBadge status={uniqueCr?.status ?? svodCr?.status ?? "no_data"} />
         </div>
       </div>
       <div className="aos-funnel">
@@ -692,16 +715,16 @@ export function UnitEconomicsPanel({ snapshot }: { snapshot: CeoControlCenterSna
 export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const p = snapshot.pipeline;
   const age = p.age;
+  const stuckAmount = snapshot.metrics.pipeline_stuck_amount;
   return (
     <section className="aos-card">
       <div className="aos-section-head">
         <div>
           <h2>Открытая воронка</h2>
           <p>
-            Без касания &gt;7 дн.: {age ? number(age.stuckOver7d.deals) : "—"} ·{" "}
-            {age ? eur(age.stuckOver7d.amount) : "—"}
+            Фокус РОП — сделки без касания ≥ 8 дней
             {age?.activityCoveragePct != null
-              ? ` · LAST_ACTIVITY ${Math.round(age.activityCoveragePct * 100)}%`
+              ? ` · покрытие активности ${Math.round(age.activityCoveragePct * 100)}%`
               : ""}
           </p>
         </div>
@@ -709,9 +732,9 @@ export function PipelinePanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
       <div className="aos-stat-grid">
         {[
           ["Сделки", p.openDeals],
-          ["Сумма", p.pipelineAmount],
-          ["С весом", p.weightedAmount],
-          ["Без касания >7 дн.", p.overdueDeals]
+          ["Сумма воронки", p.pipelineAmount],
+          ["Без касания", p.overdueDeals],
+          ["Зависшие €", stuckAmount ?? p.weightedAmount]
         ].map(([label, metric]) => (
           <div key={String(label)} className="aos-stat">
             <span>{label as string}</span>

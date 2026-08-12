@@ -40,10 +40,19 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     title: "Продажи",
     description: "Сводка, прогноз до конца месяца и рабочие экраны команды.",
     icon: Target,
-    summaryMetricIds: ["revenue", "leads", "paid_orders", "conversion_rate", "aov", "pipeline_amount"],
+    summaryMetricIds: [
+      "revenue",
+      "leads",
+      "bitrix_cards",
+      "unique_leads",
+      "conversion_rate",
+      "unique_conversion_rate",
+      "pipeline_stuck_amount",
+      "paid_orders"
+    ],
     forecastDomain: "sales",
     detailLinks: [
-      { title: "Воронка", description: "Лиды, счета, оплаты и узкие места.", href: "/os/funnel", primary: true },
+      { title: "Воронка", description: "Лиды, счета, оплаты и зависшие сделки.", href: "/os/funnel", primary: true },
       { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Цикл сделки", description: "Скорость от лида до оплаты.", href: "/os/sales-cycle" },
       { title: "Менеджеры", description: "Конверсия и выручка по команде.", href: "/os/managers" },
@@ -138,12 +147,12 @@ function ContourSummary({
                   : undefined;
         const metric: AnalyticsMetricValue | undefined = fromMetrics ?? fromMarketing;
         const label = metricLabel(id);
-        const definition = metricDefinition(id);
+        const caption = metric?.decisionHint || metricDefinition(id);
         return (
           <article key={id} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-black text-slate-950">{formatMetricDisplay(metric)}</p>
-            {definition ? <p className="mt-2 text-xs leading-5 text-slate-500">{definition}</p> : null}
+            {caption ? <p className="mt-2 text-xs leading-5 text-slate-500">{caption}</p> : null}
           </article>
         );
       })}

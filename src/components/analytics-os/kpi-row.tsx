@@ -11,14 +11,17 @@ const KPI_ORDER: Array<{ id: string; priority?: boolean }> = [
   { id: "revenue", priority: true },
   { id: "gross_profit" },
   { id: "leads", priority: true },
+  { id: "unique_leads", priority: true },
   { id: "paid_orders", priority: true },
   { id: "conversion_rate", priority: true },
+  { id: "unique_conversion_rate", priority: true },
   { id: "aov", priority: true },
   { id: "cac" },
   { id: "repeat_rate" },
   { id: "pipeline_amount" },
-  { id: "production_load" },
+  { id: "pipeline_stuck_amount", priority: true },
   { id: "overdue" },
+  { id: "production_load" },
   { id: "cash" }
 ];
 

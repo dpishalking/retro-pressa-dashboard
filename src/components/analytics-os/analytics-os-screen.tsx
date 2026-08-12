@@ -30,7 +30,10 @@ const BUSINESS_LINKS: Array<{
           {formatMetricDisplay(snapshot.metrics.leads)}
         </strong>
         <span>
-          {metricLabel("conversion_rate")} {formatMetricDisplay(snapshot.metrics.conversion_rate)}
+          {metricLabel("unique_conversion_rate")}{" "}
+          {formatMetricDisplay(snapshot.metrics.unique_conversion_rate)} ·{" "}
+          {metricLabel("pipeline_stuck_amount")}{" "}
+          {formatMetricDisplay(snapshot.metrics.pipeline_stuck_amount)}
         </span>
       </>
     )
