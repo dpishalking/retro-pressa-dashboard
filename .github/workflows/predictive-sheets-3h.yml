@@ -1,0 +1,76 @@
+name: Predictive Sheets every 3h
+
+# RP | Предиктивки — Bitrix + CEO + СВОД without a laptop.
+# Every 3 hours UTC (:00). Formatting skipped to stay under Sheets write quota.
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Refresh RP | Предиктивки
+        env:
+          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="${CRON_SYNC_SECRET:-}"
+          if [ -z "$SECRET" ]; then
+            echo "CRON_SYNC_SECRET is empty"
+            exit 1
+          fi
+          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          ASOF="$(TZ=Europe/Moscow date +%Y-%m-%d)"
+          OUT="/tmp/cron-predictive-sheets.json"
+          LOG="/tmp/cron-predictive-sheets.log"
+          rm -f "$OUT" "$LOG"
+          echo "predictive-sheets month=${MONTH} asOf=${ASOF}"
+          nohup curl -sS --max-time 300 -o "$OUT" -w "\nHTTP %{http_code}\n" \
+            -X POST http://127.0.0.1:4175/api/sync/predictive-sheets \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"month\":\"${MONTH}\",\"asOf\":\"${ASOF}\",\"skipFormatting\":true}" \
+            >"$LOG" 2>&1 &
+          PID=$!
+          for i in $(seq 1 40); do
+            if ! kill -0 "$PID" 2>/dev/null; then break; fi
+            sleep 15
+          done
+          if kill -0 "$PID" 2>/dev/null; then
+            echo "timed out waiting for predictive-sheets"
+            kill "$PID" 2>/dev/null || true
+            exit 1
+          fi
+          wait "$PID" || true
+          cat "$LOG" || true
+          if [ ! -f "$OUT" ]; then
+            echo "no response body"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("/tmp/cron-predictive-sheets.json"))
+          if not data.get("ok"):
+            print(data)
+            sys.exit(1)
+          r = data.get("result") or {}
+          print("ok metrics=", r.get("metricsCount"), "seed=", (r.get("seededFrom") or "")[:120])
+          PY
+          EOF

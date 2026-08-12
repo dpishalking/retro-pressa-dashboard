@@ -28,6 +28,7 @@ const CRON_API_PREFIXES = [
   "/api/rop/daily-sync",
   "/api/sync/os-daily",
   "/api/sync/predictive-front",
+  "/api/sync/predictive-sheets",
   "/api/sync/bitrix",
   "/api/sync/bitrix-sales-foundation",
   "/api/sync/sales-os",

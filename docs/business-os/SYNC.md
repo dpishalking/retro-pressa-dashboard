@@ -84,7 +84,9 @@ Dry run reads Bitrix only. Production uses `safeReplaceSheet` on staging tabs; f
 
 Heavy `bitrix-sales-foundation` stays on `os-daily` / manual `npm run` — in-process API OOMs the Node server.
 
-**Hourly predictive:** `predictive-hourly-sync.yml` every hour (`:05` UTC) → `POST /api/sync/predictive-front`.
+**Hourly predictive (legacy front):** `predictive-hourly-sync.yml` every hour (`:05` UTC) → `POST /api/sync/predictive-front`.
+
+**RP | Предиктивки every 3h:** `predictive-sheets-3h.yml` (`0 */3 * * *` UTC) → `POST /api/sync/predictive-sheets` (CEO + Bitrix + СВОД, no laptop).
 
 ```bash
 # Local / ops (not used by production cron)
