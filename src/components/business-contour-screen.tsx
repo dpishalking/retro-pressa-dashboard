@@ -73,7 +73,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     title: "Маркетинг и трафик",
     description: "Лендинги в работе, реклама и атрибуция.",
     icon: Megaphone,
-    summaryMetricIds: ["leads", "ad_spend", "cpl", "cac", "conversion_rate"],
+    summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     forecastDomain: "marketing",
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },

@@ -140,10 +140,20 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
       ) : data && m ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Бюджет месяца" value={formatEur(m.spend)} hint="расход MTD" />
-            <Kpi label="Выручка MTD" value={formatEur(m.revenue)} hint="Заказы €" />
-            <Kpi label="ROAS" value={formatRoas(m.roas)} hint="выручка / расход" />
-            <Kpi label="CPL" value={formatEur(m.cpl)} hint="расход / лиды CRM" />
+            <Kpi label="Бюджет месяца" value={formatEur(m.spend)} hint="расход MTD с листа ALX" />
+            <Kpi label="Выручка MTD" value={formatEur(m.revenue)} hint="заказы € с листа ALX" />
+            <Kpi label="ROAS лендинга" value={formatRoas(m.roas)} hint="выручка / расход за месяц" />
+            <Kpi
+              label="ROAS D7"
+              value={m.roasD7Mature ? formatRoas(m.roasD7) : "—"}
+              hint={m.roasD7Mature ? "накопительный ROAS дней 1–7" : "окно D7 ещё не закрыто"}
+            />
+            <Kpi
+              label="ROAS D30"
+              value={m.roasD30Mature ? formatRoas(m.roasD30) : "—"}
+              hint={m.roasD30Mature ? "накопительный ROAS дней 1–30" : "окно D30 ещё не закрыто"}
+            />
+            <Kpi label="CPL лендинга" value={formatEur(m.cpl)} hint="расход / лиды CRM листа" />
             <Kpi label="CPQL" value={formatEur(m.cpql)} hint="расход / квал. лиды" />
             <Kpi label="Лиды CRM" value={m.leads == null ? "—" : number(m.leads)} />
             <Kpi label="Квал. лиды" value={m.qualifiedLeads == null ? "—" : number(m.qualifiedLeads)} />

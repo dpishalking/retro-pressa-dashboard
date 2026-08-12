@@ -79,12 +79,17 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   cac: {
     id: "cac",
     label: "CAC",
-    definition: "Рекламный бюджет / число оплат."
+    definition: "Рекламный бюджет СВОД / новые покупатели за период (частичная метрика)."
   },
   cpl: {
     id: "cpl",
     label: "CPL",
-    definition: "Рекламный бюджет / проверенные лиды СВОД."
+    definition: "Рекламный бюджет СВОД / проверенные лиды СВОД (день + органика)."
+  },
+  landing_cpl: {
+    id: "landing_cpl",
+    label: "CPL лендинга",
+    definition: "Расход лендинга ALX / лиды CRM с листа подрядчика (не СВОД компании)."
   },
   ad_spend: {
     id: "ad_spend",
@@ -94,7 +99,22 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   roas: {
     id: "roas",
     label: "ROAS",
-    definition: "Атрибутированная выручка маркетинга / рекламный бюджет."
+    definition: "Кассовая выручка Bitrix / рекламный бюджет СВОД за период."
+  },
+  landing_roas: {
+    id: "landing_roas",
+    label: "ROAS лендинга",
+    definition: "Выручка заказов с листа ALX / расход лендинга за месяц."
+  },
+  roas_d7: {
+    id: "roas_d7",
+    label: "ROAS D7",
+    definition: "Накопительный ROAS лендинга за календарные дни 1–7 месяца (ALX). Не cohort payback."
+  },
+  roas_d30: {
+    id: "roas_d30",
+    label: "ROAS D30",
+    definition: "Накопительный ROAS лендинга за календарные дни 1–30 месяца (ALX). Не cohort payback."
   },
   repeat_rate: {
     id: "repeat_rate",

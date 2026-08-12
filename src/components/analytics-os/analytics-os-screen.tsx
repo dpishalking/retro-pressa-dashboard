@@ -48,7 +48,10 @@ const BUSINESS_LINKS: Array<{
     subtitle: "Лендинги, бюджет и привлечение",
     preview: (snapshot) => (
       <>
-        <strong>{formatMetricDisplay(snapshot.marketing.adSpend)}</strong>
+        <strong>
+          {metricLabel("ad_spend")} {formatMetricDisplay(snapshot.marketing.adSpend)} ·{" "}
+          {metricLabel("roas")} {formatMetricDisplay(snapshot.marketing.roas)}
+        </strong>
         <span>
           {metricLabel("cpl")} {formatMetricDisplay(snapshot.marketing.cpl)} ·{" "}
           {metricLabel("leads")} {formatMetricDisplay(snapshot.metrics.leads)}

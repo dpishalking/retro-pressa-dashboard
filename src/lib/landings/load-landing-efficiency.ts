@@ -33,6 +33,12 @@ export type LandingEfficiencyTotals = {
   spend: number | null;
   revenue: number | null;
   roas: number | null;
+  /** Cumulative ROAS days 1..7; null if immature or no spend. */
+  roasD7: number | null;
+  /** Cumulative ROAS days 1..30; null if immature or no spend. */
+  roasD30: number | null;
+  roasD7Mature: boolean;
+  roasD30Mature: boolean;
   clicks: number | null;
   leads: number | null;
   qualifiedLeads: number | null;
@@ -82,6 +88,10 @@ function emptyTotals(): LandingEfficiencyTotals {
     spend: null,
     revenue: null,
     roas: null,
+    roasD7: null,
+    roasD30: null,
+    roasD7Mature: false,
+    roasD30Mature: false,
     clicks: null,
     leads: null,
     qualifiedLeads: null,
@@ -91,6 +101,50 @@ function emptyTotals(): LandingEfficiencyTotals {
     saleCr: null,
     orders: null
   };
+}
+
+/** Calendar YYYY-MM-DD in Europe/Riga. */
+export function rigaTodayIso(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Riga",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
+}
+
+/**
+ * Window is mature when Riga "today" is on or after the through-day of isoMonth
+ * (or the month already ended).
+ */
+export function monthWindowMature(
+  isoMonth: string,
+  throughDay: number,
+  todayIso = rigaTodayIso()
+): boolean {
+  const [y, m] = isoMonth.split("-").map(Number);
+  if (!y || !m) return false;
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const targetDay = Math.min(Math.max(1, throughDay), lastDay);
+  const targetDate = `${isoMonth}-${String(targetDay).padStart(2, "0")}`;
+  return todayIso >= targetDate;
+}
+
+/**
+ * Cumulative ROAS for calendar days 1..throughDay of the month from daily ALX rows.
+ * Not cohort CAC payback — MTD ROAS cut at day N.
+ */
+export function cumulativeRoasThroughDay(
+  days: LandingEfficiencyDay[],
+  throughDay: number
+): number | null {
+  const slice = days.filter((day) => {
+    const dom = Number(day.date.slice(8, 10));
+    return Number.isFinite(dom) && dom >= 1 && dom <= throughDay;
+  });
+  const spend = sum(slice.map((d) => d.spend));
+  const revenue = sum(slice.map((d) => d.revenue));
+  return ratio(revenue, spend);
 }
 
 function rowToMetrics(row: string[]): Omit<LandingEfficiencyDay, "date"> {
@@ -125,17 +179,30 @@ function ratio(num: number | null, den: number | null): number | null {
   return num / den;
 }
 
-function aggregateDays(days: LandingEfficiencyDay[]): LandingEfficiencyTotals {
+export function aggregateDays(
+  days: LandingEfficiencyDay[],
+  isoMonth?: string,
+  todayIso = rigaTodayIso()
+): LandingEfficiencyTotals {
   const spend = sum(days.map((d) => d.spend));
   const revenue = sum(days.map((d) => d.revenue));
   const clicks = sum(days.map((d) => d.clicks));
   const leads = sum(days.map((d) => d.leads));
   const qualifiedLeads = sum(days.map((d) => d.qualifiedLeads));
   const orders = sum(days.map((d) => d.orders));
+  const month = isoMonth || days[0]?.date.slice(0, 7) || "";
+  const roasD7Mature = month ? monthWindowMature(month, 7, todayIso) : false;
+  const roasD30Mature = month ? monthWindowMature(month, 30, todayIso) : false;
+  const roasD7Raw = cumulativeRoasThroughDay(days, 7);
+  const roasD30Raw = cumulativeRoasThroughDay(days, 30);
   return {
     spend,
     revenue,
     roas: ratio(revenue, spend),
+    roasD7: roasD7Mature ? roasD7Raw : null,
+    roasD30: roasD30Mature ? roasD30Raw : null,
+    roasD7Mature,
+    roasD30Mature,
     clicks,
     leads,
     qualifiedLeads,
@@ -160,7 +227,7 @@ export function parseLandingEfficiencySheet(
     const row = values[i].map((c) => String(c ?? ""));
     const label = row[0]?.trim() || "";
     if (label.toLowerCase() === "день") {
-      sheetTotals = { ...rowToMetrics(row) };
+      sheetTotals = { ...emptyTotals(), ...rowToMetrics(row) };
       continue;
     }
     const date = parseAlxDate(label);
@@ -188,18 +255,26 @@ export async function loadLandingEfficiency(input: {
   });
 
   const { sheetTotals, days } = parseLandingEfficiencySheet(values, input.isoMonth);
-  const monthTotals = aggregateDays(days);
+  const monthTotals = aggregateDays(days, input.isoMonth);
 
   return {
     landing,
     isoMonth: input.isoMonth,
-    sheetTotals,
+    sheetTotals: {
+      ...emptyTotals(),
+      ...sheetTotals,
+      roasD7: null,
+      roasD30: null,
+      roasD7Mature: false,
+      roasD30Mature: false
+    },
     monthTotals,
     days,
     notes: [
       `Источник: ALX · лист «${landing.sheetTitle}»`,
       `Месяц ${input.isoMonth}: ${days.filter((d) => d.spend != null || d.leads != null).length} дней с данными`,
       "ROAS / CPL / CPQL за месяц пересчитаны из сумм дня (не среднее дневных %).",
+      "ROAS D7 / D30 — накопительный ROAS за календарные дни 1–7 / 1–30 месяца (не cohort CAC payback).",
       "Итог «День» в Sheets — накопительный срез листа, не обязательно выбранный месяц."
     ]
   };
@@ -234,6 +309,10 @@ export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<
         monthlyBudget: totals?.spend ?? null,
         cpl: totals?.cpl ?? null,
         roas: totals?.roas ?? null,
+        roasD7: totals?.roasD7 ?? null,
+        roasD30: totals?.roasD30 ?? null,
+        roasD7Mature: totals?.roasD7Mature ?? false,
+        roasD30Mature: totals?.roasD30Mature ?? false,
         landingCr: totals?.landingCr ?? null,
         saleCr: totals?.saleCr ?? null
       }
