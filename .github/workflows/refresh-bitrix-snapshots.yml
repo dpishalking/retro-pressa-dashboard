@@ -1,19 +1,26 @@
 name: Refresh Bitrix snapshots
 
-# Invalidate Analytics OS Bitrix period snapshots on Timeweb so the next BI request
-# rebuilds cash from SPA invoices (type/31 Оплачено + Дата завершения).
+# Restore or rebuild Analytics OS Bitrix period snapshots on Timeweb.
 on:
   workflow_dispatch:
     inputs:
       periods:
-        description: "Comma-separated PeriodKey list"
+        description: "Comma-separated PeriodKey list (for live rebuild)"
         required: false
         default: "july-2026,august-2026"
+      august_url:
+        description: "Optional direct URL to august-2026.json snapshot"
+        required: false
+        default: ""
+      july_url:
+        description: "Optional direct URL to july-2026.json snapshot"
+        required: false
+        default: ""
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Configure SSH
@@ -23,35 +30,66 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Invalidate Bitrix snapshots on server
+      - name: Restore or rebuild Bitrix snapshots
         env:
           PERIODS: ${{ inputs.periods }}
+          AUGUST_URL: ${{ inputs.august_url }}
+          JULY_URL: ${{ inputs.july_url }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=60 \
+            -o ServerAliveCountMax=120 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             PERIODS="$PERIODS" \
+            AUGUST_URL="$AUGUST_URL" \
+            JULY_URL="$JULY_URL" \
             bash -s << 'EOF'
           set -euo pipefail
           DATA="/opt/retro-pressa-shared/data"
           SNAP="$DATA/bitrix-snapshots"
           CACHE="$DATA/sales-cycle-cache"
           mkdir -p "$SNAP" "$CACHE"
-          IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
-          for PERIOD in "${LIST[@]}"; do
-            PERIOD="$(echo "$PERIOD" | xargs)"
-            [ -n "$PERIOD" ] || continue
-            if [ -f "$SNAP/${PERIOD}.json" ]; then
-              rm -f "$SNAP/${PERIOD}.json"
-              echo "removed $SNAP/${PERIOD}.json"
-            else
-              echo "no snapshot for ${PERIOD}"
-            fi
-          done
           rm -f "$CACHE"/* 2>/dev/null || true
-          echo "cleared sales-cycle cache"
-          curl -sS --max-time 20 http://127.0.0.1:4175/api/health || true
-          echo
+
+          if [ -n "${AUGUST_URL:-}" ]; then
+            echo "restore august from URL"
+            curl -fsSL "$AUGUST_URL" -o "$SNAP/august-2026.json"
+          fi
+          if [ -n "${JULY_URL:-}" ]; then
+            echo "restore july from URL"
+            curl -fsSL "$JULY_URL" -o "$SNAP/july-2026.json"
+          fi
+
+          if [ -z "${AUGUST_URL:-}" ] && [ -z "${JULY_URL:-}" ]; then
+            IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
+            for PERIOD in "${LIST[@]}"; do
+              PERIOD="$(echo "$PERIOD" | xargs)"
+              [ -n "$PERIOD" ] || continue
+              echo "rebuild bitrix period=${PERIOD}"
+              OUT="/tmp/bitrix-sync-${PERIOD}.json"
+              HTTP=$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" \
+                -X POST http://127.0.0.1:4175/api/sync/bitrix \
+                -H "Content-Type: application/json" \
+                -H "x-forwarded-for: 127.0.0.1" \
+                -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" || true)
+              echo "HTTP ${HTTP}"
+              head -c 400 "$OUT" || true
+              echo
+              if [ "$HTTP" != "200" ]; then
+                echo "bitrix sync failed for ${PERIOD}"
+                exit 1
+              fi
+              sleep 10
+            done
+          fi
+
           ls -la "$SNAP" | head -20
+          python3 - <<'PY'
+          import json, os
+          snap="/opt/retro-pressa-shared/data/bitrix-snapshots"
+          for name in sorted(os.listdir(snap)):
+            if not name.endswith(".json"): continue
+            d=json.load(open(os.path.join(snap,name)))
+            print(name, "paid", len(d.get("paidDeals") or []), "leads", len(d.get("leads") or []), "at", d.get("createdAt"))
+          PY
           EOF

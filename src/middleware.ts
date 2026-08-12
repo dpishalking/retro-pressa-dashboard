@@ -56,6 +56,14 @@ function hasValidCronSecret(request: NextRequest): boolean {
   return Boolean(provided && provided === expected);
 }
 
+/** Worker self-calls from 127.0.0.1 when CRON_SYNC_SECRET is unset in GitHub. */
+function isLoopbackRequest(request: NextRequest): boolean {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  const ip = forwarded || realIp || "";
+  return ip === "127.0.0.1" || ip === "::1" || ip === ":ffff:127.0.0.1";
+}
+
 function isPublicPage(pathname: string): boolean {
   return PUBLIC_PAGE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
@@ -97,7 +105,7 @@ export async function middleware(request: NextRequest) {
       );
     }
 
-    if (isCronApi(pathname) && hasValidCronSecret(request)) {
+    if (isCronApi(pathname) && (hasValidCronSecret(request) || isLoopbackRequest(request))) {
       return NextResponse.next();
     }
 
