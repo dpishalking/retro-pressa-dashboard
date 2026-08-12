@@ -112,12 +112,13 @@ assert.equal(fullIndicators[0].value, 46676);
 assert.equal(fullIndicators[4].section, "Facebook");
 assert.equal(fullIndicators[5].section, "Расходы");
 
+// `day` Лиды CRM is already ALX+Органика; Органика is breakdown only.
 const daily = parseSvodDailyLeads({
   paidSheet: [
     ["День", "x", "y", "z", "k", "Лиды CRM"],
     ["День"],
-    ["21.07.2026", "", "", "", "", "53"],
-    ["22.07.2026", "", "", "", "", "40"]
+    ["21.07.2026", "", "", "", "", "57"],
+    ["22.07.2026", "", "", "", "", "50"]
   ],
   organicSheet: [
     ["День", "a", "b", "c", "d", "e", "f", "g", "Лиды", "Лиды CRM"],
@@ -127,10 +128,11 @@ const daily = parseSvodDailyLeads({
   ],
   month: "2026-07"
 });
-assert.equal(daily.get("2026-07-21")?.paid, 53);
-assert.equal(daily.get("2026-07-21")?.organic, 4);
 assert.equal(daily.get("2026-07-21")?.total, 57);
+assert.equal(daily.get("2026-07-21")?.organic, 4);
+assert.equal(daily.get("2026-07-21")?.paid, 53);
 assert.equal(daily.get("2026-07-22")?.total, 50);
+assert.equal(daily.get("2026-07-22")?.paid, 40);
 
 const verifiedMtd = sumSvodVerifiedLeads(daily, { month: "2026-07", throughDate: "2026-07-21" });
 assert.equal(verifiedMtd.total, 57);
@@ -138,5 +140,27 @@ assert.equal(verifiedMtd.paid, 53);
 assert.equal(verifiedMtd.organic, 4);
 assert.equal(verifiedMtd.days, 1);
 assert.equal(verifiedMtd.lastDay, "2026-07-21");
+
+// REGRESSION: day «Лиды CRM» = 851 already includes organic. Never 851+200=1051.
+const noDoubleOrganic = parseSvodDailyLeads({
+  paidSheet: [
+    ["День", "x", "y", "z", "k", "Лиды CRM"],
+    ["День"],
+    ["01.08.2026", "", "", "", "", "851"]
+  ],
+  organicSheet: [
+    ["День", "a", "b", "c", "d", "e", "f", "g", "Лиды", "Лиды CRM"],
+    ["День"],
+    ["01.08.2026", "", "", "", "", "", "", "", "0", "200"]
+  ],
+  month: "2026-08"
+});
+assert.equal(noDoubleOrganic.get("2026-08-01")?.total, 851);
+assert.equal(noDoubleOrganic.get("2026-08-01")?.organic, 200);
+assert.equal(noDoubleOrganic.get("2026-08-01")?.paid, 651);
+assert.notEqual(noDoubleOrganic.get("2026-08-01")?.total, 851 + 200);
+const mtd851 = sumSvodVerifiedLeads(noDoubleOrganic, { month: "2026-08" });
+assert.equal(mtd851.total, 851);
+assert.equal(mtd851.paid + mtd851.organic, mtd851.total);
 
 console.log("svod-plans tests ok");

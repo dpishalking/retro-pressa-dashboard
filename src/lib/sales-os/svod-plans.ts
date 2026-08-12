@@ -190,8 +190,18 @@ function findLeadsCrmColumn(header: string[]): number {
   return normalized.findIndex((h) => h.includes("лиды") && h.includes("crm"));
 }
 
-/** Paid (`day`) + organic (`Органика`) → daily lead totals. */
+/**
+ * Daily lead totals from СВОД.
+ *
+ * Important: tab `day` «Лиды CRM» is already ALX + Органика
+ * (`=ALX!F + 'Органика'!J`). Do NOT add Органика on top of `day` again.
+ *
+ * - total  = `day` Лиды CRM (canonical)
+ * - organic = `Органика` Лиды CRM (breakdown)
+ * - paid   = max(0, total − organic)
+ */
 export function parseSvodDailyLeads(input: {
+  /** СВОД tab `day` (combined paid+organic in «Лиды CRM»). */
   paidSheet: string[][];
   organicSheet: string[][];
   month?: string;
@@ -206,16 +216,15 @@ export function parseSvodDailyLeads(input: {
     return row;
   };
 
-  const paidCol = findLeadsCrmColumn(input.paidSheet[0] || []);
-  if (paidCol >= 0) {
+  const dayCol = findLeadsCrmColumn(input.paidSheet[0] || []);
+  if (dayCol >= 0) {
     for (const row of input.paidSheet.slice(2)) {
       const iso = parseSvodDayDate(row[0] || "");
       if (!iso) continue;
       if (input.month && !iso.startsWith(input.month)) continue;
-      const n = parseSvodPlanNumber(row[paidCol]) ?? 0;
+      const n = parseSvodPlanNumber(row[dayCol]) ?? 0;
       const item = ensure(iso);
-      item.paid = n;
-      item.total = item.paid + item.organic;
+      item.total = n;
     }
   }
 
@@ -228,8 +237,11 @@ export function parseSvodDailyLeads(input: {
       const n = parseSvodPlanNumber(row[organicCol]) ?? 0;
       const item = ensure(iso);
       item.organic = n;
-      item.total = item.paid + item.organic;
     }
+  }
+
+  for (const item of out.values()) {
+    item.paid = Math.max(0, item.total - item.organic);
   }
 
   return out;
@@ -250,7 +262,7 @@ export async function pullSvodDailyLeads(input?: {
   return parseSvodDailyLeads({ paidSheet, organicSheet, month: input?.month });
 }
 
-/** Month-to-date verified CRM leads from СВОД `day` + `Органика` («Лиды CRM»). */
+/** Month-to-date verified CRM leads from СВОД `day` «Лиды CRM» (already includes organic). */
 export function sumSvodVerifiedLeads(
   daily: Map<string, SvodDayLeads>,
   input: { month: string; throughDate?: string | null }

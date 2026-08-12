@@ -216,7 +216,7 @@ export function aggregateTrafficChannelDaily(input: {
   return out;
 }
 
-/** Prefer СВОД day/Органика leads; keep vault/Bitrix money metrics. */
+/** Prefer СВОД leads: `day` total split into paid (day−organic) + Органика; keep vault/Bitrix money. */
 export function mergeSvodLeadsIntoTrafficFacts(
   bitrixByDate: Map<string, TrafficDaySplit>,
   svodLeads: Map<string, SvodDayLeads> | null | undefined

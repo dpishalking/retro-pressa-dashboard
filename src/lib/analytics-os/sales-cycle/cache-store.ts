@@ -52,7 +52,15 @@ async function newestBitrixSnapshotMtimeMs(): Promise<number> {
   return newest;
 }
 
-export async function readSalesCycleCache(key: SalesCycleCacheKey): Promise<SalesCyclePayload | null> {
+export type SalesCycleCacheHit = {
+  payload: SalesCyclePayload;
+  stale: boolean;
+};
+
+export async function readSalesCycleCache(
+  key: SalesCycleCacheKey,
+  options: { allowStale?: boolean } = {}
+): Promise<SalesCycleCacheHit | null> {
   try {
     const file = cachePath(key);
     const [raw, cacheInfo, sourceMtime] = await Promise.all([
@@ -60,12 +68,11 @@ export async function readSalesCycleCache(key: SalesCycleCacheKey): Promise<Sale
       stat(file),
       newestBitrixSnapshotMtimeMs()
     ]);
-    if (sourceMtime > 0 && cacheInfo.mtimeMs < sourceMtime) {
-      return null;
-    }
+    const stale = sourceMtime > 0 && cacheInfo.mtimeMs < sourceMtime;
+    if (stale && !options.allowStale) return null;
     const parsed = JSON.parse(raw) as SalesCyclePayload;
     if (!parsed || !Array.isArray(parsed.cohorts) || !parsed.breakdowns) return null;
-    return parsed;
+    return { payload: parsed, stale };
   } catch {
     return null;
   }

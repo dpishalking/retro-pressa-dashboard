@@ -53,7 +53,7 @@ import type {
 import type { PeriodKey } from "@/types/metrics";
 
 const MONTHLY_PLAN_SOURCE_LABEL = "Таблица «План/факт»";
-const SVOD_VERIFIED_LEADS_SOURCE = "СВОД day + Органика · Лиды CRM";
+const SVOD_VERIFIED_LEADS_SOURCE = "СВОД day · Лиды CRM (ALX+Органика)";
 
 function rigaDateIso(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -265,6 +265,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   }
 
   const filtered = filterSnapshot(snapshot, filters);
+  /** СВОД `day` has no country/manager grain — slice KPIs must use Bitrix. */
+  const leadsSliced = Boolean(filters.country || filters.managerId);
   const currentMonth = currentAnalyticsPeriod(now);
   const throughDate = period >= currentMonth ? rigaYesterdayIso(now) : null;
   const reportingAsOf = throughDate ?? asOf;
@@ -316,14 +318,14 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     asOf: reportingAsOf,
     source: "Bitrix WON (CLOSEDATE + STAGE_SEMANTIC_ID=S)",
     confidence: "high",
-    plan: planRevenueTarget,
+    plan: leadsSliced ? null : planRevenueTarget,
     unit: "eur"
   });
 
   const uniqueCr =
     uniqueLeadStats.unique > 0 ? paidDeals.length / uniqueLeadStats.unique : null;
 
-  // KPI «Лиды» = verified СВОД «Лиды CRM» (day + Органика), не сырые карточки Bitrix.
+  // KPI «Лиды» = verified СВОД `day` «Лиды CRM» (уже ALX+Органика), не Bitrix и не day+Органика.
   // Bitrix cards / unique remain in the subtitle for reconciliation.
   let svodVerified: Awaited<ReturnType<typeof pullSvodDailyLeads>> | null = null;
   try {
@@ -338,26 +340,47 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const yesterdayVerified = svodVerified?.get(yesterdayKey)?.total ?? null;
 
   const hasVerifiedLeads = verifiedLeads !== null;
-  const leadsMetric = metricValue({
-    metricId: "leads",
-    value: hasVerifiedLeads ? verifiedLeads.total : null,
-    status: hasVerifiedLeads ? "live" : "no_data",
-    asOf: verifiedLeads?.lastDay ?? asOf,
-    source: SVOD_VERIFIED_LEADS_SOURCE,
-    unit: "count",
-    confidence: hasVerifiedLeads ? "high" : "low",
-    plan: planLeads,
-    decisionHint:
-      hasVerifiedLeads
-        ? [
-            yesterdayVerified != null ? `Вчера (СВОД): ${yesterdayVerified}` : null,
-            `Bitrix карточек: ${leads.length}`,
-            `уникальные ≈ ${uniqueLeadStats.unique}`
-          ]
-            .filter(Boolean)
-            .join(" · ")
-        : `СВОД недоступен · Bitrix карточек: ${leads.length} · уникальные ≈ ${uniqueLeadStats.unique}`
-  });
+  const slicedLeadCount = uniqueLeadStats.coverageWithIdentity > 0.3 ? uniqueLeadStats.unique : leads.length;
+  const leadsMetric = leadsSliced
+    ? metricValue({
+        metricId: "leads",
+        value: slicedLeadCount,
+        status: "live",
+        asOf: reportingAsOf,
+        source: "Bitrix leads · фильтр страны/менеджера",
+        unit: "count",
+        confidence: uniqueLeadStats.coverageWithIdentity > 0.3 ? "medium" : "low",
+        plan: null,
+        decisionHint: [
+          filters.country ? `Страна: ${filters.country}` : null,
+          `карточек ${leads.length}`,
+          `уникальные ≈ ${uniqueLeadStats.unique}`,
+          "СВОД без разреза по стране — план компании скрыт"
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      })
+    : metricValue({
+        metricId: "leads",
+        value: hasVerifiedLeads ? verifiedLeads.total : null,
+        status: hasVerifiedLeads ? "live" : "no_data",
+        asOf: verifiedLeads?.lastDay ?? asOf,
+        source: SVOD_VERIFIED_LEADS_SOURCE,
+        unit: "count",
+        confidence: hasVerifiedLeads ? "high" : "low",
+        plan: planLeads,
+        decisionHint:
+          hasVerifiedLeads
+            ? [
+                yesterdayVerified != null ? `Вчера (СВОД): ${yesterdayVerified}` : null,
+                `платный ${verifiedLeads.paid} + органика ${verifiedLeads.organic} (уже в ${verifiedLeads.total}, не плюсовать)`,
+                `Bitrix карточек: ${leads.length}`,
+                `уникальные ≈ ${uniqueLeadStats.unique}`
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            : `СВОД недоступен · Bitrix карточек: ${leads.length} · уникальные ≈ ${uniqueLeadStats.unique}`
+      });
 
   const ordersMetric = metricValue({
     metricId: "paid_orders",
@@ -366,7 +389,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     asOf: reportingAsOf,
     source: "Bitrix paidDeals",
     unit: "count",
-    plan: planSales
+    plan: leadsSliced ? null : planSales
   });
 
   const aovMetric = metricValue({
@@ -377,7 +400,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     source: "cash / paid orders (incl. delivery)",
     unit: "eur",
     confidence: "high",
-    plan: planAov
+    plan: leadsSliced ? null : planAov
   });
 
   const productAovMetric = metricValue({
@@ -391,18 +414,25 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     decisionHint: "Средний чек продукта без доставки"
   });
 
-  const verifiedCr =
-    verifiedLeads && verifiedLeads.total > 0 ? paidDeals.length / verifiedLeads.total : null;
+  const verifiedCr = leadsSliced
+    ? slicedLeadCount > 0
+      ? paidDeals.length / slicedLeadCount
+      : null
+    : verifiedLeads && verifiedLeads.total > 0
+      ? paidDeals.length / verifiedLeads.total
+      : null;
   const crMetric = metricValue({
     metricId: "conversion_rate",
     value: verifiedCr,
     status: verifiedCr == null ? "no_data" : "calculated",
-    asOf: verifiedLeads?.lastDay ?? asOf,
-    source: "Bitrix paid orders / СВОД verified leads (same cutoff)",
+    asOf: leadsSliced ? reportingAsOf : verifiedLeads?.lastDay ?? asOf,
+    source: leadsSliced
+      ? "Bitrix paid orders / Bitrix leads (фильтр)"
+      : "Bitrix paid orders / СВОД verified leads (same cutoff)",
     unit: "pct",
-    confidence: verifiedCr == null ? "low" : "medium",
-    decisionHint: "Оплаты / верифицированные лиды",
-    plan: planCrSale
+    confidence: verifiedCr == null ? "low" : leadsSliced ? "medium" : "medium",
+    decisionHint: leadsSliced ? "Оплаты / лиды выбранной страны или менеджера" : "Оплаты / верифицированные лиды",
+    plan: leadsSliced ? null : planCrSale
   });
 
   const uniqueLeadsMetric = metricValue({
@@ -465,46 +495,52 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         });
 
   const cplValue =
-    adSpendInfo.value != null && verifiedLeads && verifiedLeads.total > 0
-      ? adSpendInfo.value / verifiedLeads.total
-      : null;
-  const cplMetric = metricValue({
-    metricId: "cpl",
-    value: cplValue,
-    status: cplValue == null ? "no_data" : "calculated",
-    asOf: verifiedLeads?.lastDay ?? adSpendInfo.asOf,
-    source: "ad_spend / СВОД verified leads",
-    confidence: cplValue == null ? "low" : "medium",
-    unit: "eur",
-    decisionHint: "Расход / верифицированные лиды"
-  });
+    leadsSliced || adSpendInfo.value == null || !verifiedLeads || verifiedLeads.total <= 0
+      ? null
+      : adSpendInfo.value / verifiedLeads.total;
+  const cplMetric = leadsSliced
+    ? noDataMetric("cpl", "ad_spend / leads", "Расход СВОД без разреза по стране — CPL не считаем", "eur")
+    : metricValue({
+        metricId: "cpl",
+        value: cplValue,
+        status: cplValue == null ? "no_data" : "calculated",
+        asOf: verifiedLeads?.lastDay ?? adSpendInfo.asOf,
+        source: "ad_spend / СВОД verified leads",
+        confidence: cplValue == null ? "low" : "medium",
+        unit: "eur",
+        decisionHint: "Расход / верифицированные лиды"
+      });
 
   const cacMetric =
-    adSpendInfo.value == null || customers.newCustomers <= 0
-      ? noDataMetric("cac", "marketing", "Нужны реклама и новые покупатели", "eur")
-      : metricValue({
-          metricId: "cac",
-          value: adSpendInfo.value / customers.newCustomers,
-          status: "calculated",
-          asOf: adSpendInfo.asOf,
-          source: "ad_spend / new paid customers — PARTIAL",
-          confidence: "low",
-          unit: "eur",
-          decisionHint: "Реклама / новые покупатели"
-        });
+    leadsSliced
+      ? noDataMetric("cac", "marketing", "Расход СВОД без разреза по стране — CAC не считаем", "eur")
+      : adSpendInfo.value == null || customers.newCustomers <= 0
+        ? noDataMetric("cac", "marketing", "Нужны реклама и новые покупатели", "eur")
+        : metricValue({
+            metricId: "cac",
+            value: adSpendInfo.value / customers.newCustomers,
+            status: "calculated",
+            asOf: adSpendInfo.asOf,
+            source: "ad_spend / new paid customers — PARTIAL",
+            confidence: "low",
+            unit: "eur",
+            decisionHint: "Реклама / новые покупатели"
+          });
 
   const roasMetric =
-    adSpendInfo.value == null || adSpendInfo.value <= 0
-      ? noDataMetric("roas", "revenue / ad_spend", undefined, "ratio")
-      : metricValue({
-          metricId: "roas",
-          value: cashRoas({ ...monthly, adSpend: adSpendInfo.value }),
-          status: "calculated",
-          asOf: adSpendInfo.asOf,
-          source: "cash ROAS — PARTIAL (Sheets spend)",
-          confidence: "low",
-          unit: "ratio"
-        });
+    leadsSliced
+      ? noDataMetric("roas", "revenue / ad_spend", "Расход СВОД без разреза по стране — ROAS не считаем", "ratio")
+      : adSpendInfo.value == null || adSpendInfo.value <= 0
+        ? noDataMetric("roas", "revenue / ad_spend", undefined, "ratio")
+        : metricValue({
+            metricId: "roas",
+            value: cashRoas({ ...monthly, adSpend: adSpendInfo.value }),
+            status: "calculated",
+            asOf: adSpendInfo.asOf,
+            source: "cash ROAS — PARTIAL (Sheets spend)",
+            confidence: "low",
+            unit: "ratio"
+          });
 
   const marginCoverage = marginAgg?.lineCoverage ?? 0;
   const marginStatus =
@@ -739,7 +775,13 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   });
 
   const filterOptions = {
-    countries: [...new Set(snapshot.paidDeals.map((d) => d.country).filter(Boolean))].sort(),
+    countries: [
+      ...new Set(
+        [...snapshot.paidDeals, ...snapshot.leads]
+          .map((row) => row.country)
+          .filter((country): country is string => Boolean(country))
+      )
+    ].sort(),
     managers: [...new Map(
       [...snapshot.leads, ...snapshot.paidDeals].map((row) => [
         row.assignedById,

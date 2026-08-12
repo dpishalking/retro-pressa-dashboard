@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { BreakdownRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
+import { useCallback, useEffect, useState } from "react";
+import type { BreakdownRow, CohortRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { eur, number, pct } from "@/lib/format";
@@ -91,6 +91,69 @@ function breakdownForTab(data: SalesCyclePayload, tab: CohortTab): BreakdownRow[
   }
 }
 
+function focusCohort(rows: CohortRow[], period: string): CohortRow | undefined {
+  return [...rows].reverse().find((row) => row.cohortKey.startsWith(period) || row.cohortStart.startsWith(period));
+}
+
+function buildCohortDecision(data: SalesCyclePayload, tab: CohortTab): string | null {
+  if (!data.cohorts.length && (tab === "month" || tab === "week")) {
+    return "В снапшотах Bitrix нет лидов для когорт. Обновите синк Bitrix, затем нажмите «Посчитать».";
+  }
+
+  const current = focusCohort(data.cohorts, data.period);
+  const mature = data.cohorts.filter(
+    (row) => row.ageDays >= 30 && row.leads >= 20 && row.cohortKey !== current?.cohortKey
+  );
+  const matureCr =
+    mature.length > 0
+      ? mature.reduce((sum, row) => sum + (cr(row.paid, row.leads) || 0), 0) / mature.length
+      : null;
+  const currentCr = current ? cr(current.paid, current.leads) : null;
+
+  if (tab === "month" || tab === "week") {
+    const cash = data.cashVsCohort;
+    const parts: string[] = [];
+    if (current && currentCr != null && matureCr != null) {
+      const delta = currentCr - matureCr;
+      if (delta <= -0.015) {
+        parts.push(
+          `Когорта ${current.cohortKey} конвертит слабее зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Смотрите оффер и скрипт этой волны, не кассу месяца.`
+        );
+      } else if (delta >= 0.015) {
+        parts.push(
+          `Когорта ${current.cohortKey} пока лучше зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Масштабируйте тот же канал и скрипт.`
+        );
+      } else {
+        parts.push(
+          `Когорта ${current.cohortKey}: ${number(current.leads)} лидов → ${number(current.paid)} оплат (${pct(currentCr)}). Это рядом со зрелыми (${pct(matureCr)}).`
+        );
+      }
+    } else if (current) {
+      parts.push(
+        `Когорта ${current.cohortKey}: ${number(current.leads)} лидов, ${number(current.paid)} оплат, ${eur(current.revenue)} выручки. Зрелых когорт для сравнения мало — смотрите D7/D30, когда пройдёт 30 дней.`
+      );
+    }
+    if (cash.cashRevenue > 0) {
+      parts.push(
+        `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт. Не смешивайте эти цифры в одном плане.`
+      );
+    }
+    return parts.length ? parts.join(" ") : null;
+  }
+
+  const rows = breakdownForTab(data, tab) || [];
+  const ranked = rows.filter((row) => row.leads >= 15 && cr(row.paid, row.leads) != null);
+  if (ranked.length < 2) {
+    return current
+      ? `Разрез «${TABS.find((item) => item.id === tab)?.label}»: мало строк с объёмом. Смотрите таблицу и сравнивайте с месячной когортой ${current.cohortKey}.`
+      : null;
+  }
+  const byCr = [...ranked].sort((a, b) => (cr(b.paid, b.leads) || 0) - (cr(a.paid, a.leads) || 0));
+  const best = byCr[0];
+  const worst = byCr[byCr.length - 1];
+  return `Лучше: ${best.label} — ${pct(cr(best.paid, best.leads)!)} с ${number(best.leads)} лидов. Слабее: ${worst.label} — ${pct(cr(worst.paid, worst.leads)!)}. Тяните скрипт и трафик к сильному сегменту, слабый разберите отдельно.`;
+}
+
 export function CohortsPanel({
   period,
   managerId,
@@ -106,9 +169,46 @@ export function CohortsPanel({
   const [data, setData] = useState<SalesCyclePayload | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const grain = tab === "week" ? "week" : "month";
   const tabMeta = TABS.find((item) => item.id === tab)!;
+
+  const load = useCallback(
+    async (refresh = false) => {
+      if (!period) return;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 90_000);
+      setError("");
+      if (refresh) setRefreshing(true);
+      else setState("loading");
+      const params = new URLSearchParams({ period, cohort_grain: grain });
+      if (managerId) params.set("managerId", managerId);
+      if (country) params.set("country", country);
+      if (productId) params.set("productId", productId);
+      if (refresh) params.set("refresh", "1");
+      try {
+        const res = await fetch(`/api/analytics/sales-cycle?${params}`, { signal: controller.signal });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Ошибка загрузки");
+        setData(json);
+        setState("ready");
+      } catch (err: unknown) {
+        const message =
+          err instanceof DOMException && err.name === "AbortError"
+            ? "Таймаут загрузки когорт. Нажмите «Посчитать» — прогреем кэш на воркере."
+            : err instanceof Error
+              ? err.message
+              : "Ошибка";
+        setError(message);
+        setState((current) => (current === "ready" ? "ready" : "error"));
+      } finally {
+        window.clearTimeout(timeout);
+        setRefreshing(false);
+      }
+    },
+    [period, grain, managerId, country, productId]
+  );
 
   useEffect(() => {
     if (!period) return;
@@ -116,6 +216,7 @@ export function CohortsPanel({
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 90_000);
     setState("loading");
+    setError("");
     const params = new URLSearchParams({ period, cohort_grain: grain });
     if (managerId) params.set("managerId", managerId);
     if (country) params.set("country", country);
@@ -130,16 +231,15 @@ export function CohortsPanel({
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          const message =
-            err instanceof DOMException && err.name === "AbortError"
-              ? "Таймаут загрузки когорт (90с). Нужен прогрев: POST /api/sync/sales-cycle"
-              : err instanceof Error
-                ? err.message
-                : "Ошибка";
-          setError(message);
-          setState("error");
-        }
+        if (cancelled) return;
+        const message =
+          err instanceof DOMException && err.name === "AbortError"
+            ? "Таймаут загрузки когорт. Нажмите «Посчитать» — прогреем кэш на воркере."
+            : err instanceof Error
+              ? err.message
+              : "Ошибка";
+        setError(message);
+        setState("error");
       })
       .finally(() => {
         window.clearTimeout(timeout);
@@ -151,15 +251,9 @@ export function CohortsPanel({
     };
   }, [period, grain, managerId, country, productId]);
 
-  if (state === "error") {
-    return (
-      <section className="aos-card aos-card--warn">
-        <p className="aos-error">{error}</p>
-      </section>
-    );
-  }
-
   const breakdownRows = data ? breakdownForTab(data, tab) : null;
+  const current = data ? focusCohort(data.cohorts, data.period) : undefined;
+  const decision = data ? buildCohortDecision(data, tab) : null;
 
   return (
     <div className="aos-cohorts">
@@ -169,7 +263,17 @@ export function CohortsPanel({
             <h2>Когорты</h2>
             <p>Лид и его продажи в одной когорте · дата создания лида в Bitrix</p>
           </div>
-          <StatusBadge status={state === "ready" ? "calculated" : "manual"} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={state === "ready" ? "calculated" : state === "error" ? "no_data" : "partial"} />
+            <button
+              type="button"
+              className="aos-link"
+              disabled={refreshing || !period}
+              onClick={() => void load(true)}
+            >
+              {refreshing ? "Считаю…" : "Посчитать"}
+            </button>
+          </div>
         </div>
 
         <div className="aos-unit-kinds" role="tablist" aria-label="Тип когорты">
@@ -191,24 +295,50 @@ export function CohortsPanel({
           {tabMeta.hint}
         </p>
 
-        {!data || state === "loading" ? (
+        {data && current ? (
+          <div className="aos-stat-grid">
+            <div className="aos-stat">
+              <span>Лиды когорты {current.cohortKey}</span>
+              <strong>{number(current.leads)}</strong>
+            </div>
+            <div className="aos-stat">
+              <span>Оплаты</span>
+              <strong>{number(current.paid)}</strong>
+            </div>
+            <div className="aos-stat">
+              <span>Конверсия</span>
+              <strong>{cr(current.paid, current.leads) == null ? "—" : pct(cr(current.paid, current.leads)!)}</strong>
+            </div>
+            <div className="aos-stat">
+              <span>Выручка когорты</span>
+              <strong>{eur(current.revenue)}</strong>
+            </div>
+          </div>
+        ) : null}
+
+        {state === "error" ? (
+          <p className="aos-error" style={{ marginTop: 12 }}>
+            {error}
+          </p>
+        ) : null}
+
+        {!data && state !== "error" ? (
           <p className="aos-muted">Загрузка когорт…</p>
-        ) : breakdownRows ? (
+        ) : data && breakdownRows ? (
           <BreakdownTable
             rows={breakdownRows}
             nameHeader={tabMeta.label}
             leadHeader={tab === "product" || tab === "gift" ? "Первые оплаты" : "Лиды"}
           />
-        ) : (
-          <TimeCohortTable rows={data.cohorts} grain={tab === "week" ? "week" : "month"} />
-        )}
-        <DecisionBrief
-          body={
-            data
-              ? "Когорта отвечает: «лиды этой волны сколько уже принесли?» Не путайте с кассой месяца. Если когорта слабая — чините скрипт и оффер той недели/канала, а не общий план."
-              : null
-          }
-        />
+        ) : data ? (
+          <TimeCohortTable
+            rows={data.cohorts}
+            grain={tab === "week" ? "week" : "month"}
+            focusPeriod={data.period}
+          />
+        ) : null}
+
+        <DecisionBrief body={decision} />
       </section>
 
       {data && (tab === "month" || tab === "week") ? (
@@ -240,13 +370,6 @@ export function CohortsPanel({
               <strong>{eur(data.cashVsCohort.fromOlder)}</strong>
             </div>
           </div>
-          <DecisionBrief
-            body={
-              data.cashVsCohort.cashRevenue > 0
-                ? `Касса месяца ≠ когорта лидов: из ${eur(data.cashVsCohort.cashRevenue)} только ${eur(data.cashVsCohort.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых лидов. Не смешивайте эти цифры в одном плане.`
-                : null
-            }
-          />
         </section>
       ) : null}
     </div>
@@ -255,12 +378,17 @@ export function CohortsPanel({
 
 function TimeCohortTable({
   rows,
-  grain
+  grain,
+  focusPeriod
 }: {
   rows: SalesCyclePayload["cohorts"];
   grain: "month" | "week";
+  focusPeriod: string;
 }) {
   const list = [...rows].reverse().slice(0, grain === "week" ? 24 : 12);
+  if (!list.length) {
+    return <p className="aos-muted">Нет когорт в снапшотах Bitrix за доступные периоды.</p>;
+  }
   return (
     <div className="table-scroll">
       <table className="aos-table">
@@ -278,11 +406,16 @@ function TimeCohortTable({
         </thead>
         <tbody>
           {list.map((row) => {
-            const d7 = row.conversion.find((p) => p.id === "D7");
-            const d30 = row.conversion.find((p) => p.id === "D30");
+            const d7 = row.conversion.find((point) => point.id === "D7");
+            const d30 = row.conversion.find((point) => point.id === "D30");
+            const isFocus = row.cohortKey.startsWith(focusPeriod) || row.cohortStart.startsWith(focusPeriod);
             return (
               <tr key={row.cohortKey}>
-                <td>{row.cohortKey}</td>
+                <td>
+                  {row.cohortKey}
+                  {isFocus ? " · текущая" : ""}
+                  {row.ageDays < 30 ? " · открытая" : ""}
+                </td>
                 <td>{number(row.leads)}</td>
                 <td>{number(row.paid)}</td>
                 <td>{cr(row.paid, row.leads) == null ? "—" : pct(cr(row.paid, row.leads)!)}</td>

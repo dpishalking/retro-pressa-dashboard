@@ -1,0 +1,31 @@
+---
+description: СВОД лиды — company total vs Bitrix slice; never add organic twice
+globs: src/lib/sales-os/svod-plans.ts,src/lib/analytics-os/load-ceo-snapshot.ts,src/lib/sales-os/traffic-channel-facts.ts,src/lib/marketing-planning/**/*.ts
+alwaysApply: false
+---
+
+# СВОД лиды — источник правды
+
+## Какой источник на KPI «Лиды»
+
+- **Все страны / все менеджеры** → СВОД tab `day`, колонка «Лиды CRM».
+- **Фильтр страны или менеджера** → Bitrix snapshot (в СВОД нет разреза по стране).
+
+Не смешивать: нельзя показывать СВОД-итог компании, когда выбран срез.
+
+## Запрет двойного счёта органики
+
+Tab `day` «Лиды CRM» **уже** = платный ALX + органика  
+(`=ALX!F + 'Органика'!J`). Это канонический total (например 851).
+
+Tab `Органика` «Лиды CRM» — только **разбивка**, не второе слагаемое.
+
+```
+total   = day «Лиды CRM»          // 851
+organic = Органика «Лиды CRM»     // например 200
+paid    = max(0, total − organic) // 651
+```
+
+**Никогда:** `total = day + Органика` (получится 851+200=1051 — органика дважды).
+
+Проверка в тесте: `src/tests/svod-plans.test.ts` (кейс 851 + органика).

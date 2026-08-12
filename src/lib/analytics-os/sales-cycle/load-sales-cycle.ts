@@ -74,7 +74,7 @@ async function loadCorpus() {
 
 function parseGrain(value: string | null | undefined): CohortGrain {
   if (value === "week" || value === "month" || value === "day") return value;
-  return "day";
+  return "month";
 }
 
 export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promise<SalesCyclePayload> {
@@ -91,8 +91,8 @@ export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promi
   };
 
   if (!options.forceRefresh) {
-    const cached = await readSalesCycleCache(cacheKey);
-    if (cached) return cached;
+    const cached = await readSalesCycleCache(cacheKey, { allowStale: true });
+    if (cached) return cached.payload;
   }
 
   const corpus = await loadCorpus();
