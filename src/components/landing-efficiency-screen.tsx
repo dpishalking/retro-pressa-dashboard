@@ -16,7 +16,7 @@ type EfficiencyResponse = {
   ok: true;
   period: string;
   isoMonth: string;
-  landing: { id: string; title: string; url: string; tag: string; sheetTitle: string; gid: number };
+  landing: { id: string; siteName: string; address: string; tag: string; sheetTitle: string; gid: number };
   sheetTotals: LandingEfficiencyTotals;
   monthTotals: LandingEfficiencyTotals;
   days: LandingEfficiencyDay[];
@@ -103,17 +103,9 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
           <div>
             <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Эффективность лендинга</p>
             <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">
-              {data?.landing.title || landingId}
+              {data?.landing.siteName || landingId}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Ключевые метрики окупаемости из ALX: расход, выручка, ROAS, CPL, CPQL и конверсии.
-              {data?.landing.url ? (
-                <>
-                  {" "}
-                  <span className="font-semibold text-slate-800">{data.landing.url}</span>
-                </>
-              ) : null}
-            </p>
+            <p className="mt-2 text-sm text-slate-500">{data?.landing.address}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -148,7 +140,7 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
       ) : data && m ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Расход MTD" value={formatEur(m.spend)} hint="сумма дней месяца" />
+            <Kpi label="Бюджет месяца" value={formatEur(m.spend)} hint="расход MTD" />
             <Kpi label="Выручка MTD" value={formatEur(m.revenue)} hint="Заказы €" />
             <Kpi label="ROAS" value={formatRoas(m.roas)} hint="выручка / расход" />
             <Kpi label="CPL" value={formatEur(m.cpl)} hint="расход / лиды CRM" />

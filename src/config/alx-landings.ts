@@ -14,10 +14,10 @@ export type AlxLandingDef = {
   sheetTitle: string;
   gid: number;
   tag: AlxLandingTag;
-  /** Short UI title */
-  title: string;
-  /** Path / host for subtitle */
-  url: string;
+  /** Site host shown as the card name */
+  siteName: string;
+  /** Landing path / address */
+  address: string;
 };
 
 /** Active green/yellow landing tabs currently shown in Marketing. */
@@ -27,72 +27,56 @@ export const ALX_ACTIVE_LANDINGS: readonly AlxLandingDef[] = [
     sheetTitle: "https://retro-pressa.com/ru/",
     gid: 249261530,
     tag: "green",
-    title: "Главная RU",
-    url: "retro-pressa.com/ru/"
+    siteName: "retro-pressa.com",
+    address: "/ru/"
   },
   {
     id: "ru-new",
     sheetTitle: "https://retro-pressa.com/ru/new",
     gid: 803863448,
     tag: "green",
-    title: "RU /new",
-    url: "retro-pressa.com/ru/new"
+    siteName: "retro-pressa.com",
+    address: "/ru/new"
   },
   {
     id: "life",
     sheetTitle: "https://retro-pressa.com/life",
     gid: 1925838060,
     tag: "green",
-    title: "Life",
-    url: "retro-pressa.com/life"
+    siteName: "retro-pressa.com",
+    address: "/life"
   },
   {
     id: "est-new",
     sheetTitle: "https://retro-pressa.com/est/new",
     gid: 1941311054,
     tag: "green",
-    title: "EST /new",
-    url: "retro-pressa.com/est/new"
-  },
-  {
-    id: "de-new",
-    sheetTitle: "https://retro-pressa.com/de/new",
-    gid: 1656463292,
-    tag: "green",
-    title: "DE /new",
-    url: "retro-pressa.com/de/new"
-  },
-  {
-    id: "es-new",
-    sheetTitle: "https://retro-pressa.com/es/new ",
-    gid: 1330707567,
-    tag: "green",
-    title: "ES /new",
-    url: "retro-pressa.com/es/new"
+    siteName: "retro-pressa.com",
+    address: "/est/new"
   },
   {
     id: "pesnya",
     sheetTitle: "https://giftboost.website/pesnya",
     gid: 233042124,
     tag: "green",
-    title: "Песня",
-    url: "giftboost.website/pesnya"
+    siteName: "giftboost.website",
+    address: "/pesnya"
   },
   {
     id: "gift2man",
     sheetTitle: "https://familia-studio.com/gift2man",
     gid: 1921997261,
     tag: "green",
-    title: "Gift2Man",
-    url: "familia-studio.com/gift2man"
+    siteName: "familia-studio.com",
+    address: "/gift2man"
   },
   {
     id: "yourstory",
     sheetTitle: "https://yourstorymagazine.com/",
     gid: 809196650,
     tag: "green",
-    title: "Your Story Magazine",
-    url: "yourstorymagazine.com"
+    siteName: "yourstorymagazine.com",
+    address: "/"
   }
 ] as const;
 

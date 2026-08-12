@@ -206,7 +206,7 @@ export async function loadLandingEfficiency(input: {
 }
 
 function hasMonthData(days: LandingEfficiencyDay[]): boolean {
-  return days.some((d) => d.spend != null || d.leads != null || d.revenue != null || d.clicks != null);
+  return days.some((d) => d.spend != null || d.leads != null || d.revenue != null);
 }
 
 export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<LandingEfficiencySummary[]> {
@@ -216,22 +216,27 @@ export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<
     )
   );
 
-  return ALX_ACTIVE_LANDINGS.map((landing, index) => {
+  return ALX_ACTIVE_LANDINGS.flatMap((landing, index) => {
     const model = models[index];
     const days = model?.days ?? [];
     const totals = model?.monthTotals;
-    return {
-      id: landing.id,
-      title: landing.title,
-      url: landing.url,
-      tag: landing.tag,
-      href: `/marketing/landings/${landing.id}`,
-      hasData: model ? hasMonthData(days) : false,
-      daysWithData: days.filter((d) => d.spend != null || d.leads != null || d.revenue != null).length,
-      cpl: totals?.cpl ?? null,
-      roas: totals?.roas ?? null,
-      landingCr: totals?.landingCr ?? null,
-      saleCr: totals?.saleCr ?? null
-    };
+    const hasData = model ? hasMonthData(days) : false;
+    if (!hasData) return [];
+    return [
+      {
+        id: landing.id,
+        siteName: landing.siteName,
+        address: landing.address,
+        tag: landing.tag,
+        href: `/marketing/landings/${landing.id}`,
+        hasData,
+        daysWithData: days.filter((d) => d.spend != null || d.leads != null || d.revenue != null).length,
+        monthlyBudget: totals?.spend ?? null,
+        cpl: totals?.cpl ?? null,
+        roas: totals?.roas ?? null,
+        landingCr: totals?.landingCr ?? null,
+        saleCr: totals?.saleCr ?? null
+      }
+    ];
   });
 }

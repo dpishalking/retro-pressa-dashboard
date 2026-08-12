@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const landing = getAlxLandingById(id);
   return {
     title: landing
-      ? `${landing.title} — эффективность — Retro Pressa`
+      ? `${landing.siteName}${landing.address} — эффективность — Retro Pressa`
       : "Лендинг — Retro Pressa"
   };
 }

@@ -32,7 +32,6 @@ function formatPct(value: number | null): string {
 export function MarketingLandingTiles() {
   const period = currentPeriodKey();
   const [landings, setLandings] = useState<LandingEfficiencySummary[] | null>(null);
-  const [isoMonth, setIsoMonth] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,10 +45,7 @@ export function MarketingLandingTiles() {
         if (!response.ok || !("ok" in payload) || payload.ok !== true) {
           throw new Error("error" in payload ? payload.error : "Не удалось загрузить лендинги");
         }
-        if (!cancelled) {
-          setLandings(payload.landings);
-          setIsoMonth(payload.isoMonth);
-        }
+        if (!cancelled) setLandings(payload.landings);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Ошибка загрузки");
       }
@@ -63,35 +59,24 @@ export function MarketingLandingTiles() {
     <section className="mb-8">
       <div className="mb-4">
         <h2 className="text-2xl font-black text-slate-950">Эффективность лендингов</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Зелёная точка — есть данные за {isoMonth || "текущий период"}, красная — нет данных.
-          CPL, окупаемость (ROAS) и конверсия лендинга.
-        </p>
       </div>
       {error ? <p className="mb-4 text-sm text-red-700">{error}</p> : null}
       {!landings && !error ? <p className="text-sm text-slate-500">Загружаю метрики лендингов…</p> : null}
-      {landings ? (
+      {landings?.length === 0 ? (
+        <p className="text-sm text-slate-500">Нет лендингов с данными за текущий период.</p>
+      ) : null}
+      {landings?.length ? (
         <div className="grid gap-4 md:grid-cols-2">
           {landings.map((landing) => (
             <Link key={landing.id} href={landing.href} className="block h-full">
               <article className="card flex h-full flex-col p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="flex items-start justify-between gap-3">
+                <h2 className="text-xl font-black text-slate-950">{landing.siteName}</h2>
+                <p className="mt-1 text-sm text-slate-500">{landing.address}</p>
+                <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                   <div>
-                    <h2 className="text-xl font-black text-slate-950">{landing.title}</h2>
-                    <p className="mt-1 text-sm text-slate-500">{landing.url}</p>
+                    <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Бюджет</dt>
+                    <dd className="mt-1 text-lg font-black text-slate-950">{formatEur(landing.monthlyBudget)}</dd>
                   </div>
-                  <span
-                    className="mt-1 inline-flex items-center gap-1.5 shrink-0 text-xs font-semibold text-slate-600"
-                    title={landing.hasData ? `В работе · ${landing.daysWithData} дн. с данными` : "Нет данных за период"}
-                  >
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${landing.hasData ? "bg-emerald-500" : "bg-red-500"}`}
-                      aria-hidden
-                    />
-                    {landing.hasData ? "в работе" : "нет данных"}
-                  </span>
-                </div>
-                <dl className="mt-5 grid grid-cols-3 gap-3 text-sm">
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">CPL</dt>
                     <dd className="mt-1 text-lg font-black text-slate-950">{formatEur(landing.cpl)}</dd>
@@ -105,7 +90,6 @@ export function MarketingLandingTiles() {
                     <dd className="mt-1 text-lg font-black text-slate-950">{formatPct(landing.landingCr)}</dd>
                   </div>
                 </dl>
-                <p className="mt-5 text-sm font-bold text-blue-600">Открыть →</p>
               </article>
             </Link>
           ))}
