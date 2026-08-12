@@ -60,6 +60,11 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     ],
     actionLinks: [
       { title: "Работа РОП", description: "Ежедневное управление командой и план-факт.", href: "/rop", primary: true },
+      {
+        title: "Зарплаты менеджеров",
+        description: "Калькулятор ФОТ: факт Bitrix или ручной сценарий.",
+        href: "/sales/payroll"
+      },
       { title: "Мотивация", description: "Бонусы и фокус месяца.", href: "/motivation" },
       { title: "Обучение", description: "Продукты, CRM и прогресс команды.", href: "/training" }
     ]
