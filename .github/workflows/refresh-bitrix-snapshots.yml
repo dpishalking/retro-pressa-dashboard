@@ -1,6 +1,7 @@
 name: Refresh Bitrix snapshots
 
-# Rebuild Analytics OS Bitrix period snapshots on Timeweb (cash = SPA invoices).
+# Invalidate Analytics OS Bitrix period snapshots on Timeweb so the next BI request
+# rebuilds cash from SPA invoices (type/31 Оплачено + Дата завершения).
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +13,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
       - name: Configure SSH
@@ -22,7 +23,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Refresh Bitrix snapshots on server
+      - name: Invalidate Bitrix snapshots on server
         env:
           PERIODS: ${{ inputs.periods }}
         run: |
@@ -33,22 +34,24 @@ jobs:
             PERIODS="$PERIODS" \
             bash -s << 'EOF'
           set -euo pipefail
-          APP_DIR="/opt/retro-pressa"
-          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))')"
-          if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET missing in /opt/retro-pressa/runtime-env.json"
-            exit 1
-          fi
+          DATA="/opt/retro-pressa-shared/data"
+          SNAP="$DATA/bitrix-snapshots"
+          CACHE="$DATA/sales-cycle-cache"
+          mkdir -p "$SNAP" "$CACHE"
           IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
           for PERIOD in "${LIST[@]}"; do
             PERIOD="$(echo "$PERIOD" | xargs)"
             [ -n "$PERIOD" ] || continue
-            echo "sync bitrix period=${PERIOD}"
-            curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/bitrix \
-              -H "Content-Type: application/json" \
-              -H "x-cron-secret: ${SECRET}" \
-              -d "{\"period\":\"${PERIOD}\",\"refresh\":true}"
-            echo
-            sleep 8
+            if [ -f "$SNAP/${PERIOD}.json" ]; then
+              rm -f "$SNAP/${PERIOD}.json"
+              echo "removed $SNAP/${PERIOD}.json"
+            else
+              echo "no snapshot for ${PERIOD}"
+            fi
           done
+          rm -f "$CACHE"/* 2>/dev/null || true
+          echo "cleared sales-cycle cache"
+          curl -sS --max-time 20 http://127.0.0.1:4175/api/health || true
+          echo
+          ls -la "$SNAP" | head -20
           EOF
