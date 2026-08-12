@@ -24,6 +24,17 @@ function MaturityCells({ points }: { points: Array<{ id: string; value: number |
   );
 }
 
+function cycleLoadError(err: unknown): string {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") {
+    return "Расчёт цикла сделки не успел. Выберите зерно «месяц» и нажмите «Повторить».";
+  }
+  const message = err instanceof Error ? err.message : "Ошибка загрузки";
+  if (message === "Failed to fetch" || /networkerror/i.test(message)) {
+    return "Не удалось связаться с сервером. Выберите зерно «месяц» и нажмите «Повторить».";
+  }
+  return message;
+}
+
 export function SalesCyclePanel({
   period,
   managerId,
@@ -35,19 +46,23 @@ export function SalesCyclePanel({
   country?: string;
   productId?: string;
 }) {
-  const [grain, setGrain] = useState<"day" | "week" | "month">("day");
+  const [grain, setGrain] = useState<"day" | "week" | "month">("month");
   const [data, setData] = useState<SalesCyclePayload | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    if (!period) return;
+    const controller = new AbortController();
     let cancelled = false;
     setState("loading");
+    setError("");
     const params = new URLSearchParams({ period, cohort_grain: grain });
     if (managerId) params.set("managerId", managerId);
     if (country) params.set("country", country);
     if (productId) params.set("productId", productId);
-    fetch(`/api/analytics/sales-cycle?${params}`)
+    fetch(`/api/analytics/sales-cycle?${params}`, { signal: controller.signal })
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Ошибка загрузки");
@@ -57,58 +72,51 @@ export function SalesCyclePanel({
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Ошибка");
-          setState("error");
-        }
+        if (cancelled) return;
+        setError(cycleLoadError(err));
+        setState("error");
       });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [period, grain, managerId, country, productId]);
+  }, [period, grain, managerId, country, productId, reloadKey]);
 
-  if (state === "error") {
-    return (
-      <section className="aos-card aos-card--warn">
-        <p className="aos-error">{error}</p>
-      </section>
-    );
-  }
-
-  if (!data) {
-    return (
-      <section className="aos-card">
-        <p className="aos-muted">Загрузка цикла сделки…</p>
-      </section>
-    );
-  }
-
-  const s = data.summary;
-  const cash = data.cashVsCohort;
+  const s = data?.summary;
+  const cash = data?.cashVsCohort;
 
   return (
     <div className="aos-sales-cycle">
-      <section className="aos-card">
+      <section className={state === "error" ? "aos-card aos-card--warn" : "aos-card"}>
         <div className="aos-section-head">
           <div>
             <h2>Цикл сделки и зрелость когорты</h2>
             <p>
-              Lead → WON (elapsed hours) · timezone {data.timezone} · {s.statusNote}
+              Lead → WON (elapsed hours)
+              {data ? ` · timezone ${data.timezone} · ${s?.statusNote}` : ""}
             </p>
           </div>
           <div className="aos-sales-cycle__grain">
-            <StatusBadge status="partial" />
+            <StatusBadge status={state === "ready" ? "partial" : state === "error" ? "no_data" : "calculated"} />
             <label>
               Зерно когорты
               <select value={grain} onChange={(e) => setGrain(e.target.value as typeof grain)}>
-                <option value="day">День</option>
-                <option value="week">Неделя</option>
                 <option value="month">Месяц</option>
+                <option value="week">Неделя</option>
+                <option value="day">День</option>
               </select>
             </label>
+            {state === "error" ? (
+              <button type="button" className="aos-link" onClick={() => setReloadKey((key) => key + 1)}>
+                Повторить
+              </button>
+            ) : null}
           </div>
         </div>
-
+        {state === "error" ? <p className="aos-error">{error}</p> : null}
+        {state === "loading" && !data ? <p className="aos-muted">Загрузка цикла сделки…</p> : null}
+        {!data || !s ? null : (
+        <>
         <div className="aos-kpi-grid">
           <div className="aos-kpi">
             <span>Median Lead → WON</span>
@@ -142,8 +150,12 @@ export function SalesCyclePanel({
               : null
           }
         />
+        </>
+        )}
       </section>
 
+      {!data || !s || !cash ? null : (
+      <>
       <section className="aos-card">
         <div className="aos-section-head">
           <div>
@@ -430,6 +442,8 @@ export function SalesCyclePanel({
           ))}
         </ul>
       </section>
+      </>
+      )}
     </div>
   );
 }

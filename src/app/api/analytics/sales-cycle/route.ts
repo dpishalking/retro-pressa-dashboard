@@ -70,7 +70,8 @@ function kickWorkerRefresh(request: NextRequest) {
 
 /**
  * GET /api/analytics/sales-cycle?period=YYYY-MM&cohort_grain=day|week|month&managerId=&productId=&country=&source=
- * Auth: session required (middleware). Serves sales-cycle-cache first, then worker compute.
+ * Auth: session required (middleware). Serves sales-cycle-cache first, then worker.
+ * Production web never computes locally — a cache miss / worker failure returns 503/504.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -92,16 +93,20 @@ export async function GET(request: NextRequest) {
       return await proxyToWorker(request, WORKER_TIMEOUT_MS);
     } catch (error) {
       const timedOut = error instanceof Error && error.name === "AbortError";
-      if (timedOut) {
-        const stale = await readSalesCycleCache(cacheKeyFromRequest(request), { allowStale: true });
-        if (stale) {
-          return NextResponse.json(stale.payload, {
-            headers: { "cache-control": "private, max-age=30" }
-          });
-        }
+      const stale = await readSalesCycleCache(cacheKeyFromRequest(request), { allowStale: true });
+      if (stale) {
+        return NextResponse.json(stale.payload, {
+          headers: { "cache-control": "private, max-age=30" }
+        });
+      }
+      if (process.env.NODE_ENV === "production") {
         return NextResponse.json(
-          { error: "Расчёт когорт на воркере не успел за 55с. Нажмите «Посчитать» ещё раз." },
-          { status: 504 }
+          {
+            error: timedOut
+              ? "Расчёт цикла сделки не успел за 55с. Выберите зерно «месяц» и нажмите «Повторить»."
+              : "Расчёт цикла сделки недоступен. Выберите зерно «месяц» или подождите фоновый прогрев."
+          },
+          { status: timedOut ? 504 : 503 }
         );
       }
     }
