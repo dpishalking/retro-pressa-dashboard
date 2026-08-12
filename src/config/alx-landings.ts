@@ -83,3 +83,8 @@ export const ALX_ACTIVE_LANDINGS: readonly AlxLandingDef[] = [
 export function getAlxLandingById(id: string): AlxLandingDef | null {
   return ALX_ACTIVE_LANDINGS.find((l) => l.id === id) ?? null;
 }
+
+/** Sheet title without protocol, same as СВОД/ALX tab name: retro-pressa.com/life */
+export function alxLandingDisplayName(landing: Pick<AlxLandingDef, "sheetTitle">): string {
+  return landing.sheetTitle.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+}

@@ -104,7 +104,7 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   ad_spend: {
     id: "ad_spend",
     label: "Рекламный бюджет",
-    definition: "Расход на рекламу из СВОД / Traffic."
+    definition: "Факт расход СВОД tab day (MTD до вчера), не план месяца и не сумма всех подрядчиков."
   },
   roas: {
     id: "roas",

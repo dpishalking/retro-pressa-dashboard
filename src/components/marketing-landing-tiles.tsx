@@ -15,9 +15,9 @@ type SummaryResponse = {
   landings: LandingEfficiencySummary[];
 };
 
-function formatEur(value: number | null): string {
+function formatEur(value: number | null, digits = 0): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return eur(value);
+  return eur(value, digits);
 }
 
 function formatRoas(value: number | null): string {
@@ -93,7 +93,7 @@ export function MarketingLandingTiles() {
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Медиана {metricLabel("landing_cpl")}
             </p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{formatEur(board.medianCpl)}</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{formatEur(board.medianCpl, 1)}</p>
           </article>
           <article className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -130,8 +130,7 @@ export function MarketingLandingTiles() {
           {landings.map((landing) => (
             <Link key={landing.id} href={landing.href} className="block h-full">
               <article className="card flex h-full flex-col p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
-                <h2 className="text-xl font-black text-slate-950">{landing.siteName}</h2>
-                <p className="mt-1 text-sm text-slate-500">{landing.address}</p>
+                <h2 className="text-xl font-black text-slate-950">{landing.title}</h2>
                 <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Бюджет</dt>
@@ -141,7 +140,7 @@ export function MarketingLandingTiles() {
                     <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
                       {metricLabel("landing_cpl")}
                     </dt>
-                    <dd className="mt-1 text-lg font-black text-slate-950">{formatEur(landing.cpl)}</dd>
+                    <dd className="mt-1 text-lg font-black text-slate-950">{formatEur(landing.cpl, 1)}</dd>
                   </div>
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">

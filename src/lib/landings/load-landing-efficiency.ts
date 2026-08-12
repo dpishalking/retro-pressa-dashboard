@@ -5,6 +5,7 @@
 import {
   ALX_ACTIVE_LANDINGS,
   ALX_LANDINGS_SPREADSHEET_ID,
+  alxLandingDisplayName,
   getAlxLandingById,
   type AlxLandingDef
 } from "@/config/alx-landings";
@@ -255,7 +256,9 @@ export async function loadLandingEfficiency(input: {
   });
 
   const { sheetTotals, days } = parseLandingEfficiencySheet(values, input.isoMonth);
-  const monthTotals = aggregateDays(days, input.isoMonth);
+  const todayIso = rigaTodayIso();
+  const monthDays = days.filter((day) => day.date <= todayIso);
+  const monthTotals = aggregateDays(monthDays, input.isoMonth, todayIso);
 
   return {
     landing,
@@ -269,10 +272,10 @@ export async function loadLandingEfficiency(input: {
       roasD30Mature: false
     },
     monthTotals,
-    days,
+    days: monthDays,
     notes: [
       `Источник: ALX · лист «${landing.sheetTitle}»`,
-      `Месяц ${input.isoMonth}: ${days.filter((d) => d.spend != null || d.leads != null).length} дней с данными`,
+      `Месяц ${input.isoMonth}: ${monthDays.filter((d) => (d.spend ?? 0) > 0 || (d.leads ?? 0) > 0).length} дней с трафиком`,
       "ROAS / CPL / CPQL за месяц пересчитаны из сумм дня (не среднее дневных %).",
       "ROAS D7 / D30 — накопительный ROAS за календарные дни 1–7 / 1–30 месяца (не cohort CAC payback).",
       "Итог «День» в Sheets — накопительный срез листа, не обязательно выбранный месяц."
@@ -280,8 +283,10 @@ export async function loadLandingEfficiency(input: {
   };
 }
 
-function hasMonthData(days: LandingEfficiencyDay[]): boolean {
-  return days.some((d) => d.spend != null || d.leads != null || d.revenue != null);
+function hasMonthTraffic(days: LandingEfficiencyDay[]): boolean {
+  return days.some(
+    (d) => (d.spend ?? 0) > 0 || (d.clicks ?? 0) > 0 || (d.leads ?? 0) > 0
+  );
 }
 
 export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<LandingEfficiencySummary[]> {
@@ -295,11 +300,12 @@ export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<
     const model = models[index];
     const days = model?.days ?? [];
     const totals = model?.monthTotals;
-    const hasData = model ? hasMonthData(days) : false;
+    const hasData = model ? hasMonthTraffic(days) : false;
     if (!hasData) return [];
     return [
       {
         id: landing.id,
+        title: alxLandingDisplayName(landing),
         siteName: landing.siteName,
         address: landing.address,
         tag: landing.tag,

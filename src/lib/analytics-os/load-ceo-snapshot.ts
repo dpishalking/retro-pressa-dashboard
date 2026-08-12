@@ -246,7 +246,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const planSpend = monthlyPlanBundle?.channels?.obshie.spend ?? null;
   const planCrSale = monthlyPlanBundle?.channels?.obshie.crLeadSale ?? null;
 
-  const adSpendInfo = await loadAdSpend(legacy);
+  let adSpendInfo = await loadAdSpend(legacy);
   const mariaRevenueValue = await loadMariaMonthRevenue(period);
 
   if (!snapshot) {
@@ -338,6 +338,13 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const verifiedLeads = svodVerified
     ? sumSvodVerifiedLeads(svodVerified, { month: period, throughDate })
     : null;
+  if (verifiedLeads && verifiedLeads.spend > 0) {
+    adSpendInfo = {
+      value: verifiedLeads.spend,
+      asOf: verifiedLeads.lastDay,
+      source: "СВОД day · расход MTD"
+    };
+  }
 
   const hasVerifiedLeads = verifiedLeads !== null;
   const slicedLeadCount = uniqueLeadStats.coverageWithIdentity > 0.3 ? uniqueLeadStats.unique : leads.length;

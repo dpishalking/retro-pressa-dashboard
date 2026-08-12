@@ -1,8 +1,9 @@
-export const eur = (value: number, compact = false) =>
+export const eur = (value: number, digits = 0) =>
   new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency: "EUR",
-    maximumFractionDigits: compact ? 0 : 0
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
   }).format(value);
 
 export const number = (value: number, digits = 0) =>

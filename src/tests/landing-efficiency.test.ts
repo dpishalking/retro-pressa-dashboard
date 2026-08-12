@@ -5,6 +5,7 @@ import {
   monthWindowMature,
   parseLandingEfficiencySheet
 } from "../lib/landings/load-landing-efficiency";
+import { alxLandingDisplayName } from "../config/alx-landings";
 
 const values = [
   ["", "Расход", "Заказы", "ROAS", "Клики", "Лиды CRM", "Квал. лиды", "CR лендинга", "CPL", "CPQL", "CR в продажу", "Кол-во заказов"],
@@ -46,5 +47,19 @@ assert.equal(mature.roasD7Mature, true);
 assert.equal(mature.roasD30Mature, true);
 assert.equal(mature.roasD7, 2.5);
 assert.equal(mature.roasD30, 330 / 120);
+
+const noTraffic = parseLandingEfficiencySheet(
+  [
+    ["", "Расход", "Заказы", "ROAS", "Клики", "Лиды CRM"],
+    ["День"],
+    ["01.08.2026", "€0,00", "€0,00", "0%", "0", "0"]
+  ],
+  "2026-08"
+);
+assert.equal(noTraffic.days.length, 1);
+assert.equal(noTraffic.days[0].spend, 0);
+
+assert.equal(alxLandingDisplayName({ sheetTitle: "https://retro-pressa.com/life" }), "retro-pressa.com/life");
+assert.equal(alxLandingDisplayName({ sheetTitle: "https://retro-pressa.com/ru/" }), "retro-pressa.com/ru");
 
 console.log("landing-efficiency.test.ts: ok");

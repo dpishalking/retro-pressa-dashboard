@@ -2,6 +2,8 @@ import type { AlxLandingTag } from "@/config/alx-landings";
 
 export type LandingEfficiencySummary = {
   id: string;
+  /** retro-pressa.com/life — matches the ALX sheet title */
+  title: string;
   siteName: string;
   address: string;
   tag: AlxLandingTag;

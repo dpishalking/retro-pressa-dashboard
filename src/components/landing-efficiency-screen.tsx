@@ -8,6 +8,7 @@ import { readJsonResponse } from "@/lib/api-response";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { eur, number, pct } from "@/lib/format";
 import type { LandingEfficiencyDay, LandingEfficiencyTotals } from "@/lib/landings/load-landing-efficiency";
+import { alxLandingDisplayName } from "@/config/alx-landings";
 import { PERIOD_KEYS, type PeriodKey } from "@/types/metrics";
 
 type LoadStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
@@ -28,9 +29,9 @@ function formatRoas(value: number | null): string {
   return `${Math.round(value * 100)}%`;
 }
 
-function formatEur(value: number | null | undefined): string {
+function formatEur(value: number | null | undefined, digits = 0): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return eur(value);
+  return eur(value, digits);
 }
 
 function formatPct(value: number | null | undefined): string {
@@ -103,9 +104,8 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
           <div>
             <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Эффективность лендинга</p>
             <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">
-              {data?.landing.siteName || landingId}
+              {data?.landing ? alxLandingDisplayName(data.landing) : landingId}
             </h1>
-            <p className="mt-2 text-sm text-slate-500">{data?.landing.address}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -153,8 +153,8 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
               value={m.roasD30Mature ? formatRoas(m.roasD30) : "—"}
               hint={m.roasD30Mature ? "накопительный ROAS дней 1–30" : "окно D30 ещё не закрыто"}
             />
-            <Kpi label="CPL лендинга" value={formatEur(m.cpl)} hint="расход / лиды CRM листа" />
-            <Kpi label="CPQL" value={formatEur(m.cpql)} hint="расход / квал. лиды" />
+            <Kpi label="CPL лендинга" value={formatEur(m.cpl, 1)} hint="расход / лиды CRM листа" />
+            <Kpi label="CPQL" value={formatEur(m.cpql, 1)} hint="расход / квал. лиды" />
             <Kpi label="Лиды CRM" value={m.leads == null ? "—" : number(m.leads)} />
             <Kpi label="Квал. лиды" value={m.qualifiedLeads == null ? "—" : number(m.qualifiedLeads)} />
             <Kpi label="Заказы" value={m.orders == null ? "—" : number(m.orders)} hint={`CR в продажу: ${formatPct(m.saleCr)}`} />
@@ -189,8 +189,8 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
                         <td className="px-3 py-2">{formatRoas(day.roas)}</td>
                         <td className="px-3 py-2">{day.leads == null ? "—" : number(day.leads)}</td>
                         <td className="px-3 py-2">{day.qualifiedLeads == null ? "—" : number(day.qualifiedLeads)}</td>
-                        <td className="px-3 py-2">{formatEur(day.cpl)}</td>
-                        <td className="px-3 py-2">{formatEur(day.cpql)}</td>
+                        <td className="px-3 py-2">{formatEur(day.cpl, 1)}</td>
+                        <td className="px-3 py-2">{formatEur(day.cpql, 1)}</td>
                         <td className="px-3 py-2">{day.orders == null ? "—" : number(day.orders)}</td>
                       </tr>
                     ))

@@ -74,7 +74,6 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     description: "Лендинги в работе, реклама и атрибуция.",
     icon: Megaphone,
     summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
-    forecastDomain: "marketing",
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
       { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" }
@@ -161,10 +160,14 @@ function ContourSummary({
         const metric: AnalyticsMetricValue | undefined = fromMetrics ?? fromMarketing;
         const label = metricLabel(id);
         const caption = metric?.decisionHint || metricDefinition(id);
+        const value =
+          id === "cpl" && metric?.value != null && metric.unit === "eur"
+            ? eur(metric.value, 1)
+            : formatMetricDisplay(metric);
         return (
           <article key={id} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{formatMetricDisplay(metric)}</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
             {caption ? <p className="mt-2 text-xs leading-5 text-slate-500">{caption}</p> : null}
           </article>
         );

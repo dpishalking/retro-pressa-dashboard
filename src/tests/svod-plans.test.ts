@@ -115,22 +115,25 @@ assert.equal(fullIndicators[5].section, "Расходы");
 // `day` Лиды CRM is already ALX+Органика; Органика is breakdown only.
 const daily = parseSvodDailyLeads({
   paidSheet: [
-    ["День", "x", "y", "z", "k", "Лиды CRM"],
+    ["День", "Расход", "y", "z", "k", "Лиды CRM"],
     ["День"],
-    ["21.07.2026", "", "", "", "", "57"],
-    ["22.07.2026", "", "", "", "", "50"]
+    ["21.07.2026", "120,5", "", "", "", "57"],
+    ["22.07.2026", "80", "", "", "", "50"],
+    ["23.07.2026", "40", "", "", "", "10"]
   ],
   organicSheet: [
     ["День", "a", "b", "c", "d", "e", "f", "g", "Лиды", "Лиды CRM"],
     ["День"],
     ["21.07.2026", "", "", "", "", "", "", "", "0", "4"],
-    ["22.07.2026", "", "", "", "", "", "", "", "0", "10"]
+    ["22.07.2026", "", "", "", "", "", "", "", "0", "10"],
+    ["23.07.2026", "", "", "", "", "", "", "", "0", "1"]
   ],
   month: "2026-07"
 });
 assert.equal(daily.get("2026-07-21")?.total, 57);
 assert.equal(daily.get("2026-07-21")?.organic, 4);
 assert.equal(daily.get("2026-07-21")?.paid, 53);
+assert.equal(daily.get("2026-07-21")?.spend, 120.5);
 assert.equal(daily.get("2026-07-22")?.total, 50);
 assert.equal(daily.get("2026-07-22")?.paid, 40);
 
@@ -138,6 +141,7 @@ const verifiedMtd = sumSvodVerifiedLeads(daily, { month: "2026-07", throughDate:
 assert.equal(verifiedMtd.total, 57);
 assert.equal(verifiedMtd.paid, 53);
 assert.equal(verifiedMtd.organic, 4);
+assert.equal(verifiedMtd.spend, 120.5);
 assert.equal(verifiedMtd.days, 1);
 assert.equal(verifiedMtd.lastDay, "2026-07-21");
 

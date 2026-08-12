@@ -168,6 +168,8 @@ export type SvodDayLeads = {
   paid: number;
   organic: number;
   total: number;
+  /** СВОД `day` column «Расход» / «Бюджет» (paid media). */
+  spend: number;
 };
 
 /** Parse DD.MM.YYYY from СВОД day sheets. */
@@ -176,6 +178,19 @@ export function parseSvodDayDate(raw: string): string | null {
   const m = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if (!m) return null;
   return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+
+function findSpendColumn(header: string[]): number {
+  const normalized = header.map((h) =>
+    String(h || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase()
+  );
+  const exact = normalized.findIndex(
+    (h) => h === "расход" || h === "бюджет" || h === "spend" || h === "budget"
+  );
+  return exact >= 0 ? exact : 1;
 }
 
 function findLeadsCrmColumn(header: string[]): number {
@@ -210,13 +225,14 @@ export function parseSvodDailyLeads(input: {
   const ensure = (iso: string) => {
     let row = out.get(iso);
     if (!row) {
-      row = { paid: 0, organic: 0, total: 0 };
+      row = { paid: 0, organic: 0, total: 0, spend: 0 };
       out.set(iso, row);
     }
     return row;
   };
 
   const dayCol = findLeadsCrmColumn(input.paidSheet[0] || []);
+  const spendCol = findSpendColumn(input.paidSheet[0] || []);
   if (dayCol >= 0) {
     for (const row of input.paidSheet.slice(2)) {
       const iso = parseSvodDayDate(row[0] || "");
@@ -225,6 +241,7 @@ export function parseSvodDailyLeads(input: {
       const n = parseSvodPlanNumber(row[dayCol]) ?? 0;
       const item = ensure(iso);
       item.total = n;
+      item.spend = parseSvodPlanNumber(row[spendCol]) ?? 0;
     }
   }
 
@@ -270,12 +287,14 @@ export function sumSvodVerifiedLeads(
   total: number;
   paid: number;
   organic: number;
+  spend: number;
   days: number;
   lastDay: string | null;
 } {
   let total = 0;
   let paid = 0;
   let organic = 0;
+  let spend = 0;
   let days = 0;
   let lastDay: string | null = null;
   for (const [iso, row] of daily) {
@@ -284,10 +303,11 @@ export function sumSvodVerifiedLeads(
     paid += row.paid;
     organic += row.organic;
     total += row.total;
+    spend += row.spend;
     days += 1;
     if (!lastDay || iso > lastDay) lastDay = iso;
   }
-  return { total, paid, organic, days, lastDay };
+  return { total, paid, organic, spend, days, lastDay };
 }
 
 export async function pullSvodMonthPlans(input: {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LandingEfficiencyScreen } from "@/components/landing-efficiency-screen";
-import { getAlxLandingById } from "@/config/alx-landings";
+import { alxLandingDisplayName, getAlxLandingById } from "@/config/alx-landings";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const landing = getAlxLandingById(id);
   return {
     title: landing
-      ? `${landing.siteName}${landing.address} — эффективность — Retro Pressa`
+      ? `${alxLandingDisplayName(landing)} — эффективность — Retro Pressa`
       : "Лендинг — Retro Pressa"
   };
 }
