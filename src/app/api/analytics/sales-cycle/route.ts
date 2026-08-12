@@ -10,6 +10,26 @@ export const maxDuration = 120;
  * Auth: session required (middleware). Prefers data/sales-cycle-cache, else Bitrix snapshots.
  */
 export async function GET(request: NextRequest) {
+  if (process.env.RPBI_PROCESS_ROLE !== "worker") {
+    const workerUrl = new URL(request.url);
+    workerUrl.protocol = "http:";
+    workerUrl.hostname = "127.0.0.1";
+    workerUrl.port = "4175";
+    const response = await fetch(workerUrl, {
+      headers: {
+        cookie: request.headers.get("cookie") || ""
+      },
+      cache: "no-store"
+    });
+    return new NextResponse(response.body, {
+      status: response.status,
+      headers: {
+        "content-type": response.headers.get("content-type") || "application/json",
+        "cache-control": "private, max-age=60"
+      }
+    });
+  }
+
   try {
     const { searchParams } = request.nextUrl;
     const payload = await loadSalesCycle({

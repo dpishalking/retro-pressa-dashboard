@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { readBitrixSnapshot, type BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
 import { getCompanySnapshot, readCompanySnapshot } from "@/lib/company-snapshot";
-import { cashRoas, paidCpl, revenuePlanCompletion } from "@/lib/metrics-engine";
+import { cashRoas, revenuePlanCompletion } from "@/lib/metrics-engine";
 import { targetScenario } from "@/data/demo-data";
 import {
   aggregateCountries,
@@ -265,10 +265,15 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   }
 
   const filtered = filterSnapshot(snapshot, filters);
-  const paidDeals = filtered.paidDeals.map(hydrateDealProducts);
-  const invoiceDeals = filtered.invoiceDeals.map(hydrateDealProducts);
+  const currentMonth = currentAnalyticsPeriod(now);
+  const throughDate = period >= currentMonth ? rigaYesterdayIso(now) : null;
+  const reportingAsOf = throughDate ?? asOf;
+  const through = (value: string | null | undefined) =>
+    !throughDate || !value || value.slice(0, 10) <= throughDate;
+  const paidDeals = filtered.paidDeals.filter((deal) => through(deal.closeDate)).map(hydrateDealProducts);
+  const invoiceDeals = filtered.invoiceDeals.filter((deal) => through(deal.invoiceDate)).map(hydrateDealProducts);
   const openPipeline = filtered.openPipeline.map(hydrateDealProducts);
-  const { leads } = filtered;
+  const leads = filtered.leads.filter((lead) => through(lead.dateCreate));
   const tree = aggregateRevenueTree(paidDeals);
   const funnel = aggregateFunnel({ leads, invoiceDeals, paidDeals });
   const managers = aggregateManagers({ leads, paidDeals });
@@ -308,7 +313,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     metricId: "revenue",
     value: tree.revenue,
     status: "live",
-    asOf,
+    asOf: reportingAsOf,
     source: "Bitrix WON (CLOSEDATE + STAGE_SEMANTIC_ID=S)",
     confidence: "high",
     plan: planRevenueTarget,
@@ -320,8 +325,6 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
 
   // KPI «Лиды» = verified СВОД «Лиды CRM» (day + Органика), не сырые карточки Bitrix.
   // Bitrix cards / unique remain in the subtitle for reconciliation.
-  const currentMonth = currentAnalyticsPeriod(now);
-  const throughDate = period >= currentMonth ? rigaYesterdayIso(now) : null;
   let svodVerified: Awaited<ReturnType<typeof pullSvodDailyLeads>> | null = null;
   try {
     svodVerified = await pullSvodDailyLeads({ month: period });
@@ -334,17 +337,18 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const yesterdayKey = rigaYesterdayIso(now);
   const yesterdayVerified = svodVerified?.get(yesterdayKey)?.total ?? null;
 
+  const hasVerifiedLeads = verifiedLeads !== null;
   const leadsMetric = metricValue({
     metricId: "leads",
-    value: verifiedLeads && verifiedLeads.total > 0 ? verifiedLeads.total : leads.length,
-    status: verifiedLeads && verifiedLeads.total > 0 ? "live" : "calculated",
+    value: hasVerifiedLeads ? verifiedLeads.total : null,
+    status: hasVerifiedLeads ? "live" : "no_data",
     asOf: verifiedLeads?.lastDay ?? asOf,
-    source: verifiedLeads && verifiedLeads.total > 0 ? SVOD_VERIFIED_LEADS_SOURCE : "Bitrix leads snapshot (fallback)",
+    source: SVOD_VERIFIED_LEADS_SOURCE,
     unit: "count",
-    confidence: verifiedLeads && verifiedLeads.total > 0 ? "high" : "medium",
+    confidence: hasVerifiedLeads ? "high" : "low",
     plan: planLeads,
     decisionHint:
-      verifiedLeads && verifiedLeads.total > 0
+      hasVerifiedLeads
         ? [
             yesterdayVerified != null ? `Вчера (СВОД): ${yesterdayVerified}` : null,
             `Bitrix карточек: ${leads.length}`,
@@ -352,14 +356,14 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           ]
             .filter(Boolean)
             .join(" · ")
-        : `Уникальные ≈ ${uniqueLeadStats.unique} · дубли ≈ ${uniqueLeadStats.duplicateApprox}`
+        : `СВОД недоступен · Bitrix карточек: ${leads.length} · уникальные ≈ ${uniqueLeadStats.unique}`
   });
 
   const ordersMetric = metricValue({
     metricId: "paid_orders",
     value: tree.orders,
     status: "live",
-    asOf,
+    asOf: reportingAsOf,
     source: "Bitrix paidDeals",
     unit: "count",
     plan: planSales
@@ -369,7 +373,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     metricId: "aov",
     value: aov,
     status: aov == null ? "no_data" : "calculated",
-    asOf,
+    asOf: reportingAsOf,
     source: "cash / paid orders (incl. delivery)",
     unit: "eur",
     confidence: "high",
@@ -380,22 +384,24 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     metricId: "product_aov",
     value: productAov,
     status: productAov == null ? "no_data" : "calculated",
-    asOf,
+    asOf: reportingAsOf,
     source: "(cash − delivery) / paid orders",
     unit: "eur",
     confidence: "high",
     decisionHint: "Средний чек продукта без доставки"
   });
 
+  const verifiedCr =
+    verifiedLeads && verifiedLeads.total > 0 ? paidDeals.length / verifiedLeads.total : null;
   const crMetric = metricValue({
     metricId: "conversion_rate",
-    value: uniqueCr,
-    status: uniqueCr == null ? "no_data" : "calculated",
-    asOf,
-    source: "paid_orders / unique_leads",
+    value: verifiedCr,
+    status: verifiedCr == null ? "no_data" : "calculated",
+    asOf: verifiedLeads?.lastDay ?? asOf,
+    source: "Bitrix paid orders / СВОД verified leads (same cutoff)",
     unit: "pct",
-    confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
-    decisionHint: "Оплаты / уникальные люди",
+    confidence: verifiedCr == null ? "low" : "medium",
+    decisionHint: "Оплаты / верифицированные лиды",
     plan: planCrSale
   });
 
@@ -403,7 +409,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     metricId: "unique_leads",
     value: uniqueLeadStats.unique,
     status: "calculated",
-    asOf,
+    asOf: reportingAsOf,
     source: "Bitrix leads · phone/email/contact · history May→prior",
     unit: "count",
     confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
@@ -417,7 +423,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     metricId: "unique_conversion_rate",
     value: uniqueCr,
     status: uniqueCr == null ? "no_data" : "calculated",
-    asOf,
+    asOf: reportingAsOf,
     source: "paid_orders / unique_leads",
     unit: "pct",
     confidence: uniqueLeadStats.coverageWithIdentity > 0.5 ? "medium" : "low",
@@ -458,32 +464,20 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
           plan: planSpend
         });
 
-  const cplMetric =
-    adSpendInfo.value == null || !monthly.paidLeads
-      ? metricValue({
-          metricId: "cpl",
-          value: adSpendInfo.value != null && leads.length > 0 ? adSpendInfo.value / leads.length : null,
-          status: adSpendInfo.value == null ? "no_data" : "calculated",
-          asOf: adSpendInfo.asOf,
-          source: "ad_spend / leads (aggregate Sheets) — PARTIAL",
-          confidence: "low",
-          unit: "eur"
-        })
-      : metricValue({
-          metricId: "cpl",
-          value: paidCpl({ ...monthly, paidLeads: Math.max(1, leads.length) }),
-          status: "calculated",
-          asOf: adSpendInfo.asOf,
-          source: "ad_spend / leads — PARTIAL (no Ads API)",
-          confidence: "low",
-          unit: "eur"
-        });
-
-  // Fix CPL: use leads.length as denominator when paidLeads is 0 in our monthly builder
-  if (cplMetric.value == null && adSpendInfo.value != null && leads.length > 0) {
-    cplMetric.value = adSpendInfo.value / leads.length;
-    cplMetric.status = "calculated";
-  }
+  const cplValue =
+    adSpendInfo.value != null && verifiedLeads && verifiedLeads.total > 0
+      ? adSpendInfo.value / verifiedLeads.total
+      : null;
+  const cplMetric = metricValue({
+    metricId: "cpl",
+    value: cplValue,
+    status: cplValue == null ? "no_data" : "calculated",
+    asOf: verifiedLeads?.lastDay ?? adSpendInfo.asOf,
+    source: "ad_spend / СВОД verified leads",
+    confidence: cplValue == null ? "low" : "medium",
+    unit: "eur",
+    decisionHint: "Расход / верифицированные лиды"
+  });
 
   const cacMetric =
     adSpendInfo.value == null || customers.newCustomers <= 0

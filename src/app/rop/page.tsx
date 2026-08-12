@@ -3,7 +3,7 @@ import { RopHub } from "@/components/rop-hub";
 
 export const metadata: Metadata = {
   title: "Инструменты РОП — Retro Pressa",
-  description: "Кабинет РОП: ежедневный импорт переписок из Bitrix, план-факт, команда и Growth Intelligence."
+  description: "Кабинет РОП: анализ переписок и мотивация команды."
 };
 
 export default function RopPage() {

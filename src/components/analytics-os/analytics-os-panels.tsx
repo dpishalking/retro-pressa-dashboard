@@ -880,8 +880,8 @@ export function OwnerIntelligencePanel({ snapshot }: { snapshot: CeoControlCente
     <section className="aos-owner" id="aos-owner">
       <div className="aos-section-head">
         <div>
-          <h2>ДЛЯ СОБСТВЕННИКА</h2>
-          <p>Правила · не Gemini</p>
+          <h2>Решения</h2>
+          <p>Главные действия по текущим данным</p>
         </div>
       </div>
       <div className="aos-owner__grid">
@@ -894,7 +894,7 @@ export function OwnerIntelligencePanel({ snapshot }: { snapshot: CeoControlCente
             <p>{card.body}</p>
             {card.href ? (
               <Link href={card.href} className="aos-link">
-                Digital Twin →
+                Перейти →
               </Link>
             ) : null}
           </article>

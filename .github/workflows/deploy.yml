@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: retro-pressa-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -488,46 +488,37 @@ jobs:
               {
                 name: "retro-pressa",
                 script: "server.js",
+                max_memory_restart: "512M",
+                exp_backoff_restart_delay: 1000,
                 env: {
                   ...runtimeEnv,
                   NODE_ENV: "production",
                   PORT: "4174",
-                  HOSTNAME: "0.0.0.0"
+                  HOSTNAME: "0.0.0.0",
+                  RPBI_PROCESS_ROLE: "web"
+                }
+              },
+              {
+                name: "retro-pressa-worker",
+                script: "server.js",
+                max_memory_restart: "768M",
+                exp_backoff_restart_delay: 2000,
+                env: {
+                  ...runtimeEnv,
+                  NODE_ENV: "production",
+                  PORT: "4175",
+                  HOSTNAME: "127.0.0.1",
+                  RPBI_PROCESS_ROLE: "worker"
                 }
               }
             ]
           };
           PM2EOF
-          if pm2 describe retro-pressa > /dev/null; then
-            pm2 delete retro-pressa
-          fi
-          pm2 start ecosystem.config.cjs
+          pm2 startOrReload ecosystem.config.cjs --update-env
           pm2 save
-          sleep 3
-          curl -f -sS -X POST http://127.0.0.1:4174/api/conversations/seed-archives || true
-
-          # Refresh Bitrix snapshot for the current calendar month (Analytics OS period).
-          PERIOD="$(node -e 'const d=new Date(); const m=d.getUTCMonth()+1; const names={5:"may",6:"june",7:"july",8:"august"}; console.log((names[m]||"august")+"-"+d.getUTCFullYear())')"
-          SECRET="$(node -e 'const e=require("./runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||e.AUTH_SECRET||"").trim())')"
-          if [ -n "$SECRET" ]; then
-            # Keep deploy light: Bitrix refresh with a hard timeout so nginx/app stay up.
-            curl -f -sS --max-time 120 -X POST http://127.0.0.1:4174/api/sync/bitrix \
-              -H "content-type: application/json" \
-              -H "x-cron-secret: ${SECRET}" \
-              -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" \
-              | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const j=JSON.parse(s);console.log("bitrix sync",j.summary?.dataSource||"?", "paid", j.summary?.paidDealsLoaded, "leads", j.summary?.leadsLoaded);}catch{console.log(s.slice(0,300));}})' \
-              || echo "WARNING: Bitrix period sync failed for ${PERIOD}"
-
-            # Cohort warm is heavy (full snapshot merge) — never block deploy / kill the app.
-            nohup curl -sS --max-time 300 -X POST http://127.0.0.1:4174/api/sync/sales-cycle \
-              -H "content-type: application/json" \
-              -H "x-cron-secret: ${SECRET}" \
-              -d '{"grains":["month","week"]}' \
-              > /tmp/sales-cycle-warm.log 2>&1 &
-            echo "sales-cycle warm started in background (pid $!)"
-          else
-            echo "WARNING: no CRON/AUTH secret for Bitrix period sync"
-          fi
+          sleep 5
+          curl -f -sS --max-time 10 http://127.0.0.1:4174/api/health
+          curl -f -sS --max-time 10 http://127.0.0.1:4175/api/health
 
           # Allow large PDF uploads for /products (default nginx limit is often 1m).
           if command -v nginx > /dev/null; then

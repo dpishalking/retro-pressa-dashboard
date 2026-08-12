@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { AnalyticsOsScreen } from "@/components/analytics-os/analytics-os-screen";
-
-export const metadata: Metadata = {
-  title: "RETRO PRESSA ANALYTICS OS — Центр управления",
-  description: "Аналитика Retro Pressa для собственника"
-};
+import { permanentRedirect } from "next/navigation";
 
 export default function AnalyticsPage() {
-  return <AnalyticsOsScreen />;
+  permanentRedirect("/os");
 }

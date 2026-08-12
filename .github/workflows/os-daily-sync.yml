@@ -1,9 +1,9 @@
 name: OS Daily Sheets Sync
 
-# 12:00 Europe/Moscow = 09:00 UTC (MSK is UTC+3 year-round)
+# 10:00 Europe/Moscow = 07:00 UTC. Kept separate from predictive close.
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 7 * * *"
   workflow_dispatch:
 
 jobs:
@@ -21,19 +21,23 @@ jobs:
       - name: Refresh OS Orders + Traffic for yesterday (Moscow)
         env:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          SECRET="${CRON_SYNC_SECRET:-}"
           if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET/AUTH_SECRET is empty"
+            echo "CRON_SYNC_SECRET is empty"
             exit 1
           fi
-          curl -f -sS -X POST http://127.0.0.1:4174/api/sync/os-daily \
+          curl -f -sS -X POST http://127.0.0.1:4175/api/sync/os-daily \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d '{"refresh":true}'
+          echo
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d '{"grains":["month","week"]}'
           EOF

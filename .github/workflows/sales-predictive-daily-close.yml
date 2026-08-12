@@ -1,12 +1,12 @@
 name: Sales Predictive Daily Close
 
-# 12:00 Europe/Moscow = 09:00 UTC.
+# 12:30 Europe/Moscow = 09:30 UTC. Runs after OS daily, not alongside it.
 # Writes Sales OS (1Zj_j…) + Marketing ROM (1Ru9H…) via Next API.
 # Heavy Bitrix foundation stays on os-daily / manual npm — in-process API
 # crashes the standalone Node server (curl HTTP 000).
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "30 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -25,23 +25,22 @@ jobs:
       - name: Sales OS
         env:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=120 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          SECRET="${CRON_SYNC_SECRET:-}"
           MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
           OUT="/tmp/cron-sales-os.json"
           LOG="/tmp/cron-sales-os.log"
           rm -f "$OUT" "$LOG"
           echo "sales-os month=${MONTH}"
           nohup curl -sS --max-time 900 -o "$OUT" -w "\nHTTP %{http_code}\n" \
-            -X POST http://127.0.0.1:4174/api/sync/sales-os \
+            -X POST http://127.0.0.1:4175/api/sync/sales-os \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d "{\"periods\":[\"${MONTH}\"]}" \
@@ -73,16 +72,15 @@ jobs:
         continue-on-error: true
         env:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=120 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          SECRET="${CRON_SYNC_SECRET:-}"
           MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
           OUT="/tmp/cron-marketing-planning.json"
           LOG="/tmp/cron-marketing-planning.log"
@@ -90,7 +88,7 @@ jobs:
           echo "marketing-planning month=${MONTH}"
           # Light module set: Performance grids + facts (full "all" OOMs standalone Node).
           nohup curl -sS --max-time 600 -o "$OUT" -w "\nHTTP %{http_code}\n" \
-            -X POST http://127.0.0.1:4174/api/sync/marketing-planning \
+            -X POST http://127.0.0.1:4175/api/sync/marketing-planning \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d "{\"periods\":[\"${MONTH}\"],\"modules\":[\"facts\",\"paid_planning\",\"marketing_planning\",\"organic_planning\"]}" \
@@ -121,19 +119,18 @@ jobs:
       - name: Predictive front
         env:
           CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
-          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=60 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" AUTH_SECRET="$AUTH_SECRET" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-$AUTH_SECRET}"
+          SECRET="${CRON_SYNC_SECRET:-}"
           MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
           echo "predictive-front month=${MONTH}"
-          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4174/api/sync/predictive-front \
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/predictive-front \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d "{\"month\":\"${MONTH}\"}"

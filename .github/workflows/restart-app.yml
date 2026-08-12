@@ -36,13 +36,15 @@ jobs:
           df -h / | tail -1
           echo "== pm2 before =="
           pm2 list || true
-          echo "== kill hung node on 4174 if any =="
+          echo "== kill hung node ports if any =="
           if command -v fuser >/dev/null 2>&1; then
             fuser -k 4174/tcp || true
+            fuser -k 4175/tcp || true
           fi
-          echo "== restart retro-pressa =="
+          echo "== restart RPBI web + worker =="
           cd /opt/retro-pressa
           pm2 delete retro-pressa 2>/dev/null || true
+          pm2 delete retro-pressa-worker 2>/dev/null || true
           if [ -f ecosystem.config.cjs ]; then
             pm2 start ecosystem.config.cjs
           else
@@ -53,11 +55,12 @@ jobs:
           pm2 save || true
           sleep 5
           pm2 list
-          echo "== local curl =="
+          echo "== local health =="
           for i in 1 2 3 4 5 6; do
-            CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:4174/ || echo fail)
-            echo "try $i => $CODE"
-            if [ "$CODE" = "200" ] || [ "$CODE" = "307" ] || [ "$CODE" = "302" ]; then
+            WEB_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:4174/api/health || echo fail)
+            WORKER_CODE=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:4175/api/health || echo fail)
+            echo "try $i => web=$WEB_CODE worker=$WORKER_CODE"
+            if [ "$WEB_CODE" = "200" ] && [ "$WORKER_CODE" = "200" ]; then
               break
             fi
             sleep 3
