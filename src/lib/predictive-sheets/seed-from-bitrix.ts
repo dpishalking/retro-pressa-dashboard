@@ -5,6 +5,7 @@ import {
   EXCLUDED_LEAD_STATUS_IDS
 } from "@/lib/bitrix/metric-definitions";
 import { PAID_INVOICE_SOURCE } from "@/lib/bitrix/paid-revenue";
+import { bitrixListAll } from "@/lib/bitrix/rest-client";
 import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
 import { PM_SALES_MANAGERS } from "@/lib/predictive-sheets/managers";
 import { mondayWeekIndex } from "@/lib/predictive-sheets/weeks";
@@ -55,18 +56,15 @@ type StageHistory = { OWNER_ID?: string | number; CREATED_TIME?: string };
 const EXCLUDED_LEAD_STATUS = new Set<string>(EXCLUDED_LEAD_STATUS_IDS);
 const BITRIX_SOURCE = `${PAID_INVOICE_SOURCE}; счета (дата «Выставлен счет» / стадия 1)`;
 
-function webhookUrl(): string {
-  const url = process.env.BITRIX_WEBHOOK_URL?.trim();
-  if (!url) throw new Error("BITRIX_WEBHOOK_URL is not configured");
-  return url.endsWith("/") ? url : `${url}/`;
-}
-
-function monthBounds(month: string): { startDate: string; endDate: string } {
+function monthBounds(month: string, throughDate?: string): { startDate: string; endDate: string } {
   const [y, m] = month.split("-").map(Number);
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const monthEnd = `${month}-${String(last).padStart(2, "0")}`;
+  const cap = throughDate?.slice(0, 10);
+  const endDate = cap && cap.startsWith(month) && cap < monthEnd ? cap : monthEnd;
   return {
     startDate: `${month}-01`,
-    endDate: `${month}-${String(last).padStart(2, "0")}`
+    endDate
   };
 }
 
@@ -97,42 +95,11 @@ function emptyManagerFacts(month: string, assignedById: string, managerName: str
   };
 }
 
-async function bitrixList<T>(method: string, body: Record<string, unknown>): Promise<T[]> {
-  const out: T[] = [];
-  let start = 0;
-  for (;;) {
-    const res = await fetch(`${webhookUrl()}${method}.json`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...body, start }),
-      cache: "no-store"
-    });
-    const data = (await res.json()) as {
-      result?: T[] | { items?: T[] };
-      next?: number;
-      error?: string;
-      error_description?: string;
-    };
-    if (data.error) {
-      throw new Error(`Bitrix ${method}: ${data.error_description || data.error}`);
-    }
-    const rows = Array.isArray(data.result)
-      ? data.result
-      : Array.isArray((data.result as { items?: T[] } | undefined)?.items)
-        ? ((data.result as { items: T[] }).items)
-        : [];
-    out.push(...rows);
-    if (data.next == null) break;
-    start = data.next;
-  }
-  return out;
-}
-
 async function listDeals(
   filter: Record<string, string | number | string[]>,
   select: string[]
 ): Promise<BitrixDeal[]> {
-  return bitrixList<BitrixDeal>("crm.deal.list", {
+  return bitrixListAll<BitrixDeal>("crm.deal.list", {
     order: { ID: "ASC" },
     filter,
     select
@@ -153,8 +120,8 @@ async function listDealAssignees(ids: string[]): Promise<Map<string, string>> {
 }
 
 /** Live Bitrix counts for the sales funnel (воронка Продажа, CATEGORY_ID=0), plus per-manager split. */
-export async function loadBitrixSalesFacts(month: string): Promise<BitrixSalesFacts> {
-  const { startDate, endDate } = monthBounds(month);
+export async function loadBitrixSalesFacts(month: string, throughDate?: string): Promise<BitrixSalesFacts> {
+  const { startDate, endDate } = monthBounds(month, throughDate);
   const managers = new Map(
     PM_SALES_MANAGERS.map((m) => [m.bitrixId, emptyManagerFacts(month, m.bitrixId, m.fullName)])
   );
@@ -169,7 +136,7 @@ export async function loadBitrixSalesFacts(month: string): Promise<BitrixSalesFa
       },
       ["ID", BITRIX_INVOICE_DATE_FIELD, "ASSIGNED_BY_ID"]
     ),
-    bitrixList<StageHistory>("crm.stagehistory.list", {
+    bitrixListAll<StageHistory>("crm.stagehistory.list", {
       entityTypeId: 2,
       order: { CREATED_TIME: "ASC" },
       filter: {
@@ -180,7 +147,7 @@ export async function loadBitrixSalesFacts(month: string): Promise<BitrixSalesFa
       },
       select: ["OWNER_ID", "CREATED_TIME", "STAGE_ID", "CATEGORY_ID"]
     }),
-    bitrixList<BitrixLead>("crm.lead.list", {
+    bitrixListAll<BitrixLead>("crm.lead.list", {
       order: { ID: "ASC" },
       filter: {
         ">=DATE_CREATE": startDate,
@@ -275,8 +242,8 @@ export async function loadBitrixSalesFacts(month: string): Promise<BitrixSalesFa
 }
 
 /** Live Bitrix counts for the sales funnel (воронка Продажа, CATEGORY_ID=0). */
-export async function loadBitrixMonthFacts(month: string): Promise<BitrixMonthFacts> {
-  const { company } = await loadBitrixSalesFacts(month);
+export async function loadBitrixMonthFacts(month: string, throughDate?: string): Promise<BitrixMonthFacts> {
+  const { company } = await loadBitrixSalesFacts(month, throughDate);
   return company;
 }
 

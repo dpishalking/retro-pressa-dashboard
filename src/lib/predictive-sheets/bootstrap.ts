@@ -1294,7 +1294,7 @@ export async function bootstrapPredictiveSheets(input?: {
   let seed = ceoSeed;
   let managerFacts: Record<string, BitrixManagerFacts> = {};
   try {
-    const bitrix = await loadBitrixSalesFacts(period);
+    const bitrix = await loadBitrixSalesFacts(period, meta.asOf);
     seed = applyBitrixFacts(seed, bitrix.company);
     managerFacts = bitrix.byManager;
   } catch (err) {
