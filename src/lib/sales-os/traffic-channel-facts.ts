@@ -105,7 +105,7 @@ type PaymentEventLike = {
  * Day × paid/organic funnel.
  * - Leads/deals: Bitrix create date + SOURCE_ID/UTM (SVOD leads overlay later)
  * - Invoices: vault `07_Invoice_Events` by invoice_at
- * - Sales/revenue: Bitrix WON mirrored in vault `08_Payment_Events` by paid_at
+ * - Sales/revenue: paid invoices in vault `08_Payment_Events` by paid_at (Дата оплаты + Сумма для счета)
  */
 export function aggregateTrafficChannelDaily(input: {
   month?: string;

@@ -24,7 +24,8 @@ const USED_FIELDS = new Set<string>([
   SF_FIELDS.dealCountry,
   SF_FIELDS.invoiceDate,
   SF_FIELDS.invoiceAmount,
-  SF_FIELDS.invoiceFlag
+  SF_FIELDS.invoiceFlag,
+  SF_FIELDS.paymentDate
 ]);
 
 const MAPPED: Record<string, string> = {
@@ -41,7 +42,8 @@ const MAPPED: Record<string, string> = {
   OPPORTUNITY: "opportunity",
   [SF_FIELDS.invoiceDate]: "invoice_at",
   [SF_FIELDS.invoiceAmount]: "invoice_amount",
-  [SF_FIELDS.invoiceFlag]: "invoice_flag"
+  [SF_FIELDS.invoiceFlag]: "invoice_flag",
+  [SF_FIELDS.paymentDate]: "paid_at"
 };
 
 function normalizeFields(entityType: string, fields: Record<string, BitrixField>, syncedAt: string): FieldCatalogRow[] {

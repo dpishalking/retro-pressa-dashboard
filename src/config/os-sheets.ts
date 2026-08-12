@@ -544,7 +544,7 @@ export const ORDERS_BITRIX_MAP: OrdersBitrixMapping[] = [
   { column: "invoice_amount", bitrixEntity: "deal", bitrixField: "UF_CRM_1739982211", transform: "number; fallback OPPORTUNITY", editableInSheets: false },
   { column: "invoice_at", bitrixEntity: "deal", bitrixField: "UF_CRM_1758618010118", transform: "date; fallback stage history STAGE_ID=1", editableInSheets: false },
   { column: "payment_status", bitrixEntity: "deal", bitrixField: "STAGE_SEMANTIC_ID+invoice", transform: "unpaid|invoiced|paid|cancelled|lost", editableInSheets: true },
-  { column: "paid_at", bitrixEntity: "deal", bitrixField: "CLOSEDATE", transform: "when STAGE_SEMANTIC_ID=S", editableInSheets: false },
+  { column: "paid_at", bitrixEntity: "deal", bitrixField: "UF_CRM_1762167848", transform: "Дата оплаты", editableInSheets: false },
   { column: "order_status", bitrixEntity: "deal", bitrixField: "STAGE_ID", transform: "new|in_progress|invoiced|paid|cancelled|lost", editableInSheets: true },
   { column: "stage_id", bitrixEntity: "deal", bitrixField: "STAGE_ID", transform: "as-is", editableInSheets: false },
   { column: "stage_semantic", bitrixEntity: "deal", bitrixField: "STAGE_SEMANTIC_ID", transform: "P|S|F", editableInSheets: false },

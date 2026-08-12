@@ -40,6 +40,8 @@ export type BitrixSnapshotDeal = {
   closeDate: string | null;
   /** Invoice event date used for period attribution. */
   invoiceDate: string | null;
+  /** «Дата оплаты» — cash-in day; null on older snapshots / unpaid. */
+  paymentDate?: string | null;
   opportunity: number;
   currencyId: string | null;
   /** Prefer «Сумма для счета», fallback to opportunity. */
@@ -80,7 +82,7 @@ export type BitrixSnapshot = {
   recentLeads: BitrixSnapshotLead[];
   /** Deals counted as invoices issued in the period. */
   deals: BitrixSnapshotDeal[];
-  /** Calendar paid deals (CLOSEDATE in period, won). */
+  /** Calendar paid SPA invoices (type/31 «Оплачено» + Дата завершения). */
   paidDeals: BitrixSnapshotDeal[];
   /** Open sales-funnel deals (STAGE_SEMANTIC_ID=P); present on new syncs. */
   openPipeline?: BitrixSnapshotDeal[];

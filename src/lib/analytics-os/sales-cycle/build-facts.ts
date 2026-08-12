@@ -1,4 +1,5 @@
 import type { BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import { classifyAcquisitionChannel, resolveGiftTypeLabel } from "./cohort-dims";
 import { LEAD_MATCH_LOOKBACK_DAYS } from "./config";
 import { daysFromHours, hoursBetween } from "./math";
@@ -154,12 +155,12 @@ export function buildSalesCycleFact(deal: CyclePaidDeal, match: ReturnType<typeo
     customerKey: deal.contactId,
     leadCreatedAt: lead?.dateCreate ?? null,
     dealCreatedAt: deal.dateCreate,
-    paidAt: deal.closeDate,
+    paidAt: deal.paymentDate || deal.closeDate,
     leadToWonHours: safeLeadHours,
     leadToWonDays: safeLeadHours != null ? daysFromHours(safeLeadHours) : null,
     dealToWonHours: dealHours,
     dealToWonDays: daysFromHours(dealHours),
-    revenue: deal.opportunity,
+    revenue: paidInvoiceAmount(deal.invoiceAmount, deal.opportunity),
     currency: deal.currencyId,
     managerId: deal.assignedById,
     managerName: deal.managerName,

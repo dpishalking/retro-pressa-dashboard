@@ -1,4 +1,4 @@
-import { BITRIX_INVOICE_AMOUNT_FIELD, BITRIX_INVOICE_DATE_FIELD, BITRIX_INVOICE_FLAG_FIELD, BITRIX_SALES_CATEGORY_ID } from "@/lib/bitrix/metric-definitions";
+import { BITRIX_INVOICE_AMOUNT_FIELD, BITRIX_INVOICE_DATE_FIELD, BITRIX_INVOICE_FLAG_FIELD, BITRIX_PAYMENT_DATE_FIELD, BITRIX_SALES_CATEGORY_ID } from "@/lib/bitrix/metric-definitions";
 
 export const SALES_FOUNDATION_CONTRACT_VERSION = "sales_foundation_v1";
 
@@ -47,6 +47,7 @@ export const SF_FIELDS = {
   invoiceDate: BITRIX_INVOICE_DATE_FIELD,
   invoiceAmount: BITRIX_INVOICE_AMOUNT_FIELD,
   invoiceFlag: BITRIX_INVOICE_FLAG_FIELD,
+  paymentDate: BITRIX_PAYMENT_DATE_FIELD,
   dealCountry: "UF_CRM_6797B3DA00D16",
   leadCountry: "UF_CRM_1737995147"
 } as const;
@@ -74,7 +75,7 @@ export const DEALS_RAW_COLUMNS = [
   "deal_id", "lead_id", "contact_id", "company_id", "created_at", "modified_at", "closed_at",
   "stage_id", "stage_semantic", "category_id", "is_open", "is_won", "is_lost",
   "assigned_by_id", "assigned_by_name", "source_id", "currency", "opportunity",
-  "invoice_amount", "invoice_at", "invoice_flag", "country_raw", "country_id",
+  "invoice_amount", "invoice_at", "invoice_flag", "paid_at", "country_raw", "country_id",
   "primary_product_id", "primary_product_name", "product_rows_count",
   "customer_key", "customer_key_type", "last_activity_at", "next_activity_at",
   "raw_updated_at", "sync_updated_at"
@@ -141,6 +142,6 @@ export const SELECT_DEAL = [
   "ID", "TITLE", "LEAD_ID", "CONTACT_ID", "COMPANY_ID", "DATE_CREATE", "DATE_MODIFY", "CLOSEDATE", "CLOSED",
   "STAGE_ID", "STAGE_SEMANTIC_ID", "CATEGORY_ID", "ASSIGNED_BY_ID", "SOURCE_ID",
   "CURRENCY_ID", "OPPORTUNITY", SF_FIELDS.dealCountry, "UTM_CAMPAIGN",
-  SF_FIELDS.invoiceDate, SF_FIELDS.invoiceAmount, SF_FIELDS.invoiceFlag,
+  SF_FIELDS.invoiceDate, SF_FIELDS.invoiceAmount, SF_FIELDS.invoiceFlag, SF_FIELDS.paymentDate,
   "LAST_ACTIVITY_TIME", "NEXT_ACTIVITY_TIME"
 ] as const;

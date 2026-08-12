@@ -18,6 +18,7 @@ import {
   getSalesOsSpreadsheetId
 } from "@/config/sales-os";
 import { SALES_FOUNDATION_TABS } from "@/config/sales-foundation";
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import { SALES_EXPORT_COLUMNS, SALES_EXPORT_CONTRACT_VERSION } from "@/lib/sales-os/export-contract";
 import { dayKeyFromIso } from "@/lib/os-sheets/sales-metric-defs";
 
@@ -152,6 +153,7 @@ export function buildSalesOsModel(input: {
       invoice_amount: row.invoice_amount || "",
       invoice_at: row.invoice_at || "",
       invoice_flag: row.invoice_flag || "",
+      paid_at: row.paid_at || "",
       country_raw: row.country_raw || "",
       primary_product_id: row.primary_product_id || "",
       primary_product_name: row.primary_product_name || "",
@@ -216,21 +218,24 @@ export function buildSalesOsModel(input: {
     .filter((row) => row.deal_id);
 
   const paymentEvents = input.dealsRaw
-    .filter((row) => (truthyFlag(row.is_won) || row.stage_semantic === "S") && Boolean(row.closed_at) && inPeriods(row.closed_at, periods))
-    .map((row) => ({
-      event_id: `payment|${row.deal_id}|${row.closed_at}`,
-      deal_id: row.deal_id || "",
-      lead_id: row.lead_id || "",
-      contact_id: row.contact_id || "",
-      manager_id: row.assigned_by_id || "",
-      manager_name: row.assigned_by_name || "",
-      paid_at: row.closed_at || "",
-      amount: row.opportunity || "",
-      currency: row.currency || "EUR",
-      customer_key: row.customer_key || "",
-      period: periodOfIso(row.closed_at || ""),
-      sync_updated_at: syncedAt
-    }))
+    .filter((row) => Boolean(row.paid_at) && inPeriods(row.paid_at, periods))
+    .map((row) => {
+      const amount = paidInvoiceAmount(row.invoice_amount, row.opportunity);
+      return {
+        event_id: `payment|${row.deal_id}|${row.paid_at}`,
+        deal_id: row.deal_id || "",
+        lead_id: row.lead_id || "",
+        contact_id: row.contact_id || "",
+        manager_id: row.assigned_by_id || "",
+        manager_name: row.assigned_by_name || "",
+        paid_at: row.paid_at || "",
+        amount: amount ? String(amount) : "",
+        currency: row.currency || "EUR",
+        customer_key: row.customer_key || "",
+        period: periodOfIso(row.paid_at || ""),
+        sync_updated_at: syncedAt
+      };
+    })
     .filter((row) => row.deal_id);
 
   const pipeline = input.pipelineRaw.map((row) => ({

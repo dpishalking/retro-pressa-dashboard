@@ -860,7 +860,7 @@ function Overview({
         <SourceOfTruthPanel truth={bitrixTruth} adSpend={current.adSpend} sheetsLeads={sheetsLeadCompare} />
 
         <section className="card p-4">
-          <SectionHead title={showPlan ? "План-факт оплат" : "Факт оплат по дням"} subtitle={hasFacts ? "Оплаты по CLOSEDATE (календарь, воронка Продажа)" : `Факты за ${periodLabel(current.month).toLowerCase()} ещё не загружены из Битрикса`} />
+          <SectionHead title={showPlan ? "План-факт оплат" : "Факт оплат по дням"} subtitle={hasFacts ? "Оплаты по SPA Счета: стадия Оплачено, дата завершения" : `Факты за ${periodLabel(current.month).toLowerCase()} ещё не загружены из Битрикса`} />
           {hasFacts ? (
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">

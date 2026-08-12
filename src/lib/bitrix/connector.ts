@@ -1,3 +1,4 @@
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
 import { extractBitrixWebValue } from "@/lib/utm-standards";
 import {
@@ -5,6 +6,7 @@ import {
   BITRIX_DELIVERY_PRICE_FIELD,
   BITRIX_INVOICE_AMOUNT_FIELD,
   BITRIX_INVOICE_DATE_FIELD,
+  BITRIX_PAYMENT_DATE_FIELD,
   BITRIX_INVOICE_STAGE_ID,
   BITRIX_METRIC_DEFINITIONS,
   BITRIX_SALES_CATEGORY_ID,
@@ -22,6 +24,7 @@ import {
 } from "@/lib/bitrix/gift-type-resolver";
 import { multiValue } from "@/lib/bitrix/sales-foundation/customer-key";
 import { fetchStagesRaw } from "@/lib/bitrix/sales-foundation/stages";
+import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
 import { readBitrixSnapshot, snapshotFilePath, writeBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead, type BitrixSnapshotProductRow } from "@/lib/bitrix/snapshot-store";
 
 type BitrixListResponse<T> = {
@@ -88,6 +91,8 @@ type BitrixDeal = {
   WEB?: unknown;
   UF_CRM_1758618010118?: string;
   UF_CRM_1739982211?: string | number | null;
+  /** «Дата оплаты» — cash-in date. */
+  UF_CRM_1762167848?: string | null;
   /** «Доставка цена» — shipping amount on deal. */
   UF_CRM_1739981844877?: string | number | null;
   /** SPA «Вид подарка» links (entity 1038). */
@@ -205,6 +210,7 @@ const selectDeal = [
   "WEB",
   BITRIX_INVOICE_DATE_FIELD,
   BITRIX_INVOICE_AMOUNT_FIELD,
+  BITRIX_PAYMENT_DATE_FIELD,
   BITRIX_DELIVERY_PRICE_FIELD,
   BITRIX_DEAL_GIFT_LINKS_FIELD
 ];
@@ -571,6 +577,11 @@ function normalizeSnapshotDeal(
     closeDate: deal.CLOSEDATE ?? null,
     lastActivityAt: deal.LAST_ACTIVITY_TIME ?? null,
     invoiceDate,
+    paymentDate: (() => {
+      const raw = deal[BITRIX_PAYMENT_DATE_FIELD as keyof BitrixDeal];
+      if (raw == null || raw === "") return null;
+      return String(raw);
+    })(),
     opportunity,
     currencyId: deal.CURRENCY_ID?.trim() || null,
     invoiceAmount: dealInvoiceAmount(deal),
@@ -620,7 +631,7 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
   const periodStartDate = dayKey(periodStart);
   const factualEndDate = dayKey(factualEndIso);
 
-  const [periodLeadsRaw, recentLeadsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, users, countryMetadata, stagesBundle] = await Promise.all([
+  const [periodLeadsRaw, recentLeadsRaw, invoiceByDateRaw, invoiceStageHistory, paidSmartInvoices, openPipelineRaw, users, countryMetadata, stagesBundle] = await Promise.all([
     listAll<BitrixLead>("crm.lead.list", {
       order: { DATE_CREATE: "ASC" },
       filter: { ">=DATE_CREATE": periodStart, "<=DATE_CREATE": factualEndIso },
@@ -651,16 +662,7 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
       },
       select: ["OWNER_ID", "CREATED_TIME", "STAGE_ID", "CATEGORY_ID", "TYPE_ID"]
     }),
-    listAll<BitrixDeal>("crm.deal.list", {
-      order: { ID: "ASC" },
-      filter: {
-        ">=CLOSEDATE": periodStartDate,
-        "<=CLOSEDATE": factualEndDate,
-        STAGE_SEMANTIC_ID: "S",
-        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
-      },
-      select: selectDeal
-    }),
+    listPaidSmartInvoicesForPeriod(periodStartDate, factualEndDate),
     listAll<BitrixDeal>("crm.deal.list", {
       order: { ID: "ASC" },
       filter: {
@@ -700,16 +702,14 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     invoiceRawById.set(String(deal.ID), deal);
   }
 
-  const paidRawById = new Map(paidDealsRaw.map((deal) => [String(deal.ID), deal]));
   const openRawById = new Map(openPipelineRaw.map((deal) => [String(deal.ID), deal]));
   const allDealIds = Array.from(new Set([
     ...invoiceRawById.keys(),
-    ...paidRawById.keys(),
     ...openRawById.keys()
   ]));
   const productRows = await listDealProductRows(allDealIds);
 
-  const allRawDeals = [...invoiceRawById.values(), ...paidRawById.values(), ...openRawById.values()];
+  const allRawDeals = [...invoiceRawById.values(), ...openRawById.values()];
   const giftItemIds = Array.from(
     new Set(
       allRawDeals.flatMap((deal) =>
@@ -743,25 +743,10 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     );
   });
 
-  const paidDeals: BitrixSnapshotDeal[] = Array.from(paidRawById.values()).map((deal) => {
-    const id = String(deal.ID);
-    const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
-    const giftTypes = giftTypesFromDealField(
-      deal[BITRIX_DEAL_GIFT_LINKS_FIELD as keyof BitrixDeal],
-      giftItemToType
-    );
-    return normalizeSnapshotDeal(
-      deal,
-      fieldDate ?? null,
-      userNames,
-      enumMaps,
-      productRows.get(id) ?? [],
-      leadLookup,
-      undefined,
-      giftTypes,
-      stageNameById
-    );
-  });
+  const paidDeals: BitrixSnapshotDeal[] = paidSmartInvoices.map((deal) => ({
+    ...deal,
+    managerName: userNames.get(deal.assignedById) ?? deal.managerName
+  }));
 
   const openPipeline: BitrixSnapshotDeal[] = Array.from(openRawById.values()).map((deal) => {
     const id = String(deal.ID);
@@ -954,7 +939,10 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   const paidLeads = leads.filter((lead) => isPaidLeadSource(lead.sourceId)).length;
   const organicLeads = leads.length - paidLeads;
   const invoicesAmount = filteredInvoiceDeals.reduce((sum, deal) => sum + (deal.invoiceAmount || deal.opportunity), 0);
-  const revenue = filteredPaidDeals.reduce((sum, deal) => sum + deal.opportunity, 0);
+  const revenue = filteredPaidDeals.reduce(
+    (sum, deal) => sum + paidInvoiceAmount(deal.invoiceAmount, deal.opportunity),
+    0
+  );
   const cancelledAmount = lostDeals.reduce((sum, deal) => sum + (deal.invoiceAmount || deal.opportunity), 0);
 
   const days = new Map<string, DailyMetrics>();
@@ -978,15 +966,15 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   }
 
   for (const deal of filteredPaidDeals) {
-    const row = days.get(dayKey(deal.closeDate));
+    const row = days.get(dayKey(deal.paymentDate || deal.closeDate));
     if (!row) continue;
     row.salesCount += 1;
-    row.revenue += deal.opportunity;
+    row.revenue += paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
   }
 
   const activeByDay = new Map<string, Set<string>>();
   for (const deal of [...filteredInvoiceDeals, ...filteredPaidDeals]) {
-    const key = dayKey(deal.invoiceDate || deal.closeDate);
+    const key = dayKey(deal.invoiceDate || deal.paymentDate || deal.closeDate);
     if (!key) continue;
     activeByDay.set(key, activeByDay.get(key) ?? new Set<string>());
     activeByDay.get(key)?.add(deal.assignedById);
@@ -1021,7 +1009,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     byManager.set(deal.assignedById, byManager.get(deal.assignedById) ?? emptyManager(snapshot.period, deal.assignedById, deal.managerName));
     const manager = byManager.get(deal.assignedById)!;
     manager.sales += 1;
-    manager.revenue += deal.opportunity;
+    manager.revenue += paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
   }
 
   const countryInvoices = new Map<string, CountryInvoiceMetrics>();
@@ -1033,7 +1021,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   for (const deal of filteredPaidDeals) {
     const country = deal.country || "Не указано";
     const bucket = countryInvoices.get(country) ?? { country, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
-    countryInvoices.set(country, addInvoiceBucket(bucket, "paid", deal.opportunity));
+    countryInvoices.set(country, addInvoiceBucket(bucket, "paid", paidInvoiceAmount(deal.invoiceAmount, deal.opportunity)));
   }
 
   const managerInvoices = new Map<string, ManagerInvoiceMetrics>();
@@ -1047,7 +1035,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
     const managerId = deal.assignedById || "unknown";
     const manager = deal.managerName || `ID ${managerId}`;
     const bucket = managerInvoices.get(managerId) ?? { managerId, manager, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
-    managerInvoices.set(managerId, addInvoiceBucket(bucket, "paid", deal.opportunity));
+    managerInvoices.set(managerId, addInvoiceBucket(bucket, "paid", paidInvoiceAmount(deal.invoiceAmount, deal.opportunity)));
   }
 
   const productInvoices = new Map<string, ProductInvoiceMetrics>();
@@ -1059,7 +1047,7 @@ function aggregateBitrixSnapshot(snapshot: BitrixSnapshot, options: BitrixSyncOp
   for (const deal of filteredPaidDeals) {
     const product = dominantProductName(deal);
     const bucket = productInvoices.get(product) ?? { product, invoicesCount: 0, invoicesAmount: 0, salesCount: 0, revenue: 0 };
-    productInvoices.set(product, addInvoiceBucket(bucket, "paid", deal.opportunity));
+    productInvoices.set(product, addInvoiceBucket(bucket, "paid", paidInvoiceAmount(deal.invoiceAmount, deal.opportunity)));
   }
 
   const usersLoaded = new Set([
@@ -1147,7 +1135,7 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   const periodStartDate = dayKey(periodStart);
   const factualEndDate = dayKey(factualEndIso);
 
-  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidDealsRaw, openPipelineRaw, periodLeadsRaw, users, countryMetadata, stagesBundle] = await Promise.all([
+  const [createdDealsRaw, invoiceByDateRaw, invoiceStageHistory, paidSmartInvoices, openPipelineRaw, periodLeadsRaw, users, countryMetadata, stagesBundle] = await Promise.all([
     listAll<BitrixDeal>("crm.deal.list", {
       order: { ID: "ASC" },
       filter: {
@@ -1177,16 +1165,7 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       },
       select: ["OWNER_ID", "CREATED_TIME", "STAGE_ID", "CATEGORY_ID", "TYPE_ID"]
     }),
-    listAll<BitrixDeal>("crm.deal.list", {
-      order: { ID: "ASC" },
-      filter: {
-        ">=CLOSEDATE": periodStartDate,
-        "<=CLOSEDATE": factualEndDate,
-        STAGE_SEMANTIC_ID: "S",
-        CATEGORY_ID: BITRIX_SALES_CATEGORY_ID
-      },
-      select: selectDeal
-    }),
+    listPaidSmartInvoicesForPeriod(periodStartDate, factualEndDate),
     listAll<BitrixDeal>("crm.deal.list", {
       order: { ID: "ASC" },
       filter: {
@@ -1226,21 +1205,20 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
   const stageOnlyDealsRaw = stageOnlyIds.length ? await listDealsByIds(stageOnlyIds) : [];
 
   const rawById = new Map<string, BitrixDeal>();
-  for (const deal of [...createdDealsRaw, ...invoiceByDateRaw, ...stageOnlyDealsRaw, ...paidDealsRaw, ...openPipelineRaw]) {
+  for (const deal of [...createdDealsRaw, ...invoiceByDateRaw, ...stageOnlyDealsRaw, ...openPipelineRaw]) {
     rawById.set(String(deal.ID), deal);
   }
 
-  const paidIds = new Set(paidDealsRaw.map((deal) => String(deal.ID)));
   const productRows = await listDealProductRows(Array.from(rawById.keys()));
 
-  const deals = Array.from(rawById.values()).map((deal) => {
+  const dealRows = Array.from(rawById.values()).map((deal) => {
     const id = String(deal.ID);
     const fromDateField = invoiceByDateIds.has(id);
     const fieldDate = deal[BITRIX_INVOICE_DATE_FIELD as keyof BitrixDeal] as string | undefined;
     const invoiceDate = fromDateField
       ? (fieldDate ?? null)
       : (invoiceStageEntries.get(id)?.CREATED_TIME ?? fieldDate ?? null);
-    const normalized = normalizeSnapshotDeal(
+    return normalizeSnapshotDeal(
       deal,
       invoiceDate,
       userNames,
@@ -1251,25 +1229,14 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       [],
       stageNameById
     );
-    // Prefer paid deal CLOSEDATE / semantic when available.
-    if (paidIds.has(id)) {
-      const paid = paidDealsRaw.find((item) => String(item.ID) === id);
-      if (paid) {
-        return normalizeSnapshotDeal(
-          paid,
-          fieldDate ?? invoiceDate,
-          userNames,
-          enumMaps,
-          productRows.get(id) ?? [],
-          leadLookup,
-          normalized.invoiceSource,
-          [],
-          stageNameById
-        );
-      }
-    }
-    return normalized;
-  }).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
+  });
+
+  const paidRows = paidSmartInvoices.map((deal) => ({
+    ...deal,
+    managerName: userNames.get(deal.assignedById) ?? deal.managerName
+  }));
+
+  const deals = [...dealRows, ...paidRows].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
 
   return {
     deals,

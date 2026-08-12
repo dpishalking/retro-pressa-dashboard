@@ -5,7 +5,7 @@ import {
   parseSvodPlanNumber
 } from "@/lib/sales-os/svod-plans";
 import { readSheetValues } from "@/lib/google/sheets-client";
-import type { BitrixMonthFacts, WeeklyFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
+import type { BitrixManagerFacts, BitrixMonthFacts, WeeklyFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
 
 export type SeedValue = {
   plan: number | null;
@@ -187,6 +187,61 @@ export function applyBitrixFacts(seed: CeoSeedBundle, bitrix: BitrixMonthFacts):
     ...seed,
     general,
     source: `${seed.source} + ${bitrix.source}`
+  };
+}
+
+/** Manager sheet seed: Bitrix facts only. Volume plans stay empty. Rate plans copy the department target. */
+export function seedForManager(company: CeoSeedBundle, facts: BitrixManagerFacts): CeoSeedBundle {
+  const g = company.general;
+  const checkFact =
+    facts.payments > 0 ? Number((facts.revenue / facts.payments).toFixed(2)) : null;
+  return {
+    month: company.month,
+    paid: {},
+    organic: {},
+    source: facts.source,
+    general: {
+      revenue: {
+        plan: null,
+        fact: facts.revenue,
+        weekFact: [...facts.revenueByWeek],
+        planNote: "нет плана менеджера"
+      },
+      payments: {
+        plan: null,
+        fact: facts.payments,
+        weekFact: [...facts.paymentsByWeek],
+        planNote: "нет плана менеджера"
+      },
+      invoices: {
+        plan: null,
+        fact: facts.invoices,
+        weekFact: [...facts.invoicesByWeek],
+        planNote: "нет плана менеджера"
+      },
+      leads: {
+        plan: null,
+        fact: facts.leads,
+        weekFact: [...facts.leadsByWeek],
+        planNote: "нет плана менеджера"
+      },
+      qualified_leads: {
+        plan: null,
+        fact: null,
+        planNote: "в Bitrix нет поля квалификации по менеджеру"
+      },
+      average_check: {
+        plan: g.average_check?.plan ?? null,
+        fact: checkFact,
+        planNote: g.average_check?.plan != null ? "план отдела (ставка)" : "нет плана"
+      },
+      invoice_to_payment_cr: {
+        plan: g.invoice_to_payment_cr?.plan ?? null,
+        fact: ratePct(facts.payments, facts.invoices),
+        weekFact: weeklyRate(facts.paymentsByWeek, facts.invoicesByWeek),
+        planNote: g.invoice_to_payment_cr?.plan != null ? "план отдела (ставка)" : "нет плана"
+      }
+    }
   };
 }
 

@@ -20,9 +20,10 @@ import {
   quoteTab,
   sheetFormula
 } from "@/lib/predictive-sheets/formulas";
-import { applyBitrixFacts, loadCeoSeed, seedForMetricId, type CeoSeedBundle } from "@/lib/predictive-sheets/seed-from-ceo";
-import { loadBitrixMonthFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
+import { applyBitrixFacts, loadCeoSeed, seedForManager, seedForMetricId, type CeoSeedBundle } from "@/lib/predictive-sheets/seed-from-ceo";
+import { loadBitrixSalesFacts, type BitrixManagerFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
 import { applyChannelFacts, loadSvodChannelFacts } from "@/lib/predictive-sheets/seed-from-channels";
+import { isManagerSheet, managerBySheet, PM_MANAGER_SHEETS, PM_SALES_MANAGERS } from "@/lib/predictive-sheets/managers";
 import {
   PM_COL,
   PM_COLORS,
@@ -127,6 +128,8 @@ function emptyOrNum(v: number | null | undefined): CellValue {
 }
 
 function detailSheetTitle(sheetTitle: string): string {
+  const mgr = managerBySheet(sheetTitle);
+  if (mgr) return `Продажи · ${mgr.firstName}`;
   if (sheetTitle.includes("PAID")) return "Маркетинг · платный";
   if (sheetTitle.includes("ORGANIC")) return "Маркетинг · органика";
   if (sheetTitle.includes("SALES")) return "Продажи";
@@ -259,6 +262,7 @@ function buildOwnersRows(): CellValue[][] {
     ["Маркетинг"],
     ["Маркетинг / РОП"],
     ["РОП"],
+    ...PM_SALES_MANAGERS.map((m) => [`${m.firstName} (${m.fullName})`]),
     ["—"]
   ];
 }
@@ -345,7 +349,9 @@ function isLagMatrixMetric(m: PmCatalogMetric): boolean {
 }
 
 function layoutDetailSheet(sheetTitle: string): DetailLayout {
-  const metrics = metricsForSheet(sheetTitle);
+  const metrics = isManagerSheet(sheetTitle)
+    ? metricsForSheet(PM_SHEETS.salesGeneral)
+    : metricsForSheet(sheetTitle);
   const lagMetrics = metrics.filter(isLagMatrixMetric);
   const leadMetrics = metrics.filter((m) => !isLagMatrixMetric(m));
 
@@ -517,41 +523,82 @@ function buildDetailGrid(
   return { rows, layout, notes };
 }
 
+function rawIndex(rawTab: string, column: string, metricId: string): string {
+  return `IFERROR(INDEX(${rawTab}!${column}:${column},MATCH("${metricId}",${rawTab}!A:A,0)),"")`;
+}
+
+function dashboardMetricRow(opts: {
+  label: string;
+  metricId: string;
+  row: number;
+  settingsTab: string;
+  rawTab: string;
+  kind: "additive" | "rate";
+}): CellValue[] {
+  const S = quoteTab(opts.settingsTab);
+  const plan = rawIndex(opts.rawTab, "K", opts.metricId);
+  const fact = rawIndex(opts.rawTab, "L", opts.metricId);
+  const weekCols = ["O", "Q", "S", "U", "W"] as const;
+  const r = opts.row;
+  const ptd =
+    opts.kind === "rate"
+      ? `IF(B${r}="","",B${r})`
+      : `IF(OR(B${r}="",${S}!B8<=0,${S}!B10<=0),"",B${r}*${S}!B8/${S}!B10)`;
+  const forecast =
+    opts.kind === "rate"
+      ? `IF(D${r}="","",D${r})`
+      : `IF(OR(D${r}="",${S}!B8<=0),"",D${r}/${S}!B8*${S}!B10)`;
+  const status = [
+    `IF(B${r}="","${PM_STATUS.noPlan}",`,
+    `IF(D${r}="","${PM_STATUS.noData}",`,
+    `IF(OR(C${r}="",C${r}=0),"${PM_STATUS.noData}",`,
+    `IF(D${r}/C${r}>=${S}!B12,"${PM_STATUS.onTrack}",`,
+    `IF(D${r}/C${r}>=${S}!B13,"${PM_STATUS.risk}","${PM_STATUS.offTrack}")))))`
+  ].join("");
+
+  return [
+    opts.label,
+    sheetFormula(plan),
+    sheetFormula(ptd),
+    sheetFormula(fact),
+    sheetFormula(`IF(OR(D${r}="",C${r}="",C${r}=0),"",D${r}/C${r}-1)`),
+    sheetFormula(forecast),
+    sheetFormula(`IF(OR(F${r}="",B${r}=""),"",F${r}-B${r})`),
+    ...weekCols.map((col) => sheetFormula(rawIndex(opts.rawTab, col, opts.metricId))),
+    sheetFormula(status)
+  ];
+}
+
 function buildDashboardRows(settingsTab: string, meta: ReturnType<typeof periodMeta>): CellValue[][] {
   const S = quoteTab(settingsTab);
-  const MG = quoteTab(PM_SHEETS.marketingGeneral);
-  // Primary KPI cards pull from Marketing General fact rows (known layout after bootstrap).
-  // Layout for MG (after section headers): computed dynamically — use INDEX/MATCH on RAW instead.
   const RAW = quoteTab(PM_SHEETS.rawData);
-  const MET = quoteTab(PM_SHEETS.metrics);
+  const weeks = displayMondayWeeks(meta.month);
+  const weekHeaders = Array.from({ length: 5 }, (_, i) => {
+    const w = weeks[i];
+    return w ? pmWeekHeader(i + 1, w.label, meta.currentWeek === i + 1) : `Н${i + 1}`;
+  });
 
-  const card = (title: string, metricId: string) => {
-    // RAW: metric_id col A, plan col K (11), fact col L (12)
-    return {
-      title,
-      metricId,
-      plan: `IFERROR(INDEX(${RAW}!K:K,MATCH("${metricId}",${RAW}!A:A,0)),"")`,
-      fact: `IFERROR(INDEX(${RAW}!L:L,MATCH("${metricId}",${RAW}!A:A,0)),"")`
-    };
-  };
+  const headers = ["Метрика", "План", "На дату", "Факт", "%", "Прогноз", "Разрыв", ...weekHeaders, "Статус"];
 
-  const cards = [
-    card("ВЫРУЧКА", "mg_revenue"),
-    card("ОПЛАТЫ", "mg_payments"),
-    card("ЛИДЫ", "mg_leads"),
-    card("СЧЕТА", "mg_invoices"),
-    card("СРЕДНИЙ ЧЕК", "mg_average_check"),
-    card("КВАЛ. ЛИДЫ", "mg_qualified_leads")
+  const lag = [
+    { label: "Выручка", id: "mg_revenue", kind: "additive" as const },
+    { label: "Оплаты", id: "mg_payments", kind: "additive" as const },
+    { label: "Средний чек", id: "mg_average_check", kind: "rate" as const }
+  ];
+  const lead = [
+    { label: "Бюджет", id: "mg_budget", kind: "additive" as const },
+    { label: "Лиды", id: "mg_leads", kind: "additive" as const },
+    { label: "Квал. лиды", id: "mg_qualified_leads", kind: "additive" as const },
+    { label: "Счета", id: "mg_invoices", kind: "additive" as const }
   ];
 
   const rows: CellValue[][] = [];
   rows.push([
     "Предиктивная модель",
+    `=${S}!B3`,
     "",
-    "",
-    "",
-    "",
-    "",
+    "Обновлено",
+    `=${S}!B16`,
     "",
     PM_STATUS.onTrack,
     PM_STATUS.risk,
@@ -559,172 +606,95 @@ function buildDashboardRows(settingsTab: string, meta: ReturnType<typeof periodM
     PM_STATUS.noData
   ]);
   rows.push([
-    `=${S}!B3`,
-    "",
-    "",
-    "Обновлено:",
-    `=${S}!B16`,
-    "",
-    "",
-    "в норме",
-    "риск",
-    "срыв",
-    "нет данных"
-  ]);
-  rows.push([
-    "Период:",
-    `=${S}!B2`,
-    "",
-    "Неделя:",
+    "Неделя",
     `=${S}!B7`,
-    "",
-    "",
-    "Прошло:",
+    "Прошло дней",
     `=${S}!B8`,
-    "Осталось:",
-    `=${S}!B9`
+    "Осталось",
+    `=${S}!B9`,
+    "",
+    "",
+    "",
+    ""
+  ]);
+  rows.push([
+    "Смотрим",
+    sheetFormula("IF(B16=\"\",\"—\",B16)"),
+    "Куда",
+    sheetFormula("IF(B17=\"\",\"—\",B17)"),
+    "Тянет вверх",
+    sheetFormula("IF(B18=\"\",\"—\",B18)"),
+    "Темп выручки",
+    sheetFormula(
+      `IF(OR(B7="",D7="",${S}!B9<=0),"",TEXT(MAX(B7-D7,0)/${S}!B9,"0")&" € / день")`
+    )
   ]);
   rows.push([]);
-
-  // KPI card headers row 5
-  const headerRow: CellValue[] = [];
-  const planRow: CellValue[] = [];
-  const factRow: CellValue[] = [];
-  const forecastRow: CellValue[] = [];
-  const gapRow: CellValue[] = [];
-  const statusRow: CellValue[] = [];
-
-  for (let i = 0; i < cards.length; i += 1) {
-    const c = cards[i];
-    const col = i * 2;
-    headerRow[col] = c.title;
-    planRow[col] = "План:";
-    planRow[col + 1] = sheetFormula(c.plan);
-    factRow[col] = "Факт:";
-    factRow[col + 1] = sheetFormula(c.fact);
-    forecastRow[col] = "Прогноз:";
-    // additive run-rate from fact
-    forecastRow[col + 1] = sheetFormula(
-      `IF(OR(${colLetter(col + 1)}7="",${S}!B8<=0),"",IF(OR("${c.metricId}"="mg_average_check","${c.metricId}"="mg_cpl"),${colLetter(col + 1)}7,${colLetter(col + 1)}7/${S}!B8*${S}!B10))`
-    );
-    gapRow[col] = "Разрыв:";
-    gapRow[col + 1] = sheetFormula(
-      `IF(OR(${colLetter(col + 1)}8="",${colLetter(col + 1)}6=""),"",${colLetter(col + 1)}8-${colLetter(col + 1)}6)`
-    );
-    statusRow[col] = "Статус:";
-    statusRow[col + 1] = sheetFormula(
-      [
-        `IF(${colLetter(col + 1)}6="","${PM_STATUS.noPlan}",`,
-        `IF(${colLetter(col + 1)}7="","${PM_STATUS.noData}",`,
-        `IF(${colLetter(col + 1)}7/(${colLetter(col + 1)}6*${S}!B8/${S}!B10)>=${S}!B12,"${PM_STATUS.onTrack}",`,
-        `IF(${colLetter(col + 1)}7/(${colLetter(col + 1)}6*${S}!B8/${S}!B10)>=${S}!B13,"${PM_STATUS.risk}","${PM_STATUS.offTrack}"))))`
-      ].join("")
-    );
-  }
-
-  rows.push(headerRow); // 5
-  rows.push(planRow); // 6
-  rows.push(factRow); // 7
-  rows.push(forecastRow); // 8
-  rows.push(gapRow); // 9
-  rows.push(statusRow); // 10
-
-  rows.push(["Смотрим:", sheetFormula('IF(B22="","—",B22)'), "", "Куда:", sheetFormula('IF(B23="","—",B23)')]); // 11
-  rows.push(["Цепочка драйверов", "Факт", "План на дату", "Прогноз", "Статус", "", "Главный риск"]);
-  const drivers = [
-    ["Бюджет", "mg_budget"],
-    ["Лиды", "mg_leads"],
-    ["Квал. лиды", "mg_qualified_leads"],
-    ["Счета", "mg_invoices"],
-    ["Оплаты", "mg_payments"],
-    ["Средний чек", "mg_average_check"],
-    ["Выручка", "mg_revenue"]
-  ] as const;
-
-  let r = 13;
-  for (const [label, id] of drivers) {
-    rows.push([
-      label,
-      sheetFormula(`IFERROR(INDEX(${RAW}!L:L,MATCH("${id}",${RAW}!A:A,0)),"")`),
-      sheetFormula(
-        `IFERROR(IF(INDEX(${RAW}!K:K,MATCH("${id}",${RAW}!A:A,0))="","",INDEX(${RAW}!K:K,MATCH("${id}",${RAW}!A:A,0))*${S}!B8/${S}!B10),"")`
-      ),
-      sheetFormula(
-        `IF(OR(B${r}="",${S}!B8<=0),"",IF("${id}"="mg_average_check",B${r},B${r}/${S}!B8*${S}!B10))`
-      ),
-      sheetFormula(
-        [
-          `IF(IFERROR(INDEX(${RAW}!K:K,MATCH("${id}",${RAW}!A:A,0)),"")="","${PM_STATUS.noPlan}",`,
-          `IF(B${r}="","${PM_STATUS.noData}",`,
-          `IF(OR(C${r}="",C${r}=0),"${PM_STATUS.noData}",`,
-          `IF(B${r}/C${r}>=${S}!B12,"${PM_STATUS.onTrack}",`,
-          `IF(B${r}/C${r}>=${S}!B13,"${PM_STATUS.risk}","${PM_STATUS.offTrack}")))))`
-        ].join("")
-      )
-    ]);
-    r += 1;
-  }
-
-  // Driver rows occupy 13..19 (1-based). Diagnosis block starts at row 21.
-  rows.push([]); // 20
-  rows.push([
-    "Главный риск",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Бюджет → лиды → квал. → счета → оплаты → чек → выручка"
-  ]); // 21
-  rows.push([
-    "Первый сломанный драйвер:",
-    sheetFormula(
-      [
-        `IF(AND(E16="${PM_STATUS.offTrack}",E14<>"${PM_STATUS.offTrack}"),"Счета",`,
-        `IF(AND(E17="${PM_STATUS.offTrack}",E16<>"${PM_STATUS.offTrack}"),"Оплаты",`,
-        `IF(E14="${PM_STATUS.offTrack}","Лиды",`,
-        `IF(E19="${PM_STATUS.offTrack}","Выручка",`,
-        `IF(COUNTIF(E13:E19,"${PM_STATUS.offTrack}")=0,"Нет срыва","Недостаточно данных")))))`
-      ].join("")
-    )
-  ]); // 22
-  rows.push([
-    "Куда смотреть:",
-    sheetFormula(
-      `IF(OR(B22="Счета",B22="Оплаты"),"Продажи → 04 / 05",IF(B22="Лиды","Маркетинг → 01 / 02 / 03","04_SALES_GENERAL"))`
-    )
-  ]); // 23
-  rows.push([
-    "Что тянет вверх:",
-    sheetFormula(
-      [
-        `IF(E18="${PM_STATUS.onTrack}","Средний чек","")&`,
-        `IF(AND(E18="${PM_STATUS.onTrack}",OR(E14="${PM_STATUS.onTrack}",E15="${PM_STATUS.onTrack}")),"","")&`,
-        `IF(AND(E18<>"${PM_STATUS.onTrack}",E15<>"${PM_STATUS.onTrack}",E14<>"${PM_STATUS.onTrack}"),"Нет компенсирующего драйвера","")`
-      ].join("")
-    )
-  ]); // 24
-
+  rows.push(["LAG — результат"]);
+  rows.push(headers);
+  rows.push(dashboardMetricRow({ label: lag[0].label, metricId: lag[0].id, row: 7, settingsTab, rawTab: RAW, kind: lag[0].kind }));
+  rows.push(dashboardMetricRow({ label: lag[1].label, metricId: lag[1].id, row: 8, settingsTab, rawTab: RAW, kind: lag[1].kind }));
+  rows.push(dashboardMetricRow({ label: lag[2].label, metricId: lag[2].id, row: 9, settingsTab, rawTab: RAW, kind: lag[2].kind }));
+  rows.push(["LEAD — драйверы"]);
+  rows.push(dashboardMetricRow({ label: lead[0].label, metricId: lead[0].id, row: 11, settingsTab, rawTab: RAW, kind: lead[0].kind }));
+  rows.push(dashboardMetricRow({ label: lead[1].label, metricId: lead[1].id, row: 12, settingsTab, rawTab: RAW, kind: lead[1].kind }));
+  rows.push(dashboardMetricRow({ label: lead[2].label, metricId: lead[2].id, row: 13, settingsTab, rawTab: RAW, kind: lead[2].kind }));
+  rows.push(dashboardMetricRow({ label: lead[3].label, metricId: lead[3].id, row: 14, settingsTab, rawTab: RAW, kind: lead[3].kind }));
   rows.push([]);
-  rows.push(["Качество данных", sheetFormula(`IFERROR(${quoteTab(PM_SHEETS.diagnostics)}!B2,"—")`), "", "→ 94_DIAGNOSTICS"]);
-  rows.push(["Замечание", "Конверсии воронки — по событиям, не когортные (дата лида ≠ дата оплаты)"]);
   rows.push([
-    "Недельный план",
-    "План месяца режется по неделям пн–вс пропорционально дням (больше дней — больше денег)."
+    "Первый сломанный драйвер",
+    sheetFormula(
+      [
+        `IF(M12="${PM_STATUS.offTrack}","Лиды",`,
+        `IF(M13="${PM_STATUS.offTrack}","Квал. лиды",`,
+        `IF(M14="${PM_STATUS.offTrack}","Счета",`,
+        `IF(M8="${PM_STATUS.offTrack}","Оплаты",`,
+        `IF(M7="${PM_STATUS.offTrack}","Выручка",`,
+        `IF(COUNTIF(M7:M14,"${PM_STATUS.offTrack}")=0,"Нет срыва","Недостаточно данных"))))))`
+      ].join("")
+    )
   ]);
-  rows.push(["Листы", "01 общее", "02 платный", "03 органика", "04 продажи", "05 менеджеры", "06 действия"]);
+  rows.push([
+    "Куда смотреть",
+    sheetFormula(
+      `IF(OR(B16="Лиды",B16="Квал. лиды"),"Маркетинг → 01 / 02 / 03",IF(OR(B16="Счета",B16="Оплаты",B16="Выручка"),"Продажи → 04","—"))`
+    )
+  ]);
+  rows.push([
+    "Что тянет вверх",
+    sheetFormula(`IF(M9="${PM_STATUS.onTrack}","Средний чек","Нет компенсирующего драйвера")`)
+  ]);
+  rows.push([]);
+  rows.push([
+    "Как читать",
+    "План на дату — линейно MTD. % — факт к плану на дату. Прогноз — текущий темп до конца месяца. Средний чек не экстраполируется."
+  ]);
+  rows.push([
+    "Качество данных",
+    `=${quoteTab(PM_SHEETS.diagnostics)}!B3`,
+    "Подробности: 94_DIAGNOSTICS"
+  ]);
 
-  void MG;
-  void MET;
-  void meta;
   return rows;
+}
+
+function managerLayoutCell(metricId: string, col: number): { row: number; letter: string } | null {
+  const block = layoutDetailSheet(PM_SHEETS.salesGeneral).blocks.find((b) => b.metric.metric_id === metricId);
+  if (!block) return null;
+  const row = col === PM_COL.plan ? block.planRow : block.factRow;
+  return { row, letter: colLetter(col) };
 }
 
 function buildManagersSheet(settingsTab: string): CellValue[][] {
   const S = quoteTab(settingsTab);
-  return [
+  const ref = (sheet: string, metricId: string, col: number) => {
+    const cell = managerLayoutCell(metricId, col);
+    if (!cell) return "";
+    return `=${quoteTab(sheet)}!${cell.letter}${cell.row}`;
+  };
+  const rows: CellValue[][] = [
     ["Менеджеры — сводка"],
-    [`Период: =${S}!B3`, "", "Не сравнивать менеджеров только по выручке"],
+    ["Период:", `=${S}!B3`, "Не сравнивать менеджеров только по выручке"],
     [
       "Менеджер",
       "План выручки",
@@ -736,40 +706,35 @@ function buildManagersSheet(settingsTab: string): CellValue[][] {
       "Оплаты",
       "Конверсия",
       "Средний чек",
-      "Активность",
       "Статус",
+      "Лист",
       "Комментарий"
-    ],
-    [
-      "—",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      PM_STATUS.noData,
-      "Планы менеджеров не подключены. Факты — через Sales OS."
-    ],
-    [],
-    ["Детализация менеджера"],
-    ["Менеджер", "—", "Список: 93_OWNERS"],
-    [],
-    ["Метрика", "План", "Факт", "План на дату", "Прогноз", "Разрыв", "Нужный темп", "Статус"],
-    ["Назначенные лиды", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Обработанные лиды", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Квал. лиды", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Счета", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Оплаты", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Выручка", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Средний чек", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Активность", "", "", "", "", "", "", PM_STATUS.noData],
-    ["Ёмкость", "", "", "", "", "", "", PM_STATUS.noData]
+    ]
   ];
+  for (const m of PM_SALES_MANAGERS) {
+    rows.push([
+      m.firstName,
+      ref(m.sheet, "sg_revenue", PM_COL.plan),
+      ref(m.sheet, "sg_revenue", PM_COL.forecast),
+      ref(m.sheet, "sg_revenue", PM_COL.gap),
+      ref(m.sheet, "sg_leads", PM_COL.fact),
+      ref(m.sheet, "sg_qualified_leads", PM_COL.fact),
+      ref(m.sheet, "sg_invoices", PM_COL.fact),
+      ref(m.sheet, "sg_payments", PM_COL.fact),
+      ref(m.sheet, "sg_cr_invoice_payment", PM_COL.fact),
+      ref(m.sheet, "sg_average_check", PM_COL.fact),
+      ref(m.sheet, "sg_revenue", PM_COL.status),
+      m.sheet,
+      `SPA Счета type/31, Оплачено, дата завершения. ${m.fullName} [${m.bitrixId}]. Объёмные планы не подключены.`
+    ]);
+  }
+  rows.push([]);
+  rows.push([
+    "Детализация",
+    PM_MANAGER_SHEETS.join(" · "),
+    "Та же таблица, что 04_SALES_GENERAL, в разрезе менеджера"
+  ]);
+  return rows;
 }
 
 function buildDiagnostics(seed: CeoSeedBundle): { rows: CellValue[][]; issues: string[] } {
@@ -1068,121 +1033,175 @@ async function applyDetailFormatting(
   await batchUpdate(spreadsheetId, requests);
 }
 
-async function applyDashboardFormatting(spreadsheetId: string) {
+async function applyDashboardFormatting(spreadsheetId: string, meta: ReturnType<typeof periodMeta>) {
   const sheetId = await getSheetIdByTitle(spreadsheetId, PM_SHEETS.dashboard);
   if (sheetId == null) return;
   await clearConditionalFormats(spreadsheetId, sheetId);
+
+  const paint = (
+    r1: number,
+    r2: number,
+    c1: number,
+    c2: number,
+    format: Record<string, unknown>,
+    fields: string
+  ) => ({
+    repeatCell: {
+      range: { sheetId, startRowIndex: r1, endRowIndex: r2, startColumnIndex: c1, endColumnIndex: c2 },
+      cell: { userEnteredFormat: format },
+      fields
+    }
+  });
+
+  const widths = [160, 110, 110, 110, 80, 110, 110, 100, 100, 100, 100, 100, 120];
   const requests: unknown[] = [
     {
       updateSheetProperties: {
         properties: {
           sheetId,
-          gridProperties: { hideGridlines: true, frozenRowCount: 3 }
+          gridProperties: { hideGridlines: true, frozenRowCount: 6, frozenColumnCount: 0 }
         },
-        fields: "gridProperties.hideGridlines,gridProperties.frozenRowCount"
+        fields: "gridProperties.hideGridlines,gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
       }
     },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 4 },
-        cell: {
-          userEnteredFormat: {
-            textFormat: {
-              fontFamily: "Roboto",
-              fontSize: 18,
-              bold: true,
-              foregroundColor: PM_COLORS.dark
-            }
-          }
-        },
-        fields: "userEnteredFormat.textFormat"
-      }
-    },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 4, endRowIndex: 5, startColumnIndex: 0, endColumnIndex: 12 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.dark,
-            textFormat: { bold: true, fontSize: 12, foregroundColor: PM_COLORS.white, fontFamily: "Roboto" },
-            horizontalAlignment: "CENTER"
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
-      }
-    },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 10, endRowIndex: 11, startColumnIndex: 0, endColumnIndex: 5 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.yellowBg,
-            textFormat: { bold: true, fontSize: 11, foregroundColor: PM_COLORS.yellowText, fontFamily: "Roboto" },
-            verticalAlignment: "MIDDLE"
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"
-      }
-    },
-    // Legend colors
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 7, endColumnIndex: 8 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.greenBg,
-            textFormat: { foregroundColor: PM_COLORS.greenText, bold: true }
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat)"
-      }
-    },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 8, endColumnIndex: 9 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.yellowBg,
-            textFormat: { foregroundColor: PM_COLORS.yellowText, bold: true }
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat)"
-      }
-    },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 9, endColumnIndex: 10 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.redBg,
-            textFormat: { foregroundColor: PM_COLORS.redText, bold: true }
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat)"
-      }
-    },
-    {
-      repeatCell: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 10, endColumnIndex: 11 },
-        cell: {
-          userEnteredFormat: {
-            backgroundColor: PM_COLORS.noDataBg,
-            textFormat: { foregroundColor: PM_COLORS.noDataText, bold: true }
-          }
-        },
-        fields: "userEnteredFormat(backgroundColor,textFormat)"
-      }
-    }
+    paint(0, 40, 0, 13, {}, "userEnteredFormat"),
+    paint(0, 1, 0, 2, {
+      textFormat: { fontFamily: "Roboto", fontSize: 18, bold: true, foregroundColor: PM_COLORS.dark }
+    }, "userEnteredFormat.textFormat"),
+    paint(2, 3, 0, 8, {
+      backgroundColor: PM_COLORS.yellowBg,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11, foregroundColor: PM_COLORS.yellowText },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(4, 5, 0, 13, {
+      backgroundColor: PM_COLORS.sectionHeader,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11, foregroundColor: PM_COLORS.white },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(9, 10, 0, 13, {
+      backgroundColor: PM_COLORS.sectionHeader,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11, foregroundColor: PM_COLORS.white },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(5, 6, 0, 13, {
+      backgroundColor: PM_COLORS.headerBg,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text },
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"),
+    paint(6, 9, 0, 13, { backgroundColor: PM_COLORS.white }, "userEnteredFormat.backgroundColor"),
+    paint(10, 14, 0, 13, { backgroundColor: PM_COLORS.secondaryBg }, "userEnteredFormat.backgroundColor"),
+    paint(6, 9, 0, 1, { textFormat: { bold: true, fontSize: 11, fontFamily: "Roboto" } }, "userEnteredFormat.textFormat"),
+    paint(10, 14, 0, 1, { textFormat: { bold: true, fontSize: 11, fontFamily: "Roboto" } }, "userEnteredFormat.textFormat"),
+    paint(6, 14, 1, 12, { horizontalAlignment: "RIGHT", textFormat: { fontFamily: "Roboto", fontSize: 10 } }, "userEnteredFormat(horizontalAlignment,textFormat)"),
+    paint(6, 14, 12, 13, {
+      horizontalAlignment: "CENTER",
+      textFormat: { fontFamily: "Roboto", fontSize: 10, bold: true }
+    }, "userEnteredFormat(horizontalAlignment,textFormat)"),
+    paint(6, 7, 1, 12, { numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" } }, "userEnteredFormat.numberFormat"),
+    paint(7, 8, 1, 12, { numberFormat: { type: "NUMBER", pattern: "#,##0" } }, "userEnteredFormat.numberFormat"),
+    paint(8, 9, 1, 12, { numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" } }, "userEnteredFormat.numberFormat"),
+    paint(10, 11, 1, 12, { numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" } }, "userEnteredFormat.numberFormat"),
+    paint(11, 14, 1, 12, { numberFormat: { type: "NUMBER", pattern: "#,##0" } }, "userEnteredFormat.numberFormat"),
+    paint(6, 14, 4, 5, { numberFormat: { type: "PERCENT", pattern: "0.0%" } }, "userEnteredFormat.numberFormat"),
+    paint(15, 18, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary }
+    }, "userEnteredFormat.textFormat"),
+    paint(15, 18, 1, 2, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11, foregroundColor: PM_COLORS.dark }
+    }, "userEnteredFormat.textFormat"),
+    paint(19, 21, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary }
+    }, "userEnteredFormat.textFormat"),
+    paint(19, 21, 1, 8, {
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(textFormat,wrapStrategy)"),
+    paint(0, 1, 6, 7, {
+      backgroundColor: PM_COLORS.greenBg,
+      textFormat: { foregroundColor: PM_COLORS.greenText, bold: true }
+    }, "userEnteredFormat(backgroundColor,textFormat)"),
+    paint(0, 1, 7, 8, {
+      backgroundColor: PM_COLORS.yellowBg,
+      textFormat: { foregroundColor: PM_COLORS.yellowText, bold: true }
+    }, "userEnteredFormat(backgroundColor,textFormat)"),
+    paint(0, 1, 8, 9, {
+      backgroundColor: PM_COLORS.redBg,
+      textFormat: { foregroundColor: PM_COLORS.redText, bold: true }
+    }, "userEnteredFormat(backgroundColor,textFormat)"),
+    paint(0, 1, 9, 10, {
+      backgroundColor: PM_COLORS.noDataBg,
+      textFormat: { foregroundColor: PM_COLORS.noDataText, bold: true }
+    }, "userEnteredFormat(backgroundColor,textFormat)")
   ];
 
-  // Status CF on dashboard
+  const weekCol = 7 + meta.currentWeek - 1;
+  requests.push(
+    paint(5, 6, weekCol, weekCol + 1, {
+      backgroundColor: PM_COLORS.currentWeek,
+      textFormat: { bold: true, foregroundColor: PM_COLORS.blueAccent }
+    }, "userEnteredFormat(backgroundColor,textFormat)")
+  );
+
+  for (let i = 0; i < widths.length; i += 1) {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
+        properties: { pixelSize: widths[i] },
+        fields: "pixelSize"
+      }
+    });
+  }
+  for (const row of [
+    { start: 0, end: 1, px: 32 },
+    { start: 2, end: 3, px: 28 },
+    { start: 4, end: 6, px: 26 },
+    { start: 19, end: 21, px: 40 }
+  ]) {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: row.start, endIndex: row.end },
+        properties: { pixelSize: row.px },
+        fields: "pixelSize"
+      }
+    });
+  }
+
+  const pctRange = {
+    sheetId,
+    startRowIndex: 6,
+    endRowIndex: 14,
+    startColumnIndex: 4,
+    endColumnIndex: 5
+  };
+  const pctFormulas = [
+    { formula: "=И(ЕЧИСЛО(E7);E7<-0,3)", bg: PM_COLORS.redBg, fg: PM_COLORS.redText },
+    { formula: "=И(ЕЧИСЛО(E7);E7>=-0,3;E7<-0,1)", bg: PM_COLORS.yellowBg, fg: PM_COLORS.yellowText },
+    { formula: "=И(ЕЧИСЛО(E7);E7>=-0,1)", bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText }
+  ];
+  for (const rule of pctFormulas) {
+    requests.push({
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [pctRange],
+          booleanRule: {
+            condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: rule.formula }] },
+            format: { backgroundColor: rule.bg, textFormat: { foregroundColor: rule.fg } }
+          }
+        },
+        index: 0
+      }
+    });
+  }
+
   for (const rule of PM_STATUS_CF) {
     requests.push({
       addConditionalFormatRule: {
         rule: {
           ranges: [
-            { sheetId, startRowIndex: 9, endRowIndex: 20, startColumnIndex: 0, endColumnIndex: 12 },
-            { sheetId, startRowIndex: 12, endRowIndex: 20, startColumnIndex: 4, endColumnIndex: 5 }
+            { sheetId, startRowIndex: 6, endRowIndex: 14, startColumnIndex: 12, endColumnIndex: 13 },
+            { sheetId, startRowIndex: 2, endRowIndex: 3, startColumnIndex: 1, endColumnIndex: 2 }
           ],
           booleanRule: {
             condition: { type: "TEXT_CONTAINS", values: [{ userEnteredValue: rule.text }] },
@@ -1193,16 +1212,6 @@ async function applyDashboardFormatting(spreadsheetId: string) {
           }
         },
         index: 0
-      }
-    });
-  }
-
-  for (let i = 0; i < 12; i += 1) {
-    requests.push({
-      updateDimensionProperties: {
-        range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
-        properties: { pixelSize: i % 2 === 0 ? 140 : 110 },
-        fields: "pixelSize"
       }
     });
   }
@@ -1260,12 +1269,13 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingGeneral,
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
-    PM_SHEETS.salesGeneral
+    PM_SHEETS.salesGeneral,
+    ...PM_MANAGER_SHEETS
   ];
 
   if (input?.formatOnly) {
     await clearFrozenColumns(spreadsheetId, [...detailTitles, PM_SHEETS.salesManagers]);
-    await applyDashboardFormatting(spreadsheetId);
+    await applyDashboardFormatting(spreadsheetId, meta);
     for (const title of detailTitles) {
       await applyDetailFormatting(spreadsheetId, title, layoutDetailSheet(title), meta);
     }
@@ -1282,9 +1292,11 @@ export async function bootstrapPredictiveSheets(input?: {
 
   const ceoSeed = await loadCeoSeed(period);
   let seed = ceoSeed;
+  let managerFacts: Record<string, BitrixManagerFacts> = {};
   try {
-    const bitrix = await loadBitrixMonthFacts(period);
-    seed = applyBitrixFacts(seed, bitrix);
+    const bitrix = await loadBitrixSalesFacts(period);
+    seed = applyBitrixFacts(seed, bitrix.company);
+    managerFacts = bitrix.byManager;
   } catch (err) {
     console.warn(
       `[predictive-sheets] Bitrix facts unavailable: ${err instanceof Error ? err.message : String(err)}`
@@ -1314,6 +1326,7 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
     PM_SHEETS.salesGeneral,
+    ...PM_MANAGER_SHEETS,
     PM_SHEETS.salesManagers,
     PM_SHEETS.actions,
     PM_SHEETS.metrics,
@@ -1357,11 +1370,33 @@ export async function bootstrapPredictiveSheets(input?: {
     detailLayouts.push({ title, layout });
   }
 
+  for (const mgr of PM_SALES_MANAGERS) {
+    const facts = managerFacts[mgr.bitrixId];
+    const managerSeed = facts ? seedForManager(seed, facts) : seedForManager(seed, {
+      month: period,
+      assignedById: mgr.bitrixId,
+      managerName: mgr.fullName,
+      revenue: 0,
+      payments: 0,
+      invoices: 0,
+      leads: 0,
+      revenueByWeek: [null, null, null, null, null],
+      paymentsByWeek: [null, null, null, null, null],
+      invoicesByWeek: [null, null, null, null, null],
+      leadsByWeek: [null, null, null, null, null],
+      source: "Bitrix manager facts unavailable"
+    });
+    const { rows, layout, notes } = buildDetailGrid(mgr.sheet, PM_SHEETS.settings, managerSeed, meta);
+    await writeTab(spreadsheetId, mgr.sheet, rows, "A:Z");
+    await applyCellNotes(spreadsheetId, mgr.sheet, notes);
+    detailLayouts.push({ title: mgr.sheet, layout });
+  }
+
   await writeTab(
     spreadsheetId,
     PM_SHEETS.dashboard,
     buildDashboardRows(PM_SHEETS.settings, meta),
-    "A:L"
+    "A:N"
   );
 
   await clearFrozenColumns(spreadsheetId, [
@@ -1369,12 +1404,13 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
     PM_SHEETS.salesGeneral,
+    ...PM_MANAGER_SHEETS,
     PM_SHEETS.salesManagers
   ]);
 
   // Formatting
   if (!input?.skipFormatting) {
-    await applyDashboardFormatting(spreadsheetId);
+    await applyDashboardFormatting(spreadsheetId, meta);
     for (const { title, layout } of detailLayouts) {
       await applyDetailFormatting(spreadsheetId, title, layout, meta);
     }

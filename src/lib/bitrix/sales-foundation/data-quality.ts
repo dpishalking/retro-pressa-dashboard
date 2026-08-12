@@ -98,6 +98,7 @@ export function buildDataQualityRows(input: {
     { field_id: "invoice_at", field_name: "Invoice date", getter: (r) => r.invoice_at },
     { field_id: "invoice_amount", field_name: "Invoice amount", getter: (r) => r.invoice_amount },
     { field_id: "invoice_flag", field_name: "Invoice flag", getter: (r) => r.invoice_flag },
+    { field_id: "paid_at", field_name: "Payment date", getter: (r) => r.paid_at },
     { field_id: "CLOSEDATE", field_name: "Close date", getter: (r) => r.closed_at },
     { field_id: "product_rows", field_name: "Product rows", getter: (r) => r.product_rows_count },
     { field_id: "country", field_name: "Country", getter: (r) => r.country_raw }

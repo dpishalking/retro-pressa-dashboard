@@ -62,6 +62,7 @@ const snapshot = {
     contactId: "55",
     dateCreate: "2026-07-03T10:00:00+03:00",
     closeDate: "2026-07-05",
+    paymentDate: "2026-07-05",
     invoiceDate: "2026-07-04",
     opportunity: 80,
     currencyId: "EUR",

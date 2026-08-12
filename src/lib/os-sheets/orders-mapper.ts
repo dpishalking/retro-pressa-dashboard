@@ -1,4 +1,5 @@
 import { PAID_LEAD_SOURCE_IDS } from "@/lib/bitrix/metric-definitions";
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import type { BitrixSnapshot, BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
 import { ORDERS_COLUMNS, ORDERS_MANUAL_COLUMNS, ORDERS_NUMERIC_COLUMNS, type OrdersColumn } from "@/config/os-sheets";
 import { resolveCustomerIdentity } from "@/lib/os-sheets/customer-identity";
@@ -55,7 +56,7 @@ function sourceChannel(sourceId: string | null | undefined) {
 }
 
 function paymentStatus(deal: BitrixSnapshotDeal): string {
-  if (deal.stageSemanticId === "S") return "paid";
+  if (deal.paymentDate) return "paid";
   if (deal.stageSemanticId === "F") return "lost";
   if (deal.invoiceDate || deal.invoiceAmount > 0) return "invoiced";
   return "unpaid";
@@ -89,9 +90,7 @@ export function mapDealToOrdersRow(
 ): OrdersRow {
   const product = primaryProduct(deal);
   const payment = paymentStatus(deal);
-  const amount = payment === "paid"
-    ? deal.opportunity
-    : (deal.invoiceAmount > 0 ? deal.invoiceAmount : deal.opportunity);
+  const amount = paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
 
   const row = emptyOrdersRow();
   row.order_id = deal.id;
@@ -121,7 +120,7 @@ export function mapDealToOrdersRow(
   row.invoice_amount = deal.invoiceAmount ? String(deal.invoiceAmount) : "";
   row.invoice_at = deal.invoiceDate ?? "";
   row.payment_status = payment;
-  row.paid_at = payment === "paid" ? (deal.closeDate ?? "") : "";
+  row.paid_at = payment === "paid" ? (deal.paymentDate ?? "") : "";
   row.order_status = orderStatus(deal);
   row.stage_id = deal.stageId ?? "";
   row.stage_semantic = deal.stageSemanticId ?? "";

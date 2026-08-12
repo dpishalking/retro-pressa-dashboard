@@ -5,10 +5,18 @@
 
 export const BITRIX_INVOICE_DATE_FIELD = "UF_CRM_1758618010118"; // «Выставлен счет»
 export const BITRIX_INVOICE_AMOUNT_FIELD = "UF_CRM_1739982211"; // «Сумма для счета»
+export const BITRIX_PAYMENT_DATE_FIELD = "UF_CRM_1762167848"; // deal UF «Дата оплаты» (legacy; cash SSOT is SPA below)
 export const BITRIX_INVOICE_FLAG_FIELD = "UF_CRM_1778244823819"; // «Счет выставлен?»
 export const BITRIX_INVOICE_FLAG_YES = "2752";
 export const BITRIX_INVOICE_STAGE_ID = "1"; // «Выставление счета»
 export const BITRIX_SALES_CATEGORY_ID = 0; // воронка «Продажа»
+
+/** Smart Invoice SPA `/crm/type/31/` — касса «Оплачено» as in Bitrix Kanban. */
+export const BITRIX_SMART_INVOICE_ENTITY_TYPE_ID = 31;
+/** Stage «Оплачено» (STATUS_ID P, SEMANTICS S). Not DT31_2:S = «Отправлено клиенту». */
+export const BITRIX_SMART_INVOICE_PAID_STAGE_ID = "DT31_2:P";
+/** UF «Дата завершения» on SPA invoices (UI filter). Not filterable via REST — client-side. */
+export const BITRIX_SMART_INVOICE_COMPLETION_DATE_FIELD = "ufCrm_69C2C99FE5C54";
 
 /** Deal ↔ SPA «Вид подарка» (entityTypeId 1038). Used when productrows are empty. */
 export const BITRIX_DEAL_GIFT_LINKS_FIELD = "UF_CRM_1784794322";
@@ -60,7 +68,7 @@ export const BITRIX_METRIC_DEFINITIONS = {
     label: "Оплачено счетов",
     source: "bitrix",
     definition:
-      "Сделки воронки «Продажа» со STAGE_SEMANTIC_ID=S (Выиграно) и CLOSEDATE в календарном периоде. Не когорта выставленных счетов. Сумма: OPPORTUNITY."
+      "SPA «Счета» (entityTypeId=31), стадия «Оплачено» (DT31_2:P), «Дата завершения» (ufCrm_69C2C99FE5C54) в периоде. Сумма opportunity в валюте счёта, пересчёт в базовую EUR по crm.currency.list. Не сделки WON и не deal UF «Дата оплаты»."
   },
   leads: {
     label: "Лиды",
@@ -107,9 +115,9 @@ export function buildKnownGaps(input: {
     {
       metric: "Оплачено счетов",
       pullable: `${input.salesCount} / ${Math.round(input.revenue)} €`,
-      reported: "212 / 13 970 € (ручной срез)",
+      reported: "канбан Счета / Оплачено + Дата завершения",
       cause:
-        "Календарные WON по CLOSEDATE в воронке Продажа. Раньше на дашборде была когорта «оплаты среди счетов месяца» — это занижало факт. Остаточный зазор к ручному отчёту возможен из‑за другого поля даты оплаты или включения соседней воронки."
+        "Касса = SPA type/31 стадия Оплачено (DT31_2:P) + Дата завершения в периоде, суммы в EUR (курс Bitrix). Расхождение возможно при другом диапазоне дат или колонке без конвертации валют."
     },
     {
       metric: "Лиды",

@@ -4,6 +4,7 @@
  */
 
 import type { BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import type { ProductHubMarginCatalog } from "@/lib/product-hub/sku-margin-catalog";
 import { resolveLineCogs } from "@/lib/product-hub/sku-margin-catalog";
 
@@ -109,7 +110,7 @@ export function sumDelivery(paidDeals: BitrixSnapshotDeal[]): {
   let dealsWithDelivery = 0;
   let dealsWithField = 0;
   for (const deal of paidDeals) {
-    cash += Number(deal.opportunity) || 0;
+    cash += paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
     if (deal.deliveryPrice == null) continue;
     dealsWithField += 1;
     const d = Number(deal.deliveryPrice) || 0;
@@ -340,7 +341,7 @@ export function managerBenchmark(
       isTop20: false
     };
     row.paid += 1;
-    row.revenue += Number(deal.opportunity) || 0;
+    row.revenue += paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
     if (!row.managerName) row.managerName = deal.managerName || id;
     byManager.set(id, row);
   }

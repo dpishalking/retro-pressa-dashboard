@@ -1,4 +1,5 @@
 import { readBitrixSnapshot } from "@/lib/bitrix/snapshot-store";
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import { readGa4Snapshot } from "@/lib/google/ga4-snapshot-store";
 import { readGoogleTrafficSnapshot } from "@/lib/google/snapshot-store";
 import { campaignsMatch, normalizeCampaignSlug } from "@/lib/utm-standards";
@@ -139,7 +140,7 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
   }
 
   const leads = (bitrix?.leads ?? []).filter((lead) => lead.statusId !== "1" && lead.statusId !== "3");
-  // Invoice deals = дата «Выставлен счет» / стадия выставления. Paid = календарные WON по CLOSEDATE.
+  // Invoice deals = дата «Выставлен счет» / стадия выставления. Paid = дата оплаты + сумма счёта.
   const deals = bitrix?.deals ?? [];
   const paidDeals = bitrix?.paidDeals ?? [];
 
@@ -171,7 +172,7 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
     const bucket = buckets.get(normalizeCampaignSlug(keyCampaign) || keyCampaign.trim().toLowerCase());
     addCampaignBucket(buckets, keyCampaign, {
       bitrixWonDeals: (bucket?.bitrixWonDeals ?? 0) + 1,
-      bitrixRevenue: (bucket?.bitrixRevenue ?? 0) + deal.opportunity
+      bitrixRevenue: (bucket?.bitrixRevenue ?? 0) + paidInvoiceAmount(deal.invoiceAmount, deal.opportunity)
     });
   }
 
@@ -242,7 +243,7 @@ export async function buildUtmAudit(period: PeriodKey): Promise<UtmAuditPayload>
     salesSourceMap.set(label, {
       ...current,
       bitrixWonDeals: current.bitrixWonDeals + 1,
-      bitrixRevenue: current.bitrixRevenue + deal.opportunity
+      bitrixRevenue: current.bitrixRevenue + paidInvoiceAmount(deal.invoiceAmount, deal.opportunity)
     });
   }
 

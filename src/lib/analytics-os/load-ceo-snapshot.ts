@@ -272,7 +272,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const reportingAsOf = throughDate ?? asOf;
   const through = (value: string | null | undefined) =>
     !throughDate || !value || value.slice(0, 10) <= throughDate;
-  const paidDeals = filtered.paidDeals.filter((deal) => through(deal.closeDate)).map(hydrateDealProducts);
+  const paidDeals = filtered.paidDeals.filter((deal) => through(deal.paymentDate || deal.closeDate)).map(hydrateDealProducts);
   const invoiceDeals = filtered.invoiceDeals.filter((deal) => through(deal.invoiceDate)).map(hydrateDealProducts);
   const openPipeline = filtered.openPipeline.map(hydrateDealProducts);
   const leads = filtered.leads.filter((lead) => through(lead.dateCreate));
@@ -316,7 +316,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     value: tree.revenue,
     status: "live",
     asOf: reportingAsOf,
-    source: "Bitrix WON (CLOSEDATE + STAGE_SEMANTIC_ID=S)",
+    source: "Bitrix SPA Счета type/31: Оплачено + Дата завершения",
     confidence: "high",
     plan: leadsSliced ? null : planRevenueTarget,
     unit: "eur"
@@ -1099,7 +1099,7 @@ function emptySnapshot(input: {
     availablePeriods: input.availablePeriods,
     filterOptions: { countries: [], managers: [], products: [] },
     metrics: {
-      revenue: no("revenue", "Bitrix WON", "eur"),
+      revenue: no("revenue", "Bitrix оплаченные счета", "eur"),
       gross_profit: no("gross_profit", "Finance", "eur"),
       leads: no("leads", "Bitrix", "count"),
       bitrix_cards: no("bitrix_cards", "Bitrix", "count"),
@@ -1138,7 +1138,7 @@ function emptySnapshot(input: {
         source: input.planSource,
         unit: "eur"
       }),
-      factRevenue: no("revenue", "Bitrix WON", "eur"),
+      factRevenue: no("revenue", "Bitrix оплаченные счета", "eur"),
       forecastRevenue: no("forecast_revenue", "run-rate", "eur"),
       gap: no("plan_gap", "plan", "eur"),
       planCompletion: no("plan_completion", "plan", "pct"),
@@ -1151,7 +1151,7 @@ function emptySnapshot(input: {
       indicatorCount: input.planIndicators.length
     },
     revenueTree: {
-      total: no("revenue", "Bitrix WON", "eur"),
+      total: no("revenue", "Bitrix оплаченные счета", "eur"),
       countries: [],
       products: [],
       managers: []
@@ -1219,7 +1219,7 @@ function emptySnapshot(input: {
       missing: ["старт производства", "конец производства", "дата отправки", "дата доставки"]
     },
     reconciliation: {
-      bitrixRevenue: no("revenue", "Bitrix WON", "eur"),
+      bitrixRevenue: no("revenue", "Bitrix оплаченные счета", "eur"),
       mariaRevenue:
         input.mariaRevenueValue == null
           ? no("maria_revenue", "Maria", "eur")

@@ -79,7 +79,7 @@ export const DEALS_COLUMNS = [
   "deal_id", "lead_id", "contact_id", "created_at", "modified_at", "closed_at",
   "stage_id", "stage_semantic", "category_id", "is_open", "is_won", "is_lost",
   "assigned_by_id", "assigned_by_name", "source_id", "currency", "opportunity",
-  "invoice_amount", "invoice_at", "invoice_flag", "country_raw",
+  "invoice_amount", "invoice_at", "invoice_flag", "paid_at", "country_raw",
   "primary_product_id", "primary_product_name", "product_rows_count",
   "customer_key", "customer_key_type", "period", "sync_updated_at"
 ] as const;

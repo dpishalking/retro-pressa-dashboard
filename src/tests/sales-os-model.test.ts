@@ -53,7 +53,8 @@ const model = buildSalesOsModel({
       currency: "EUR",
       invoice_at: "2026-07-10T10:00:00",
       invoice_amount: "100",
-      invoice_flag: "true"
+      invoice_flag: "true",
+      paid_at: "2026-07-20T10:00:00"
     }
   ],
   stagesRaw: [{ stage_id: "NEW", stage_name: "New", category_id: "0", semantic: "P" }],

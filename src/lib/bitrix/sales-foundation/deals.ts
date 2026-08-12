@@ -52,6 +52,7 @@ function normalizeDeal(
     invoice_amount: asNumberString(deal[SF_FIELDS.invoiceAmount]),
     invoice_at: asString(deal[SF_FIELDS.invoiceDate]),
     invoice_flag: invoiceFlagRaw === BITRIX_INVOICE_FLAG_YES || invoiceFlagRaw === "Y" ? "true" : (invoiceFlagRaw ? "false" : ""),
+    paid_at: asString(deal[SF_FIELDS.paymentDate]),
     country_raw: asString(deal[SF_FIELDS.dealCountry]),
     country_id: "",
     primary_product_id: primary?.PRODUCT_ID != null ? String(primary.PRODUCT_ID) : "",
@@ -69,7 +70,8 @@ function normalizeDeal(
 /**
  * Sales-funnel deals (CATEGORY_ID=0):
  * - created in period (deals sheet grain)
- * - WON closed in period (needed for payments even if created earlier)
+ * - paid invoice date in period (касса, not WON/CLOSEDATE)
+ * - WON closed in period (kept for stage/closed_at, not for revenue)
  */
 export async function fetchDealsRaw(periods: string[], syncedAt: string): Promise<{ rows: DealRawRow[]; warnings: string[] }> {
   const warnings: string[] = [];
@@ -80,7 +82,7 @@ export async function fetchDealsRaw(periods: string[], syncedAt: string): Promis
     const startDay = startIso.slice(0, 10);
     const endDay = endIso.slice(0, 10);
 
-    const [createdDeals, closedWonDeals] = await Promise.all([
+    const [createdDeals, closedWonDeals, paidInvoiceDeals] = await Promise.all([
       bitrixListAll<BitrixDeal>("crm.deal.list", {
         filter: {
           CATEGORY_ID: SALES_CATEGORY_ID,
@@ -99,11 +101,20 @@ export async function fetchDealsRaw(periods: string[], syncedAt: string): Promis
         },
         select: [...SELECT_DEAL],
         order: { CLOSEDATE: "ASC" }
+      }),
+      bitrixListAll<BitrixDeal>("crm.deal.list", {
+        filter: {
+          CATEGORY_ID: SALES_CATEGORY_ID,
+          [`>=${SF_FIELDS.paymentDate}`]: startDay,
+          [`<=${SF_FIELDS.paymentDate}`]: endDay
+        },
+        select: [...SELECT_DEAL],
+        order: { ID: "ASC" }
       })
     ]);
 
     const merged = new Map<string, BitrixDeal>();
-    for (const deal of [...createdDeals, ...closedWonDeals]) {
+    for (const deal of [...createdDeals, ...closedWonDeals, ...paidInvoiceDeals]) {
       const id = asString(deal.ID);
       if (id) merged.set(id, deal);
     }

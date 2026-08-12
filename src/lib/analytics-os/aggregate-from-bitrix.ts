@@ -1,3 +1,4 @@
+import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
 import type { BitrixSnapshot, BitrixSnapshotDeal, BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
 import { hydrateDealProducts, isMissingProductLabel, resolveDealProductName } from "@/lib/bitrix/gift-type-resolver";
 import { resolveCustomerIdentity } from "@/lib/os-sheets/customer-identity";
@@ -78,8 +79,12 @@ export function filterSnapshot(snapshot: BitrixSnapshot, filters: AnalyticsFilte
   return { paidDeals, invoiceDeals, leads, openPipeline };
 }
 
+export function dealCashAmount(deal: BitrixSnapshotDeal): number {
+  return paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
+}
+
 export function sumPaidRevenue(paidDeals: BitrixSnapshotDeal[]): number {
-  return paidDeals.reduce((sum, deal) => sum + (Number(deal.opportunity) || 0), 0);
+  return paidDeals.reduce((sum, deal) => sum + dealCashAmount(deal), 0);
 }
 
 export function buildMonthlyFromBitrix(input: {
@@ -129,7 +134,7 @@ export function aggregateRevenueTree(
   const byManager = new Map<string, { name: string; revenue: number; orders: number }>();
 
   for (const deal of paidDeals) {
-    const amount = Number(deal.opportunity) || 0;
+    const amount = dealCashAmount(deal);
     const country = deal.country?.trim() || "Не указана";
     const countryAgg = byCountry.get(country) || { revenue: 0, orders: 0 };
     countryAgg.revenue += amount;
@@ -246,7 +251,7 @@ export function aggregateManagers(input: {
       productRows: 0
     };
     existing.paidOrders += 1;
-    existing.revenue += Number(deal.opportunity) || 0;
+    existing.revenue += dealCashAmount(deal);
     existing.productRows += Math.max(1, deal.products.length);
     byManager.set(deal.assignedById, existing);
   }
@@ -305,7 +310,7 @@ export function aggregateProducts(
   for (const deal of paidDeals) {
     if (deal.products.length > 1) multi += 1;
     const product = primaryProduct(deal);
-    const amount = Number(deal.opportunity) || 0;
+    const amount = dealCashAmount(deal);
     if (product.missing) {
       missingOrders += 1;
       missingRevenue += amount;
@@ -354,7 +359,7 @@ export function aggregateCountries(input: {
   for (const deal of input.paidDeals) {
     const country = deal.country?.trim() || "Не указана";
     const agg = revenueByCountry.get(country) || { revenue: 0, orders: 0 };
-    agg.revenue += Number(deal.opportunity) || 0;
+    agg.revenue += dealCashAmount(deal);
     agg.orders += 1;
     revenueByCountry.set(country, agg);
   }
@@ -408,7 +413,7 @@ export function aggregateCustomers(paidDeals: BitrixSnapshotDeal[]) {
     if (!identity.customer_key) continue;
     const existing = byKey.get(identity.customer_key) || { paid: 0, revenue: 0 };
     existing.paid += 1;
-    existing.revenue += Number(deal.opportunity) || 0;
+    existing.revenue += dealCashAmount(deal);
     byKey.set(identity.customer_key, existing);
   }
   const customers = byKey.size;
