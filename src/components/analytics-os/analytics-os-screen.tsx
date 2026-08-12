@@ -30,8 +30,12 @@ const BUSINESS_LINKS: Array<{
           {formatMetricDisplay(snapshot.metrics.leads)}
         </strong>
         <span>
-          {metricLabel("unique_conversion_rate")}{" "}
-          {formatMetricDisplay(snapshot.metrics.unique_conversion_rate)} ·{" "}
+          CR медиана{" "}
+          {snapshot.managerBenchmark.medianCr == null
+            ? "—"
+            : pct(snapshot.managerBenchmark.medianCr)}{" "}
+          · топ 20%{" "}
+          {snapshot.managerBenchmark.p80Cr == null ? "—" : pct(snapshot.managerBenchmark.p80Cr)} ·{" "}
           {metricLabel("pipeline_stuck_amount")}{" "}
           {formatMetricDisplay(snapshot.metrics.pipeline_stuck_amount)}
         </span>
@@ -58,16 +62,21 @@ const BUSINESS_LINKS: Array<{
     subtitle: "SKU, спрос и клиенты",
     preview: (snapshot) => {
       const top = snapshot.products[0];
-      return top ? (
+      return (
         <>
-          <strong>{top.productName}</strong>
+          <strong>
+            {metricLabel("product_aov")} {formatMetricDisplay(snapshot.metrics.product_aov)} ·{" "}
+            {metricLabel("product_revenue_net")}{" "}
+            {formatMetricDisplay(snapshot.metrics.product_revenue_net)}
+          </strong>
           <span>
-            {eur(top.revenue)}
-            {top.marginRate == null ? "" : ` · маржа ${pct(top.marginRate)}`}
+            {top
+              ? `${top.productName} · ${eur(top.revenue)}`
+              : metricLabel("delivery_revenue") +
+                " " +
+                formatMetricDisplay(snapshot.metrics.delivery_revenue)}
           </span>
         </>
-      ) : (
-        <span>Нет данных по продуктам</span>
       );
     }
   },

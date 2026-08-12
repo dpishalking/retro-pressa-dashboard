@@ -88,7 +88,15 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     title: "Продукт",
     description: "Ассортимент, спрос и клиентские срезы.",
     icon: Package,
-    summaryMetricIds: ["revenue", "aov", "gross_profit", "repeat_rate"],
+    summaryMetricIds: [
+      "revenue",
+      "product_revenue_net",
+      "delivery_revenue",
+      "product_aov",
+      "aov",
+      "gross_profit",
+      "repeat_rate"
+    ],
     detailLinks: [
       { title: "Продукты", description: "SKU, выручка, маржа и доля.", href: "/os/products", primary: true },
       { title: "Клиенты", description: "Новые, повторные и средний чек.", href: "/os/customers" }
@@ -238,25 +246,148 @@ function ContourForecast({ domain }: { domain: PredictiveDomain }) {
 function ProductHighlights({ snapshot }: { snapshot: CeoControlCenterSnapshot | null }) {
   if (!snapshot) return null;
   const top = snapshot.products.slice(0, 3);
-  if (!top.length) return null;
+  const pricing = (snapshot.pricingCompare || []).slice(0, 6);
+  if (!top.length && !pricing.length) return null;
+  return (
+    <>
+      {top.length ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">Топ продуктов</h2>
+            <p className="mt-1 text-sm text-slate-600">По оплаченной выручке за выбранный период.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {top.map((product) => (
+              <article key={product.productId} className="rounded-xl border border-[var(--line)] bg-white p-4">
+                <p className="text-sm font-bold text-slate-950">{product.productName}</p>
+                <p className="mt-2 text-xl font-black text-slate-950">{eur(product.revenue)}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {pct(product.share)}
+                  {product.marginRate == null ? "" : ` · маржа ${pct(product.marginRate)}`}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {pricing.length ? (
+        <section className="mb-8">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-slate-950">Витрина vs факт</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Цена витрины Product Hub против средней продажи в Bitrix.
+              </p>
+            </div>
+            <Link href="/os/products" className="text-sm font-bold text-blue-600">
+              Все продукты →
+            </Link>
+          </div>
+          <div className="table-scroll rounded-xl border border-[var(--line)] bg-white">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-bold">Продукт</th>
+                  <th className="px-4 py-3 font-bold">Продаж</th>
+                  <th className="px-4 py-3 font-bold">Витрина</th>
+                  <th className="px-4 py-3 font-bold">Средняя</th>
+                  <th className="px-4 py-3 font-bold">Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pricing.map((row) => (
+                  <tr key={row.productName} className="border-t border-[var(--line)]">
+                    <td className="px-4 py-3 font-semibold text-slate-900">{row.productName}</td>
+                    <td className="px-4 py-3 text-slate-700">{number(row.orders)}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {row.listPrice == null ? "—" : eur(row.listPrice)}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {row.soldAvg == null ? "—" : eur(row.soldAvg)}
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-950">
+                      {row.deltaPct == null
+                        ? "—"
+                        : `${row.deltaPct > 0 ? "+" : ""}${number(row.deltaPct, 1)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function ManagerBenchmarkStrip({ snapshot }: { snapshot: CeoControlCenterSnapshot | null }) {
+  if (!snapshot) return null;
+  const b = snapshot.managerBenchmark;
+  const top = (snapshot.managers || []).filter((row) => row.isTopPerformer).slice(0, 3);
+  const hasBench =
+    b.medianCr != null ||
+    b.p80Cr != null ||
+    b.medianRevenuePerLead != null ||
+    b.p80RevenuePerLead != null;
+  if (!hasBench && !top.length) return null;
+
   return (
     <section className="mb-8">
-      <div className="mb-4">
-        <h2 className="text-2xl font-black text-slate-950">Топ продуктов</h2>
-        <p className="mt-1 text-sm text-slate-600">По оплаченной выручке за выбранный период.</p>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-black text-slate-950">Бенчмарк команды</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Медиана vs топ 20% по CR и €/лид (менеджеры от 10 лидов).
+          </p>
+        </div>
+        <Link href="/os/managers" className="text-sm font-bold text-blue-600">
+          Все менеджеры →
+        </Link>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        {top.map((product) => (
-          <article key={product.productId} className="rounded-xl border border-[var(--line)] bg-white p-4">
-            <p className="text-sm font-bold text-slate-950">{product.productName}</p>
-            <p className="mt-2 text-xl font-black text-slate-950">{eur(product.revenue)}</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {pct(product.share)}
-              {product.marginRate == null ? "" : ` · маржа ${pct(product.marginRate)}`}
-            </p>
-          </article>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Медиана CR</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {b.medianCr == null ? "—" : pct(b.medianCr)}
+          </p>
+        </article>
+        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Топ 20% CR</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {b.p80Cr == null ? "—" : pct(b.p80Cr)}
+          </p>
+        </article>
+        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Медиана €/лид</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {b.medianRevenuePerLead == null ? "—" : eur(b.medianRevenuePerLead)}
+          </p>
+        </article>
+        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Топ 20% €/лид</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {b.p80RevenuePerLead == null ? "—" : eur(b.p80RevenuePerLead)}
+          </p>
+        </article>
       </div>
+      {top.length ? (
+        <div className="mt-4 rounded-xl border border-[var(--line)] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Лидеры по €/лид</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {top.map((row) => (
+              <div key={row.managerId}>
+                <p className="font-bold text-slate-950">{row.managerName}</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {eur(row.revenue)} · CR {row.conversionRate == null ? "—" : pct(row.conversionRate)} ·{" "}
+                  {row.revenuePerLead == null ? "—" : `${eur(row.revenuePerLead)}/лид`}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -337,6 +468,7 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
       </section>
 
       {contour.forecastDomain ? <ContourForecast domain={contour.forecastDomain} /> : null}
+      {contourId === "sales" ? <ManagerBenchmarkStrip snapshot={snapshot} /> : null}
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
       {contourId === "marketing" ? <MarketingLandingTiles /> : null}
 

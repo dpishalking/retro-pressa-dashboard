@@ -54,7 +54,27 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   aov: {
     id: "aov",
     label: "Средний чек",
-    definition: "Средняя оплаченная выручка на заказ."
+    definition: "Средняя касса на заказ, включая доставку."
+  },
+  product_aov: {
+    id: "product_aov",
+    label: "Чек продукта",
+    definition: "Средний чек без доставки: (касса − доставка) / оплаты."
+  },
+  product_revenue_net: {
+    id: "product_revenue_net",
+    label: "Выручка продукта",
+    definition: "Оплаченная касса минус доставка."
+  },
+  delivery_revenue: {
+    id: "delivery_revenue",
+    label: "Доставка €",
+    definition: "Сумма доставки из поля Bitrix по оплаченным сделкам."
+  },
+  delivery_share_pct: {
+    id: "delivery_share_pct",
+    label: "Доля доставки",
+    definition: "Доставка / касса по оплаченным сделкам."
   },
   cac: {
     id: "cac",
