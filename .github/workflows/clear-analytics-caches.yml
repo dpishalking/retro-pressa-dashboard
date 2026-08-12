@@ -1,0 +1,22 @@
+name: Clear analytics caches
+on:
+  workflow_dispatch:
+jobs:
+  clear:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+      - name: Clear company snapshots
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s <<'EOF'
+          set -euo pipefail
+          rm -f /opt/retro-pressa-shared/data/company-snapshots/*.json || true
+          rm -f /opt/retro-pressa-shared/data/sales-cycle-cache/* || true
+          ls -la /opt/retro-pressa-shared/data/bitrix-snapshots
+          ls -la /opt/retro-pressa-shared/data/company-snapshots || true
+          EOF
