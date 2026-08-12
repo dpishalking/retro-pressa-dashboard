@@ -27,7 +27,10 @@ export type CyclePaidDeal = {
   title: string | null;
   dateCreate: string;
   closeDate: string;
+  /** SPA «Дата завершения» / deal «Дата оплаты» when present. */
+  paymentDate: string | null;
   opportunity: number;
+  invoiceAmount: number;
   currencyId: string | null;
   assignedById: string;
   managerName: string;
@@ -71,7 +74,9 @@ export function paidDealFromSnapshot(deal: BitrixSnapshotDeal): CyclePaidDeal | 
     title: deal.title ?? null,
     dateCreate: deal.dateCreate,
     closeDate: deal.closeDate,
+    paymentDate: deal.paymentDate ?? null,
     opportunity: Number(deal.opportunity) || 0,
+    invoiceAmount: Number(deal.invoiceAmount) || 0,
     currencyId: deal.currencyId,
     assignedById: deal.assignedById,
     managerName: deal.managerName,

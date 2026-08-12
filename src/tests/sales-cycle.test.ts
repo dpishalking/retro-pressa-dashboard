@@ -37,11 +37,14 @@ const leadOlder: CycleLead = {
 };
 
 function deal(partial: Partial<CyclePaidDeal> & Pick<CyclePaidDeal, "id" | "dateCreate" | "closeDate">): CyclePaidDeal {
+  const opportunity = partial.opportunity ?? 100;
   return {
     leadId: null,
     contactId: null,
     title: null,
-    opportunity: 100,
+    paymentDate: null,
+    opportunity,
+    invoiceAmount: partial.invoiceAmount ?? opportunity,
     currencyId: "EUR",
     assignedById: "1",
     managerName: "Анна",
@@ -51,7 +54,9 @@ function deal(partial: Partial<CyclePaidDeal> & Pick<CyclePaidDeal, "id" | "date
     productId: "P1",
     productName: "Газета",
     giftTypes: [],
-    ...partial
+    ...partial,
+    opportunity: partial.opportunity ?? opportunity,
+    invoiceAmount: partial.invoiceAmount ?? partial.opportunity ?? opportunity
   };
 }
 
