@@ -17,4 +17,8 @@ assert.equal(parsed.days[1].revenue, 150);
 assert.equal(parsed.sheetTotals.spend, 100);
 assert.equal(parsed.sheetTotals.roas, 2.5);
 
+const july = parseLandingEfficiencySheet(values, "2026-07");
+assert.equal(july.days.length, 1);
+assert.equal(july.days[0].date, "2026-07-01");
+
 console.log("landing-efficiency.test.ts: ok");

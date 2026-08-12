@@ -1,7 +1,7 @@
 /**
  * ALX contractor landing sheets — active landings for Marketing hub.
  * Source: https://docs.google.com/spreadsheets/d/1Hh6U4udZXp69RVKMIF29RBHjKef5JxEbLHdmLZYIAIM
- * Green / yellow tab colors = landings in work; first 7 by sheet order.
+ * Green / yellow tab colors = landings in work.
  */
 
 export const ALX_LANDINGS_SPREADSHEET_ID = "1Hh6U4udZXp69RVKMIF29RBHjKef5JxEbLHdmLZYIAIM";
@@ -20,7 +20,7 @@ export type AlxLandingDef = {
   url: string;
 };
 
-/** First 7 green/yellow landing tabs (in work). */
+/** Active green/yellow landing tabs currently shown in Marketing. */
 export const ALX_ACTIVE_LANDINGS: readonly AlxLandingDef[] = [
   {
     id: "ru",
@@ -77,6 +77,22 @@ export const ALX_ACTIVE_LANDINGS: readonly AlxLandingDef[] = [
     tag: "green",
     title: "Песня",
     url: "giftboost.website/pesnya"
+  },
+  {
+    id: "gift2man",
+    sheetTitle: "https://familia-studio.com/gift2man",
+    gid: 1921997261,
+    tag: "green",
+    title: "Gift2Man",
+    url: "familia-studio.com/gift2man"
+  },
+  {
+    id: "yourstory",
+    sheetTitle: "https://yourstorymagazine.com/",
+    gid: 809196650,
+    tag: "green",
+    title: "Your Story Magazine",
+    url: "yourstorymagazine.com"
   }
 ] as const;
 

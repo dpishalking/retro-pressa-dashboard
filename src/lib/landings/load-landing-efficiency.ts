@@ -2,9 +2,17 @@
  * Load landing payback / efficiency metrics from ALX contractor sheet tabs.
  */
 
-import { ALX_LANDINGS_SPREADSHEET_ID, getAlxLandingById, type AlxLandingDef } from "@/config/alx-landings";
+import {
+  ALX_ACTIVE_LANDINGS,
+  ALX_LANDINGS_SPREADSHEET_ID,
+  getAlxLandingById,
+  type AlxLandingDef
+} from "@/config/alx-landings";
 import { readSheetValues } from "@/lib/google/sheets-client";
 import { quoteTab } from "@/lib/sales-os/predictive-model";
+import type { LandingEfficiencySummary } from "@/lib/landings/types";
+
+export type { LandingEfficiencySummary } from "@/lib/landings/types";
 
 export type LandingEfficiencyDay = {
   date: string;
@@ -195,4 +203,35 @@ export async function loadLandingEfficiency(input: {
       "Итог «День» в Sheets — накопительный срез листа, не обязательно выбранный месяц."
     ]
   };
+}
+
+function hasMonthData(days: LandingEfficiencyDay[]): boolean {
+  return days.some((d) => d.spend != null || d.leads != null || d.revenue != null || d.clicks != null);
+}
+
+export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<LandingEfficiencySummary[]> {
+  const models = await Promise.all(
+    ALX_ACTIVE_LANDINGS.map((landing) =>
+      loadLandingEfficiency({ landingId: landing.id, isoMonth }).catch(() => null)
+    )
+  );
+
+  return ALX_ACTIVE_LANDINGS.map((landing, index) => {
+    const model = models[index];
+    const days = model?.days ?? [];
+    const totals = model?.monthTotals;
+    return {
+      id: landing.id,
+      title: landing.title,
+      url: landing.url,
+      tag: landing.tag,
+      href: `/marketing/landings/${landing.id}`,
+      hasData: model ? hasMonthData(days) : false,
+      daysWithData: days.filter((d) => d.spend != null || d.leads != null || d.revenue != null).length,
+      cpl: totals?.cpl ?? null,
+      roas: totals?.roas ?? null,
+      landingCr: totals?.landingCr ?? null,
+      saleCr: totals?.saleCr ?? null
+    };
+  });
 }

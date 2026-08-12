@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { parsePeriodParam, periodToIsoMonth } from "@/lib/financial-report/period";
-import { loadLandingEfficiency } from "@/lib/landings/load-landing-efficiency";
+import { loadLandingEfficiency, loadLandingEfficiencySummaries } from "@/lib/landings/load-landing-efficiency";
 import { readSessionCookie } from "@/lib/auth/session";
-import { ALX_ACTIVE_LANDINGS } from "@/config/alx-landings";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,17 +22,12 @@ export async function GET(request: Request) {
     const isoMonth = periodToIsoMonth(period);
 
     if (!landingId) {
+      const landings = await loadLandingEfficiencySummaries(isoMonth);
       return NextResponse.json({
         ok: true,
         period,
         isoMonth,
-        landings: ALX_ACTIVE_LANDINGS.map((l) => ({
-          id: l.id,
-          title: l.title,
-          url: l.url,
-          tag: l.tag,
-          href: `/marketing/landings/${l.id}`
-        }))
+        landings
       });
     }
 
