@@ -455,17 +455,21 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
         </div>
       </header>
 
-      <section className="mb-8">
-        <div className="mb-4">
-          <h2 className="text-2xl font-black text-slate-950">Сводка</h2>
-          <p className="mt-1 text-sm text-slate-600">Ключевые показатели направления.</p>
-        </div>
-        {state === "error" && !snapshot ? (
-          <p className="text-sm text-red-700">{error}</p>
-        ) : (
-          <ContourSummary snapshot={snapshot} metricIds={contour.summaryMetricIds} />
-        )}
-      </section>
+      {contourId !== "product" ? (
+        <section className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-black text-slate-950">Сводка</h2>
+            <p className="mt-1 text-sm text-slate-600">Ключевые показатели направления.</p>
+          </div>
+          {state === "error" && !snapshot ? (
+            <p className="text-sm text-red-700">{error}</p>
+          ) : (
+            <ContourSummary snapshot={snapshot} metricIds={contour.summaryMetricIds} />
+          )}
+        </section>
+      ) : state === "error" && !snapshot ? (
+        <p className="mb-8 text-sm text-red-700">{error}</p>
+      ) : null}
 
       {contour.forecastDomain ? <ContourForecast domain={contour.forecastDomain} /> : null}
       {contourId === "sales" ? <ManagerBenchmarkStrip snapshot={snapshot} /> : null}
