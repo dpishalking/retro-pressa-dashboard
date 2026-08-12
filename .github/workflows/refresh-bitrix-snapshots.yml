@@ -24,20 +24,19 @@ jobs:
 
       - name: Refresh Bitrix snapshots on server
         env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
           PERIODS: ${{ inputs.periods }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=60 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             PERIODS="$PERIODS" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
+          APP_DIR="/opt/retro-pressa"
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))')"
           if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET is empty"
+            echo "CRON_SYNC_SECRET missing in /opt/retro-pressa/runtime-env.json"
             exit 1
           fi
           IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
