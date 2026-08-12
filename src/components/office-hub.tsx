@@ -90,6 +90,19 @@ const officeSections: OfficeSection[] = [
       status: "active",
       accent: "text-violet-600 bg-violet-50"
     }]
+  },
+  {
+    id: "partners",
+    title: "Партнёрская программа",
+    subtitle: "Кабинет партнёра и материалы.",
+    cards: [{
+      href: "/partners",
+      title: "Партнёрская программа",
+      description: "Кабинет партнёра: промокод, продажи, материалы и выплаты.",
+      icon: Handshake,
+      status: "active",
+      accent: "text-teal-600 bg-teal-50"
+    }]
   }
 ];
 
