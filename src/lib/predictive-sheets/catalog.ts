@@ -616,13 +616,13 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     owner: "РОП",
     parent_metric_id: "sg_invoices",
     plan_source: "CEO План/факт",
-    fact_source: "Sales OS / Bitrix",
+    fact_source: "Bitrix STATUS=CONVERTED (Лид класифицирован); отдел — СВОД QL",
     forecast_method: "calendar_run_rate",
     is_primary: true,
     sheet: PM_SHEETS.salesGeneral,
     section: "FUNNEL",
-    glossary: "Квалифицированные лиды в CRM.",
-    formulaHint: "COUNT(QL)"
+    glossary: "По менеджеру: лиды DATE_CREATE в периоде со статусом «Лид класифицирован». Отдел — колонка QL из СВОД.",
+    formulaHint: "COUNT(STATUS_ID=CONVERTED)"
   },
   {
     metric_id: "sg_invoices",

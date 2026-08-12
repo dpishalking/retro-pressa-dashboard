@@ -16,20 +16,21 @@ export function decisionPlanFact(snapshot: CeoControlCenterSnapshot): BlockDecis
   const fact = snapshot.plan.factRevenue.value;
   const forecast = snapshot.plan.forecastRevenue.value;
   const aov = snapshot.metrics.aov?.value ?? null;
+  const daysRemaining = snapshot.plan.daysRemaining;
   if (plan == null || fact == null) return null;
   const needed = gapOrders(plan, fact, aov);
   if (forecast != null && forecast < plan) {
     const short = Math.round(plan - forecast);
     return needed != null && needed > 0
-      ? `Темп ниже плана: до конца месяца не хватает ≈ ${eur(short)}. Нужно ещё ≈ ${number(needed)} оплат при текущем чеке — усиливайте закрытие сделок в воронке.`
-      : `Темп ниже плана: прогноз отстаёт примерно на ${eur(short)}. Смотрите воронку и рекламу.`;
+      ? `Темп до конца месяца: не хватает ≈ ${eur(short)} до плана (${daysRemaining} дн.). Нужно ещё ≈ ${number(needed)} оплат при текущем чеке.`
+      : `Темп до конца месяца ниже плана примерно на ${eur(short)}. Смотрите воронку и рекламу.`;
   }
-  if (fact >= plan) {
-    return "План по выручке закрыт или выше. Не раздувайте скидки — держите чек и маржу.";
+  if (fact >= plan || (forecast != null && forecast >= plan)) {
+    return "При текущем темпе план месяца достижим или уже закрыт. Держите чек и не раздувайте скидки.";
   }
   return needed != null && needed > 0
-    ? `До плана осталось ≈ ${eur(plan - fact)}. При текущем чеке это ≈ ${number(needed)} оплат. Приоритет: дожать открытый пайплайн.`
-    : `Факт ниже плана. Сверьте темп оплат и лиды.`;
+    ? `До плана ≈ ${eur(plan - fact)}. При текущем чеке это ≈ ${number(needed)} оплат за ${daysRemaining} дн. — дожимайте пайплайн.`
+    : `Факт ниже плана. Сверьте темп оплат и лиды до конца месяца.`;
 }
 
 export function decisionPlanIndicators(snapshot: CeoControlCenterSnapshot): BlockDecision {

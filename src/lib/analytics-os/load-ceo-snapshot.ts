@@ -239,6 +239,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       ? MONTHLY_PLAN_SOURCE_LABEL
       : "targetScenario / North Star (fallback)";
   const planLeads = monthlyPlanBundle?.channels?.obshie.leads ?? monthlyPlanBundle?.obshie?.leads ?? null;
+  const planPaidLeads = monthlyPlanBundle?.channels?.paid.leads ?? null;
+  const planOrganicLeads = monthlyPlanBundle?.channels?.organic.leads ?? null;
   const planSales = monthlyPlanBundle?.channels?.obshie.sale ?? monthlyPlanBundle?.obshie?.sale ?? null;
   const planAov = monthlyPlanBundle?.channels?.obshie.aov ?? monthlyPlanBundle?.obshie?.aov ?? null;
   const planSpend = monthlyPlanBundle?.channels?.obshie.spend ?? null;
@@ -336,8 +338,6 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const verifiedLeads = svodVerified
     ? sumSvodVerifiedLeads(svodVerified, { month: period, throughDate })
     : null;
-  const yesterdayKey = rigaYesterdayIso(now);
-  const yesterdayVerified = svodVerified?.get(yesterdayKey)?.total ?? null;
 
   const hasVerifiedLeads = verifiedLeads !== null;
   const slicedLeadCount = uniqueLeadStats.coverageWithIdentity > 0.3 ? uniqueLeadStats.unique : leads.length;
@@ -350,15 +350,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         source: "Bitrix leads · фильтр страны/менеджера",
         unit: "count",
         confidence: uniqueLeadStats.coverageWithIdentity > 0.3 ? "medium" : "low",
-        plan: null,
-        decisionHint: [
-          filters.country ? `Страна: ${filters.country}` : null,
-          `карточек ${leads.length}`,
-          `уникальные ≈ ${uniqueLeadStats.unique}`,
-          "СВОД без разреза по стране — план компании скрыт"
-        ]
-          .filter(Boolean)
-          .join(" · ")
+        plan: null
       })
     : metricValue({
         metricId: "leads",
@@ -368,18 +360,51 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         source: SVOD_VERIFIED_LEADS_SOURCE,
         unit: "count",
         confidence: hasVerifiedLeads ? "high" : "low",
-        plan: planLeads,
-        decisionHint:
-          hasVerifiedLeads
-            ? [
-                yesterdayVerified != null ? `Вчера (СВОД): ${yesterdayVerified}` : null,
-                `платный ${verifiedLeads.paid} + органика ${verifiedLeads.organic} (уже в ${verifiedLeads.total}, не плюсовать)`,
-                `Bitrix карточек: ${leads.length}`,
-                `уникальные ≈ ${uniqueLeadStats.unique}`
-              ]
-                .filter(Boolean)
-                .join(" · ")
-            : `СВОД недоступен · Bitrix карточек: ${leads.length} · уникальные ≈ ${uniqueLeadStats.unique}`
+        plan: planLeads
+      });
+
+  const paidLeadsMetric = leadsSliced
+    ? metricValue({
+        metricId: "paid_leads",
+        value: null,
+        status: "no_data",
+        asOf: reportingAsOf,
+        source: "СВОД без разреза по стране/менеджеру",
+        unit: "count",
+        plan: null
+      })
+    : metricValue({
+        metricId: "paid_leads",
+        value: hasVerifiedLeads ? verifiedLeads.paid : null,
+        status: hasVerifiedLeads ? "live" : "no_data",
+        asOf: verifiedLeads?.lastDay ?? asOf,
+        source: SVOD_VERIFIED_LEADS_SOURCE,
+        unit: "count",
+        confidence: hasVerifiedLeads ? "high" : "low",
+        plan:
+          planPaidLeads ??
+          (planLeads != null && planOrganicLeads != null ? Math.max(0, planLeads - planOrganicLeads) : null)
+      });
+
+  const organicLeadsMetric = leadsSliced
+    ? metricValue({
+        metricId: "organic_leads",
+        value: null,
+        status: "no_data",
+        asOf: reportingAsOf,
+        source: "СВОД без разреза по стране/менеджеру",
+        unit: "count",
+        plan: null
+      })
+    : metricValue({
+        metricId: "organic_leads",
+        value: hasVerifiedLeads ? verifiedLeads.organic : null,
+        status: hasVerifiedLeads ? "live" : "no_data",
+        asOf: verifiedLeads?.lastDay ?? asOf,
+        source: SVOD_VERIFIED_LEADS_SOURCE,
+        unit: "count",
+        confidence: hasVerifiedLeads ? "high" : "low",
+        plan: planOrganicLeads
       });
 
   const ordersMetric = metricValue({
@@ -410,8 +435,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     asOf: reportingAsOf,
     source: "(cash − delivery) / paid orders",
     unit: "eur",
-    confidence: "high",
-    decisionHint: "Средний чек продукта без доставки"
+    confidence: "high"
   });
 
   const verifiedCr = leadsSliced
@@ -431,7 +455,6 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       : "Bitrix paid orders / СВОД verified leads (same cutoff)",
     unit: "pct",
     confidence: verifiedCr == null ? "low" : leadsSliced ? "medium" : "medium",
-    decisionHint: leadsSliced ? "Оплаты / лиды выбранной страны или менеджера" : "Оплаты / верифицированные лиды",
     plan: leadsSliced ? null : planCrSale
   });
 
@@ -838,6 +861,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       revenue: revenueMetric,
       gross_profit: grossProfitMetric,
       leads: leadsMetric,
+      paid_leads: paidLeadsMetric,
+      organic_leads: organicLeadsMetric,
       bitrix_cards: bitrixCardsMetric,
       unique_leads: uniqueLeadsMetric,
       paid_orders: ordersMetric,
@@ -1102,6 +1127,8 @@ function emptySnapshot(input: {
       revenue: no("revenue", "Bitrix оплаченные счета", "eur"),
       gross_profit: no("gross_profit", "Finance", "eur"),
       leads: no("leads", "Bitrix", "count"),
+      paid_leads: no("paid_leads", "СВОД", "count"),
+      organic_leads: no("organic_leads", "СВОД", "count"),
       bitrix_cards: no("bitrix_cards", "Bitrix", "count"),
       unique_leads: no("unique_leads", "Bitrix", "count"),
       paid_orders: no("paid_orders", "Bitrix", "count"),

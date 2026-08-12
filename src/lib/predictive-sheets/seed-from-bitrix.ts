@@ -1,6 +1,7 @@
 import {
   BITRIX_INVOICE_DATE_FIELD,
   BITRIX_INVOICE_STAGE_ID,
+  BITRIX_QUALIFIED_LEAD_STATUS_ID,
   BITRIX_SALES_CATEGORY_ID,
   EXCLUDED_LEAD_STATUS_IDS
 } from "@/lib/bitrix/metric-definitions";
@@ -28,6 +29,8 @@ export type BitrixManagerFacts = BitrixMonthFacts & {
   managerName: string;
   leads: number;
   leadsByWeek: WeeklyFacts;
+  qualifiedLeads: number;
+  qualifiedLeadsByWeek: WeeklyFacts;
 };
 
 export type BitrixSalesFacts = {
@@ -87,10 +90,12 @@ function emptyManagerFacts(month: string, assignedById: string, managerName: str
     payments: 0,
     invoices: 0,
     leads: 0,
+    qualifiedLeads: 0,
     revenueByWeek: emptyWeeks(),
     paymentsByWeek: emptyWeeks(),
     invoicesByWeek: emptyWeeks(),
     leadsByWeek: emptyWeeks(),
+    qualifiedLeadsByWeek: emptyWeeks(),
     source: `${BITRIX_SOURCE}; ASSIGNED_BY_ID=${assignedById}`
   };
 }
@@ -215,11 +220,16 @@ export async function loadBitrixSalesFacts(month: string, throughDate?: string):
   }
 
   for (const lead of leads) {
-    if (EXCLUDED_LEAD_STATUS.has(String(lead.STATUS_ID || ""))) continue;
+    const statusId = String(lead.STATUS_ID || "");
+    if (EXCLUDED_LEAD_STATUS.has(statusId)) continue;
     const bucket = managers.get(String(lead.ASSIGNED_BY_ID || ""));
     if (!bucket) continue;
     bucket.leads += 1;
     addWeek(bucket.leadsByWeek, String(lead.DATE_CREATE || ""), month);
+    if (statusId === BITRIX_QUALIFIED_LEAD_STATUS_ID) {
+      bucket.qualifiedLeads += 1;
+      addWeek(bucket.qualifiedLeadsByWeek, String(lead.DATE_CREATE || ""), month);
+    }
   }
 
   for (const bucket of managers.values()) {

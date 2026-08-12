@@ -434,6 +434,7 @@ function fillMetricTriple(
     rows[fr - 1][PM_COL.w1 + w - 1] = emptyOrNum(seedVal.weekFact?.[w - 1] ?? null);
   }
   rows[fr - 1][PM_COL.fact] = emptyOrNum(seedVal.fact);
+  if (seedVal.factNote) notes.push({ row: fr, col: PM_COL.fact, note: seedVal.factNote });
   rows[fr - 1][PM_COL.forecast] = sheetFormula(
     formulaForecastEom({
       factCell: `${factLetter}${fr}`,
@@ -725,7 +726,11 @@ function buildManagersSheet(settingsTab: string): CellValue[][] {
       ref(m.sheet, "sg_average_check", PM_COL.fact),
       ref(m.sheet, "sg_revenue", PM_COL.status),
       m.sheet,
-      `SPA Счета type/31, Оплачено, дата завершения. ${m.fullName} [${m.bitrixId}]. Объёмные планы не подключены.`
+      `SPA Счета type/31, Оплачено, дата завершения. ${m.fullName} [${m.bitrixId}].${
+        m.revenuePlan != null
+          ? ` План выручки ${m.revenuePlan} € → оплаты/счета/лиды по бенчмаркам отдела.`
+          : " План выручки не задан."
+      }`
     ]);
   }
   rows.push([]);
@@ -745,7 +750,8 @@ function buildDiagnostics(seed: CeoSeedBundle): { rows: CellValue[][]; issues: s
     if (s.fact == null) issues.push(`NO_FACT: ${m.metric_id}`);
   }
   issues.push("Недельный план: пропорционально дням пн–вс");
-  issues.push("Планы менеджеров не подключены");
+  const withoutPlan = PM_SALES_MANAGERS.filter((m) => m.revenuePlan == null).map((m) => m.firstName);
+  if (withoutPlan.length) issues.push(`План выручки не задан: ${withoutPlan.join(", ")}`);
   issues.push("Конверсии воронки — по событиям, не когортные");
 
   const rows: CellValue[][] = [
@@ -1372,7 +1378,7 @@ export async function bootstrapPredictiveSheets(input?: {
 
   for (const mgr of PM_SALES_MANAGERS) {
     const facts = managerFacts[mgr.bitrixId];
-    const managerSeed = facts ? seedForManager(seed, facts) : seedForManager(seed, {
+    const emptyFacts: BitrixManagerFacts = {
       month: period,
       assignedById: mgr.bitrixId,
       managerName: mgr.fullName,
@@ -1380,12 +1386,15 @@ export async function bootstrapPredictiveSheets(input?: {
       payments: 0,
       invoices: 0,
       leads: 0,
+      qualifiedLeads: 0,
       revenueByWeek: [null, null, null, null, null],
       paymentsByWeek: [null, null, null, null, null],
       invoicesByWeek: [null, null, null, null, null],
       leadsByWeek: [null, null, null, null, null],
+      qualifiedLeadsByWeek: [null, null, null, null, null],
       source: "Bitrix manager facts unavailable"
-    });
+    };
+    const managerSeed = seedForManager(seed, facts ?? emptyFacts, mgr.revenuePlan);
     const { rows, layout, notes } = buildDetailGrid(mgr.sheet, PM_SHEETS.settings, managerSeed, meta);
     await writeTab(spreadsheetId, mgr.sheet, rows, "A:Z");
     await applyCellNotes(spreadsheetId, mgr.sheet, notes);

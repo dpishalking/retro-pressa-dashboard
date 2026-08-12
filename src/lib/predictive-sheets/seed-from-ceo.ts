@@ -11,6 +11,7 @@ export type SeedValue = {
   plan: number | null;
   fact: number | null;
   planNote?: string;
+  factNote?: string;
   /** Weekly facts W1–W5; plans stay empty unless a real weekly plan exists. */
   weekFact?: Array<number | null>;
 };
@@ -190,11 +191,44 @@ export function applyBitrixFacts(seed: CeoSeedBundle, bitrix: BitrixMonthFacts):
   };
 }
 
-/** Manager sheet seed: Bitrix facts only. Volume plans stay empty. Rate plans copy the department target. */
-export function seedForManager(company: CeoSeedBundle, facts: BitrixManagerFacts): CeoSeedBundle {
+/** Manager sheet seed: Bitrix facts + revenue plan decomposed via sales-department rate benchmarks. */
+export function seedForManager(
+  company: CeoSeedBundle,
+  facts: BitrixManagerFacts,
+  revenuePlan?: number | null
+): CeoSeedBundle {
   const g = company.general;
   const checkFact =
     facts.payments > 0 ? Number((facts.revenue / facts.payments).toFixed(2)) : null;
+  const hasRevenuePlan = revenuePlan != null && Number.isFinite(revenuePlan);
+  const revPlan = hasRevenuePlan ? Number(revenuePlan) : null;
+
+  const checkPlan = g.average_check?.plan ?? null;
+  const crPlan = g.invoice_to_payment_cr?.plan ?? null; // percent, e.g. 91
+  const deptPayments = g.payments?.plan ?? null;
+  const deptLeads = g.leads?.plan ?? null;
+  const deptQl = g.qualified_leads?.plan ?? null;
+
+  let paymentsPlan: number | null = null;
+  let invoicesPlan: number | null = null;
+  let leadsPlan: number | null = null;
+  let qlPlan: number | null = null;
+
+  if (revPlan != null && checkPlan != null && checkPlan > 0) {
+    paymentsPlan = Number((revPlan / checkPlan).toFixed(2));
+  }
+  if (paymentsPlan != null && crPlan != null && crPlan > 0) {
+    invoicesPlan = Number((paymentsPlan / (crPlan / 100)).toFixed(2));
+  }
+  if (paymentsPlan != null && deptPayments != null && deptPayments > 0 && deptLeads != null) {
+    leadsPlan = Number((paymentsPlan * (deptLeads / deptPayments)).toFixed(2));
+  }
+  if (leadsPlan != null && deptLeads != null && deptLeads > 0 && deptQl != null) {
+    qlPlan = Number((leadsPlan * (deptQl / deptLeads)).toFixed(2));
+  }
+
+  const decompNote = "декомпозиция от плана выручки по бенчмаркам 04_SALES_GENERAL";
+
   return {
     month: company.month,
     paid: {},
@@ -202,44 +236,55 @@ export function seedForManager(company: CeoSeedBundle, facts: BitrixManagerFacts
     source: facts.source,
     general: {
       revenue: {
-        plan: null,
+        plan: revPlan,
         fact: facts.revenue,
         weekFact: [...facts.revenueByWeek],
-        planNote: "нет плана менеджера"
+        planNote: hasRevenuePlan ? "план менеджера (выручка)" : "нет плана менеджера"
       },
       payments: {
-        plan: null,
+        plan: paymentsPlan,
         fact: facts.payments,
         weekFact: [...facts.paymentsByWeek],
-        planNote: "нет плана менеджера"
+        planNote: paymentsPlan != null ? `${decompNote}: выручка ÷ средний чек` : "нет плана менеджера"
       },
       invoices: {
-        plan: null,
+        plan: invoicesPlan,
         fact: facts.invoices,
         weekFact: [...facts.invoicesByWeek],
-        planNote: "нет плана менеджера"
+        planNote:
+          invoicesPlan != null
+            ? `${decompNote}: оплаты ÷ (счёт→оплата)`
+            : "нет плана менеджера"
       },
       leads: {
-        plan: null,
+        plan: leadsPlan,
         fact: facts.leads,
         weekFact: [...facts.leadsByWeek],
-        planNote: "нет плана менеджера"
+        planNote:
+          leadsPlan != null
+            ? `${decompNote}: оплаты × (лиды отдела ÷ оплаты отдела)`
+            : "нет плана менеджера"
       },
       qualified_leads: {
-        plan: null,
-        fact: null,
-        planNote: "в Bitrix нет поля квалификации по менеджеру"
+        plan: qlPlan,
+        fact: facts.qualifiedLeads,
+        weekFact: [...facts.qualifiedLeadsByWeek],
+        planNote:
+          qlPlan != null
+            ? `${decompNote}: лиды × (квал÷лиды отдела)`
+            : "нет плана менеджера",
+        factNote: "Bitrix STATUS_ID=CONVERTED (Лид класифицирован), DATE_CREATE в периоде"
       },
       average_check: {
-        plan: g.average_check?.plan ?? null,
+        plan: checkPlan,
         fact: checkFact,
-        planNote: g.average_check?.plan != null ? "план отдела (ставка)" : "нет плана"
+        planNote: checkPlan != null ? "бенчмарк отдела (ставка)" : "нет плана"
       },
       invoice_to_payment_cr: {
-        plan: g.invoice_to_payment_cr?.plan ?? null,
+        plan: crPlan,
         fact: ratePct(facts.payments, facts.invoices),
         weekFact: weeklyRate(facts.paymentsByWeek, facts.invoicesByWeek),
-        planNote: g.invoice_to_payment_cr?.plan != null ? "план отдела (ставка)" : "нет плана"
+        planNote: crPlan != null ? "бенчмарк отдела (ставка)" : "нет плана"
       }
     }
   };

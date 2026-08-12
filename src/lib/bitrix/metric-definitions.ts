@@ -45,6 +45,9 @@ export const BITRIX_GIFT_TYPE_ENUM: Record<string, string> = {
 /** Lead statuses excluded from operational lead totals. */
 export const EXCLUDED_LEAD_STATUS_IDS = ["1", "3"] as const; // СПАМ, Отзывы
 
+/** Bitrix STATUS_ID «Лид класифицирован» — per-manager QL proxy (СВОД has no manager split). */
+export const BITRIX_QUALIFIED_LEAD_STATUS_ID = "CONVERTED";
+
 /**
  * Paid social sources in this Bitrix (there is no SOURCE_ID=ORGANIC).
  * Everything else counts as organic/other for the paid/organic split only.
@@ -78,8 +81,9 @@ export const BITRIX_METRIC_DEFINITIONS = {
   },
   qualifiedLeads: {
     label: "Qualified лиды",
-    source: "google_marketing",
-    definition: "Колонка QL из Google Sheets (маркетинговая сводная). В Bitrix отдельного поля QL в текущей выгрузке нет."
+    source: "google_marketing / bitrix",
+    definition:
+      "Отдел/маркетинг: колонка QL из Google Sheets (СВОД). По менеджеру: crm.lead.list DATE_CREATE в периоде, STATUS_ID=CONVERTED («Лид класифицирован»)."
   },
   adSpend: {
     label: "Бюджет трафика",
