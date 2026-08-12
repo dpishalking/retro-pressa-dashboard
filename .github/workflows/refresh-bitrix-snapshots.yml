@@ -53,11 +53,19 @@ jobs:
 
           if [ -n "${AUGUST_URL:-}" ]; then
             echo "restore august from URL"
-            curl -fsSL "$AUGUST_URL" -o "$SNAP/august-2026.json"
+            if [[ "$AUGUST_URL" == *.gz ]]; then
+              curl -fsSL "$AUGUST_URL" | gunzip > "$SNAP/august-2026.json"
+            else
+              curl -fsSL "$AUGUST_URL" -o "$SNAP/august-2026.json"
+            fi
           fi
           if [ -n "${JULY_URL:-}" ]; then
             echo "restore july from URL"
-            curl -fsSL "$JULY_URL" -o "$SNAP/july-2026.json"
+            if [[ "$JULY_URL" == *.gz ]]; then
+              curl -fsSL "$JULY_URL" | gunzip > "$SNAP/july-2026.json"
+            else
+              curl -fsSL "$JULY_URL" -o "$SNAP/july-2026.json"
+            fi
           fi
 
           if [ -z "${AUGUST_URL:-}" ] && [ -z "${JULY_URL:-}" ]; then
