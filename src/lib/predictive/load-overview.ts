@@ -374,7 +374,7 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
   const base: PredictiveDomainBlock = {
     domain: "finance",
     title: "Финансы",
-    subtitle: "Trailing daily run-rate по выручке, прибыли и cash на горизонтах 7 / 30 / 90 дней.",
+    subtitle: "Прогноз по дневному темпу выручки, прибыли и кассы на горизонтах 7 / 30 / 90 дней.",
     status: "blocked",
     message: "Нет финансового отчёта.",
     method: "trailing_daily_run_rate",
@@ -441,7 +441,7 @@ async function loadFinanceBlock(period: PeriodKey): Promise<PredictiveDomainBloc
     return {
       ...base,
       status: metrics.length ? "ok" : "partial",
-      message: "Финансовый прогноз на основе company snapshot (trailing run-rate).",
+      message: "Финансовый прогноз по текущему дневному темпу из снимка компании.",
       asOf: report.builtAt?.slice(0, 10) ?? null,
       updatedAt: report.builtAt ?? null,
       metrics,

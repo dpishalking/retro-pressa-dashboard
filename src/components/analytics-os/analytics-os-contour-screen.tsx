@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import type { ContourDef } from "@/lib/analytics-os/contours";
-import { ANALYTICS_CONTOURS, contourStatusLabel, wheelContours } from "@/lib/analytics-os/contours";
+import {
+  BUSINESS_CONTOUR_PATHS,
+  businessContourForOsId,
+  contourStatusLabel,
+  siblingContours
+} from "@/lib/analytics-os/contours";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
@@ -41,8 +46,8 @@ function StubPanel({ contour }: { contour: ContourDef }) {
         <StatusBadge status="no_data" />
       </div>
       <p className="aos-muted">
-        Контур заложен в карту Analytics OS, но живых данных для него пока нет. На главном экране блок
-        кликабелен — сюда можно наращивать источник без смены навигации.
+        По этому разделу пока нет живых данных. Экран уже в навигации — источник можно подключить без
+        смены структуры.
       </p>
       <DecisionBrief empty />
     </section>
@@ -63,18 +68,18 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
     state,
     error
   } = useCeoSnapshot();
+  const businessId = businessContourForOsId(contour.id);
+  const backHref = businessId ? BUSINESS_CONTOUR_PATHS[businessId] : "/hub";
+  const siblings = siblingContours(contour.id);
 
   return (
     <div className="aos-root aos-root--contour">
       <header className="aos-topbar">
         <div>
-          <Link href="/os" className="aos-back">
-            ← Центр управления
+          <Link href={backHref} className="aos-back">
+            ← Назад
           </Link>
-          <div className="aos-topbar__title">
-            {contour.number > 0 ? `${contour.number}. ` : ""}
-            {contour.title}
-          </div>
+          <div className="aos-topbar__title">{contour.title}</div>
           <div className="aos-topbar__subtitle">{contour.subtitle}</div>
         </div>
         <div className="aos-topbar__meta">
@@ -102,25 +107,22 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
 
       <div className="aos-contour-layout">
         <aside className="aos-contour-nav">
-          <p className="aos-contour-nav__title">12 контуров</p>
+          <p className="aos-contour-nav__title">В этом направлении</p>
           <nav>
-            {wheelContours().map((item) => (
+            {siblings.map((item, index) => (
               <Link
                 key={item.id}
                 href={item.href}
                 className={`aos-contour-nav__link ${item.id === contour.id ? "is-active" : ""}`}
               >
-                <span>{item.number}</span>
+                <span>{index + 1}</span>
                 {item.shortTitle}
               </Link>
             ))}
           </nav>
           <div className="aos-contour-nav__extra">
-            {ANALYTICS_CONTOURS.filter((item) => !item.onWheel).map((item) => (
-              <Link key={item.id} href={item.href} className={item.id === contour.id ? "is-active" : ""}>
-                {item.shortTitle}
-              </Link>
-            ))}
+            <Link href={backHref}>К сводке направления</Link>
+            <Link href="/os">Общая аналитика</Link>
           </div>
         </aside>
 

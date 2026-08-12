@@ -85,9 +85,9 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
   {
     id: "sales-cycle",
     number: 0,
-    title: "Sales Cycle",
+    title: "Цикл сделки",
     shortTitle: "Цикл сделки",
-    subtitle: "Lead → WON · D0–D30 · менеджеры / источники",
+    subtitle: "Лид → оплата · D0–D30 · менеджеры / источники",
     href: "/os/sales-cycle",
     status: "partial",
     accent: "blue",
@@ -96,7 +96,7 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
   {
     id: "customers",
     number: 5,
-    title: "Customer Intelligence",
+    title: "Клиенты",
     shortTitle: "Клиенты",
     subtitle: "Новые / повтор / средний чек клиента",
     href: "/os/customers",
@@ -151,7 +151,7 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
   {
     id: "conversations",
     number: 10,
-    title: "Conversation Intelligence",
+    title: "Диалоги",
     shortTitle: "Диалоги",
     subtitle: "Чаты · возражения · качество",
     href: "/rop/conversations",
@@ -296,6 +296,29 @@ export function businessContourGroups(): BusinessContourGroup[] {
       .map((id) => byId.get(id))
       .filter((item): item is ContourDef => Boolean(item))
   }));
+}
+
+export const BUSINESS_CONTOUR_PATHS: Record<BusinessContourId, string> = {
+  analytics: "/os",
+  sales: "/sales",
+  marketing: "/marketing",
+  product: "/product",
+  finance: "/finance"
+};
+
+export function businessContourForOsId(id: ContourId): BusinessContourId | null {
+  for (const group of BUSINESS_CONTOUR_ORDER) {
+    if (group.contourIds.includes(id)) return group.id;
+  }
+  if (id === "sources") return "marketing";
+  return null;
+}
+
+export function siblingContours(id: ContourId): ContourDef[] {
+  const groupId = businessContourForOsId(id);
+  if (!groupId) return [];
+  const group = businessContourGroups().find((item) => item.id === groupId);
+  return group?.contours ?? [];
 }
 
 export function contourStatusLabel(status: ContourStatus): string {

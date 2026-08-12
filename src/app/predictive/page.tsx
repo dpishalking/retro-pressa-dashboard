@@ -4,7 +4,7 @@ import { PredictiveModelsScreen } from "@/components/predictive-models-screen";
 
 export const metadata: Metadata = {
   title: "Предиктивные модели — Retro Pressa",
-  description: "Прогнозы продаж, маркетинга и финансов: план, факт и run-rate"
+  description: "Прогнозы продаж, маркетинга и финансов: план, факт и прогноз до конца месяца"
 };
 
 export default function PredictivePage() {

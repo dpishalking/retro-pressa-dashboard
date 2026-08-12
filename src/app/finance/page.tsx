@@ -3,7 +3,7 @@ import { BusinessContourScreen } from "@/components/business-contour-screen";
 
 export const metadata: Metadata = {
   title: "Финансы — Retro Pressa",
-  description: "Контур финансов: план, факт, прогноз и юнит-экономика"
+  description: "План, факт, прогноз и юнит-экономика"
 };
 
 export default function FinancePage() {

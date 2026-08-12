@@ -91,7 +91,7 @@ export function SalesCyclePanel({
       <section className="aos-card">
         <div className="aos-section-head">
           <div>
-            <h2>Sales Cycle & Cohort Maturity</h2>
+            <h2>Цикл сделки и зрелость когорты</h2>
             <p>
               Lead → WON (elapsed hours) · timezone {data.timezone} · {s.statusNote}
             </p>
@@ -485,11 +485,11 @@ export function SalesCycleCeoCard({ period }: { period: string }) {
     <section className="aos-card">
       <div className="aos-section-head">
         <div>
-          <h2>Sales Cycle</h2>
+          <h2>Цикл сделки</h2>
           <p>Median Lead → WON · касса vs когорта</p>
         </div>
         <a className="aos-link" href="/os/sales-cycle">
-          Открыть контур →
+          Открыть цикл сделки →
         </a>
       </div>
       <div className="aos-kpi-grid">

@@ -62,7 +62,7 @@ export function MarketingPredictiveMonthDays({
 
       <p className="aos-note" style={{ marginTop: 0 }}>
         {block.message}
-        {block.asOf ? ` · as of ${block.asOf}` : ""}
+        {block.asOf ? ` · на дату ${block.asOf}` : ""}
       </p>
 
       <div className="table-scroll">
@@ -73,7 +73,7 @@ export function MarketingPredictiveMonthDays({
               <th>План</th>
               <th>Факт</th>
               <th>Прогноз</th>
-              <th>Gap</th>
+              <th>К плану</th>
               <th>Статус</th>
             </tr>
           </thead>

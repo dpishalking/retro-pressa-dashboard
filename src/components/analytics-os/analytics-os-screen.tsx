@@ -7,195 +7,109 @@ import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
 import { formatMetricDisplay, StatusBadge } from "@/components/analytics-os/format-metric";
 import {
-  businessContourGroups,
-  contourStatusLabel,
-  type ContourDef
+  BUSINESS_CONTOUR_PATHS,
+  type BusinessContourId
 } from "@/lib/analytics-os/contours";
-import { eur, number, pct } from "@/lib/format";
+import { metricLabel } from "@/lib/analytics-os/metric-glossary";
+import { eur, pct } from "@/lib/format";
 
-function ContourLink({
-  contour,
-  children,
-  className
-}: {
-  contour: ContourDef;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <Link href={contour.href} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-function ModuleCard({
-  contour,
-  children,
-  preview
-}: {
-  contour: ContourDef;
-  children?: ReactNode;
-  preview?: ReactNode;
-}) {
-  return (
-    <ContourLink contour={contour} className={`aos-module aos-module--${contour.accent}`}>
-      <div className="aos-module__head">
-        <span className="aos-module__num">{contour.number || "·"}</span>
-        <div>
-          <h3>{contour.title}</h3>
-          <p>{contour.subtitle}</p>
-        </div>
-        <span className={`aos-contour-pill aos-contour-pill--${contour.status}`}>
-          {contourStatusLabel(contour.status)}
-        </span>
-      </div>
-      {preview ? <div className="aos-module__preview">{preview}</div> : null}
-      {children}
-      <span className="aos-module__cta">Открыть →</span>
-    </ContourLink>
-  );
-}
-
-function tilePreview(contour: ContourDef, snapshot: CeoControlCenterSnapshot): ReactNode {
-  const topCountry = snapshot.countries[0];
-  const topManager = snapshot.managers[0];
-  const topProduct = snapshot.products[0];
-
-  switch (contour.id) {
-    case "revenue":
-      return (
-        <>
-          <strong>{formatMetricDisplay(snapshot.metrics.revenue)}</strong>
-          <span>
-            План {formatMetricDisplay(snapshot.plan.planRevenue)} · прогресс{" "}
-            {formatMetricDisplay(snapshot.plan.planCompletion)}
-          </span>
-        </>
-      );
-    case "unit-economics":
-      return (
-        <>
-          <strong>Маржа {formatMetricDisplay(snapshot.productMargin.marginRate)}</strong>
-          <span>
-            Валовая {formatMetricDisplay(snapshot.productMargin.grossProfit)} · себестоимость{" "}
-            {formatMetricDisplay(snapshot.productMargin.cogs)} · средний чек{" "}
-            {formatMetricDisplay(snapshot.metrics.aov)}
-          </span>
-        </>
-      );
-    case "products":
-      return topProduct ? (
-        <>
-          <strong>{topProduct.productName}</strong>
-          <span>
-            {eur(topProduct.revenue)}
-            {topProduct.marginRate == null ? "" : ` · маржа ${pct(topProduct.marginRate)}`} ·{" "}
-            {pct(topProduct.share)}
-          </span>
-        </>
-      ) : (
-        <span>Нет данных по SKU</span>
-      );
-    case "cohorts":
-      return <span>Месяц / неделя лида · страны · лиды и оплаты в одной когорте</span>;
-    case "sales-cycle":
-      return <span>От лида до оплаты · зрелость когорты · менеджеры и источники</span>;
-    case "customers":
-      return (
-        <>
-          <strong>{formatMetricDisplay(snapshot.metrics.repeat_rate)} повтор</strong>
-          <span>
-            Клиенты {formatMetricDisplay(snapshot.customers.customers)} · новые{" "}
-            {formatMetricDisplay(snapshot.customers.newCustomers)}
-          </span>
-        </>
-      );
-    case "marketing":
-      return (
-        <>
-          <strong>{formatMetricDisplay(snapshot.metrics.ad_spend)}</strong>
-          <span>{snapshot.marketing.note}</span>
-        </>
-      );
-    case "creatives":
-      return <span>Ads API / креативы ещё не подключены</span>;
-    case "funnel":
-      return (
+const BUSINESS_LINKS: Array<{
+  id: BusinessContourId;
+  title: string;
+  subtitle: string;
+  preview: (snapshot: CeoControlCenterSnapshot) => ReactNode;
+}> = [
+  {
+    id: "sales",
+    title: "Продажи",
+    subtitle: "Воронка, команда и прогноз оплат",
+    preview: (snapshot) => (
+      <>
+        <strong>
+          {formatMetricDisplay(snapshot.metrics.revenue)} · {metricLabel("leads")}{" "}
+          {formatMetricDisplay(snapshot.metrics.leads)}
+        </strong>
         <span>
-          {snapshot.funnel
-            .map((stage) => `${stage.label} ${stage.count == null ? "—" : number(stage.count)}`)
-            .join(" → ")}
+          {metricLabel("conversion_rate")} {formatMetricDisplay(snapshot.metrics.conversion_rate)}
         </span>
-      );
-    case "managers":
-      return topManager ? (
+      </>
+    )
+  },
+  {
+    id: "marketing",
+    title: "Маркетинг и трафик",
+    subtitle: "Лендинги, бюджет и привлечение",
+    preview: (snapshot) => (
+      <>
+        <strong>{formatMetricDisplay(snapshot.marketing.adSpend)}</strong>
+        <span>
+          {metricLabel("cpl")} {formatMetricDisplay(snapshot.marketing.cpl)} ·{" "}
+          {metricLabel("leads")} {formatMetricDisplay(snapshot.metrics.leads)}
+        </span>
+      </>
+    )
+  },
+  {
+    id: "product",
+    title: "Продукт",
+    subtitle: "SKU, спрос и клиенты",
+    preview: (snapshot) => {
+      const top = snapshot.products[0];
+      return top ? (
         <>
-          <strong>{topManager.managerName}</strong>
+          <strong>{top.productName}</strong>
           <span>
-            {eur(topManager.revenue)} · CR{" "}
-            {topManager.conversionRate == null ? "—" : pct(topManager.conversionRate)}
+            {eur(top.revenue)}
+            {top.marginRate == null ? "" : ` · маржа ${pct(top.marginRate)}`}
           </span>
         </>
       ) : (
-        <span>Нет менеджеров в снимке</span>
+        <span>Нет данных по продуктам</span>
       );
-    case "conversations":
-      return <span>Открывает раздел диалогов РОП</span>;
-    case "geography":
-      return topCountry ? (
-        <>
-          <strong>{topCountry.country}</strong>
-          <span>
-            {eur(topCountry.revenue)} · {pct(topCountry.share)}
-          </span>
-        </>
-      ) : (
-        <span>Нет стран в снимке</span>
-      );
-    case "production":
-      return <span>{snapshot.production.message}</span>;
-    case "plan":
-      return (
-        <>
-          <strong>{formatMetricDisplay(snapshot.plan.planRevenue)}</strong>
-          <span>
-            Факт {formatMetricDisplay(snapshot.plan.factRevenue)} · прогноз{" "}
-            {formatMetricDisplay(snapshot.plan.forecastRevenue)} · {snapshot.plan.indicatorCount}{" "}
-            показателей
-          </span>
-        </>
-      );
-    default:
-      return <span>{contour.subtitle}</span>;
+    }
+  },
+  {
+    id: "finance",
+    title: "Финансы",
+    subtitle: "План, факт и экономика",
+    preview: (snapshot) => (
+      <>
+        <strong>{formatMetricDisplay(snapshot.plan.planRevenue)}</strong>
+        <span>
+          Факт {formatMetricDisplay(snapshot.plan.factRevenue)} · прогноз{" "}
+          {formatMetricDisplay(snapshot.plan.forecastRevenue)}
+        </span>
+      </>
+    )
   }
-}
+];
 
-function ContourTiles({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
-  const groups = businessContourGroups();
+function BusinessDirectionBand({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   return (
-    <section className="aos-tiles-band" aria-label="Модули аналитики">
+    <section className="aos-tiles-band" aria-label="Направления бизнеса">
       <div className="aos-tiles-band__head">
         <div>
-          <h2>Пять контуров BI</h2>
-          <p>Выберите бизнес-направление, затем нужный модуль.</p>
+          <h2>Направления</h2>
+          <p>Сводка здесь. Детали и действия — в выбранном направлении.</p>
         </div>
       </div>
-      <div className="space-y-8">
-        {groups.map((group) => (
-          <section key={group.id} aria-labelledby={`business-contour-${group.id}`}>
-            <div className="mb-4">
-              <h3 id={`business-contour-${group.id}`} className="text-xl font-black text-slate-950">
-                {group.title}
-              </h3>
-              <p className="aos-muted">{group.subtitle}</p>
+      <div className="aos-tiles-grid">
+        {BUSINESS_LINKS.map((item) => (
+          <Link
+            key={item.id}
+            href={BUSINESS_CONTOUR_PATHS[item.id]}
+            className="aos-module aos-module--blue"
+          >
+            <div className="aos-module__head">
+              <span className="aos-module__num">→</span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.subtitle}</p>
+              </div>
             </div>
-            <div className="aos-tiles-grid">
-              {group.contours.map((contour) => (
-                <ModuleCard key={contour.id} contour={contour} preview={tilePreview(contour, snapshot)} />
-              ))}
-            </div>
-          </section>
+            <div className="aos-module__preview">{item.preview(snapshot)}</div>
+            <span className="aos-module__cta">Открыть →</span>
+          </Link>
         ))}
       </div>
     </section>
@@ -208,11 +122,11 @@ function ScenarioWorkshop({ snapshot }: { snapshot: CeoControlCenterSnapshot }) 
     <section className="aos-ai-band">
       <div className="aos-ai-band__head">
         <div>
-          <h2>Мастерская сценариев</h2>
-          <p>AI-аналитик · честные статусы, без выдуманных цифр</p>
+          <h2>Что делать дальше</h2>
+          <p>Короткие выводы по текущим данным — без выдуманных цифр</p>
         </div>
-        <Link href="/os/revenue" className="aos-ai-band__link">
-          К плану / факту →
+        <Link href="/finance" className="aos-ai-band__link">
+          К финансам →
         </Link>
       </div>
       <div className="aos-ai-band__grid">
@@ -240,10 +154,10 @@ function DataSourcesBand({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
     <section className="aos-sources-band">
       <div className="aos-sources-band__head">
         <div>
-          <h2>Источники правды</h2>
-          <p className="aos-sources-band__lead">Единая модель данных — что подключено и что ещё нет</p>
+          <h2>Источники данных</h2>
+          <p className="aos-sources-band__lead">Что подключено и чему можно верить</p>
         </div>
-        <Link href="/os/sources">Качество и источники →</Link>
+        <Link href="/os/sources">Качество данных →</Link>
       </div>
       <div className="aos-sources-band__grid">
         {snapshot.sources.map((source) => (
@@ -292,8 +206,8 @@ export function AnalyticsOsScreen() {
       <header className="aos-hero">
         <div>
           <p className="aos-hero__eyebrow">RETRO PRESSA</p>
-          <h1>Аналитическая операционная система</h1>
-          <p className="aos-hero__lead">Ключевые показатели, отклонения и решения по бизнесу</p>
+          <h1>Аналитика</h1>
+          <p className="aos-hero__lead">Ключевые показатели, отклонения и решения</p>
         </div>
         <div className="aos-topbar__meta">
           <label>
@@ -325,8 +239,8 @@ export function AnalyticsOsScreen() {
 
       <section className="aos-ceo-band">
         <div className="aos-ceo-band__title">
-          <strong>CEO Control Center</strong>
-          <span>Приборная панель собственника</span>
+          <strong>Сводка собственника</strong>
+          <span>План, факт и сигналы по бизнесу</span>
         </div>
         <div className="aos-filters aos-filters--inline">
           <label>
@@ -383,11 +297,11 @@ export function AnalyticsOsScreen() {
 
       {!snapshot ? (
         <section className="aos-card" style={{ margin: "1rem" }}>
-          <p>{state === "error" ? error : "Загрузка центра управления…"}</p>
+          <p>{state === "error" ? error : "Загрузка сводки…"}</p>
         </section>
       ) : (
         <>
-          <ContourTiles snapshot={snapshot} />
+          <BusinessDirectionBand snapshot={snapshot} />
           <ScenarioWorkshop snapshot={snapshot} />
           <DataSourcesBand snapshot={snapshot} />
         </>

@@ -3,7 +3,7 @@ import { BusinessContourScreen } from "@/components/business-contour-screen";
 
 export const metadata: Metadata = {
   title: "Продукт — Retro Pressa",
-  description: "Контур продукта: ассортимент, выпуски и продуктовая аналитика"
+  description: "Ассортимент, спрос, выпуски и клиенты"
 };
 
 export default function ProductPage() {

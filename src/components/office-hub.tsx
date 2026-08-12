@@ -29,11 +29,11 @@ const officeSections: OfficeSection[] = [
   {
     id: "analytics",
     title: "Аналитика",
-    subtitle: "Общая картина бизнеса, KPI, сигналы и управленческие решения.",
+    subtitle: "Общая картина бизнеса, KPI и решения.",
     cards: [{
       href: "/os",
       title: "Аналитика",
-      description: "Общий CEO-дашборд для всех пяти контуров BI.",
+      description: "Общая сводка собственника по всему бизнесу.",
       icon: BarChart3,
       status: "active",
       accent: "text-blue-600 bg-blue-50"
@@ -42,11 +42,11 @@ const officeSections: OfficeSection[] = [
   {
     id: "sales",
     title: "Продажи",
-    subtitle: "Общий дашборд, прогноз, воронка, команда и качество коммуникации.",
+    subtitle: "Сводка, прогноз, воронка и команда.",
     cards: [{
       href: "/sales",
       title: "Продажи",
-      description: "Сводка продаж, прогноз и все рабочие модули РОП.",
+      description: "Сводка, прогноз и работа команды продаж.",
       icon: Target,
       status: "active",
       accent: "text-amber-600 bg-amber-50"
@@ -55,11 +55,11 @@ const officeSections: OfficeSection[] = [
   {
     id: "marketing",
     title: "Маркетинг и трафик",
-    subtitle: "Привлечение, реклама, прогноз, каналы и атрибуция трафика.",
+    subtitle: "Лендинги, реклама и атрибуция.",
     cards: [{
       href: "/marketing",
       title: "Маркетинг и трафик",
-      description: "Сводка маркетинга, прогноз и инструменты рекламных каналов.",
+      description: "Лендинги, бюджет, прогноз и каналы.",
       icon: Megaphone,
       status: "active",
       accent: "text-emerald-600 bg-emerald-50"
@@ -68,11 +68,11 @@ const officeSections: OfficeSection[] = [
   {
     id: "product",
     title: "Продукт",
-    subtitle: "Продуктовый дашборд, спрос по SKU, выпуски и партнёрский контур.",
+    subtitle: "Ассортимент, спрос и клиенты.",
     cards: [{
       href: "/product",
       title: "Продукт",
-      description: "Продуктовая сводка, выпуски, ассортимент и партнёрский контур.",
+      description: "SKU, спрос, выпуски и клиентская база.",
       icon: Package,
       status: "active",
       accent: "text-sky-600 bg-sky-50"
@@ -81,11 +81,11 @@ const officeSections: OfficeSection[] = [
   {
     id: "finance",
     title: "Финансы",
-    subtitle: "План, факт, финансовый прогноз, юнит-экономика и сценарии.",
+    subtitle: "План, факт, прогноз и экономика.",
     cards: [{
       href: "/finance",
       title: "Финансы",
-      description: "Финансовая сводка, прогноз и инструменты управления результатом.",
+      description: "План, факт, прогноз и юнит-экономика.",
       icon: WalletCards,
       status: "active",
       accent: "text-violet-600 bg-violet-50"

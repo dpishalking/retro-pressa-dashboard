@@ -573,7 +573,7 @@ export async function loadMarketingPredictiveModel(input: {
       message:
         diagnosisNote ||
         (hasFacts
-          ? `Месяц ${input.isoMonth} · ${meta.label}: факт по дням из ${sources.dailyTab}, ${planSourceNote}, прогноз = run-rate.`
+          ? `Месяц ${input.isoMonth} · ${meta.label}: факт по дням из ${sources.dailyTab}, ${planSourceNote}, прогноз по текущему темпу.`
           : hasPlans
             ? `Есть план (${meta.label}), но дневных фактов за ${input.isoMonth} ещё нет.`
             : `Нет плана и факта маркетинга (${meta.label}) за ${input.isoMonth}.`),

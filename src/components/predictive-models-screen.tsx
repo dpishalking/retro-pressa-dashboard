@@ -86,8 +86,7 @@ function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
         </div>
         <p className="mt-3 text-sm text-slate-700">{block.message}</p>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-          <span>Метод: {block.method}</span>
-          {block.asOf ? <span>As of: {block.asOf}</span> : null}
+          {block.asOf ? <span>На дату: {block.asOf}</span> : null}
           {block.updatedAt ? <span>Обновлено: {block.updatedAt.slice(0, 19).replace("T", " ")}</span> : null}
         </div>
       </div>
@@ -101,7 +100,7 @@ function DomainPanel({ block }: { block: PredictiveDomainBlock }) {
                 <th className="px-4 py-3 font-bold">План</th>
                 <th className="px-4 py-3 font-bold">Факт</th>
                 <th className="px-4 py-3 font-bold">Прогноз</th>
-                <th className="px-4 py-3 font-bold">Gap</th>
+                <th className="px-4 py-3 font-bold">К плану</th>
                 <th className="px-4 py-3 font-bold">Статус</th>
               </tr>
             </thead>
@@ -252,10 +251,10 @@ export function PredictiveModelsScreen() {
         <OfficeHubBackLink />
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Predictive Models</p>
-            <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">Предиктивные модели</h1>
+            <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Прогноз</p>
+            <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">Прогнозы</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Единый кабинет прогнозов: продажи, маркетинг и финансы. Сейчас — план/факт/run-rate без сценариев.
+              План, факт и прогноз до конца месяца по продажам, маркетингу и финансам.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
