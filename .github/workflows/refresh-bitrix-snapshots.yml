@@ -9,11 +9,11 @@ on:
         required: false
         default: "july-2026,august-2026"
       august_url:
-        description: "Optional direct URL to august-2026.json snapshot"
+        description: "Optional direct URL to august-2026.json or .json.gz"
         required: false
         default: ""
       july_url:
-        description: "Optional direct URL to july-2026.json snapshot"
+        description: "Optional direct URL to july-2026.json or .json.gz"
         required: false
         default: ""
 
@@ -30,74 +30,73 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Restore or rebuild Bitrix snapshots
+      - name: Download snapshots on runner
+        if: ${{ inputs.august_url != '' || inputs.july_url != '' }}
         env:
-          PERIODS: ${{ inputs.periods }}
           AUGUST_URL: ${{ inputs.august_url }}
           JULY_URL: ${{ inputs.july_url }}
         run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=120 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            PERIODS="$PERIODS" \
-            AUGUST_URL="$AUGUST_URL" \
-            JULY_URL="$JULY_URL" \
-            bash -s << 'EOF'
-          set -euo pipefail
-          DATA="/opt/retro-pressa-shared/data"
-          SNAP="$DATA/bitrix-snapshots"
-          CACHE="$DATA/sales-cycle-cache"
-          mkdir -p "$SNAP" "$CACHE"
-          rm -f "$CACHE"/* 2>/dev/null || true
-
-          if [ -n "${AUGUST_URL:-}" ]; then
-            echo "restore august from URL"
-            if [[ "$AUGUST_URL" == *.gz ]]; then
-              curl -fsSL "$AUGUST_URL" | gunzip > "$SNAP/august-2026.json"
+          mkdir -p /tmp/bitrix-snaps
+          download() {
+            local url="$1" dest="$2"
+            if [[ "$url" == *.gz ]]; then
+              curl -fsSL --max-time 120 "$url" | gunzip > "$dest"
             else
-              curl -fsSL "$AUGUST_URL" -o "$SNAP/august-2026.json"
+              curl -fsSL --max-time 120 "$url" -o "$dest"
             fi
-          fi
-          if [ -n "${JULY_URL:-}" ]; then
-            echo "restore july from URL"
-            if [[ "$JULY_URL" == *.gz ]]; then
-              curl -fsSL "$JULY_URL" | gunzip > "$SNAP/july-2026.json"
-            else
-              curl -fsSL "$JULY_URL" -o "$SNAP/july-2026.json"
-            fi
-          fi
+            python3 -c "import json; d=json.load(open('$dest')); print('$dest', 'paid', len(d.get('paidDeals') or []), 'leads', len(d.get('leads') or []))"
+          }
+          if [ -n "${AUGUST_URL:-}" ]; then download "$AUGUST_URL" /tmp/bitrix-snaps/august-2026.json; fi
+          if [ -n "${JULY_URL:-}" ]; then download "$JULY_URL" /tmp/bitrix-snaps/july-2026.json; fi
+          ls -lh /tmp/bitrix-snaps
 
-          if [ -z "${AUGUST_URL:-}" ] && [ -z "${JULY_URL:-}" ]; then
-            IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
-            for PERIOD in "${LIST[@]}"; do
-              PERIOD="$(echo "$PERIOD" | xargs)"
-              [ -n "$PERIOD" ] || continue
-              echo "rebuild bitrix period=${PERIOD}"
-              OUT="/tmp/bitrix-sync-${PERIOD}.json"
-              HTTP=$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" \
-                -X POST http://127.0.0.1:4175/api/sync/bitrix \
-                -H "Content-Type: application/json" \
-                -H "x-forwarded-for: 127.0.0.1" \
-                -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" || true)
-              echo "HTTP ${HTTP}"
-              head -c 400 "$OUT" || true
-              echo
-              if [ "$HTTP" != "200" ]; then
-                echo "bitrix sync failed for ${PERIOD}"
-                exit 1
-              fi
-              sleep 10
-            done
-          fi
-
-          ls -la "$SNAP" | head -20
-          python3 - <<'PY'
+      - name: Upload snapshots to server
+        if: ${{ inputs.august_url != '' || inputs.july_url != '' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'mkdir -p /opt/retro-pressa-shared/data/bitrix-snapshots /opt/retro-pressa-shared/data/sales-cycle-cache && rm -f /opt/retro-pressa-shared/data/sales-cycle-cache/* || true'
+          scp -i ~/.ssh/deploy_key /tmp/bitrix-snaps/*.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/retro-pressa-shared/data/bitrix-snapshots/"
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'ls -lh /opt/retro-pressa-shared/data/bitrix-snapshots; python3 - <<"PY"
           import json, os
           snap="/opt/retro-pressa-shared/data/bitrix-snapshots"
           for name in sorted(os.listdir(snap)):
             if not name.endswith(".json"): continue
             d=json.load(open(os.path.join(snap,name)))
             print(name, "paid", len(d.get("paidDeals") or []), "leads", len(d.get("leads") or []), "at", d.get("createdAt"))
-          PY
+          PY'
+
+      - name: Live rebuild on server
+        if: ${{ inputs.august_url == '' && inputs.july_url == '' }}
+        env:
+          PERIODS: ${{ inputs.periods }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            PERIODS="$PERIODS" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          IFS=',' read -r -a LIST <<< "${PERIODS:-august-2026}"
+          for PERIOD in "${LIST[@]}"; do
+            PERIOD="$(echo "$PERIOD" | xargs)"
+            [ -n "$PERIOD" ] || continue
+            echo "rebuild bitrix period=${PERIOD}"
+            OUT="/tmp/bitrix-sync-${PERIOD}.json"
+            HTTP=$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" \
+              -X POST http://127.0.0.1:4175/api/sync/bitrix \
+              -H "Content-Type: application/json" \
+              -H "x-forwarded-for: 127.0.0.1" \
+              -d "{\"period\":\"${PERIOD}\",\"refresh\":true}" || true)
+            echo "HTTP ${HTTP}"
+            head -c 400 "$OUT" || true
+            echo
+            if [ "$HTTP" != "200" ]; then
+              echo "bitrix sync failed for ${PERIOD}"
+              exit 1
+            fi
+            sleep 10
+          done
           EOF
