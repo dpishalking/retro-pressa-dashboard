@@ -67,11 +67,9 @@ export function MarketingLandingTiles() {
     if (!landings?.length) return null;
     const d7 = landings.map((row) => row.roasD7).filter((v): v is number => v != null && Number.isFinite(v));
     const d30 = landings.map((row) => row.roasD30).filter((v): v is number => v != null && Number.isFinite(v));
-    const cpl = landings.map((row) => row.cpl).filter((v): v is number => v != null && Number.isFinite(v));
     return {
       medianRoasD7: median(d7),
       medianRoasD30: median(d30),
-      medianCpl: median(cpl),
       matureD7: landings.some((row) => row.roasD7Mature),
       matureD30: landings.some((row) => row.roasD30Mature)
     };
@@ -88,13 +86,7 @@ export function MarketingLandingTiles() {
       </div>
 
       {board ? (
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          <article className="rounded-xl border border-[var(--line)] bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-              Медиана {metricLabel("landing_cpl")}
-            </p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{formatEur(board.medianCpl, 1)}</p>
-          </article>
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
           <article className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Медиана {metricLabel("roas_d7")}
