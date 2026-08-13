@@ -154,6 +154,17 @@ function buildCohortDecision(data: SalesCyclePayload, tab: CohortTab): string | 
   return `Лучше: ${best.label} — ${pct(cr(best.paid, best.leads)!)} с ${number(best.leads)} лидов. Слабее: ${worst.label} — ${pct(cr(worst.paid, worst.leads)!)}. Тяните скрипт и трафик к сильному сегменту, слабый разберите отдельно.`;
 }
 
+function cohortLoadError(err: unknown): string {
+  if (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") {
+    return "Расчёт когорт не успел. Нажмите «Посчитать» — прогреем кэш на воркере.";
+  }
+  const message = err instanceof Error ? err.message : "Ошибка загрузки";
+  if (message === "Failed to fetch" || /networkerror/i.test(message)) {
+    return "Не удалось связаться с сервером. Нажмите «Посчитать» ещё раз.";
+  }
+  return message;
+}
+
 export function CohortsPanel({
   period,
   managerId,
@@ -170,6 +181,7 @@ export function CohortsPanel({
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const grain = tab === "week" ? "week" : "month";
   const tabMeta = TABS.find((item) => item.id === tab)!;
@@ -178,7 +190,7 @@ export function CohortsPanel({
     async (refresh = false) => {
       if (!period) return;
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 90_000);
+      const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 65_000);
       setError("");
       if (refresh) setRefreshing(true);
       else setState("loading");
@@ -194,13 +206,7 @@ export function CohortsPanel({
         setData(json);
         setState("ready");
       } catch (err: unknown) {
-        const message =
-          err instanceof DOMException && err.name === "AbortError"
-            ? "Таймаут загрузки когорт. Нажмите «Посчитать» — прогреем кэш на воркере."
-            : err instanceof Error
-              ? err.message
-              : "Ошибка";
-        setError(message);
+        setError(cohortLoadError(err));
         setState((current) => (current === "ready" ? "ready" : "error"));
       } finally {
         window.clearTimeout(timeout);
@@ -211,10 +217,14 @@ export function CohortsPanel({
   );
 
   useEffect(() => {
-    if (!period) return;
+    if (!period) {
+      setState("error");
+      setError("Нет периода для когорт. Дождитесь загрузки сводки или выберите месяц сверху.");
+      return;
+    }
     let cancelled = false;
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 90_000);
+    const timeout = window.setTimeout(() => controller.abort(), 65_000);
     setState("loading");
     setError("");
     const params = new URLSearchParams({ period, cohort_grain: grain });
@@ -232,13 +242,7 @@ export function CohortsPanel({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const message =
-          err instanceof DOMException && err.name === "AbortError"
-            ? "Таймаут загрузки когорт. Нажмите «Посчитать» — прогреем кэш на воркере."
-            : err instanceof Error
-              ? err.message
-              : "Ошибка";
-        setError(message);
+        setError(cohortLoadError(err));
         setState("error");
       })
       .finally(() => {
@@ -249,7 +253,7 @@ export function CohortsPanel({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [period, grain, managerId, country, productId]);
+  }, [period, grain, managerId, country, productId, reloadKey]);
 
   const breakdownRows = data ? breakdownForTab(data, tab) : null;
   const current = data ? focusCohort(data.cohorts, data.period) : undefined;
@@ -269,9 +273,15 @@ export function CohortsPanel({
               type="button"
               className="aos-link"
               disabled={refreshing || !period}
-              onClick={() => void load(true)}
+              onClick={() => {
+                if (state === "error" && !refreshing) {
+                  setReloadKey((key) => key + 1);
+                  return;
+                }
+                void load(true);
+              }}
             >
-              {refreshing ? "Считаю…" : "Посчитать"}
+              {refreshing ? "Считаю…" : state === "error" ? "Повторить" : "Посчитать"}
             </button>
           </div>
         </div>

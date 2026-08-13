@@ -19,25 +19,27 @@ jobs:
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Refresh OS Orders + Traffic for yesterday (Moscow)
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=40 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))')"
           if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET is empty"
+            echo "CRON_SYNC_SECRET missing in /opt/retro-pressa/runtime-env.json"
             exit 1
           fi
-          curl -f -sS -X POST http://127.0.0.1:4175/api/sync/os-daily \
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/os-daily \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d '{"refresh":true}'
           echo
-          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+          curl -f -sS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: ${SECRET}" \
             -d '{"grains":["month","week"]}'
+          echo
+          ls -lah /opt/retro-pressa-shared/data/sales-cycle-cache | head -20
           EOF

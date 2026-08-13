@@ -45,7 +45,9 @@ async function proxyToWorker(request: NextRequest, timeoutMs: number): Promise<N
       cache: "no-store",
       signal: controller.signal
     });
-    return new NextResponse(response.body, {
+    // Buffer JSON so a hung worker stream cannot leave the browser on "Загрузка…" forever.
+    const body = await response.text();
+    return new NextResponse(body, {
       status: response.status,
       headers: {
         "content-type": response.headers.get("content-type") || "application/json",
@@ -55,6 +57,22 @@ async function proxyToWorker(request: NextRequest, timeoutMs: number): Promise<N
   } finally {
     clearTimeout(timer);
   }
+}
+
+function kickWorkerWarm() {
+  // Loopback cron path on the worker rebuilds month+week caches for all periods.
+  void fetch("http://127.0.0.1:4175/api/sync/sales-cycle", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-forwarded-for": "127.0.0.1",
+      "x-real-ip": "127.0.0.1"
+    },
+    body: JSON.stringify({ grains: ["month", "week"] }),
+    cache: "no-store"
+  }).catch(() => {
+    // Best-effort background warm.
+  });
 }
 
 function kickWorkerRefresh(request: NextRequest) {
@@ -89,6 +107,8 @@ export async function GET(request: NextRequest) {
   }
 
   if (!isWorker) {
+    // Cache miss: start a full warm so the next open of /os/cohorts hits disk.
+    if (!forceRefresh) kickWorkerWarm();
     try {
       return await proxyToWorker(request, WORKER_TIMEOUT_MS);
     } catch (error) {
@@ -103,8 +123,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             error: timedOut
-              ? "Расчёт цикла сделки не успел за 55с. Выберите зерно «месяц» и нажмите «Повторить»."
-              : "Расчёт цикла сделки недоступен. Выберите зерно «месяц» или подождите фоновый прогрев."
+              ? "Расчёт когорт не успел за 55с. Фоновый прогрев запущен — обновите страницу через 1–2 минуты или нажмите «Повторить»."
+              : "Кэш когорт пуст. Фоновый прогрев запущен — обновите страницу через 1–2 минуты."
           },
           { status: timedOut ? 504 : 503 }
         );

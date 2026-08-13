@@ -1,0 +1,60 @@
+name: Warm sales-cycle cache
+
+# Rebuild data/sales-cycle-cache on Timeweb so /os/cohorts and /os/sales-cycle load instantly.
+on:
+  workflow_dispatch:
+    inputs:
+      periods:
+        description: "Optional ISO periods JSON array, e.g. [\"2026-07\",\"2026-08\"]"
+        required: false
+        default: ""
+      grains:
+        description: "Comma-separated grains"
+        required: false
+        default: "month,week"
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Warm cohorts on worker
+        env:
+          PERIODS_JSON: ${{ inputs.periods }}
+          GRAINS: ${{ inputs.grains }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=40 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            PERIODS_JSON="$PERIODS_JSON" \
+            GRAINS="$GRAINS" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))')"
+          if [ -z "$SECRET" ]; then
+            echo "CRON_SYNC_SECRET missing in /opt/retro-pressa/runtime-env.json"
+            exit 1
+          fi
+          GRAINS_JSON="$(node -e 'const g=String(process.env.GRAINS||"month,week").split(",").map(s=>s.trim()).filter(Boolean); process.stdout.write(JSON.stringify(g))')"
+          if [ -n "${PERIODS_JSON:-}" ]; then
+            BODY="$(node -e 'const periods=JSON.parse(process.env.PERIODS_JSON||"[]"); const grains=JSON.parse(process.env.GRAINS_JSON); process.stdout.write(JSON.stringify({periods, grains}))' PERIODS_JSON="$PERIODS_JSON" GRAINS_JSON="$GRAINS_JSON")"
+          else
+            BODY="$(node -e 'const grains=JSON.parse(process.env.GRAINS_JSON); process.stdout.write(JSON.stringify({grains}))' GRAINS_JSON="$GRAINS_JSON")"
+          fi
+          echo "POST /api/sync/sales-cycle body=$BODY"
+          curl -f -sS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "$BODY"
+          echo
+          ls -lah /opt/retro-pressa-shared/data/sales-cycle-cache | head -40
+          EOF

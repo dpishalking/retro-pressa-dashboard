@@ -19,4 +19,15 @@ jobs:
           rm -f /opt/retro-pressa-shared/data/sales-cycle-cache/* || true
           ls -la /opt/retro-pressa-shared/data/bitrix-snapshots
           ls -la /opt/retro-pressa-shared/data/company-snapshots || true
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))')"
+          if [ -n "$SECRET" ]; then
+            curl -f -sS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+              -H "Content-Type: application/json" \
+              -H "x-cron-secret: ${SECRET}" \
+              -d '{"grains":["month","week"]}' || true
+            echo
+            ls -lah /opt/retro-pressa-shared/data/sales-cycle-cache | head -20
+          else
+            echo "CRON_SYNC_SECRET missing — skipped sales-cycle warm"
+          fi
           EOF
