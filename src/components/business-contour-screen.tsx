@@ -168,7 +168,7 @@ function ContourSummary({
             ? eur(metric.value, 1)
             : formatMetricDisplay(metric);
         return (
-          <article key={id} className="rounded-xl border border-[var(--line)] bg-white p-4">
+          <article key={id} className="dash-tile rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
           </article>
@@ -227,7 +227,7 @@ function ContourForecast({ domain }: { domain: PredictiveDomain }) {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {rows.length ? (
               rows.map((row) => (
-                <div key={row.id} className="rounded-lg bg-slate-50 p-3">
+                <div key={row.id} className="dash-tile rounded-lg bg-slate-50 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{row.label}</p>
                   <p className="mt-2 text-lg font-black text-slate-950">
                     {formatPredictiveValue(row.unit, row.forecast)}
@@ -415,25 +415,25 @@ function ManagerBenchmarkStrip({ snapshot }: { snapshot: CeoControlCenterSnapsho
         </Link>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+        <article className="dash-tile rounded-xl border border-[var(--line)] bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Медиана CR</p>
           <p className="mt-2 text-2xl font-black text-slate-950">
             {b.medianCr == null ? "—" : pct(b.medianCr)}
           </p>
         </article>
-        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+        <article className="dash-tile rounded-xl border border-[var(--line)] bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Топ 20% CR</p>
           <p className="mt-2 text-2xl font-black text-slate-950">
             {b.p80Cr == null ? "—" : pct(b.p80Cr)}
           </p>
         </article>
-        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+        <article className="dash-tile rounded-xl border border-[var(--line)] bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Медиана €/лид</p>
           <p className="mt-2 text-2xl font-black text-slate-950">
             {b.medianRevenuePerLead == null ? "—" : eur(b.medianRevenuePerLead)}
           </p>
         </article>
-        <article className="rounded-xl border border-[var(--line)] bg-white p-4">
+        <article className="dash-tile rounded-xl border border-[var(--line)] bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Топ 20% €/лид</p>
           <p className="mt-2 text-2xl font-black text-slate-950">
             {b.p80RevenuePerLead == null ? "—" : eur(b.p80RevenuePerLead)}
@@ -441,7 +441,7 @@ function ManagerBenchmarkStrip({ snapshot }: { snapshot: CeoControlCenterSnapsho
         </article>
       </div>
       {top.length ? (
-        <div className="mt-4 rounded-xl border border-[var(--line)] bg-white p-4">
+        <div className="dash-tile mt-4 rounded-xl border border-[var(--line)] bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Лидеры по €/лид</p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             {top.map((row) => (

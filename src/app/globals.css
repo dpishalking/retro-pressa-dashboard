@@ -44,7 +44,8 @@ select {
   .aos-topbar__hub,
   .aos-link,
   .aos-tree-col button,
-  .office-hub-home-btn {
+  .office-hub-home-btn,
+  .dash-tile {
     transition:
       background-color 0.15s ease,
       color 0.15s ease,
@@ -107,6 +108,13 @@ a[href]:active,
   select:hover,
   .aos-filters select:hover {
     border-color: #94a3b8;
+  }
+
+  .dash-tile:hover {
+    transform: translateY(-2px);
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    box-shadow: 0 10px 24px rgba(36, 52, 71, 0.1);
   }
 }
 
@@ -323,8 +331,13 @@ td {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .magazine-flipbook-stage {
+  .magazine-flipbook-stage,
+  .dash-tile {
     transition: none;
+  }
+
+  .dash-tile:hover {
+    transform: none;
   }
 }
 
