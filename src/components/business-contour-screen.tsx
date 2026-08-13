@@ -419,7 +419,7 @@ function LinkList({ title, links }: { title: string; links: ActionLink[] }) {
             </div>
           );
           return link.href ? (
-            <Link key={link.title} href={link.href} className="block transition hover:bg-slate-50">
+            <Link key={link.title} href={link.href} className="block transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px">
               {row}
             </Link>
           ) : (

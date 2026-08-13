@@ -133,7 +133,7 @@ function OfficeCardLink({ office, accessLevel }: { office: OfficeCard; accessLev
 
   const content = (
     <article
-      className={`card flex h-full flex-col p-6 transition ${isClickable ? "hover:-translate-y-0.5 hover:shadow-lg" : "opacity-70"}`}
+      className={`card flex h-full flex-col p-6 transition ${isClickable ? "hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md active:bg-slate-50" : "opacity-70"}`}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className={`rounded-xl p-3 ${office.accent}`}>
@@ -182,7 +182,7 @@ export function OfficeHub() {
             {canAccessUserManagement(user.accessLevel) ? (
               <Link
                 href="/admin/users"
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px"
               >
                 <Settings size={16} />
                 {user.accessLevel === "rop" ? "Менеджеры" : "Доступы"}
@@ -191,7 +191,7 @@ export function OfficeHub() {
             {user.accessLevel === "admin" ? (
               <Link
                 href="/admin/partners"
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px"
               >
                 <Handshake size={16} />
                 Партнёры
@@ -200,7 +200,7 @@ export function OfficeHub() {
             <button
               type="button"
               onClick={() => logout()}
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px"
             >
               <LogOut size={16} />
               Выйти
@@ -226,7 +226,10 @@ export function OfficeHub() {
 
 export function OfficeHubBackLink() {
   return (
-    <Link href={HUB_PATH} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900">
+    <Link
+      href={HUB_PATH}
+      className="inline-flex items-center gap-2 rounded-lg px-1.5 py-1 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 active:translate-y-px"
+    >
       <ArrowLeft size={16} />
       В кабинет
     </Link>
