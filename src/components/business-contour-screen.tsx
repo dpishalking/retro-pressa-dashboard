@@ -57,7 +57,6 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     forecastDomain: "sales",
     detailLinks: [
       { title: "Воронка", description: "Лиды, счета, оплаты и зависшие сделки.", href: "/os/funnel", primary: true },
-      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Цикл сделки", description: "Скорость от лида до оплаты.", href: "/os/sales-cycle" },
       { title: "Менеджеры", description: "Конверсия и выручка по команде.", href: "/os/managers" },
       { title: "Диалоги", description: "Качество переписок и возражения.", href: "/rop/conversations" }
@@ -80,6 +79,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
+      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" }
     ],
     actionLinks: [
@@ -544,9 +544,11 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
       {contourId === "marketing" ? (
         <>
+          <LinkList title="Детализация" links={detailLinks} />
           <MarketingLandingTiles />
           <MarketingFunnelTiles />
           <MarketingAudienceBoard />
+          <LinkList title="Действия" links={actionLinks} />
         </>
       ) : (
         <>

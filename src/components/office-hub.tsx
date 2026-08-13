@@ -59,7 +59,7 @@ const officeSections: OfficeSection[] = [
     cards: [{
       href: "/marketing",
       title: "Маркетинг и трафик",
-      description: "Лендинги, бюджет, прогноз и каналы.",
+      description: "Лендинги, когорты, бюджет и каналы.",
       icon: Megaphone,
       status: "active",
       accent: "text-emerald-600 bg-emerald-50"
