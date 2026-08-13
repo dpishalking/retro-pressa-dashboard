@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { LandingEfficiencyScreen } from "@/components/landing-efficiency-screen";
 import { alxLandingDisplayName, getAlxLandingById } from "@/config/alx-landings";
 
@@ -17,6 +16,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function MarketingLandingPage({ params }: Props) {
   const { id } = await params;
-  if (!getAlxLandingById(id)) notFound();
   return <LandingEfficiencyScreen landingId={id} />;
 }

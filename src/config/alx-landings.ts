@@ -5,6 +5,7 @@
  */
 
 export const ALX_LANDINGS_SPREADSHEET_ID = "1Hh6U4udZXp69RVKMIF29RBHjKef5JxEbLHdmLZYIAIM";
+export const ART_LANDINGS_SPREADSHEET_ID = "1TW6WJFQGs-E1TUNLUYKDCULkHDLyagg8tZMCyx--yuA";
 
 export type AlxLandingTag = "green" | "yellow";
 
@@ -18,6 +19,10 @@ export type AlxLandingDef = {
   siteName: string;
   /** Landing path / address */
   address: string;
+  /** Contractor workbook. Defaults to ALX when omitted. */
+  spreadsheetId?: string;
+  /** Short contractor label shown on cards: ALX, ART, … */
+  sourceLabel?: string;
 };
 
 /** Active green/yellow landing tabs currently shown in Marketing. */
@@ -87,4 +92,14 @@ export function getAlxLandingById(id: string): AlxLandingDef | null {
 /** Sheet title without protocol, same as СВОД/ALX tab name: retro-pressa.com/life */
 export function alxLandingDisplayName(landing: Pick<AlxLandingDef, "sheetTitle">): string {
   return landing.sheetTitle.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+}
+
+export function parseLandingSite(sheetTitle: string): { siteName: string; address: string } {
+  const display = alxLandingDisplayName({ sheetTitle });
+  const slash = display.indexOf("/");
+  if (slash < 0) return { siteName: display || sheetTitle, address: "/" };
+  return {
+    siteName: display.slice(0, slash) || display,
+    address: display.slice(slash) || "/"
+  };
 }

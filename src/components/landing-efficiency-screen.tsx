@@ -9,6 +9,7 @@ import { currentPeriodKey } from "@/lib/conversation-periods";
 import { eur, number, pct } from "@/lib/format";
 import type { LandingEfficiencyDay, LandingEfficiencyTotals } from "@/lib/landings/load-landing-efficiency";
 import { alxLandingDisplayName } from "@/config/alx-landings";
+import { sheetsUrlForLanding } from "@/lib/landings/contractor-books";
 import { PERIOD_KEYS, type PeriodKey } from "@/types/metrics";
 
 type LoadStatus = { state: "idle" | "loading" | "ok" | "error"; message: string };
@@ -17,7 +18,16 @@ type EfficiencyResponse = {
   ok: true;
   period: string;
   isoMonth: string;
-  landing: { id: string; siteName: string; address: string; tag: string; sheetTitle: string; gid: number };
+  landing: {
+    id: string;
+    siteName: string;
+    address: string;
+    tag: string;
+    sheetTitle: string;
+    gid: number;
+    spreadsheetId?: string;
+    sourceLabel?: string;
+  };
   sheetTotals: LandingEfficiencyTotals;
   monthTotals: LandingEfficiencyTotals;
   days: LandingEfficiencyDay[];
@@ -140,8 +150,8 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
       ) : data && m ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Бюджет месяца" value={formatEur(m.spend)} hint="расход MTD с листа ALX" />
-            <Kpi label="Выручка MTD" value={formatEur(m.revenue)} hint="заказы € с листа ALX" />
+            <Kpi label="Бюджет месяца" value={formatEur(m.spend)} hint="расход MTD с листа подрядчика" />
+            <Kpi label="Выручка MTD" value={formatEur(m.revenue)} hint="заказы € с листа подрядчика" />
             <Kpi label="ROAS лендинга" value={formatRoas(m.roas)} hint="выручка / расход за месяц" />
             <Kpi
               label="ROAS D7"
@@ -211,7 +221,7 @@ export function LandingEfficiencyScreen({ landingId }: { landingId: string }) {
               ← Все лендинги
             </Link>
             <a
-              href={`https://docs.google.com/spreadsheets/d/1Hh6U4udZXp69RVKMIF29RBHjKef5JxEbLHdmLZYIAIM/edit#gid=${data.landing.gid ?? 0}`}
+              href={sheetsUrlForLanding(data.landing)}
               target="_blank"
               rel="noreferrer"
               className="font-semibold text-slate-600 hover:underline"

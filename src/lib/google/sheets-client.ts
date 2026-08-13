@@ -321,19 +321,32 @@ export async function formatSheetNumberColumns(input: {
   }
 }
 
-export async function listSheetTitles(spreadsheetId: string): Promise<string[]> {
+export type SpreadsheetTab = { title: string; sheetId: number };
+
+export async function listSpreadsheetTabs(spreadsheetId: string): Promise<SpreadsheetTab[]> {
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
   const response = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`,
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title)`,
     { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" },
   );
-  const data = (await response.json()) as { sheets?: Array<{ properties?: { title?: string } }> };
+  const data = (await response.json()) as {
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+    error?: { message?: string };
+  };
   if (!response.ok) {
-    throw new Error(`Google Sheets metadata failed: ${response.status}`);
+    throw new Error(`Google Sheets metadata failed: ${data.error?.message || response.status}`);
   }
-  return (data.sheets ?? [])
-    .map((sheet) => sheet.properties?.title)
-    .filter((title): title is string => Boolean(title));
+  return (data.sheets ?? []).flatMap((sheet) => {
+    const title = sheet.properties?.title?.trim() || "";
+    const sheetId = sheet.properties?.sheetId;
+    if (!title || sheetId == null) return [];
+    return [{ title, sheetId }];
+  });
+}
+
+export async function listSheetTitles(spreadsheetId: string): Promise<string[]> {
+  const tabs = await listSpreadsheetTabs(spreadsheetId);
+  return tabs.map((tab) => tab.title);
 }
 
 export async function ensureSheetTab(spreadsheetId: string, title: string): Promise<void> {

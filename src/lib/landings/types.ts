@@ -7,6 +7,7 @@ export type LandingEfficiencySummary = {
   siteName: string;
   address: string;
   tag: AlxLandingTag;
+  sourceLabel?: string;
   href: string;
   hasData: boolean;
   daysWithData: number;
