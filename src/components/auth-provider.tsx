@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { OfficeHubHomeButton } from "@/components/office-hub-home-button";
 import type { SessionUser } from "@/types/auth";
 
 type AuthContextValue = {
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, loading, refresh, logout }}>
       {children}
+      <OfficeHubHomeButton />
     </AuthContext.Provider>
   );
 }

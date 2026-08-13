@@ -127,7 +127,7 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
         </aside>
 
         <main className="aos-main">
-          <div className="aos-filters">
+          <div className="aos-filters aos-filters--bar">
             <label>
               Страна
               <select value={country} onChange={(event) => setCountry(event.target.value)}>
