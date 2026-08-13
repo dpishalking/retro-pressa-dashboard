@@ -48,10 +48,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     summaryMetricIds: [
       "revenue",
       "leads",
-      "bitrix_cards",
-      "unique_leads",
       "conversion_rate",
-      "unique_conversion_rate",
       "pipeline_stuck_amount",
       "paid_orders"
     ],
