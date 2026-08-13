@@ -30,33 +30,59 @@ jobs:
               "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
           fi
 
-      - name: Download cache files on runner
+      - name: Download cache + Bitrix snapshots on runner
         run: |
-          mkdir -p /tmp/sales-cycle-cache
+          mkdir -p /tmp/sales-cycle-cache /tmp/bitrix-snaps
           cd /tmp/sales-cycle-cache
-          curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/1oz7vz.json
-          curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/9rgjsw.json
-          curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/nv1xoi.json
-          curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/r8khmj.json
+          curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/taxtj0.json
+          curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/2hxj9b.json
+          curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/zknkt5.json
+          curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/py8aol.json
           ls -lah
           python3 - <<'PY'
           import json, pathlib
           for path in pathlib.Path("/tmp/sales-cycle-cache").glob("*.json"):
               data = json.loads(path.read_text())
               assert isinstance(data.get("cohorts"), list), path.name
-              print(path.name, "cohorts=", len(data["cohorts"]))
+              gifts = (data.get("breakdowns") or {}).get("gifts") or []
+              print(path.name, "cohorts=", len(data["cohorts"]), "gifts=", [g.get("key") for g in gifts[:6]])
+          PY
+          # Gift-patched Bitrix period snapshots (SPA cash + parent-deal giftTypes).
+          curl -fsSL --max-time 120 https://files.catbox.moe/y7djig.gz | gunzip > /tmp/bitrix-snaps/august-2026.json
+          curl -fsSL --max-time 120 https://files.catbox.moe/gl0wnd.gz | gunzip > /tmp/bitrix-snaps/july-2026.json
+          python3 - <<'PY'
+          import json
+          for name in ("august-2026.json", "july-2026.json"):
+              d = json.load(open(f"/tmp/bitrix-snaps/{name}"))
+              paid = d.get("paidDeals") or []
+              empty = sum(1 for x in paid if not (x.get("giftTypes") or []))
+              print(name, "paid", len(paid), "emptyGift", empty)
           PY
 
-      - name: Upload cache to server
+      - name: Upload cache + snapshots to server
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            'mkdir -p /opt/retro-pressa-shared/data/sales-cycle-cache /opt/retro-pressa/data/sales-cycle-cache'
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'mkdir -p /opt/retro-pressa-shared/data/sales-cycle-cache /opt/retro-pressa-shared/data/bitrix-snapshots /opt/retro-pressa/data/sales-cycle-cache'
           scp -i ~/.ssh/deploy_key /tmp/sales-cycle-cache/*.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/retro-pressa-shared/data/sales-cycle-cache/"
+          scp -i ~/.ssh/deploy_key /tmp/bitrix-snaps/*.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/retro-pressa-shared/data/bitrix-snapshots/"
           ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s << 'EOF'
           set -euo pipefail
           SHARED=/opt/retro-pressa-shared/data/sales-cycle-cache
+          SNAP=/opt/retro-pressa-shared/data/bitrix-snapshots
           ls -lah "$SHARED"
+          ls -lh "$SNAP"/july-2026.json "$SNAP"/august-2026.json
+          python3 - <<'PY'
+          import json
+          for name in ("august-2026.json", "july-2026.json"):
+              d = json.load(open(f"/opt/retro-pressa-shared/data/bitrix-snapshots/{name}"))
+              paid = d.get("paidDeals") or []
+              empty = sum(1 for x in paid if not (x.get("giftTypes") or []))
+              print(name, "paid", len(paid), "emptyGift", empty, "at", d.get("createdAt"))
+          PY
           # APP data is a symlink to shared — no copy needed.
           curl -fsS --max-time 180 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
             -H "Content-Type: application/json" \

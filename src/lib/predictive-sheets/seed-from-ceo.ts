@@ -6,6 +6,7 @@ import {
 } from "@/lib/sales-os/svod-plans";
 import { readSheetValues } from "@/lib/google/sheets-client";
 import type { BitrixManagerFacts, BitrixMonthFacts, WeeklyFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
+import { managerPayrollSeedValues, type PayrollCalendar } from "@/lib/predictive-sheets/payroll-seed";
 
 export type SeedValue = {
   plan: number | null;
@@ -21,6 +22,7 @@ export type CeoSeedBundle = {
   general: Record<string, SeedValue>;
   paid: Record<string, SeedValue>;
   organic: Record<string, SeedValue>;
+  finance?: Record<string, SeedValue>;
   source: string;
 };
 
@@ -195,7 +197,8 @@ export function applyBitrixFacts(seed: CeoSeedBundle, bitrix: BitrixMonthFacts):
 export function seedForManager(
   company: CeoSeedBundle,
   facts: BitrixManagerFacts,
-  revenuePlan?: number | null
+  revenuePlan?: number | null,
+  calendar?: PayrollCalendar
 ): CeoSeedBundle {
   const g = company.general;
   const checkFact =
@@ -228,6 +231,9 @@ export function seedForManager(
   }
 
   const decompNote = "декомпозиция от плана выручки по бенчмаркам 04_SALES_GENERAL";
+  const payroll = calendar
+    ? managerPayrollSeedValues(facts, revPlan, calendar)
+    : {};
 
   return {
     month: company.month,
@@ -285,7 +291,12 @@ export function seedForManager(
         fact: ratePct(facts.payments, facts.invoices),
         weekFact: weeklyRate(facts.paymentsByWeek, facts.invoicesByWeek),
         planNote: crPlan != null ? "бенчмарк отдела (ставка)" : "нет плана"
-      }
+      },
+      salary: payroll.salary || { plan: null, fact: null },
+      commission: payroll.commission || { plan: null, fact: null },
+      bonuses: payroll.bonuses || { plan: null, fact: null },
+      payroll: payroll.payroll || { plan: null, fact: null },
+      payroll_per_day: payroll.payroll_per_day || { plan: null, fact: null }
     }
   };
 }
@@ -338,7 +349,20 @@ export function seedForMetricId(
     sg_qualification_rate: g.qualification_rate || { plan: null, fact: null },
     sg_qualified_leads: g.qualified_leads || { plan: null, fact: null },
     sg_invoices: g.invoices || { plan: null, fact: null },
-    sg_cr_invoice_payment: g.invoice_to_payment_cr || { plan: null, fact: null }
+    sg_cr_invoice_payment: g.invoice_to_payment_cr || { plan: null, fact: null },
+    sg_salary: g.salary || { plan: null, fact: null },
+    sg_commission: g.commission || { plan: null, fact: null },
+    sg_bonuses: g.bonuses || { plan: null, fact: null },
+    sg_payroll: g.payroll || { plan: null, fact: null },
+    sg_payroll_per_day: g.payroll_per_day || { plan: null, fact: null },
+
+    fn_revenue: seed.finance?.revenue || g.revenue || { plan: null, fact: null },
+    fn_ad_spend: seed.finance?.ad_spend || g.budget || { plan: null, fact: null },
+    fn_contribution_ads: seed.finance?.contribution_ads || { plan: null, fact: null },
+    fn_payroll: seed.finance?.payroll || { plan: null, fact: null },
+    fn_after_payroll: seed.finance?.after_payroll || { plan: null, fact: null },
+    fn_roas: seed.finance?.roas || g.roas || { plan: null, fact: null },
+    fn_fot_share: seed.finance?.fot_share || { plan: null, fact: null }
   };
 
   let value = map[metricId] || { plan: null, fact: null };

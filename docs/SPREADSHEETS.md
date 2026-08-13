@@ -76,8 +76,8 @@ Tabs: [business-os/ARCHITECTURE.md](./business-os/ARCHITECTURE.md) · [business-
 | Env | `MONTHLY_PLAN_SPREADSHEET_ID` / `MONTHLY_PLAN_TAB` |
 | Purpose | Monthly plan for all indicators (ОБЩИЕ, Facebook, Яндекс, Органика, расходы) |
 | Status | **Primary** plan source for Analytics OS / predictive |
-| Manual | Yes — plan columns per month |
-| Automatic | Read-only |
+| Manual | Yes — **План** columns per month |
+| Automatic | **Факт** once a day ~09:00 Europe/Riga (`/api/sync/monthly-plan-facts`). Plan cells are never overwritten. |
 
 ---
 

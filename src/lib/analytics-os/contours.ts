@@ -263,14 +263,14 @@ const BUSINESS_CONTOUR_ORDER: Array<{
   {
     id: "sales",
     title: "Продажи",
-    subtitle: "Воронка, когорты, команда и качество диалогов",
-    contourIds: ["funnel", "cohorts", "sales-cycle", "managers", "conversations"]
+    subtitle: "Воронка, команда и качество диалогов",
+    contourIds: ["funnel", "sales-cycle", "managers", "conversations"]
   },
   {
     id: "marketing",
     title: "Маркетинг и трафик",
-    subtitle: "Бюджет, привлечение и креативы",
-    contourIds: ["marketing", "creatives"]
+    subtitle: "Бюджет, когорты, привлечение и креативы",
+    contourIds: ["marketing", "cohorts", "creatives"]
   },
   {
     id: "product",

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Megaphone, Package, Target, type LucideIcon, WalletCards } from "lucide-react";
@@ -15,8 +16,9 @@ import { readJsonResponse } from "@/lib/api-response";
 import { metricLabel } from "@/lib/analytics-os/metric-glossary";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { eur, number, pct } from "@/lib/format";
+import { matchGiftVisual } from "@/lib/product-cards/gift-visual";
 import type { PredictiveDomain, PredictiveDomainBlock, PredictiveOverview } from "@/lib/predictive/types";
-import type { AnalyticsMetricValue, CeoControlCenterSnapshot } from "@/types/analytics-os";
+import type { AnalyticsMetricValue, AnalyticsProductRow, CeoControlCenterSnapshot } from "@/types/analytics-os";
 
 type ContourId = "sales" | "marketing" | "product" | "finance";
 
@@ -56,7 +58,6 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     forecastDomain: "sales",
     detailLinks: [
       { title: "Воронка", description: "Лиды, счета, оплаты и зависшие сделки.", href: "/os/funnel", primary: true },
-      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Цикл сделки", description: "Скорость от лида до оплаты.", href: "/os/sales-cycle" },
       { title: "Менеджеры", description: "Конверсия и выручка по команде.", href: "/os/managers" },
       { title: "Диалоги", description: "Качество переписок и возражения.", href: "/rop/conversations" }
@@ -79,6 +80,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
+      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" }
     ],
     actionLinks: [
@@ -247,29 +249,92 @@ function ContourForecast({ domain }: { domain: PredictiveDomain }) {
   );
 }
 
+const TOP_GIFT_BAR = ["bg-amber-700", "bg-slate-800", "bg-orange-600"] as const;
+
+function TopGiftCard({ product, rank }: { product: AnalyticsProductRow; rank: number }) {
+  const visual = matchGiftVisual(product.productName);
+  const bar = TOP_GIFT_BAR[rank] ?? "bg-slate-700";
+  const media = (
+    <div className="relative aspect-[5/3] overflow-hidden bg-slate-100">
+      {visual ? (
+        <Image
+          src={visual.image}
+          alt={product.productName}
+          fill
+          className="object-cover object-top"
+          sizes="(max-width: 768px) 100vw, 33vw"
+          unoptimized
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center bg-gradient-to-br from-amber-100 to-slate-200">
+          <span className="text-4xl font-black text-slate-400">{product.productName.slice(0, 1)}</span>
+        </div>
+      )}
+      <span className="absolute left-3 top-3 rounded-md bg-white/90 px-2 py-1 text-xs font-black text-slate-900">
+        #{rank + 1}
+      </span>
+    </div>
+  );
+
+  return (
+    <article className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
+      {visual?.href ? (
+        <Link href={visual.href} className="block" target="_blank" rel="noreferrer">
+          {media}
+        </Link>
+      ) : (
+        media
+      )}
+      <div className="p-4">
+        <p className="text-sm font-bold text-slate-950">{product.productName}</p>
+        {visual?.subtitle ? <p className="mt-1 text-xs text-slate-500">{visual.subtitle}</p> : null}
+        <p className="mt-3 text-xl font-black text-slate-950">{eur(product.revenue)}</p>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className={`h-full rounded-full ${bar}`} style={{ width: `${Math.max(4, Math.min(100, product.share * 100))}%` }} />
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          {pct(product.share)} доли · {number(product.orders)} продаж
+          {product.marginRate == null ? "" : ` · маржа ${pct(product.marginRate)}`}
+        </p>
+        {visual?.href ? (
+          <Link href={visual.href} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-bold text-blue-600">
+            Карточка подарка →
+          </Link>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
 function ProductHighlights({ snapshot }: { snapshot: CeoControlCenterSnapshot | null }) {
   if (!snapshot) return null;
   const top = snapshot.products.slice(0, 3);
   const pricing = (snapshot.pricingCompare || []).slice(0, 6);
   if (!top.length && !pricing.length) return null;
+  const mixTotal = top.reduce((sum, row) => sum + row.share, 0);
   return (
     <>
       {top.length ? (
         <section className="mb-8">
           <div className="mb-4">
             <h2 className="text-2xl font-black text-slate-950">Топ продуктов</h2>
-            <p className="mt-1 text-sm text-slate-600">По оплаченной выручке за выбранный период.</p>
+            <p className="mt-1 text-sm text-slate-600">Визуал подарка и оплаченная выручка за выбранный период.</p>
           </div>
+          {mixTotal > 0 ? (
+            <div className="mb-3 flex h-2.5 overflow-hidden rounded-full bg-slate-100">
+              {top.map((product, index) => (
+                <div
+                  key={product.productId}
+                  className={TOP_GIFT_BAR[index] ?? "bg-slate-700"}
+                  style={{ width: `${(product.share / mixTotal) * 100}%` }}
+                  title={`${product.productName}: ${pct(product.share)}`}
+                />
+              ))}
+            </div>
+          ) : null}
           <div className="grid gap-3 md:grid-cols-3">
-            {top.map((product) => (
-              <article key={product.productId} className="rounded-xl border border-[var(--line)] bg-white p-4">
-                <p className="text-sm font-bold text-slate-950">{product.productName}</p>
-                <p className="mt-2 text-xl font-black text-slate-950">{eur(product.revenue)}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {pct(product.share)}
-                  {product.marginRate == null ? "" : ` · маржа ${pct(product.marginRate)}`}
-                </p>
-              </article>
+            {top.map((product, index) => (
+              <TopGiftCard key={product.productId} product={product} rank={index} />
             ))}
           </div>
         </section>
@@ -420,7 +485,7 @@ function LinkList({ title, links }: { title: string; links: ActionLink[] }) {
             </div>
           );
           return link.href ? (
-            <Link key={link.title} href={link.href} className="block transition hover:bg-slate-50">
+            <Link key={link.title} href={link.href} className="block transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px">
               {row}
             </Link>
           ) : (
@@ -481,9 +546,11 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
       {contourId === "marketing" ? (
         <>
+          <LinkList title="Детализация" links={detailLinks} />
           <MarketingLandingTiles />
           <MarketingFunnelTiles />
           <MarketingAudienceBoard />
+          <LinkList title="Действия" links={actionLinks} />
         </>
       ) : (
         <>

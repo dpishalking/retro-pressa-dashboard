@@ -23,6 +23,8 @@ import {
 import { applyBitrixFacts, loadCeoSeed, seedForManager, seedForMetricId, type CeoSeedBundle } from "@/lib/predictive-sheets/seed-from-ceo";
 import { loadBitrixSalesFacts, type BitrixManagerFacts } from "@/lib/predictive-sheets/seed-from-bitrix";
 import { applyChannelFacts, loadSvodChannelFacts } from "@/lib/predictive-sheets/seed-from-channels";
+import { applyFinanceFacts } from "@/lib/predictive-sheets/seed-from-finance";
+import { buildMotivationSheet } from "@/lib/predictive-sheets/motivation-sheet";
 import { isManagerSheet, managerBySheet, PM_MANAGER_SHEETS, PM_SALES_MANAGERS } from "@/lib/predictive-sheets/managers";
 import {
   PM_COL,
@@ -133,6 +135,8 @@ function detailSheetTitle(sheetTitle: string): string {
   if (sheetTitle.includes("PAID")) return "Маркетинг · платный";
   if (sheetTitle.includes("ORGANIC")) return "Маркетинг · органика";
   if (sheetTitle.includes("SALES")) return "Продажи";
+  if (sheetTitle.includes("FINANCE")) return "Финансы";
+  if (sheetTitle.includes("MOTIVATION")) return "Мотивация";
   return "Маркетинг · общее";
 }
 
@@ -262,6 +266,7 @@ function buildOwnersRows(): CellValue[][] {
     ["Маркетинг"],
     ["Маркетинг / РОП"],
     ["РОП"],
+    ["Финансы"],
     ...PM_SALES_MANAGERS.map((m) => [`${m.firstName} (${m.fullName})`]),
     ["—"]
   ];
@@ -350,7 +355,7 @@ function isLagMatrixMetric(m: PmCatalogMetric): boolean {
 
 function layoutDetailSheet(sheetTitle: string): DetailLayout {
   const metrics = isManagerSheet(sheetTitle)
-    ? metricsForSheet(PM_SHEETS.salesGeneral)
+    ? [...metricsForSheet(PM_SHEETS.salesGeneral), ...metricsForSheet(PM_SHEETS.motivation)]
     : metricsForSheet(sheetTitle);
   const lagMetrics = metrics.filter(isLagMatrixMetric);
   const leadMetrics = metrics.filter((m) => !isLagMatrixMetric(m));
@@ -745,8 +750,12 @@ function buildManagersSheet(settingsTab: string): CellValue[][] {
 function buildDiagnostics(seed: CeoSeedBundle): { rows: CellValue[][]; issues: string[] } {
   const issues: string[] = [];
   for (const m of PM_METRIC_CATALOG) {
+    if (m.sheet === PM_SHEETS.motivation) continue;
+    if (m.plan_source === "NO_PLAN") continue;
     const s = seedForMetricId(m.metric_id, seed);
-    if (s.plan == null) issues.push(`NO_PLAN: ${m.metric_id}`);
+    if (s.plan == null && !String(m.plan_source || "").startsWith("NO_PLAN")) {
+      issues.push(`NO_PLAN: ${m.metric_id}`);
+    }
     if (s.fact == null) issues.push(`NO_FACT: ${m.metric_id}`);
   }
   issues.push("Недельный план: пропорционально дням пн–вс");
@@ -1276,11 +1285,12 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
     PM_SHEETS.salesGeneral,
-    ...PM_MANAGER_SHEETS
+    ...PM_MANAGER_SHEETS,
+    PM_SHEETS.finance
   ];
 
   if (input?.formatOnly) {
-    await clearFrozenColumns(spreadsheetId, [...detailTitles, PM_SHEETS.salesManagers]);
+    await clearFrozenColumns(spreadsheetId, [...detailTitles, PM_SHEETS.salesManagers, PM_SHEETS.motivation]);
     await applyDashboardFormatting(spreadsheetId, meta);
     for (const title of detailTitles) {
       await applyDetailFormatting(spreadsheetId, title, layoutDetailSheet(title), meta);
@@ -1316,6 +1326,7 @@ export async function bootstrapPredictiveSheets(input?: {
       `[predictive-sheets] СВОД channel facts unavailable: ${err instanceof Error ? err.message : String(err)}`
     );
   }
+  seed = applyFinanceFacts(seed, managerFacts);
 
   const existing = await listSheetTitles(spreadsheetId);
   const sheetsCreated: string[] = [];
@@ -1334,6 +1345,8 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.salesGeneral,
     ...PM_MANAGER_SHEETS,
     PM_SHEETS.salesManagers,
+    PM_SHEETS.finance,
+    PM_SHEETS.motivation,
     PM_SHEETS.actions,
     PM_SHEETS.metrics,
     PM_SHEETS.settings,
@@ -1362,13 +1375,24 @@ export async function bootstrapPredictiveSheets(input?: {
   await writeTab(spreadsheetId, PM_SHEETS.rawData, buildRawRows(seed), "A:X");
   await writeTab(spreadsheetId, PM_SHEETS.diagnostics, diagnostics.rows, "A:B");
   await writeTab(spreadsheetId, PM_SHEETS.salesManagers, buildManagersSheet(PM_SHEETS.settings), "A:M");
+  await writeTab(
+    spreadsheetId,
+    PM_SHEETS.motivation,
+    buildMotivationSheet(PM_SHEETS.settings, managerFacts, {
+      month: period,
+      elapsed: meta.elapsed,
+      totalDays: meta.totalDays
+    }),
+    "A:N"
+  );
 
   const detailLayouts: Array<{ title: string; layout: ReturnType<typeof layoutDetailSheet> }> = [];
   for (const title of [
     PM_SHEETS.marketingGeneral,
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
-    PM_SHEETS.salesGeneral
+    PM_SHEETS.salesGeneral,
+    PM_SHEETS.finance
   ]) {
     const { rows, layout, notes } = buildDetailGrid(title, PM_SHEETS.settings, seed, meta);
     await writeTab(spreadsheetId, title, rows, "A:Z");
@@ -1394,7 +1418,11 @@ export async function bootstrapPredictiveSheets(input?: {
       qualifiedLeadsByWeek: [null, null, null, null, null],
       source: "Bitrix manager facts unavailable"
     };
-    const managerSeed = seedForManager(seed, facts ?? emptyFacts, mgr.revenuePlan);
+    const managerSeed = seedForManager(seed, facts ?? emptyFacts, mgr.revenuePlan, {
+      month: period,
+      elapsed: meta.elapsed,
+      totalDays: meta.totalDays
+    });
     const { rows, layout, notes } = buildDetailGrid(mgr.sheet, PM_SHEETS.settings, managerSeed, meta);
     await writeTab(spreadsheetId, mgr.sheet, rows, "A:Z");
     await applyCellNotes(spreadsheetId, mgr.sheet, notes);
@@ -1414,7 +1442,9 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingOrganic,
     PM_SHEETS.salesGeneral,
     ...PM_MANAGER_SHEETS,
-    PM_SHEETS.salesManagers
+    PM_SHEETS.salesManagers,
+    PM_SHEETS.finance,
+    PM_SHEETS.motivation
   ]);
 
   // Formatting
