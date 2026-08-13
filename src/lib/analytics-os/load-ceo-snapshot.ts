@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { readBitrixSnapshot, type BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
+import { readBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
 import { getCompanySnapshot, readCompanySnapshot } from "@/lib/company-snapshot";
 import { cashRoas, revenuePlanCompletion } from "@/lib/metrics-engine";
 import { targetScenario } from "@/data/demo-data";
@@ -24,7 +24,6 @@ import {
   opportunityGaps,
   pipelineAgeAnalysis,
   sumDelivery,
-  type LeadIdentity
 } from "@/lib/analytics-os/decision-extras";
 import { metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
@@ -43,6 +42,7 @@ import {
   loadProductHubMarginCatalog
 } from "@/lib/product-hub/sku-margin-catalog";
 import { buildUnitEconomicsUnits } from "@/lib/analytics-os/unit-economics-units";
+import { attachDealCountries } from "@/lib/bitrix/deal-country";
 import { hydrateDealProducts, isMissingProductLabel } from "@/lib/bitrix/gift-type-resolver";
 import type {
   AnalyticsPlanIndicator,
@@ -168,22 +168,20 @@ async function loadAdSpend(legacy: PeriodKey | null): Promise<{ value: number | 
   }
 }
 
-async function loadPriorLeadIdentities(period: AnalyticsPeriod): Promise<LeadIdentity[]> {
+async function loadPriorCountryCorpus(period: AnalyticsPeriod): Promise<{
+  leads: BitrixSnapshotLead[];
+  deals: BitrixSnapshotDeal[];
+}> {
   const prior = (await listAvailablePeriods()).filter((p) => p < period);
-  const out: LeadIdentity[] = [];
+  const leads: BitrixSnapshotLead[] = [];
+  const deals: BitrixSnapshotDeal[] = [];
   for (const p of prior) {
     const snap = await loadBitrixForPeriod(p);
     if (!snap) continue;
-    for (const lead of snap.leads || []) {
-      out.push({
-        id: lead.id,
-        phones: lead.phones || [],
-        emails: lead.emails || [],
-        contactId: lead.contactId ?? null
-      });
-    }
+    leads.push(...(snap.leads || []), ...(snap.recentLeads || []));
+    deals.push(...(snap.deals || []), ...(snap.paidDeals || []), ...(snap.openPipeline || []));
   }
-  return out;
+  return { leads, deals };
 }
 
 async function loadMariaMonthRevenue(period: AnalyticsPeriod): Promise<number | null> {
@@ -266,7 +264,26 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     });
   }
 
-  const filtered = filterSnapshot(snapshot, filters);
+  const priorCorpus = await loadPriorCountryCorpus(period);
+  const priorLeads = priorCorpus.leads;
+  const countryLeads = [...(snapshot.leads || []), ...(snapshot.recentLeads || []), ...priorLeads];
+  const dealsWithCountry = attachDealCountries(snapshot.deals, countryLeads, priorCorpus.deals);
+  const openWithCountry = attachDealCountries(
+    snapshot.openPipeline || [],
+    countryLeads,
+    [...dealsWithCountry, ...priorCorpus.deals]
+  );
+  const snapshotWithCountry: BitrixSnapshot = {
+    ...snapshot,
+    deals: dealsWithCountry,
+    openPipeline: openWithCountry,
+    paidDeals: attachDealCountries(snapshot.paidDeals, countryLeads, [
+      ...dealsWithCountry,
+      ...openWithCountry,
+      ...priorCorpus.deals
+    ])
+  };
+  const filtered = filterSnapshot(snapshotWithCountry, filters);
   /** СВОД `day` has no country/manager grain — slice KPIs must use Bitrix. */
   const leadsSliced = Boolean(filters.country || filters.managerId);
   const currentMonth = currentAnalyticsPeriod(now);
@@ -281,7 +298,12 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const tree = aggregateRevenueTree(paidDeals);
   const funnel = aggregateFunnel({ leads, invoiceDeals, paidDeals });
   const managers = aggregateManagers({ leads, paidDeals });
-  const historyLeads = await loadPriorLeadIdentities(period);
+  const historyLeads = priorLeads.map((lead) => ({
+    id: lead.id,
+    phones: lead.phones || [],
+    emails: lead.emails || [],
+    contactId: lead.contactId ?? null
+  }));
   const uniqueLeadStats = countUniqueLeadsWithHistory(leads, historyLeads);
   const deliveryStats = sumDelivery(paidDeals);
   const bench = managerBenchmark(leads, paidDeals);
@@ -832,7 +854,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const filterOptions = {
     countries: [
       ...new Set(
-        [...snapshot.paidDeals, ...snapshot.leads]
+        [...snapshotWithCountry.paidDeals, ...snapshotWithCountry.leads]
           .map((row) => row.country)
           .filter((country): country is string => Boolean(country))
       )
