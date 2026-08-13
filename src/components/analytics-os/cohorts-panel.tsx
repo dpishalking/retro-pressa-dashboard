@@ -258,6 +258,37 @@ export function CohortsPanel({
   const breakdownRows = data ? breakdownForTab(data, tab) : null;
   const current = data ? focusCohort(data.cohorts, data.period) : undefined;
   const decision = data ? buildCohortDecision(data, tab) : null;
+  const isTimeTab = tab === "month" || tab === "week";
+  const mini = (() => {
+    if (!data) return null;
+    if (isTimeTab) {
+      if (!current) return null;
+      return {
+        leadLabel: `Лиды когорты ${current.cohortKey}`,
+        leads: current.leads,
+        paid: current.paid,
+        revenue: current.revenue
+      };
+    }
+    if (!breakdownRows?.length) {
+      if (!current) return null;
+      return {
+        leadLabel: `Итого когорта ${data.period}`,
+        leads: current.leads,
+        paid: current.paid,
+        revenue: current.revenue
+      };
+    }
+    // Same selected-month cohort as the table below (period-scoped breakdowns).
+    const leads = breakdownRows.reduce((sum, row) => sum + row.leads, 0);
+    const paid = breakdownRows.reduce((sum, row) => sum + row.paid, 0);
+    const revenue = breakdownRows.reduce((sum, row) => sum + row.revenue, 0);
+    const leadLabel =
+      tab === "product" || tab === "gift"
+        ? `Первые оплаты · ${data.period}`
+        : `Итого по таблице · ${data.period}`;
+    return { leadLabel, leads, paid, revenue };
+  })();
 
   return (
     <div className="aos-cohorts">
@@ -305,23 +336,23 @@ export function CohortsPanel({
           {tabMeta.hint}
         </p>
 
-        {data && current ? (
+        {mini ? (
           <div className="aos-stat-grid">
             <div className="aos-stat">
-              <span>Лиды когорты {current.cohortKey}</span>
-              <strong>{number(current.leads)}</strong>
+              <span>{mini.leadLabel}</span>
+              <strong>{number(mini.leads)}</strong>
             </div>
             <div className="aos-stat">
               <span>Оплаты</span>
-              <strong>{number(current.paid)}</strong>
+              <strong>{number(mini.paid)}</strong>
             </div>
             <div className="aos-stat">
               <span>Конверсия</span>
-              <strong>{cr(current.paid, current.leads) == null ? "—" : pct(cr(current.paid, current.leads)!)}</strong>
+              <strong>{cr(mini.paid, mini.leads) == null ? "—" : pct(cr(mini.paid, mini.leads)!)}</strong>
             </div>
             <div className="aos-stat">
-              <span>Выручка когорты</span>
-              <strong>{eur(current.revenue)}</strong>
+              <span>Выручка</span>
+              <strong>{eur(mini.revenue)}</strong>
             </div>
           </div>
         ) : null}
@@ -351,7 +382,7 @@ export function CohortsPanel({
         <DecisionBrief body={decision} />
       </section>
 
-      {data && (tab === "month" || tab === "week") ? (
+      {data && isTimeTab ? (
         <section className="aos-card">
           <div className="aos-section-head">
             <div>

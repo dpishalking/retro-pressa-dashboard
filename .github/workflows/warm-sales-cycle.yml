@@ -34,10 +34,10 @@ jobs:
         run: |
           mkdir -p /tmp/sales-cycle-cache
           cd /tmp/sales-cycle-cache
-          curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/h2li1e.json
-          curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/5sc01t.json
-          curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/03mg4o.json
-          curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/3yu77d.json
+          curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/1oz7vz.json
+          curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/9rgjsw.json
+          curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/nv1xoi.json
+          curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/r8khmj.json
           ls -lah
           python3 - <<'PY'
           import json, pathlib

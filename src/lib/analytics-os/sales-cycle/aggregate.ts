@@ -545,6 +545,15 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
   const cohorts = buildCohortRows(leads, facts, input.cohortGrain, input.asOf);
   const cashVsCohort = buildCashVsCohort(facts, input.period);
 
+  // Dimension cuts on the Cohorts screen must match the selected month cohort —
+  // not the full multi-month Bitrix corpus (that made mini-KPI and tables disagree).
+  const periodLeadIds = new Set(periodLeads.map((lead) => lead.id));
+  const cohortFacts = facts.filter(
+    (fact) =>
+      (fact.leadId != null && periodLeadIds.has(fact.leadId)) ||
+      (fact.leadCreatedAt != null && monthKeyInTz(fact.leadCreatedAt) === input.period)
+  );
+
   const byMethod = {
     lead_id: facts.filter((f) => f.joinMethod === "lead_id").length,
     contact_id: facts.filter((f) => f.joinMethod === "contact_id").length,
@@ -569,7 +578,8 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
       "У лидов в старых снапшотах может не быть contactId — contact fallback через сделки с тем же contact.",
       useUnique
         ? `Unique Lead CR + история до ${input.period} (coverage ${Math.round(uniqueLeadStats.coverageWithIdentity * 100)}%, history dups ${uniqueLeadStats.historyDuplicates}).`
-        : "Unique-lead dedup слабый → CR по карточкам (Created Lead CR)."
+        : "Unique-lead dedup слабый → CR по карточкам (Created Lead CR).",
+      `Разрезы менеджер/канал/продукт — только когорта ${input.period} (${periodLeads.length} лидов).`
     ]
   };
 
@@ -592,14 +602,14 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
     currentVsBenchmark: buildBenchmark(cohorts, input.period),
     forecast: buildForecast(cohorts, input.period),
     breakdowns: {
-      managers: breakdown(leads, facts, "manager", input.asOf),
-      products: breakdown(leads, facts, "product", input.asOf),
-      countries: breakdown(leads, facts, "country", input.asOf),
-      sources: breakdown(leads, facts, "source", input.asOf),
-      channels: breakdown(leads, facts, "channel", input.asOf),
-      gifts: breakdown(leads, facts, "gift", input.asOf),
-      customers: breakdown(leads, facts, "customer", input.asOf),
-      traffic: breakdown(leads, facts, "traffic", input.asOf)
+      managers: breakdown(periodLeads, cohortFacts, "manager", input.asOf),
+      products: breakdown(periodLeads, cohortFacts, "product", input.asOf),
+      countries: breakdown(periodLeads, cohortFacts, "country", input.asOf),
+      sources: breakdown(periodLeads, cohortFacts, "source", input.asOf),
+      channels: breakdown(periodLeads, cohortFacts, "channel", input.asOf),
+      gifts: breakdown(periodLeads, cohortFacts, "gift", input.asOf),
+      customers: breakdown(periodLeads, cohortFacts, "customer", input.asOf),
+      traffic: breakdown(periodLeads, cohortFacts, "traffic", input.asOf)
     },
     dataQuality,
     availablePeriods: input.availablePeriods

@@ -172,6 +172,11 @@ assert.ok(Math.abs(hoursBetween("2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z") 
   assert.equal(d7?.matured, true);
   assert.ok(d7?.value != null);
 
+  // Manager/channel cuts are scoped to the selected month cohort, not the full corpus.
+  const managerLeadTotal = payload.breakdowns.managers.reduce((sum, row) => sum + row.leads, 0);
+  assert.equal(managerLeadTotal, 2); // L1 + L2 in July; L3 (June) excluded
+  assert.ok(payload.breakdowns.managers.every((row) => row.leads <= 2));
+
   // Fresh August day cohort is not D30-matured
   const dayPayload = aggregateSalesCycle({
     facts,
