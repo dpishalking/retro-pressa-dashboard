@@ -13,6 +13,7 @@ import {
   resolveGiftTypeNamesByItemIds
 } from "@/lib/bitrix/gift-type-resolver";
 import {
+  BITRIX_DEAL_COUNTRY_FIELD,
   BITRIX_DEAL_GIFT_LINKS_FIELD,
   BITRIX_SMART_INVOICE_COMPLETION_DATE_FIELD,
   BITRIX_SMART_INVOICE_ENTITY_TYPE_ID,
@@ -51,6 +52,7 @@ type ParentDealGiftInfo = {
   giftTypes: string[];
   title: string | null;
   productNames: string[];
+  countryRaw: string;
 };
 
 function dayKey(value: string | null | undefined): string | null {
@@ -160,7 +162,7 @@ async function loadParentDealGiftInfo(dealIds: string[]): Promise<Map<string, Pa
   const giftItemIds = new Set<string>();
   const rawByDeal = new Map<
     string,
-    { leadId: string | null; title: string | null; giftRaw: unknown; productNames: string[] }
+    { leadId: string | null; title: string | null; giftRaw: unknown; productNames: string[]; countryRaw: string }
   >();
 
   for (const batch of chunkIds(unique, 25)) {
@@ -168,7 +170,7 @@ async function loadParentDealGiftInfo(dealIds: string[]): Promise<Map<string, Pa
       batch.flatMap((id, index) => [
         [
           `d${index}`,
-          `crm.deal.get?id=${encodeURIComponent(id)}&select[]=ID&select[]=TITLE&select[]=LEAD_ID&select[]=${BITRIX_DEAL_GIFT_LINKS_FIELD}`
+          `crm.deal.get?id=${encodeURIComponent(id)}&select[]=ID&select[]=TITLE&select[]=LEAD_ID&select[]=${BITRIX_DEAL_GIFT_LINKS_FIELD}&select[]=${BITRIX_DEAL_COUNTRY_FIELD}`
         ],
         [`p${index}`, `crm.deal.productrows.get?id=${encodeURIComponent(id)}`]
       ])
@@ -181,11 +183,14 @@ async function loadParentDealGiftInfo(dealIds: string[]): Promise<Map<string, Pa
       const id = String(deal.ID ?? batch[index]);
       const giftRaw = deal[BITRIX_DEAL_GIFT_LINKS_FIELD];
       for (const giftId of parseDealGiftLinkIds(giftRaw)) giftItemIds.add(giftId);
+      const countryVal = deal[BITRIX_DEAL_COUNTRY_FIELD];
+      const countryRaw = Array.isArray(countryVal) ? String(countryVal[0] || "") : String(countryVal || "");
       rawByDeal.set(id, {
         leadId: deal.LEAD_ID != null && String(deal.LEAD_ID) !== "0" ? String(deal.LEAD_ID) : null,
         title: deal.TITLE != null ? String(deal.TITLE) : null,
         giftRaw,
-        productNames: productNamesFromRows(rows)
+        productNames: productNamesFromRows(rows),
+        countryRaw: countryRaw.trim()
       });
     }
   }
@@ -198,7 +203,8 @@ async function loadParentDealGiftInfo(dealIds: string[]): Promise<Map<string, Pa
       leadId: raw.leadId,
       title: raw.title,
       giftTypes: fromSpa.length ? fromSpa : Array.from(new Set(fromProducts)),
-      productNames: raw.productNames
+      productNames: raw.productNames,
+      countryRaw: raw.countryRaw
     });
   }
   return out;
@@ -268,7 +274,7 @@ export async function listPaidSmartInvoicesForPeriod(
       sourceId: null,
       assignedById,
       managerName: userNames?.get(assignedById) ?? `ID ${assignedById}`,
-      country: "",
+      country: parent?.countryRaw || "",
       utmCampaign: null,
       landingPage: null,
       phone: null,

@@ -16,6 +16,8 @@ import {
   isAnalyticsPeriod,
   parseAnalyticsPeriod
 } from "@/lib/analytics-os/period";
+import { attachDealCountries } from "@/lib/bitrix/deal-country";
+import { buildUnitEconomicsUnits } from "@/lib/analytics-os/unit-economics-units";
 
 const snapshot = {
   version: 2,
@@ -172,5 +174,38 @@ const forced = metricValue({
   source: "test"
 });
 assert.equal(forced.value, null);
+
+const spaInvoices = attachDealCountries(
+  [
+    {
+      ...paidDeals[0],
+      id: "si31-1",
+      country: "",
+      leadId: "10"
+    },
+    {
+      ...paidDeals[1],
+      id: "si31-2",
+      country: "2840",
+      leadId: "11"
+    }
+  ],
+  snapshot.leads
+);
+assert.equal(spaInvoices[0].country, "Латвия");
+assert.equal(spaInvoices[1].country, "Германия");
+
+const units = buildUnitEconomicsUnits({
+  paidDeals: spaInvoices,
+  leads: snapshot.leads,
+  catalog: null,
+  adSpend: null,
+  cpl: null,
+  cac: null
+});
+const countryUnits = units.filter((unit) => unit.kind === "country");
+assert.equal(countryUnits.some((unit) => unit.name === "Латвия"), true);
+assert.equal(countryUnits.some((unit) => unit.name === "Германия"), true);
+assert.equal(countryUnits.some((unit) => unit.name === "Не указана"), false);
 
 console.log("analytics-os.test.ts: ok");
