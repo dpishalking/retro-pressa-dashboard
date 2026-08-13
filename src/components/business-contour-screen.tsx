@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
+import { ManagerScheduleBoard } from "@/components/manager-schedule-board";
 import { MarketingAudienceBoard } from "@/components/marketing-audience-board";
 import { MarketingFunnelTiles } from "@/components/marketing-funnel-tiles";
 import { MarketingLandingTiles } from "@/components/marketing-landing-tiles";
@@ -42,7 +43,7 @@ type ContourConfig = {
 const CONTOURS: Record<ContourId, ContourConfig> = {
   sales: {
     title: "Продажи",
-    description: "Сводка, прогноз до конца месяца и рабочие экраны команды.",
+    description: "Сводка, прогноз, график смен и рабочие экраны команды.",
     icon: Target,
     summaryMetricIds: [
       "revenue",
@@ -541,6 +542,7 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
 
       {contour.forecastDomain ? <ContourForecast domain={contour.forecastDomain} /> : null}
       {contourId === "sales" ? <ManagerBenchmarkStrip snapshot={snapshot} /> : null}
+      {contourId === "sales" ? <ManagerScheduleBoard /> : null}
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
       {contourId === "marketing" ? (
         <>
