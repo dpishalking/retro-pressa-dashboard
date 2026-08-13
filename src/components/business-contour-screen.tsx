@@ -7,6 +7,8 @@ import { useAuth } from "@/components/auth-provider";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
+import { MarketingAudienceBoard } from "@/components/marketing-audience-board";
+import { MarketingCreativeTiles } from "@/components/marketing-creative-tiles";
 import { MarketingLandingTiles } from "@/components/marketing-landing-tiles";
 import { readJsonResponse } from "@/lib/api-response";
 import { metricLabel } from "@/lib/analytics-os/metric-glossary";
@@ -71,7 +73,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
   },
   marketing: {
     title: "Маркетинг и трафик",
-    description: "Лендинги в работе, реклама и атрибуция.",
+    description: "Лендинги, офферы и целевая аудитория.",
     icon: Megaphone,
     summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     detailLinks: [
@@ -475,10 +477,18 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
       {contour.forecastDomain ? <ContourForecast domain={contour.forecastDomain} /> : null}
       {contourId === "sales" ? <ManagerBenchmarkStrip snapshot={snapshot} /> : null}
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
-      {contourId === "marketing" ? <MarketingLandingTiles /> : null}
-
-      <LinkList title="Детализация" links={detailLinks} />
-      <LinkList title="Действия" links={actionLinks} />
+      {contourId === "marketing" ? (
+        <>
+          <MarketingLandingTiles />
+          <MarketingCreativeTiles />
+          <MarketingAudienceBoard />
+        </>
+      ) : (
+        <>
+          <LinkList title="Детализация" links={detailLinks} />
+          <LinkList title="Действия" links={actionLinks} />
+        </>
+      )}
     </main>
   );
 }
