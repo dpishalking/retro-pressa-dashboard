@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { readBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
+import { readBitrixSnapshot, type BitrixSnapshot, type BitrixSnapshotDeal, type BitrixSnapshotLead } from "@/lib/bitrix/snapshot-store";
 import { getCompanySnapshot, readCompanySnapshot } from "@/lib/company-snapshot";
 import { cashRoas, revenuePlanCompletion } from "@/lib/metrics-engine";
 import { targetScenario } from "@/data/demo-data";
@@ -168,15 +168,20 @@ async function loadAdSpend(legacy: PeriodKey | null): Promise<{ value: number | 
   }
 }
 
-async function loadPriorLeads(period: AnalyticsPeriod): Promise<BitrixSnapshotLead[]> {
+async function loadPriorCountryCorpus(period: AnalyticsPeriod): Promise<{
+  leads: BitrixSnapshotLead[];
+  deals: BitrixSnapshotDeal[];
+}> {
   const prior = (await listAvailablePeriods()).filter((p) => p < period);
-  const out: BitrixSnapshotLead[] = [];
+  const leads: BitrixSnapshotLead[] = [];
+  const deals: BitrixSnapshotDeal[] = [];
   for (const p of prior) {
     const snap = await loadBitrixForPeriod(p);
     if (!snap) continue;
-    out.push(...(snap.leads || []), ...(snap.recentLeads || []));
+    leads.push(...(snap.leads || []), ...(snap.recentLeads || []));
+    deals.push(...(snap.deals || []), ...(snap.paidDeals || []), ...(snap.openPipeline || []));
   }
-  return out;
+  return { leads, deals };
 }
 
 async function loadMariaMonthRevenue(period: AnalyticsPeriod): Promise<number | null> {
@@ -259,13 +264,24 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     });
   }
 
-  const priorLeads = await loadPriorLeads(period);
+  const priorCorpus = await loadPriorCountryCorpus(period);
+  const priorLeads = priorCorpus.leads;
   const countryLeads = [...(snapshot.leads || []), ...(snapshot.recentLeads || []), ...priorLeads];
+  const dealsWithCountry = attachDealCountries(snapshot.deals, countryLeads, priorCorpus.deals);
+  const openWithCountry = attachDealCountries(
+    snapshot.openPipeline || [],
+    countryLeads,
+    [...dealsWithCountry, ...priorCorpus.deals]
+  );
   const snapshotWithCountry: BitrixSnapshot = {
     ...snapshot,
-    paidDeals: attachDealCountries(snapshot.paidDeals, countryLeads),
-    deals: attachDealCountries(snapshot.deals, countryLeads),
-    openPipeline: attachDealCountries(snapshot.openPipeline || [], countryLeads)
+    deals: dealsWithCountry,
+    openPipeline: openWithCountry,
+    paidDeals: attachDealCountries(snapshot.paidDeals, countryLeads, [
+      ...dealsWithCountry,
+      ...openWithCountry,
+      ...priorCorpus.deals
+    ])
   };
   const filtered = filterSnapshot(snapshotWithCountry, filters);
   /** СВОД `day` has no country/manager grain — slice KPIs must use Bitrix. */

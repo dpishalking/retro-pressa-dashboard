@@ -756,7 +756,8 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
       managerName: userNames.get(deal.assignedById) ?? deal.managerName,
       country: namedCountry(deal.country, enumMaps)
     })),
-    [...leads, ...recentLeads]
+    [...leads, ...recentLeads],
+    deals
   );
 
   const openPipeline: BitrixSnapshotDeal[] = Array.from(openRawById.values()).map((deal) => {
@@ -1248,7 +1249,8 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
       managerName: userNames.get(deal.assignedById) ?? deal.managerName,
       country: namedCountry(deal.country, enumMaps)
     })),
-    leads
+    leads,
+    dealRows
   );
 
   const deals = [...dealRows, ...paidRows].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));

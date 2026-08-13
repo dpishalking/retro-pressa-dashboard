@@ -259,6 +259,7 @@ export async function listPaidSmartInvoicesForPeriod(
       title: hydrated.title,
       leadId: parent?.leadId ?? null,
       contactId: item.contactId != null ? String(item.contactId) : null,
+      parentDealId: parentId,
       dateCreate: item.createdTime ?? null,
       closeDate: completion,
       invoiceDate: dayKey(item.begindate) || completion,
