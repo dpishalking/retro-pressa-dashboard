@@ -245,13 +245,15 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           for i in 1 2 3 4 5; do
             if ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
-              exit 0
+              break
             fi
             echo "ssh-keyscan attempt $i failed; retrying..."
             sleep 3
           done
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
+          if ! grep -q "${{ secrets.DEPLOY_HOST }}" ~/.ssh/known_hosts 2>/dev/null; then
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
+          fi
 
       - name: Upload archive
         run: |

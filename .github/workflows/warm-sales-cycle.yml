@@ -1,6 +1,7 @@
 name: Warm sales-cycle cache
 
-# Rebuild or restore data/sales-cycle-cache on Timeweb so /os/cohorts loads instantly.
+# Restore data/sales-cycle-cache on Timeweb so /os/cohorts loads instantly.
+# Downloads on the GitHub runner (server outbound SSL to file hosts is flaky), then SCPs.
 on:
   workflow_dispatch:
 
@@ -29,30 +30,42 @@ jobs:
               "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
           fi
 
-      - name: Restore cohort cache files then warm on worker
+      - name: Download cache files on runner
         run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=40 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            bash -s << 'EOF'
-          set -euo pipefail
-          CACHE_DIR=/opt/retro-pressa-shared/data/sales-cycle-cache
-          mkdir -p "$CACHE_DIR"
-          cd "$CACHE_DIR"
-          # Prebuilt caches (July/August month+week) so /os/cohorts is instant.
+          mkdir -p /tmp/sales-cycle-cache
+          cd /tmp/sales-cycle-cache
           curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/h2li1e.json
           curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/5sc01t.json
           curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/03mg4o.json
           curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/3yu77d.json
-          ls -lah "$CACHE_DIR"
-          # Also rebuild from live Bitrix snapshots when worker is healthy.
-          curl -fsS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+          ls -lah
+          python3 - <<'PY'
+          import json, pathlib
+          for path in pathlib.Path("/tmp/sales-cycle-cache").glob("*.json"):
+              data = json.loads(path.read_text())
+              assert isinstance(data.get("cohorts"), list), path.name
+              print(path.name, "cohorts=", len(data["cohorts"]))
+          PY
+
+      - name: Upload cache to server
+        run: |
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'mkdir -p /opt/retro-pressa-shared/data/sales-cycle-cache /opt/retro-pressa/data/sales-cycle-cache'
+          scp -i ~/.ssh/deploy_key /tmp/sales-cycle-cache/*.json \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/retro-pressa-shared/data/sales-cycle-cache/"
+          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s << 'EOF'
+          set -euo pipefail
+          SHARED=/opt/retro-pressa-shared/data/sales-cycle-cache
+          APP=/opt/retro-pressa/data/sales-cycle-cache
+          mkdir -p "$APP"
+          cp -f "$SHARED"/*.json "$APP"/
+          ls -lah "$SHARED"
+          ls -lah "$APP"
+          # Best-effort live rebuild on worker (does not fail the job).
+          curl -fsS --max-time 180 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
             -H "Content-Type: application/json" \
             -H "x-forwarded-for: 127.0.0.1" \
             -H "x-real-ip: 127.0.0.1" \
             -d '{"grains":["month","week"],"periods":["2026-07","2026-08"]}' \
-            || echo "worker warm skipped/failed — prebuilt cache already restored"
-          echo
-          ls -lah "$CACHE_DIR" | head -40
+            || echo "worker warm skipped"
           EOF
