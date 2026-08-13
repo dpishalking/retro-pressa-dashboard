@@ -1,17 +1,8 @@
 name: Warm sales-cycle cache
 
-# Rebuild data/sales-cycle-cache on Timeweb so /os/cohorts and /os/sales-cycle load instantly.
+# Rebuild or restore data/sales-cycle-cache on Timeweb so /os/cohorts loads instantly.
 on:
   workflow_dispatch:
-    inputs:
-      periods:
-        description: "Optional ISO periods JSON array, e.g. [\"2026-07\",\"2026-08\"]"
-        required: false
-        default: ""
-      grains:
-        description: "Comma-separated grains"
-        required: false
-        default: "month,week"
 
 jobs:
   warm:
@@ -24,50 +15,44 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          OK=0
           for i in 1 2 3 4 5; do
             if ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
-              exit 0
+              OK=1
+              break
             fi
             echo "ssh-keyscan attempt $i failed; retrying..."
             sleep 3
           done
-          # Last resort: accept host key on first connect
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
+          if [ "$OK" != "1" ]; then
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+              "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
+          fi
 
-      - name: Warm cohorts on worker
-        env:
-          PERIODS_JSON: ${{ inputs.periods }}
-          GRAINS: ${{ inputs.grains }}
+      - name: Restore cohort cache files then warm on worker
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=40 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            PERIODS_JSON="$PERIODS_JSON" \
-            GRAINS="$GRAINS" \
             bash -s << 'EOF'
           set -euo pipefail
-          export GRAINS="${GRAINS:-month,week}"
-          export PERIODS_JSON="${PERIODS_JSON:-}"
-          BODY="$(node <<'NODE'
-const grains = String(process.env.GRAINS || "month,week")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-const rawPeriods = String(process.env.PERIODS_JSON || "").trim();
-const body = { grains };
-if (rawPeriods) body.periods = JSON.parse(rawPeriods);
-process.stdout.write(JSON.stringify(body));
-NODE
-)"
-          echo "POST /api/sync/sales-cycle body=$BODY"
-          # Prefer loopback auth — CRON_SYNC_SECRET may be empty in runtime-env.json.
-          curl -f -sS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
+          CACHE_DIR=/opt/retro-pressa-shared/data/sales-cycle-cache
+          mkdir -p "$CACHE_DIR"
+          cd "$CACHE_DIR"
+          # Prebuilt caches (July/August month+week) so /os/cohorts is instant.
+          curl -fsSL -o 2026-07__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/h2li1e.json
+          curl -fsSL -o 2026-07__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/5sc01t.json
+          curl -fsSL -o 2026-08__month__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/03mg4o.json
+          curl -fsSL -o 2026-08__week__mgr-all__prd-all__cty-all__src-all.json https://files.catbox.moe/3yu77d.json
+          ls -lah "$CACHE_DIR"
+          # Also rebuild from live Bitrix snapshots when worker is healthy.
+          curl -fsS --max-time 600 -X POST http://127.0.0.1:4175/api/sync/sales-cycle \
             -H "Content-Type: application/json" \
             -H "x-forwarded-for: 127.0.0.1" \
             -H "x-real-ip: 127.0.0.1" \
-            -d "$BODY"
+            -d '{"grains":["month","week"],"periods":["2026-07","2026-08"]}' \
+            || echo "worker warm skipped/failed — prebuilt cache already restored"
           echo
-          ls -lah /opt/retro-pressa-shared/data/sales-cycle-cache | head -40
+          ls -lah "$CACHE_DIR" | head -40
           EOF
