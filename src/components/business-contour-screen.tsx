@@ -9,7 +9,7 @@ import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { MarketingLandingTiles } from "@/components/marketing-landing-tiles";
 import { readJsonResponse } from "@/lib/api-response";
-import { metricDefinition, metricLabel } from "@/lib/analytics-os/metric-glossary";
+import { metricLabel } from "@/lib/analytics-os/metric-glossary";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { eur, number, pct } from "@/lib/format";
 import type { PredictiveDomain, PredictiveDomainBlock, PredictiveOverview } from "@/lib/predictive/types";
@@ -159,7 +159,6 @@ function ContourSummary({
                   : undefined;
         const metric: AnalyticsMetricValue | undefined = fromMetrics ?? fromMarketing;
         const label = metricLabel(id);
-        const caption = metric?.decisionHint || metricDefinition(id);
         const value =
           id === "cpl" && metric?.value != null && metric.unit === "eur"
             ? eur(metric.value, 1)
@@ -168,7 +167,6 @@ function ContourSummary({
           <article key={id} className="rounded-xl border border-[var(--line)] bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-            {caption ? <p className="mt-2 text-xs leading-5 text-slate-500">{caption}</p> : null}
           </article>
         );
       })}
