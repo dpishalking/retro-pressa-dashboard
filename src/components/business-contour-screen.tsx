@@ -8,7 +8,7 @@ import { OfficeHubBackLink } from "@/components/office-hub";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { MarketingAudienceBoard } from "@/components/marketing-audience-board";
-import { MarketingCreativeTiles } from "@/components/marketing-creative-tiles";
+import { MarketingFunnelTiles } from "@/components/marketing-funnel-tiles";
 import { MarketingLandingTiles } from "@/components/marketing-landing-tiles";
 import { readJsonResponse } from "@/lib/api-response";
 import { metricLabel } from "@/lib/analytics-os/metric-glossary";
@@ -480,7 +480,7 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
       {contourId === "marketing" ? (
         <>
           <MarketingLandingTiles />
-          <MarketingCreativeTiles />
+          <MarketingFunnelTiles />
           <MarketingAudienceBoard />
         </>
       ) : (
