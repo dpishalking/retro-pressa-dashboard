@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { readJsonResponse } from "@/lib/api-response";
 import type { FunnelSummary } from "@/lib/marketing/funnel-types";
 
+const MATERIALS_DRIVE_URL = "https://drive.google.com/drive/folders/17gprWSvRoR5pNGIskKbkqr_95R5dv08s";
+
+const tileClass =
+  "block rounded-xl border border-[var(--line)] bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm";
+
 export function MarketingFunnelTiles() {
   const router = useRouter();
   const [funnels, setFunnels] = useState<FunnelSummary[] | null>(null);
@@ -113,21 +118,20 @@ export function MarketingFunnelTiles() {
       {error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}
       {!funnels && !error ? <p className="text-sm text-slate-500">Загружаю воронки…</p> : null}
 
-      {funnels?.length ? (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {funnels.map((funnel) => (
-            <Link
-              key={funnel.id}
-              href={`/marketing/funnels/${funnel.id}`}
-              className="block rounded-xl border border-[var(--line)] bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm"
-            >
-              <p className="text-xs font-bold uppercase tracking-wide text-blue-600">{funnel.stage}</p>
-              <h3 className="mt-1 text-lg font-black text-slate-950">{funnel.title}</h3>
-              {funnel.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{funnel.description}</p> : null}
-            </Link>
-          ))}
-        </div>
-      ) : null}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {funnels?.map((funnel) => (
+          <Link key={funnel.id} href={`/marketing/funnels/${funnel.id}`} className={tileClass}>
+            <p className="text-xs font-bold uppercase tracking-wide text-blue-600">{funnel.stage}</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">{funnel.title}</h3>
+            {funnel.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{funnel.description}</p> : null}
+          </Link>
+        ))}
+        <a href={MATERIALS_DRIVE_URL} target="_blank" rel="noreferrer" className={tileClass}>
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Материалы</p>
+          <h3 className="mt-1 text-lg font-black text-slate-950">Google Диск</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Креативы, исходники и файлы для воронок.</p>
+        </a>
+      </div>
     </section>
   );
 }
