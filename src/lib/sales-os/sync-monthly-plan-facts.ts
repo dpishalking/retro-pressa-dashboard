@@ -84,6 +84,55 @@ function roasPct(revenue: number | null, spend: number | null): number | null {
   return Math.round((revenue / spend) * 1000) / 10;
 }
 
+/** Percent rows in «План/факт» — write "15.6%" so % cells do not show 1560%. */
+export function isPercentFactLabel(labelRaw: string): boolean {
+  const label = normalizeLabel(labelRaw);
+  if (!label) return false;
+  if (label === "roas" || label === "roi" || label === "romi") return true;
+  if (label.includes("%") && label.includes("квал")) return true;
+  if (label.includes("конверсия") && label.includes("лид") && (label.includes("счет") || label.includes("оплат"))) {
+    return true;
+  }
+  if (label.startsWith("счет в оплат")) return true;
+  return false;
+}
+
+/** USER_ENTERED value: append % for rates so Sheets stores 15.6% not 15.6→1560%. */
+export function formatFactCellValue(labelRaw: string, value: number): string | number {
+  if (!isPercentFactLabel(labelRaw)) return value;
+  return `${value}%`;
+}
+
+/**
+ * Channel fact revenue from company cash × lead share (Maria / Bitrix), not СВОД «Выручка».
+ * СВОД day Выручка is a different grain and can exceed company cash (e.g. 12 045 > 11 439).
+ */
+export function resolveFactRevenue(input: {
+  cash: number | null;
+  svod: number | null;
+  companyCash?: number | null;
+  leadShare?: number | null;
+}): number | null {
+  if (
+    input.companyCash != null &&
+    input.companyCash > 0 &&
+    input.leadShare != null &&
+    input.leadShare > 0 &&
+    input.leadShare <= 1
+  ) {
+    return roundMoney(input.companyCash * input.leadShare);
+  }
+  if (input.cash != null && input.cash > 0) {
+    if (input.companyCash != null && input.cash > input.companyCash) return roundMoney(input.companyCash);
+    return roundMoney(input.cash);
+  }
+  if (input.svod != null && input.svod > 0) {
+    if (input.companyCash != null && input.svod > input.companyCash) return roundMoney(input.companyCash);
+    return roundMoney(input.svod);
+  }
+  return null;
+}
+
 function normalizeLabel(raw: string): string {
   return String(raw || "")
     .replace(/\s+/g, " ")
@@ -251,6 +300,8 @@ export async function loadMonthlyPlanFactSources(input: {
   const obshieSpend = verified.spend || mariaMonth?.budget || null;
   const facebookBitrix = bitrixChannelSlice(bitrix, input.throughDate, true);
   const organicBitrix = bitrixChannelSlice(bitrix, input.throughDate, false);
+  const paidShare = verified.total > 0 ? verified.paid / verified.total : null;
+  const organicShare = verified.total > 0 ? verified.organic / verified.total : null;
 
   return {
     obshie: {
@@ -262,7 +313,12 @@ export async function loadMonthlyPlanFactSources(input: {
       sales: obshieSales || null
     },
     facebook: {
-      revenue: paidRevenue || facebookBitrix.revenue,
+      revenue: resolveFactRevenue({
+        cash: facebookBitrix.revenue,
+        svod: paidRevenue || null,
+        companyCash: obshieRevenue || null,
+        leadShare: paidShare
+      }),
       spend: verified.spend || null,
       leads: verified.paid || null,
       qualifiedLeads: paidQl || null,
@@ -271,7 +327,12 @@ export async function loadMonthlyPlanFactSources(input: {
     },
     yandex: EMPTY_SLICE(),
     organic: {
-      revenue: organicRevenue || organicBitrix.revenue,
+      revenue: resolveFactRevenue({
+        cash: organicBitrix.revenue,
+        svod: organicRevenue || null,
+        companyCash: obshieRevenue || null,
+        leadShare: organicShare
+      }),
       spend: null,
       leads: verified.organic || null,
       qualifiedLeads: organicQl || null,
@@ -324,7 +385,7 @@ export async function syncMonthlyPlanFacts(input?: {
       continue;
     }
     const a1 = `${quoteTab(tabTitle)}!${col}${cell.row}`;
-    updates.push({ range: a1, values: [[cell.value]] });
+    updates.push({ range: a1, values: [[formatFactCellValue(cell.label, cell.value)]] });
     writtenCells.push({ a1: `${col}${cell.row}`, section: cell.section, label: cell.label, value: cell.value });
   }
 
