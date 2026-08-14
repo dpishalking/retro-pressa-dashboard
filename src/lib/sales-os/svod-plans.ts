@@ -737,9 +737,15 @@ export function resolveCompanyMonthPlan(input: {
 
   const paidHasFunnel = sliceHasFunnel(paid);
   const organicLeads = organic.leads;
-  const missingPaid = !paidHasFunnel && organicLeads != null && organicLeads > 0 && leads != null;
+  const missingPaid =
+    !paidHasFunnel && organicLeads != null && organicLeads > 0 && leads != null;
 
-  if (missingPaid && !companyAlreadyIncludesOrganic(leads, organicLeads)) {
+  if (
+    missingPaid &&
+    leads != null &&
+    organicLeads != null &&
+    !companyAlreadyIncludesOrganic(leads, organicLeads)
+  ) {
     const revenuePerLead = revenue != null && leads > 0 ? revenue / leads : null;
     const salePerLead = sale != null && leads > 0 ? sale / leads : null;
     const organicSale = organic.sale ?? (salePerLead != null ? salePerLead * organicLeads : impliedSale(organic, cr));
