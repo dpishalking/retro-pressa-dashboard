@@ -5,13 +5,78 @@ import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
 
 type LoadState = "loading" | "ok" | "error";
 
+const CLIENT_TTL_MS = 5 * 60 * 1000;
+
+type CacheEntry = {
+  query: string;
+  snapshot: CeoControlCenterSnapshot;
+  fetchedAt: number;
+};
+
+let memoryCache: CacheEntry | null = null;
+const inflight = new Map<string, Promise<CeoControlCenterSnapshot>>();
+
+function filterParams(query: string): { period: string; country: string; managerId: string; productId: string } {
+  const params = new URLSearchParams(query);
+  return {
+    period: params.get("period") || "",
+    country: params.get("country") || "",
+    managerId: params.get("managerId") || "",
+    productId: params.get("productId") || ""
+  };
+}
+
+function queriesEquivalent(requestQuery: string, cached: CacheEntry): boolean {
+  if (requestQuery === cached.query) return true;
+  const req = filterParams(requestQuery);
+  const cachedParams = filterParams(cached.query);
+  const sameSlice =
+    req.country === cachedParams.country &&
+    req.managerId === cachedParams.managerId &&
+    req.productId === cachedParams.productId;
+  const reqPeriod = req.period || cached.snapshot.period;
+  const cachedPeriod = cachedParams.period || cached.snapshot.period;
+  return sameSlice && Boolean(reqPeriod) && reqPeriod === cachedPeriod;
+}
+
+function readCache(query: string, allowStale: boolean): CacheEntry | null {
+  if (!memoryCache) return null;
+  if (!queriesEquivalent(query, memoryCache)) return null;
+  if (!allowStale && Date.now() - memoryCache.fetchedAt > CLIENT_TTL_MS) return null;
+  return memoryCache;
+}
+
+function writeCache(query: string, snapshot: CeoControlCenterSnapshot) {
+  memoryCache = { query, snapshot, fetchedAt: Date.now() };
+}
+
+function fetchCeoSnapshot(query: string): Promise<CeoControlCenterSnapshot> {
+  const pending = inflight.get(query);
+  if (pending) return pending;
+
+  const request = fetch(`/api/analytics/ceo-snapshot${query ? `?${query}` : ""}`)
+    .then(async (response) => {
+      const json = (await response.json()) as CeoControlCenterSnapshot & { error?: string };
+      if (!response.ok) throw new Error(json.error || "Ошибка загрузки");
+      writeCache(query, json);
+      return json;
+    })
+    .finally(() => {
+      inflight.delete(query);
+    });
+
+  inflight.set(query, request);
+  return request;
+}
+
 export function useCeoSnapshot(initialPeriod = "") {
-  const [period, setPeriod] = useState(initialPeriod);
+  const seed = memoryCache;
+  const [period, setPeriod] = useState(initialPeriod || seed?.snapshot.period || "");
   const [country, setCountry] = useState("");
   const [managerId, setManagerId] = useState("");
   const [productId, setProductId] = useState("");
-  const [snapshot, setSnapshot] = useState<CeoControlCenterSnapshot | null>(null);
-  const [state, setState] = useState<LoadState>("loading");
+  const [snapshot, setSnapshot] = useState<CeoControlCenterSnapshot | null>(seed?.snapshot ?? null);
+  const [state, setState] = useState<LoadState>(seed ? "ok" : "loading");
   const [error, setError] = useState("");
 
   const query = useMemo(() => {
@@ -25,12 +90,27 @@ export function useCeoSnapshot(initialPeriod = "") {
 
   useEffect(() => {
     let cancelled = false;
-    setState("loading");
+    const fresh = readCache(query, false);
+    if (fresh) {
+      setSnapshot(fresh.snapshot);
+      setPeriod((current) => current || fresh.snapshot.period);
+      setState("ok");
+      setError("");
+      return;
+    }
+
+    const stale = readCache(query, true);
+    if (stale) {
+      setSnapshot(stale.snapshot);
+      setPeriod((current) => current || stale.snapshot.period);
+      setState("ok");
+    } else {
+      setState("loading");
+    }
     setError("");
-    fetch(`/api/analytics/ceo-snapshot${query ? `?${query}` : ""}`)
-      .then(async (response) => {
-        const json = (await response.json()) as CeoControlCenterSnapshot & { error?: string };
-        if (!response.ok) throw new Error(json.error || "Ошибка загрузки");
+
+    fetchCeoSnapshot(query)
+      .then((json) => {
         if (cancelled) return;
         setSnapshot(json);
         setPeriod((current) => current || json.period);
@@ -38,9 +118,10 @@ export function useCeoSnapshot(initialPeriod = "") {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setState("error");
+        setState((current) => (current === "ok" ? "ok" : "error"));
         setError(err instanceof Error ? err.message : "Ошибка загрузки");
       });
+
     return () => {
       cancelled = true;
     };
