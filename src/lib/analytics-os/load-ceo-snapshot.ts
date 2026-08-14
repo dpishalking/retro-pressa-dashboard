@@ -861,16 +861,19 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       )
     ].sort(),
     managers: [...new Map(
-      [...snapshot.leads, ...snapshot.paidDeals].map((row) => [
-        row.assignedById,
-        { id: row.assignedById, name: row.managerName || row.assignedById }
-      ])
+      [...snapshot.leads, ...snapshot.paidDeals]
+        .filter((row) => row.assignedById)
+        .map((row) => [
+          row.assignedById,
+          { id: row.assignedById, name: row.managerName || row.assignedById }
+        ])
     ).values()],
     products: [...new Map(
       snapshot.paidDeals.flatMap((deal) => {
         const p = deal.products.find((x) => x.productId || x.productName);
         if (!p) return [];
         const id = p.productId || p.productName;
+        if (!id) return [];
         return [[id, { id, name: p.productName || p.productId }]] as const;
       })
     ).values()]

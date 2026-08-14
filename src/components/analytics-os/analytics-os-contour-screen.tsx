@@ -128,40 +128,51 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
 
         <main className="aos-main">
           <div className="aos-filters aos-filters--bar">
-            <label>
-              Страна
-              <select value={country} onChange={(event) => setCountry(event.target.value)}>
-                <option value="">Все</option>
-                {(snapshot?.filterOptions.countries || []).map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Менеджер
-              <select value={managerId} onChange={(event) => setManagerId(event.target.value)}>
-                <option value="">Все</option>
-                {(snapshot?.filterOptions.managers || []).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Продукт
-              <select value={productId} onChange={(event) => setProductId(event.target.value)}>
-                <option value="">Все</option>
-                {(snapshot?.filterOptions.products || []).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {state === "loading" ? <StatusBadge status="calculated" /> : null}
+            <p className="aos-filters__title">Фильтры</p>
+            <div className="aos-filters__controls">
+              <label>
+                Страна
+                <select value={country} onChange={(event) => setCountry(event.target.value)} disabled={!snapshot}>
+                  <option value="">Все</option>
+                  {(snapshot?.filterOptions.countries || []).filter(Boolean).map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Менеджер
+                <select value={managerId} onChange={(event) => setManagerId(event.target.value)} disabled={!snapshot}>
+                  <option value="">Все</option>
+                  {(snapshot?.filterOptions.managers || [])
+                    .filter((item) => item.id)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label>
+                Продукт
+                <select value={productId} onChange={(event) => setProductId(event.target.value)} disabled={!snapshot}>
+                  <option value="">Все</option>
+                  {(snapshot?.filterOptions.products || [])
+                    .filter((item) => item.id)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+            {state === "loading" && snapshot ? (
+              <p className="aos-muted" style={{ margin: 0 }}>
+                Обновляю срез…
+              </p>
+            ) : null}
             {state === "error" ? <span className="aos-error">{error}</span> : null}
           </div>
 
@@ -215,7 +226,11 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
               )}
               {contour.id === "managers" && (
                 <>
-                  <ManagersPanel snapshot={snapshot} />
+                  <ManagersPanel
+                    snapshot={snapshot}
+                    selectedManagerId={managerId}
+                    onSelectManager={setManagerId}
+                  />
                   <OpportunitiesPanel snapshot={snapshot} />
                 </>
               )}

@@ -254,14 +254,25 @@ export function FunnelPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }
   );
 }
 
-export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
+export function ManagersPanel({
+  snapshot,
+  selectedManagerId,
+  onSelectManager
+}: {
+  snapshot: CeoControlCenterSnapshot;
+  selectedManagerId?: string;
+  onSelectManager?: (managerId: string) => void;
+}) {
   const b = snapshot.managerBenchmark;
+  const rows = selectedManagerId
+    ? snapshot.managers.filter((row) => row.managerId === selectedManagerId)
+    : snapshot.managers;
   return (
     <section className="aos-card" id="aos-managers">
       <div className="aos-section-head">
         <div>
           <h2>Менеджеры</h2>
-          <p>Топ 20% по €/лид (от 10 лидов)</p>
+          <p>Топ 20% по €/лид (от 10 лидов). Нажмите имя в таблице, чтобы отфильтровать.</p>
         </div>
       </div>
       <div className="aos-stat-grid" style={{ marginBottom: 16 }}>
@@ -297,15 +308,27 @@ export function ManagersPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot
             </tr>
           </thead>
           <tbody>
-            {snapshot.managers.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
-                <td colSpan={8}>—</td>
+                <td colSpan={8}>Нет строк по выбранному фильтру</td>
               </tr>
             ) : (
-              snapshot.managers.slice(0, 15).map((row) => (
+              rows.map((row) => (
                 <tr key={row.managerId}>
                   <td>
-                    {row.managerName}
+                    {onSelectManager ? (
+                      <button
+                        type="button"
+                        className="aos-link"
+                        onClick={() =>
+                          onSelectManager(row.managerId === selectedManagerId ? "" : row.managerId)
+                        }
+                      >
+                        {row.managerName}
+                      </button>
+                    ) : (
+                      row.managerName
+                    )}
                     {row.isTopPerformer ? <span className="aos-chip">ТОП 20%</span> : null}
                   </td>
                   <td>{number(row.leads)}</td>
