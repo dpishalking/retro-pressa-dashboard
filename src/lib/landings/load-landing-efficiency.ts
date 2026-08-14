@@ -3,15 +3,14 @@
  */
 
 import {
-  ALX_ACTIVE_LANDINGS,
   ALX_LANDINGS_SPREADSHEET_ID,
   alxLandingDisplayName,
-  getAlxLandingById,
   type AlxLandingDef
 } from "@/config/alx-landings";
 import { readSheetValues } from "@/lib/google/sheets-client";
 import { quoteTab } from "@/lib/sales-os/predictive-model";
 import type { LandingEfficiencySummary } from "@/lib/landings/types";
+import { getLandingById, listLandingSheets } from "@/lib/landings/landing-registry";
 
 export type { LandingEfficiencySummary } from "@/lib/landings/types";
 
@@ -244,14 +243,17 @@ export function parseLandingEfficiencySheet(
 export async function loadLandingEfficiency(input: {
   landingId: string;
   isoMonth: string;
+  landing?: AlxLandingDef;
 }): Promise<LandingEfficiencyModel> {
-  const landing = getAlxLandingById(input.landingId);
+  const landing = input.landing ?? (await getLandingById(input.landingId));
   if (!landing) {
     throw new Error(`Неизвестный лендинг: ${input.landingId}`);
   }
 
+  const spreadsheetId = landing.spreadsheetId || ALX_LANDINGS_SPREADSHEET_ID;
+  const sourceLabel = landing.sourceLabel || "ALX";
   const values = await readSheetValues({
-    spreadsheetId: ALX_LANDINGS_SPREADSHEET_ID,
+    spreadsheetId,
     range: `${quoteTab(landing.sheetTitle)}!A1:L400`
   });
 
@@ -274,7 +276,7 @@ export async function loadLandingEfficiency(input: {
     monthTotals,
     days: monthDays,
     notes: [
-      `Источник: ALX · лист «${landing.sheetTitle}»`,
+      `Источник: ${sourceLabel} · лист «${landing.sheetTitle}»`,
       `Месяц ${input.isoMonth}: ${monthDays.filter((d) => (d.spend ?? 0) > 0 || (d.leads ?? 0) > 0).length} дней с трафиком`,
       "ROAS / CPL / CPQL за месяц пересчитаны из сумм дня (не среднее дневных %).",
       "ROAS D7 / D30 — накопительный ROAS за календарные дни 1–7 / 1–30 месяца (не cohort CAC payback).",
@@ -289,14 +291,27 @@ function hasMonthTraffic(days: LandingEfficiencyDay[]): boolean {
   );
 }
 
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await fn(items[index]!);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, Math.max(items.length, 1)) }, () => worker()));
+  return results;
+}
+
 export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<LandingEfficiencySummary[]> {
-  const models = await Promise.all(
-    ALX_ACTIVE_LANDINGS.map((landing) =>
-      loadLandingEfficiency({ landingId: landing.id, isoMonth }).catch(() => null)
-    )
+  const landings = await listLandingSheets();
+  const models = await mapLimit(landings, 6, (landing) =>
+    loadLandingEfficiency({ landingId: landing.id, isoMonth, landing }).catch(() => null)
   );
 
-  return ALX_ACTIVE_LANDINGS.flatMap((landing, index) => {
+  return landings.flatMap((landing, index) => {
     const model = models[index];
     const days = model?.days ?? [];
     const totals = model?.monthTotals;
@@ -309,6 +324,7 @@ export async function loadLandingEfficiencySummaries(isoMonth: string): Promise<
         siteName: landing.siteName,
         address: landing.address,
         tag: landing.tag,
+        sourceLabel: landing.sourceLabel || "ALX",
         href: `/marketing/landings/${landing.id}`,
         hasData,
         daysWithData: days.filter((d) => d.spend != null || d.leads != null || d.revenue != null).length,

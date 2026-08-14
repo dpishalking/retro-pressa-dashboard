@@ -26,6 +26,7 @@ data/partners/partners-runtime.json
 data/partners/partners-runtime.json.*
 data/webinar/
 data/marketing-funnels/
+data/landing-contractor-books/
 data/product-passports/*
 !data/product-passports/dashboard.json
 tsconfig.tsbuildinfo

@@ -5,7 +5,12 @@ import {
   monthWindowMature,
   parseLandingEfficiencySheet
 } from "../lib/landings/load-landing-efficiency";
-import { alxLandingDisplayName } from "../config/alx-landings";
+import { alxLandingDisplayName, parseLandingSite } from "../config/alx-landings";
+import {
+  isContractorLandingTabTitle,
+  landingIdForTab,
+  parseContractorSpreadsheetId
+} from "../lib/landings/contractor-books";
 
 const values = [
   ["", "Расход", "Заказы", "ROAS", "Клики", "Лиды CRM", "Квал. лиды", "CR лендинга", "CPL", "CPQL", "CR в продажу", "Кол-во заказов"],
@@ -61,5 +66,22 @@ assert.equal(noTraffic.days[0].spend, 0);
 
 assert.equal(alxLandingDisplayName({ sheetTitle: "https://retro-pressa.com/life" }), "retro-pressa.com/life");
 assert.equal(alxLandingDisplayName({ sheetTitle: "https://retro-pressa.com/ru/" }), "retro-pressa.com/ru");
+assert.deepEqual(parseLandingSite("https://giftboost.website/pesnya"), {
+  siteName: "giftboost.website",
+  address: "/pesnya"
+});
+
+assert.equal(isContractorLandingTabTitle("https://retro-pressa.com/life"), true);
+assert.equal(isContractorLandingTabTitle("familia-studio.com/gift2man"), true);
+assert.equal(isContractorLandingTabTitle("day"), false);
+assert.equal(isContractorLandingTabTitle("СВОД"), false);
+assert.equal(
+  parseContractorSpreadsheetId("https://docs.google.com/spreadsheets/d/1TW6WJFQGs-E1TUNLUYKDCULkHDLyagg8tZMCyx--yuA/edit#gid=0"),
+  "1TW6WJFQGs-E1TUNLUYKDCULkHDLyagg8tZMCyx--yuA"
+);
+assert.equal(
+  landingIdForTab("1Hh6U4udZXp69RVKMIF29RBHjKef5JxEbLHdmLZYIAIM", "https://retro-pressa.com/life"),
+  "life"
+);
 
 console.log("landing-efficiency.test.ts: ok");
