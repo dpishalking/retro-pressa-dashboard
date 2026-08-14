@@ -20,7 +20,8 @@ export type ContourId =
   | "geography"
   | "production"
   | "plan"
-  | "sources";
+  | "sources"
+  | "factors";
 
 export type ContourDef = {
   id: ContourId;
@@ -183,6 +184,17 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
     onWheel: true
   },
   {
+    id: "factors",
+    number: 0,
+    title: "Факторный анализ",
+    shortTitle: "Факторы",
+    subtitle: "Что съело план и куда жать, чтобы расти",
+    href: "/os/factors",
+    status: "live",
+    accent: "gold",
+    onWheel: false
+  },
+  {
     id: "plan",
     number: 0,
     title: "План / Факт / Прогноз",
@@ -217,6 +229,7 @@ export function wheelContours(): ContourDef[] {
 /** Home hub tiles — work modules only (sources live in their own band). */
 const HUB_TILE_ORDER: ContourId[] = [
   "revenue",
+  "factors",
   "unit-economics",
   "products",
   "cohorts",
@@ -258,7 +271,7 @@ const BUSINESS_CONTOUR_ORDER: Array<{
     id: "analytics",
     title: "Аналитика",
     subtitle: "Общая картина бизнеса и клиентская база",
-    contourIds: ["revenue", "customers", "geography"]
+    contourIds: ["revenue", "factors", "customers", "geography"]
   },
   {
     id: "sales",

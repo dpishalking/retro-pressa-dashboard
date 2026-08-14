@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, Megaphone, Package, Target, WalletCards, type LucideIcon } from "lucide-react";
+import { Database, GitBranch, Megaphone, Package, Target, WalletCards, type LucideIcon } from "lucide-react";
 import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { BUSINESS_CONTOUR_PATHS, type BusinessContourId } from "@/lib/analytics-os/contours";
@@ -11,10 +11,11 @@ import { pct } from "@/lib/format";
 type DoorMetric = { label: string; value: string };
 
 type DoorDef = {
-  id: Exclude<BusinessContourId, "analytics">;
+  id: Exclude<BusinessContourId, "analytics"> | "factors";
   title: string;
   subtitle: string;
   icon: LucideIcon;
+  href?: string;
   metrics: (snapshot: CeoControlCenterSnapshot) => DoorMetric[];
 };
 
@@ -80,6 +81,18 @@ const DOORS: DoorDef[] = [
       { label: "Факт", value: formatMetricDisplay(snapshot.plan.factRevenue) },
       { label: "Прогноз", value: formatMetricDisplay(snapshot.plan.forecastRevenue) }
     ]
+  },
+  {
+    id: "factors",
+    title: "Факторный анализ",
+    subtitle: "Что съело план и куда жать",
+    icon: GitBranch,
+    href: "/os/factors",
+    metrics: (snapshot) => [
+      { label: "План", value: formatMetricDisplay(snapshot.plan.planRevenue) },
+      { label: "Факт", value: formatMetricDisplay(snapshot.plan.factRevenue) },
+      { label: "Разрыв", value: formatMetricDisplay(snapshot.plan.gap) }
+    ]
   }
 ];
 
@@ -88,7 +101,7 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
     <section className="aos-doors-band" aria-label="Направления бизнеса">
       <div className="aos-doors-band__head">
         <h2>Направления</h2>
-        <p>Четыре рабочих контура. Цифры — из текущей сводки.</p>
+        <p>Рабочие контуры и факторный разбор месяца. Цифры — из текущей сводки.</p>
       </div>
       <div className="aos-doors">
         {DOORS.map((door) => {
@@ -96,7 +109,7 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
           return (
             <Link
               key={door.id}
-              href={BUSINESS_CONTOUR_PATHS[door.id]}
+              href={door.href || BUSINESS_CONTOUR_PATHS[door.id as Exclude<BusinessContourId, "analytics">]}
               className={`aos-door aos-door--${door.id}`}
             >
               <div className="aos-door__art" aria-hidden="true">
