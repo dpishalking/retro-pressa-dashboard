@@ -49,7 +49,9 @@ export function PartnersCatalogScreen() {
                     {product.priceLabel
                       ? product.priceLabel
                       : product.priceFrom > 0
-                        ? eur(product.priceFrom)
+                        ? Number.isInteger(product.priceFrom)
+                          ? eur(product.priceFrom)
+                          : eur(product.priceFrom, 1)
                         : "по запросу"}
                   </dd>
                 </div>
