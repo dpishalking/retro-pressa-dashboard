@@ -8,6 +8,7 @@ import {
   parseSvodObshiePlans,
   parseSvodPaidOrganicPlans,
   parseSvodPlanNumber,
+  resolveCompanyMonthPlan,
   sumSvodVerifiedLeads
 } from "@/lib/sales-os/svod-plans";
 import { collectMonthlyPlanFactCells, factValueForLabel } from "@/lib/sales-os/sync-monthly-plan-facts";
@@ -221,5 +222,85 @@ const indentedCells = collectMonthlyPlanFactCells(indentedOrganic, {
 });
 assert.equal(indentedCells.find((c) => c.section === "organic" && c.label === "Лиды")?.value, 210);
 assert.equal(indentedCells.find((c) => c.section === "organic" && c.label === "Выручка")?.value, 9338);
+
+const facebookFirst: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["Facebook"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Конверсия Лид в оплату", "", "20%"],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"],
+  ["Оплаты шт.", "", "134"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "46676"],
+  ["Лиды", "", "3334"],
+  ["Оплаты шт.", "", "667"],
+  ["Средний чек оплата", "", "70"]
+];
+const facebookFirstObshie = parseSvodObshiePlans(facebookFirst, "2026-08");
+assert.equal(facebookFirstObshie?.revenue, 46676);
+assert.equal(facebookFirstObshie?.leads, 3334);
+assert.equal(facebookFirstObshie?.sale, 667);
+const facebookFirstChannels = parseSvodPaidOrganicPlans(facebookFirst, "2026-08");
+const recovered = resolveCompanyMonthPlan({
+  obshie: facebookFirstObshie,
+  channels: facebookFirstChannels
+});
+assert.equal(recovered.revenue, 46676);
+assert.equal(recovered.leads, 3334);
+
+const copiedFacebookAsCompany: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Facebook"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"],
+  ["Оплаты шт.", "", "134"]
+];
+const copied = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(copiedFacebookAsCompany, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(copiedFacebookAsCompany, "2026-08")
+});
+assert.equal(copied.revenue, 46676);
+assert.equal(copied.leads, 3334);
+assert.equal(copied.sale, 667);
+
+const loweredOnPurpose: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Facebook"],
+  ["Выручка", "", "28000"],
+  ["Лиды", "", "2000"],
+  ["Оплаты шт.", "", "400"],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"],
+  ["Оплаты шт.", "", "133"]
+];
+const lowered = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(loweredOnPurpose, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(loweredOnPurpose, "2026-08")
+});
+assert.equal(lowered.revenue, 37338);
+assert.equal(lowered.leads, 2667);
 
 console.log("svod-plans tests ok");

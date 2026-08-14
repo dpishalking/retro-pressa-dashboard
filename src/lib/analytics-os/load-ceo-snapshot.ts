@@ -35,7 +35,7 @@ import {
   parseAnalyticsPeriod,
   periodCalendarBounds
 } from "@/lib/analytics-os/period";
-import { pullMonthlyPlanIndicators, pullSvodDailyLeads, sumSvodVerifiedLeads } from "@/lib/sales-os/svod-plans";
+import { pullMonthlyPlanIndicators, pullSvodDailyLeads, resolveCompanyMonthPlan, sumSvodVerifiedLeads } from "@/lib/sales-os/svod-plans";
 import {
   aggregateMargins,
   aggregateProductMargins,
@@ -228,21 +228,26 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
     monthlyPlanBundle = null;
   }
   const planIndicators = mapPlanIndicators(monthlyPlanBundle?.indicators || []);
+  const companyPlan = resolveCompanyMonthPlan({
+    obshie: monthlyPlanBundle?.obshie ?? null,
+    channels: monthlyPlanBundle?.channels ?? null
+  });
   const planRevenueTarget =
+    companyPlan.revenue ??
     monthlyPlanBundle?.obshie?.revenue ??
     monthlyPlanBundle?.channels?.obshie.revenue ??
     targetScenario.targetRevenue;
   const planSource =
-    monthlyPlanBundle?.obshie?.revenue != null
+    companyPlan.revenue != null || monthlyPlanBundle?.obshie?.revenue != null
       ? MONTHLY_PLAN_SOURCE_LABEL
       : "targetScenario / North Star (fallback)";
-  const planLeads = monthlyPlanBundle?.channels?.obshie.leads ?? monthlyPlanBundle?.obshie?.leads ?? null;
+  const planLeads = companyPlan.leads ?? monthlyPlanBundle?.obshie?.leads ?? null;
   const planPaidLeads = monthlyPlanBundle?.channels?.paid.leads ?? null;
   const planOrganicLeads = monthlyPlanBundle?.channels?.organic.leads ?? null;
-  const planSales = monthlyPlanBundle?.channels?.obshie.sale ?? monthlyPlanBundle?.obshie?.sale ?? null;
-  const planAov = monthlyPlanBundle?.channels?.obshie.aov ?? monthlyPlanBundle?.obshie?.aov ?? null;
-  const planSpend = monthlyPlanBundle?.channels?.obshie.spend ?? null;
-  const planCrSale = monthlyPlanBundle?.channels?.obshie.crLeadSale ?? null;
+  const planSales = companyPlan.sale ?? monthlyPlanBundle?.obshie?.sale ?? null;
+  const planAov = companyPlan.aov ?? monthlyPlanBundle?.obshie?.aov ?? null;
+  const planSpend = companyPlan.spend ?? monthlyPlanBundle?.channels?.obshie.spend ?? null;
+  const planCrSale = companyPlan.crLeadSale ?? monthlyPlanBundle?.channels?.obshie.crLeadSale ?? null;
 
   let adSpendInfo = await loadAdSpend(legacy);
   const mariaRevenueValue = await loadMariaMonthRevenue(period);
@@ -410,9 +415,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         source: SVOD_VERIFIED_LEADS_SOURCE,
         unit: "count",
         confidence: hasVerifiedLeads ? "high" : "low",
-        plan:
-          planPaidLeads ??
-          (planLeads != null && planOrganicLeads != null ? Math.max(0, planLeads - planOrganicLeads) : null)
+        plan: planPaidLeads
       });
 
   const organicLeadsMetric = leadsSliced
