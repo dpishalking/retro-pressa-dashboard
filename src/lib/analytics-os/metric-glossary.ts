@@ -74,17 +74,17 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   product_revenue_net: {
     id: "product_revenue_net",
     label: "Выручка продукта",
-    definition: "Оплаченная касса минус доставка."
+    definition: "Оплаченная касса минус доставка (5,5% выручки)."
   },
   delivery_revenue: {
     id: "delivery_revenue",
     label: "Доставка €",
-    definition: "Сумма доставки из поля Bitrix по оплаченным сделкам."
+    definition: "5,5% от оплаченной кассы за период."
   },
   delivery_share_pct: {
     id: "delivery_share_pct",
     label: "Доля доставки",
-    definition: "Доставка / касса по оплаченным сделкам."
+    definition: "Фиксированная доля 5,5% от кассы."
   },
   cac: {
     id: "cac",
