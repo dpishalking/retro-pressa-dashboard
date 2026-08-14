@@ -34,6 +34,7 @@ import { CohortsPanel } from "@/components/analytics-os/cohorts-panel";
 import { SalesCyclePanel } from "@/components/analytics-os/sales-cycle-panel";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { MarketingPredictivePanel } from "@/components/analytics-os/marketing-predictive-panel";
+import { FactorAnalysisPanel } from "@/components/analytics-os/factor-analysis-panel";
 
 function StubPanel({ contour }: { contour: ContourDef }) {
   return (
@@ -202,6 +203,7 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
                   <PlanIndicatorsPanel snapshot={snapshot} />
                 </>
               )}
+              {contour.id === "factors" && <FactorAnalysisPanel snapshot={snapshot} />}
               {contour.id === "unit-economics" && <UnitEconomicsPanel snapshot={snapshot} />}
               {contour.id === "products" && <ProductsPanel snapshot={snapshot} />}
               {contour.id === "customers" && <CustomersPanel snapshot={snapshot} />}

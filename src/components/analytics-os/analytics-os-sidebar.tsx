@@ -29,6 +29,7 @@ const NAV: NavGroup[] = [
     title: "Аналитика",
     items: [
       { id: "overview", label: "Главный экран", enabled: true, section: "overview" },
+      { id: "external", label: "Факторный анализ", enabled: true, href: "/os/factors" },
       { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
       { id: "countries", label: "Страны", enabled: true, section: "countries" },
       { id: "sources", label: "Источники", enabled: true, section: "sources" },

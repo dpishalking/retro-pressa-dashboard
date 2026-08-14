@@ -1865,6 +1865,96 @@ td {
   height: 112px;
 }
 
+.aos-door--factors {
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(129, 140, 248, 0.4), transparent 55%),
+    linear-gradient(145deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+}
+
+.aos-door--factors .aos-door__shape--a,
+.aos-door--factors .aos-door__shape--b,
+.aos-door--factors .aos-door__shape--c {
+  background: rgba(199, 210, 254, 0.28);
+}
+
+.aos-factor-headline {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.aos-factor-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media (min-width: 800px) {
+  .aos-factor-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.aos-factor-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.aos-factor-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.aos-factor-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.aos-factor-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.aos-factor-card__press {
+  font-weight: 650;
+}
+
+.aos-factor-card a {
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: #1d4ed8;
+}
+
+.aos-factor-card--hurt {
+  border-left: 4px solid #dc2626;
+  background: #fff7f7;
+}
+
+.aos-factor-card--help {
+  border-left: 4px solid #15803d;
+  background: #f4faf6;
+}
+
+.aos-factor-card--neutral {
+  border-left: 4px solid #64748b;
+}
+
+.aos-factor-notes {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 .aos-sources-module {
   margin: 0.85rem 1.25rem 1.75rem;
 }
