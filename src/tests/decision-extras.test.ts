@@ -46,8 +46,9 @@ assert.equal(normalizePhone("+371 28373939"), "");
   ] as BitrixSnapshotDeal[];
   const d = sumDelivery(deals);
   assert.equal(d.cash, 230);
-  assert.equal(d.delivery, 10);
-  assert.equal(d.productRevenue, 220);
+  assert.equal(d.delivery, 12.65);
+  assert.equal(d.productRevenue, 217.35);
+  assert.equal(d.deliverySharePct, 0.055);
   assert.equal(d.dealsWithDelivery, 1);
   assert.equal(d.dealsWithField, 2);
 }

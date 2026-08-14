@@ -96,6 +96,9 @@ export function countUniqueLeadsWithHistory(
   };
 }
 
+/** Company rule: delivery is 5.5% of cash revenue (SPA invoices have no delivery UF). */
+export const IMPLIED_DELIVERY_RATE = 0.055;
+
 export function sumDelivery(paidDeals: BitrixSnapshotDeal[]): {
   cash: number;
   delivery: number;
@@ -106,26 +109,22 @@ export function sumDelivery(paidDeals: BitrixSnapshotDeal[]): {
   fieldCoveragePct: number | null;
 } {
   let cash = 0;
-  let delivery = 0;
   let dealsWithDelivery = 0;
   let dealsWithField = 0;
   for (const deal of paidDeals) {
     cash += paidInvoiceAmount(deal.invoiceAmount, deal.opportunity);
     if (deal.deliveryPrice == null) continue;
     dealsWithField += 1;
-    const d = Number(deal.deliveryPrice) || 0;
-    if (d > 0) {
-      delivery += d;
-      dealsWithDelivery += 1;
-    }
+    if ((Number(deal.deliveryPrice) || 0) > 0) dealsWithDelivery += 1;
   }
+  const delivery = Math.round(cash * IMPLIED_DELIVERY_RATE * 100) / 100;
   return {
     cash,
     delivery,
-    productRevenue: Math.max(0, cash - delivery),
+    productRevenue: Math.max(0, Math.round((cash - delivery) * 100) / 100),
     dealsWithDelivery,
     dealsWithField,
-    deliverySharePct: cash > 0 ? delivery / cash : null,
+    deliverySharePct: cash > 0 ? IMPLIED_DELIVERY_RATE : null,
     fieldCoveragePct: paidDeals.length ? dealsWithField / paidDeals.length : null
   };
 }

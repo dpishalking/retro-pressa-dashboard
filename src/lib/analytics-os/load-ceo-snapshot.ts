@@ -690,36 +690,34 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const productionLoad = noDataMetric("production_load", "Производство", "Пока нет данных по загрузке", "pct");
   const cashMetric = noDataMetric("cash", "Финансы", "Касса пока не подключена", "eur");
 
-  const deliveryHasField = (deliveryStats.fieldCoveragePct || 0) > 0;
+  const deliveryHasCash = deliveryStats.cash > 0;
   const deliveryBlock = {
     deliveryRevenue: metricValue({
       metricId: "delivery_revenue",
-      value: deliveryHasField ? deliveryStats.delivery : null,
-      status: deliveryHasField ? "live" : "no_data",
+      value: deliveryHasCash ? deliveryStats.delivery : null,
+      status: deliveryHasCash ? "calculated" : "no_data",
       asOf,
-      source: "Bitrix UF «Доставка цена»",
+      source: "5.5% от кассы",
       unit: "eur" as const,
       confidence: "high" as const,
-      decisionHint: deliveryHasField
-        ? `${deliveryStats.dealsWithDelivery} сделок с доставкой > 0`
-        : "Поле не в снапшоте — обновите Bitrix sync"
+      decisionHint: "Доставка = 5,5% выручки"
     }),
     productRevenue: metricValue({
       metricId: "product_revenue_net",
-      value: deliveryHasField ? deliveryStats.productRevenue : null,
-      status: deliveryHasField ? "calculated" : "no_data",
+      value: deliveryHasCash ? deliveryStats.productRevenue : null,
+      status: deliveryHasCash ? "calculated" : "no_data",
       asOf,
-      source: "cash − delivery",
+      source: "касса − 5.5%",
       unit: "eur" as const,
       confidence: "high" as const,
-      decisionHint: "Касса без доставки"
+      decisionHint: "Касса без доставки (94,5%)"
     }),
     deliverySharePct: metricValue({
       metricId: "delivery_share_pct",
-      value: deliveryHasField ? deliveryStats.deliverySharePct : null,
-      status: deliveryHasField ? "calculated" : "no_data",
+      value: deliveryHasCash ? deliveryStats.deliverySharePct : null,
+      status: deliveryHasCash ? "calculated" : "no_data",
       asOf,
-      source: "delivery / cash",
+      source: "5.5% от кассы",
       unit: "pct" as const,
       confidence: "high" as const
     }),
