@@ -129,12 +129,24 @@ function normalizeMetricLabel(raw: string): string {
     .toLowerCase();
 }
 
+/** Section / metric title: column A, or indented column B (same as fact sync). */
+function rowLabel(row: string[] | undefined): string {
+  const a = String(row?.[0] || "").replace(/\s+/g, " ").trim();
+  if (a) return a;
+  return String(row?.[1] || "").replace(/\s+/g, " ").trim();
+}
+
 function isObshieSection(label: string): boolean {
   return label === "общие" || label.startsWith("общие ") || label.startsWith("общий") || label.startsWith("общее");
 }
 
 function isRevenueLabel(label: string): boolean {
   return label === "выручка" || label.startsWith("выручка");
+}
+
+function isLeadsLabel(label: string): boolean {
+  if (label.includes("квал")) return false;
+  return label === "лиды" || label === "лиды crm" || label === "лиды сrm" || label.startsWith("лиды шт");
 }
 
 /** Parse ОБЩИЕ block only (stop at Facebook / next channel section). */
@@ -153,9 +165,8 @@ export function parseSvodObshiePlans(values: string[][], month: string): SvodMon
   };
 
   let inObshie = false;
-  let seenChannel = false;
   for (let r = 2; r < values.length; r += 1) {
-    const label = normalizeMetricLabel(values[r]?.[0] || "");
+    const label = normalizeMetricLabel(rowLabel(values[r]));
     if (!label) continue;
     if (isObshieSection(label)) {
       inObshie = true;
@@ -163,20 +174,15 @@ export function parseSvodObshiePlans(values: string[][], month: string): SvodMon
     }
     if (isPaidAdSection(label) || isOrganicSection(label) || label.startsWith("расход")) {
       if (inObshie) break;
-      seenChannel = true;
       continue;
     }
-    if (!inObshie) {
-      if (seenChannel) continue;
-      if (!isRevenueLabel(label)) continue;
-      inObshie = true;
-    }
+    if (!inObshie) continue;
 
     const value = parseSvodPlanNumber(values[r]?.[planCol]);
     if (value == null) continue;
 
     if (isRevenueLabel(label)) out.revenue = value;
-    else if (label === "лиды") out.leads = value;
+    else if (isLeadsLabel(label)) out.leads = value;
     else if (label.startsWith("счета")) out.invoices = value;
     else if (label.startsWith("оплаты")) out.sale = value;
     else if (label.includes("средний чек") && label.includes("оплат")) out.aov = value;
@@ -386,7 +392,7 @@ export function parseMonthlyPlanIndicators(values: string[][], month: string): M
   const out: MonthlyPlanIndicator[] = [];
   let section = "ОБЩИЕ";
   for (let r = 2; r < values.length; r += 1) {
-    const labelRaw = String(values[r]?.[0] || "").replace(/\s+/g, " ").trim();
+    const labelRaw = rowLabel(values[r]);
     if (!labelRaw) continue;
     const label = normalizeMetricLabel(labelRaw);
     if (
@@ -522,7 +528,7 @@ export function svodRateToUnit(value: number): number {
 
 function applyMetricToSlice(slice: SvodSalesPlanSlice, label: string, value: number): void {
   if (isRevenueLabel(label)) slice.revenue = value;
-  else if (label === "лиды") slice.leads = value;
+  else if (isLeadsLabel(label)) slice.leads = value;
   else if (label.startsWith("счета")) slice.invoices = value;
   else if (label.startsWith("оплаты")) slice.sale = value;
   else if (label.includes("средний чек") && label.includes("оплат")) slice.aov = value;
@@ -539,12 +545,22 @@ function applyMetricToSlice(slice: SvodSalesPlanSlice, label: string, value: num
 function isPaidAdSection(label: string): boolean {
   return (
     label.startsWith("facebook") ||
+    label.startsWith("фейсбук") ||
+    label.startsWith("фб") ||
+    label.startsWith("meta") ||
+    label.startsWith("insta") ||
+    label.startsWith("alx") ||
     label.startsWith("яндекс") ||
+    label.startsWith("yandex") ||
     label.startsWith("google") ||
     label.startsWith("vk") ||
     label.startsWith("платн") ||
     label === "paid"
   );
+}
+
+function sliceHasFunnel(slice: SvodSalesPlanSlice): boolean {
+  return slice.revenue != null || slice.leads != null || slice.sale != null;
 }
 
 function isOrganicSection(label: string): boolean {
@@ -580,9 +596,11 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
   type Mode = "none" | "obshie" | "paid" | "organic" | "skip";
   let mode: Mode = "none";
   let paidAccum = EMPTY_SLICE();
+  let preamble = EMPTY_SLICE();
 
   for (let r = 2; r < values.length; r += 1) {
-    const label = normalizeMetricLabel(values[r]?.[0] || "");
+    const labelRaw = rowLabel(values[r]);
+    const label = normalizeMetricLabel(labelRaw);
     if (!label) continue;
 
     if (isObshieSection(label)) {
@@ -603,7 +621,7 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
         paidAccum = EMPTY_SLICE();
       }
       mode = "paid";
-      out.paidSections.push(String(values[r]?.[0] || "").trim());
+      out.paidSections.push(labelRaw);
       continue;
     }
     if (label.startsWith("расход")) break;
@@ -616,7 +634,7 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
       continue;
     }
 
-    if (mode === "none" || mode === "skip") continue;
+    if (mode === "skip") continue;
     if (label === "roas" || label === "roi" || label === "romi") {
       continue;
     }
@@ -624,12 +642,17 @@ export function parseSvodPaidOrganicPlans(values: string[][], month: string): Sv
     const value = parseSvodPlanNumber(values[r]?.[planCol]);
     if (value == null) continue;
 
-    if (mode === "obshie") applyMetricToSlice(out.obshie, label, value);
+    if (mode === "none") applyMetricToSlice(preamble, label, value);
+    else if (mode === "obshie") applyMetricToSlice(out.obshie, label, value);
     else if (mode === "organic") applyMetricToSlice(out.organic, label, value);
     else if (mode === "paid") applyMetricToSlice(paidAccum, label, value);
   }
 
   if (mode === "paid") out.paid = addSlice(out.paid, paidAccum);
+  if (!sliceHasFunnel(out.paid) && sliceHasFunnel(preamble)) {
+    out.paid = addSlice(out.paid, preamble);
+    if (!out.paidSections.length) out.paidSections.push("preamble");
+  }
 
   const hasAny = [out.obshie, out.paid, out.organic].some((s) =>
     [s.revenue, s.sale, s.leads, s.invoices, s.aov, s.cpl, s.spend].some((v) => v != null)
@@ -641,9 +664,57 @@ function nearlyEqual(a: number, b: number, epsilon = 1): boolean {
   return Math.abs(a - b) <= epsilon;
 }
 
+function sliceCr(slice: SvodSalesPlanSlice, fallback: number | null = null): number | null {
+  if (slice.crLeadSale != null) return slice.crLeadSale;
+  if (slice.sale != null && slice.leads != null && slice.leads > 0) return slice.sale / slice.leads;
+  return fallback;
+}
+
+function impliedSale(slice: SvodSalesPlanSlice, cr: number | null): number | null {
+  if (slice.sale != null) return slice.sale;
+  if (slice.leads != null && cr != null) return slice.leads * cr;
+  return null;
+}
+
+function impliedRevenue(slice: SvodSalesPlanSlice, cr: number | null, aov: number | null): number | null {
+  if (slice.revenue != null) return slice.revenue;
+  const sales = impliedSale(slice, cr);
+  if (sales != null && aov != null) return sales * aov;
+  if (slice.leads != null && cr != null && aov != null) return slice.leads * cr * aov;
+  return null;
+}
+
 /**
- * Company month plan = ОБЩИЕ. If ОБЩИЕ copied Facebook/paid (same revenue/leads
- * as paid while organic is present), recover paid + organic.
+ * Official mix is organic ≈ 20% of company leads (667 / 3 334).
+ * If ОБЩИЕ already has that share, do not add organic again.
+ */
+function companyAlreadyIncludesOrganic(companyLeads: number, organicLeads: number): boolean {
+  if (companyLeads <= 0 || organicLeads <= 0) return false;
+  const epsilon = Math.max(20, organicLeads * 0.08);
+  return nearlyEqual(companyLeads * 0.2, organicLeads, epsilon);
+}
+
+function recoverChannelSum(
+  companyValue: number | null,
+  paidValue: number | null,
+  organicValue: number | null,
+  epsilon: number
+): number | null {
+  if (organicValue == null || organicValue <= 0) return companyValue;
+  if (paidValue != null && paidValue > 0) {
+    const sum = paidValue + organicValue;
+    if (companyValue == null) return sum;
+    if (nearlyEqual(companyValue, paidValue, epsilon) && !nearlyEqual(companyValue, sum, epsilon)) {
+      return sum;
+    }
+    return companyValue;
+  }
+  return companyValue ?? organicValue;
+}
+
+/**
+ * Company month plan = ОБЩИЕ (paid + organic). Recovers when ОБЩИЕ copied
+ * Facebook, or when the paid block is empty and ОБЩИЕ is still Facebook-only.
  */
 export function resolveCompanyMonthPlan(input: {
   obshie: SvodMonthPlans | null;
@@ -659,25 +730,30 @@ export function resolveCompanyMonthPlan(input: {
   let leads = obshie?.leads ?? company.leads;
   let sale = obshie?.sale ?? company.sale;
   let invoices = obshie?.invoices ?? company.invoices;
-  let aov = obshie?.aov ?? company.aov;
+  let aov = obshie?.aov ?? company.aov ?? paid.aov ?? organic.aov;
+  const cr =
+    company.crLeadSale ??
+    sliceCr({ ...EMPTY_SLICE(), sale, leads, crLeadSale: paid.crLeadSale ?? organic.crLeadSale });
 
-  if (paid.revenue != null && organic.revenue != null && organic.revenue > 0) {
-    const sum = paid.revenue + organic.revenue;
-    if (revenue == null || (paid.revenue > 0 && nearlyEqual(revenue, paid.revenue) && !nearlyEqual(revenue, sum, 50))) {
-      revenue = sum;
-    }
-  }
-  if (paid.leads != null && organic.leads != null && organic.leads > 0) {
-    const sum = paid.leads + organic.leads;
-    if (leads == null || (paid.leads > 0 && nearlyEqual(leads, paid.leads) && !nearlyEqual(leads, sum))) {
-      leads = sum;
-    }
-  }
-  if (paid.sale != null && organic.sale != null && organic.sale > 0) {
-    const sum = paid.sale + organic.sale;
-    if (sale == null || (paid.sale > 0 && nearlyEqual(sale, paid.sale) && !nearlyEqual(sale, sum))) {
-      sale = sum;
-    }
+  const paidHasFunnel = sliceHasFunnel(paid);
+  const organicLeads = organic.leads;
+  const missingPaid = !paidHasFunnel && organicLeads != null && organicLeads > 0 && leads != null;
+
+  if (missingPaid && !companyAlreadyIncludesOrganic(leads, organicLeads)) {
+    const revenuePerLead = revenue != null && leads > 0 ? revenue / leads : null;
+    const salePerLead = sale != null && leads > 0 ? sale / leads : null;
+    const organicSale = organic.sale ?? (salePerLead != null ? salePerLead * organicLeads : impliedSale(organic, cr));
+    const organicRevenue =
+      organic.revenue ?? (revenuePerLead != null ? revenuePerLead * organicLeads : impliedRevenue(organic, cr, aov));
+    leads = (leads ?? 0) + organicLeads;
+    if (sale != null || organicSale != null) sale = (sale ?? 0) + (organicSale ?? 0);
+    if (revenue != null || organicRevenue != null) revenue = (revenue ?? 0) + (organicRevenue ?? 0);
+  } else {
+    const organicRevenue = impliedRevenue(organic, cr, aov);
+    const organicSale = impliedSale(organic, cr);
+    revenue = recoverChannelSum(revenue, paid.revenue ?? impliedRevenue(paid, cr, aov), organicRevenue, 50);
+    leads = recoverChannelSum(leads, paid.leads, organic.leads, 1);
+    sale = recoverChannelSum(sale, paid.sale ?? impliedSale(paid, cr), organicSale, 1);
   }
 
   return {
@@ -686,9 +762,9 @@ export function resolveCompanyMonthPlan(input: {
     leads,
     invoices,
     aov,
-    crLeadInvoice: company.crLeadInvoice,
-    crLeadSale: company.crLeadSale,
-    crInvoiceSale: company.crInvoiceSale,
+    crLeadInvoice: company.crLeadInvoice ?? paid.crLeadInvoice ?? organic.crLeadInvoice,
+    crLeadSale: cr ?? company.crLeadSale ?? paid.crLeadSale ?? organic.crLeadSale,
+    crInvoiceSale: company.crInvoiceSale ?? paid.crInvoiceSale ?? organic.crInvoiceSale,
     cpl: company.cpl,
     spend: company.spend ?? paid.spend
   };
