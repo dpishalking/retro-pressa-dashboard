@@ -242,8 +242,10 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       ? MONTHLY_PLAN_SOURCE_LABEL
       : "targetScenario / North Star (fallback)";
   const planLeads = companyPlan.leads ?? monthlyPlanBundle?.obshie?.leads ?? null;
-  const planPaidLeads = monthlyPlanBundle?.channels?.paid.leads ?? null;
   const planOrganicLeads = monthlyPlanBundle?.channels?.organic.leads ?? null;
+  const planPaidLeads =
+    monthlyPlanBundle?.channels?.paid.leads ??
+    (planLeads != null && planOrganicLeads != null ? Math.max(0, planLeads - planOrganicLeads) : null);
   const planSales = companyPlan.sale ?? monthlyPlanBundle?.obshie?.sale ?? null;
   const planAov = companyPlan.aov ?? monthlyPlanBundle?.obshie?.aov ?? null;
   const planSpend = companyPlan.spend ?? monthlyPlanBundle?.channels?.obshie.spend ?? null;

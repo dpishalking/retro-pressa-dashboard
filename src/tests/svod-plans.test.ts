@@ -303,4 +303,116 @@ const lowered = resolveCompanyMonthPlan({
 assert.equal(lowered.revenue, 37338);
 assert.equal(lowered.leads, 2667);
 
+// Live sheet: ОБЩИЕ copied Facebook, Facebook cells empty, organic present.
+const emptyPaidBlock: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Конверсия Лид в оплату", "", "20%"],
+  ["Facebook"],
+  ["Выручка", "", ""],
+  ["Лиды", "", ""],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"],
+  ["Оплаты шт.", "", "134"]
+];
+const emptyPaid = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(emptyPaidBlock, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(emptyPaidBlock, "2026-08")
+});
+assert.equal(emptyPaid.leads, 3334);
+assert.equal(emptyPaid.revenue, 46676);
+assert.equal(emptyPaid.sale, 667);
+
+const emptyPaidNoOrganicRevenue: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Facebook"],
+  ["Органика"],
+  ["Лиды", "", "667"]
+];
+const impliedOrganic = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(emptyPaidNoOrganicRevenue, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(emptyPaidNoOrganicRevenue, "2026-08")
+});
+assert.equal(impliedOrganic.leads, 3334);
+assert.equal(Math.round(impliedOrganic.revenue ?? 0), 46676);
+
+// Unlabeled first block is Facebook, not ОБЩИЕ. Company = paid + organic.
+const preambleOnly: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["Выручка", "", "37338"],
+  ["Лиды", "", "2667"],
+  ["Оплаты шт.", "", "533"],
+  ["Средний чек оплата", "", "70"],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"],
+  ["Оплаты шт.", "", "134"]
+];
+assert.equal(parseSvodObshiePlans(preambleOnly, "2026-08"), null);
+const preambleChannels = parseSvodPaidOrganicPlans(preambleOnly, "2026-08");
+assert.equal(preambleChannels?.paid.revenue, 37338);
+assert.equal(preambleChannels?.paid.leads, 2667);
+const preambleResolved = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(preambleOnly, "2026-08"),
+  channels: preambleChannels
+});
+assert.equal(preambleResolved.revenue, 46676);
+assert.equal(preambleResolved.leads, 3334);
+
+// Indented labels in column B (same layout as fact sync).
+const indentedPlan: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["", "Выручка", "37338"],
+  ["", "Лиды", "2667"],
+  ["Facebook"],
+  ["", "Выручка", "37338"],
+  ["", "Лиды", "2667"],
+  ["", "Органика"],
+  ["", "Выручка", "9338"],
+  ["", "Лиды", "667"]
+];
+const indentedResolved = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(indentedPlan, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(indentedPlan, "2026-08")
+});
+assert.equal(indentedResolved.revenue, 46676);
+assert.equal(indentedResolved.leads, 3334);
+
+// ОБЩИЕ already paid+organic — do not add organic twice when Facebook is empty.
+const alreadyFull: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "План"],
+  ["ОБЩИЕ"],
+  ["Выручка", "", "46676"],
+  ["Лиды", "", "3334"],
+  ["Оплаты шт.", "", "667"],
+  ["Средний чек оплата", "", "70"],
+  ["Facebook"],
+  ["Выручка", "", ""],
+  ["Органика"],
+  ["Выручка", "", "9338"],
+  ["Лиды", "", "667"]
+];
+const already = resolveCompanyMonthPlan({
+  obshie: parseSvodObshiePlans(alreadyFull, "2026-08"),
+  channels: parseSvodPaidOrganicPlans(alreadyFull, "2026-08")
+});
+assert.equal(already.revenue, 46676);
+assert.equal(already.leads, 3334);
+
 console.log("svod-plans tests ok");
