@@ -33,7 +33,8 @@ const CRON_API_PREFIXES = [
   "/api/sync/bitrix-sales-foundation",
   "/api/sync/sales-os",
   "/api/sync/sales-cycle",
-  "/api/sync/marketing-planning"
+  "/api/sync/marketing-planning",
+  "/api/sync/monthly-plan-facts"
 ];
 const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
 

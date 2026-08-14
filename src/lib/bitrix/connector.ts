@@ -1,4 +1,5 @@
 import { paidInvoiceAmount } from "@/lib/bitrix/paid-revenue";
+import { attachDealCountries } from "@/lib/bitrix/deal-country";
 import type { CountryInvoiceMetrics, DailyMetrics, ManagerInvoiceMetrics, ManagerMetrics, MonthlyMetrics, PeriodKey, ProductInvoiceMetrics } from "@/types/metrics";
 import { extractBitrixWebValue } from "@/lib/utm-standards";
 import {
@@ -467,6 +468,12 @@ function enumValueName(map: Map<string, string>, value?: string | string[]) {
   return map.get(String(raw)) ?? String(raw);
 }
 
+function namedCountry(raw: string, enumMaps: BitrixEnumMaps): string {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  return enumMaps.dealCountries.get(text) || enumMaps.leadCountries.get(text) || (/^\d+$/.test(text) ? "" : text);
+}
+
 async function loadCountryMetadata() {
   const [leadFields, dealFields] = await Promise.all([
     callBitrixResult<Record<string, BitrixField>>("crm.lead.fields"),
@@ -743,10 +750,15 @@ async function buildBitrixSnapshot(period: PeriodKey): Promise<BitrixSnapshot> {
     );
   });
 
-  const paidDeals: BitrixSnapshotDeal[] = paidSmartInvoices.map((deal) => ({
-    ...deal,
-    managerName: userNames.get(deal.assignedById) ?? deal.managerName
-  }));
+  const paidDeals: BitrixSnapshotDeal[] = attachDealCountries(
+    paidSmartInvoices.map((deal) => ({
+      ...deal,
+      managerName: userNames.get(deal.assignedById) ?? deal.managerName,
+      country: namedCountry(deal.country, enumMaps)
+    })),
+    [...leads, ...recentLeads],
+    deals
+  );
 
   const openPipeline: BitrixSnapshotDeal[] = Array.from(openRawById.values()).map((deal) => {
     const id = String(deal.ID);
@@ -1231,10 +1243,15 @@ export async function loadOsBitrixDealUniverse(period: PeriodKey): Promise<{
     );
   });
 
-  const paidRows = paidSmartInvoices.map((deal) => ({
-    ...deal,
-    managerName: userNames.get(deal.assignedById) ?? deal.managerName
-  }));
+  const paidRows = attachDealCountries(
+    paidSmartInvoices.map((deal) => ({
+      ...deal,
+      managerName: userNames.get(deal.assignedById) ?? deal.managerName,
+      country: namedCountry(deal.country, enumMaps)
+    })),
+    leads,
+    dealRows
+  );
 
   const deals = [...dealRows, ...paidRows].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
 

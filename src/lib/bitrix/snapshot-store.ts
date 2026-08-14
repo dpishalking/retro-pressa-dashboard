@@ -65,6 +65,8 @@ export type BitrixSnapshotDeal = {
   /** Resolved SPA «Тип подарка» names (Оригинал, Репродукция, …). */
   giftTypes?: string[];
   products: BitrixSnapshotProductRow[];
+  /** CRM deal linked to a SPA invoice (`parentId2`); optional on older snapshots. */
+  parentDealId?: string | null;
   /** How this deal entered the invoice set. */
   invoiceSource?: "invoice_date_field" | "stage_history";
 };

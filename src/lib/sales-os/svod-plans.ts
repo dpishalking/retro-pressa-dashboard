@@ -77,21 +77,47 @@ export function monthNameRuGenitiveOrNominative(month: string): string {
   return MONTH_NAMES_RU[idx] || "";
 }
 
+function headerMonthName(raw: string): string | null {
+  const name = String(raw || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  if (!name) return null;
+  return MONTH_NAMES_RU.find((item) => name === item || name.startsWith(item)) ?? null;
+}
+
 /** Find 0-based plan column for YYYY-MM on header rows 1–2. */
 export function findSvodPlanColumn(values: string[][], month: string): number | null {
   const want = monthNameRuGenitiveOrNominative(month);
   if (!want) return null;
   const header = values[0] || [];
   const sub = values[1] || [];
+  let currentMonth = "";
   for (let col = 0; col < Math.max(header.length, sub.length); col += 1) {
-    const name = String(header[col] || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
+    const headerMonth = headerMonthName(header[col] || "");
+    if (headerMonth) currentMonth = headerMonth;
     const kind = String(sub[col] || "")
       .trim()
       .toLowerCase();
-    if (name === want && kind.startsWith("план")) return col;
+    if (currentMonth === want && kind.startsWith("план")) return col;
+  }
+  return null;
+}
+
+/** Find 0-based fact column for YYYY-MM. Merged month headers are filled forward. */
+export function findSvodFactColumn(values: string[][], month: string): number | null {
+  const want = monthNameRuGenitiveOrNominative(month);
+  if (!want) return null;
+  const header = values[0] || [];
+  const sub = values[1] || [];
+  let currentMonth = "";
+  for (let col = 0; col < Math.max(header.length, sub.length); col += 1) {
+    const headerMonth = headerMonthName(header[col] || "");
+    if (headerMonth) currentMonth = headerMonth;
+    const kind = String(sub[col] || "")
+      .trim()
+      .toLowerCase();
+    if (currentMonth === want && kind.startsWith("факт")) return col;
   }
   return null;
 }

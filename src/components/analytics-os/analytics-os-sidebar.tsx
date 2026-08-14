@@ -42,7 +42,6 @@ const NAV: NavGroup[] = [
       { id: "funnel", label: "Воронка", enabled: true, section: "funnel" },
       { id: "managers", label: "Менеджеры", enabled: true, section: "managers" },
       { id: "external", label: "Диалоги", enabled: true, href: "/rop/conversations" },
-      { id: "external", label: "Когорты", enabled: true, href: "/os/cohorts" },
       { id: "external", label: "Цикл сделки", enabled: true, href: "/os/sales-cycle" }
     ]
   },
@@ -50,6 +49,7 @@ const NAV: NavGroup[] = [
     title: "Маркетинг и трафик",
     items: [
       { id: "marketing", label: "Маркетинг", enabled: true, section: "marketing" },
+      { id: "external", label: "Когорты", enabled: true, href: "/os/cohorts" },
       { id: "stub", label: "Креативы", enabled: false }
     ]
   },

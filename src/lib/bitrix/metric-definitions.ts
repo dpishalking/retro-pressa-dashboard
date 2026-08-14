@@ -18,7 +18,8 @@ export const BITRIX_SMART_INVOICE_PAID_STAGE_ID = "DT31_2:P";
 /** UF «Дата завершения» on SPA invoices (UI filter). Not filterable via REST — client-side. */
 export const BITRIX_SMART_INVOICE_COMPLETION_DATE_FIELD = "ufCrm_69C2C99FE5C54";
 
-/** Deal ↔ SPA «Вид подарка» (entityTypeId 1038). Used when productrows are empty. */
+/** Deal UF country (enum). Same source as CRM deal country on the dashboard. */
+export const BITRIX_DEAL_COUNTRY_FIELD = "UF_CRM_6797B3DA00D16";
 export const BITRIX_DEAL_GIFT_LINKS_FIELD = "UF_CRM_1784794322";
 /** Shipping amount on deal (not a product row). */
 export const BITRIX_DELIVERY_PRICE_FIELD = "UF_CRM_1739981844877";

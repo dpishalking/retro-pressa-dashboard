@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { OfficeHubBackLink } from "@/components/office-hub";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
+import { ManagerScheduleBoard } from "@/components/manager-schedule-board";
 import { MarketingAudienceBoard } from "@/components/marketing-audience-board";
 import { MarketingFunnelTiles } from "@/components/marketing-funnel-tiles";
 import { MarketingLandingTiles } from "@/components/marketing-landing-tiles";
@@ -42,22 +43,18 @@ type ContourConfig = {
 const CONTOURS: Record<ContourId, ContourConfig> = {
   sales: {
     title: "Продажи",
-    description: "Сводка, прогноз до конца месяца и рабочие экраны команды.",
+    description: "Сводка, прогноз, график смен и рабочие экраны команды.",
     icon: Target,
     summaryMetricIds: [
       "revenue",
       "leads",
-      "bitrix_cards",
-      "unique_leads",
       "conversion_rate",
-      "unique_conversion_rate",
       "pipeline_stuck_amount",
       "paid_orders"
     ],
     forecastDomain: "sales",
     detailLinks: [
       { title: "Воронка", description: "Лиды, счета, оплаты и зависшие сделки.", href: "/os/funnel", primary: true },
-      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Цикл сделки", description: "Скорость от лида до оплаты.", href: "/os/sales-cycle" },
       { title: "Менеджеры", description: "Конверсия и выручка по команде.", href: "/os/managers" },
       { title: "Диалоги", description: "Качество переписок и возражения.", href: "/rop/conversations" }
@@ -80,6 +77,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
+      { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" }
     ],
     actionLinks: [
@@ -541,12 +539,15 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
 
       {contour.forecastDomain ? <ContourForecast domain={contour.forecastDomain} /> : null}
       {contourId === "sales" ? <ManagerBenchmarkStrip snapshot={snapshot} /> : null}
+      {contourId === "sales" ? <ManagerScheduleBoard /> : null}
       {contourId === "product" ? <ProductHighlights snapshot={snapshot} /> : null}
       {contourId === "marketing" ? (
         <>
+          <LinkList title="Детализация" links={detailLinks} />
           <MarketingLandingTiles />
           <MarketingFunnelTiles />
           <MarketingAudienceBoard />
+          <LinkList title="Действия" links={actionLinks} />
         </>
       ) : (
         <>

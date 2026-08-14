@@ -1,0 +1,45 @@
+name: Finance Plan Fact Morning
+
+# 09:00 Europe/Riga = 06:00 UTC (summer). Once a day — Fact only, never Plan.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Write RP | Finance «План/факт» Fact column
+        env:
+          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=40 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="${CRON_SYNC_SECRET:-}"
+          if [ -z "$SECRET" ]; then
+            echo "CRON_SYNC_SECRET is empty"
+            exit 1
+          fi
+          MONTH="$(TZ=Europe/Riga date +%Y-%m)"
+          echo "monthly-plan-facts month=${MONTH}"
+          curl -f -sS --max-time 180 -X POST http://127.0.0.1:4175/api/sync/monthly-plan-facts \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${SECRET}" \
+            -d "{\"month\":\"${MONTH}\"}"
+          echo
+          EOF

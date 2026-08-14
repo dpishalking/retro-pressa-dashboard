@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  findSvodFactColumn,
   findSvodPlanColumn,
   parseMonthlyPlanIndicators,
   parseSvodDailyLeads,
@@ -10,6 +11,7 @@ import {
   resolveCompanyMonthPlan,
   sumSvodVerifiedLeads
 } from "@/lib/sales-os/svod-plans";
+import { collectMonthlyPlanFactCells, factValueForLabel } from "@/lib/sales-os/sync-monthly-plan-facts";
 
 assert.equal(parseSvodPlanNumber("€36 274"), 36274);
 assert.equal(parseSvodPlanNumber("3 334"), 3334);
@@ -30,6 +32,14 @@ const grid: string[][] = [
 ];
 
 assert.equal(findSvodPlanColumn(grid, "2026-07"), 2);
+assert.equal(findSvodFactColumn(grid, "2026-07"), 4);
+
+const mergedAugust: string[][] = [
+  ["Показатели", "", "", "", "", "", "", "Август", "", "", ""],
+  ["", "", "", "", "", "", "", "План", "%", "Факт", "Δ"]
+];
+assert.equal(findSvodPlanColumn(mergedAugust, "2026-08"), 7);
+assert.equal(findSvodFactColumn(mergedAugust, "2026-08"), 9);
 const plans = parseSvodObshiePlans(grid, "2026-07");
 assert.ok(plans);
 assert.equal(plans!.revenue, 36274);
@@ -53,6 +63,8 @@ const channelGrid: string[][] = [
   ["ROAS", "", "645"],
   ["Лиды", "", "2667"],
   ["CPL", "", "1.69"],
+  ["Квал лиды", "", "1867"],
+  ["% квал лидов", "", "70%"],
   ["Счета шт", "", "587"],
   ["Оплаты шт.", "", "427"],
   ["Конверсия Лид в счет", "", "22%"],
@@ -67,6 +79,8 @@ const channelGrid: string[][] = [
   ["Органика"],
   ["Выручка", "", "7257"],
   ["Лиды", "", "667"],
+  ["Квал лиды", "", "467"],
+  ["% квал лидов", "", "70%"],
   ["Счета шт", "", "147"],
   ["Оплаты шт.", "", "107"],
   ["Конверсия Лид в счет", "", "22%"],
@@ -167,6 +181,47 @@ assert.notEqual(noDoubleOrganic.get("2026-08-01")?.total, 851 + 200);
 const mtd851 = sumSvodVerifiedLeads(noDoubleOrganic, { month: "2026-08" });
 assert.equal(mtd851.total, 851);
 assert.equal(mtd851.paid + mtd851.organic, mtd851.total);
+
+assert.equal(factValueForLabel("Лиды", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 851);
+assert.equal(factValueForLabel("Оплаты шт.", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 147);
+assert.equal(factValueForLabel("ROAS", { revenue: 200, spend: 50, leads: 10, qualifiedLeads: 2, invoices: 1, sales: 1 }), 400);
+assert.equal(factValueForLabel("CPL", { revenue: 200, spend: 851, leads: 851, qualifiedLeads: 2, invoices: 1, sales: 1 }), 1);
+
+const factCells = collectMonthlyPlanFactCells(channelGrid, {
+  obshie: { revenue: 13822, spend: 4067, leads: 851, qualifiedLeads: 200, invoices: 180, sales: 147 },
+  facebook: { revenue: 10000, spend: 4067, leads: 651, qualifiedLeads: 150, invoices: 120, sales: 100 },
+  yandex: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null },
+  organic: { revenue: 3822, spend: null, leads: 200, qualifiedLeads: 50, invoices: 40, sales: 47 }
+});
+assert.equal(factCells.find((c) => c.section === "obshie" && c.label === "Лиды")?.value, 851);
+assert.equal(factCells.find((c) => c.section === "obshie" && c.label === "Оплаты шт.")?.value, 147);
+assert.equal(factCells.find((c) => c.section === "facebook" && c.label === "Лиды")?.value, 651);
+assert.equal(factCells.find((c) => c.section === "facebook" && c.label === "Квал лиды")?.value, 150);
+assert.equal(factCells.find((c) => c.section === "facebook" && c.label === "Счета шт")?.value, 120);
+assert.equal(factCells.find((c) => c.section === "facebook" && c.label === "Оплаты шт.")?.value, 100);
+assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Лиды")?.value, 200);
+assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Квал лиды")?.value, 50);
+assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Счета шт")?.value, 40);
+assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Оплаты шт.")?.value, 47);
+assert.equal(factCells.some((c) => c.section === "yandex"), false);
+
+const indentedOrganic: string[][] = [
+  ["Показатели", "", "Август"],
+  ["", "", "Факт"],
+  ["", "Органика"],
+  ["", "Выручка"],
+  ["", "Лиды"],
+  ["", "Оплаты шт."]
+];
+const emptySlice = { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null };
+const indentedCells = collectMonthlyPlanFactCells(indentedOrganic, {
+  obshie: emptySlice,
+  facebook: emptySlice,
+  yandex: emptySlice,
+  organic: { revenue: 9338, spend: null, leads: 210, qualifiedLeads: null, invoices: null, sales: 80 }
+});
+assert.equal(indentedCells.find((c) => c.section === "organic" && c.label === "Лиды")?.value, 210);
+assert.equal(indentedCells.find((c) => c.section === "organic" && c.label === "Выручка")?.value, 9338);
 
 const facebookFirst: string[][] = [
   ["Показатели", "", "Август"],

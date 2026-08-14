@@ -74,9 +74,11 @@ export async function readSheetValues(input: {
   spreadsheetId: string;
   range: string;
   gid?: string;
+  valueRenderOption?: "FORMATTED_VALUE" | "UNFORMATTED_VALUE" | "FORMULA";
 }): Promise<string[][]> {
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets.readonly");
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}/values/${encodeURIComponent(input.range)}`;
+  const render = input.valueRenderOption ? `?valueRenderOption=${encodeURIComponent(input.valueRenderOption)}` : "";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}/values/${encodeURIComponent(input.range)}${render}`;
   const response = await fetch(url, {
     headers: { authorization: `Bearer ${accessToken}` },
     cache: "no-store",

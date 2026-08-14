@@ -27,6 +27,8 @@ export const PM_SHEETS = {
   salesMaria: "05g_МАРИЯ",
   salesManagers: "05_SALES_MANAGERS",
   actions: "06_ACTIONS",
+  finance: "07_FINANCE",
+  motivation: "08_MOTIVATION",
   metrics: "90_METRICS",
   settings: "91_SETTINGS",
   glossary: "92_GLOSSARY",
@@ -41,5 +43,6 @@ export const PM_DETAIL_SHEETS = [
   PM_SHEETS.marketingGeneral,
   PM_SHEETS.marketingPaid,
   PM_SHEETS.marketingOrganic,
-  PM_SHEETS.salesGeneral
+  PM_SHEETS.salesGeneral,
+  PM_SHEETS.finance
 ] as const;
