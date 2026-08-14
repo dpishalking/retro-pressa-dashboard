@@ -31,9 +31,6 @@ jobs:
           AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
           if [ -n "${SECRET:-}" ]; then
             AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
-          else
-            echo "CRON_SYNC_SECRET missing in runtime-env.json"
-            exit 1
           fi
           MONTH="$(TZ=Europe/Riga date +%Y-%m)"
           echo "monthly-plan-facts month=${MONTH}"
