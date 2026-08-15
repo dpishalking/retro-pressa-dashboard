@@ -163,8 +163,8 @@ function monthDecompRun(snapshot: CeoControlCenterSnapshot): ScenarioRun {
     diagnosis: `${revenueDiagnosis(report)} Что масштабировать и что чинить — по знаку вклада рычага, не по ощущению.`,
     findings,
     actions: factorActions(report, [
-      { title: "Продукты", why: "Микс и чек.", href: "/os/products" },
-      { title: "География", why: "Какие рынки тянут кассу.", href: "/os/geography" }
+      { title: "Срезы: продукты", why: "Кто тянет кассу.", href: "/os/slices?dim=product&metric=revenue" },
+      { title: "Срезы: страны", why: "Где деньги.", href: "/os/slices?dim=country&metric=revenue" }
     ]),
     sampleNote: "Полный разбор каналов и креативов требует Ads API и чистый SOURCE_ID."
   };
@@ -364,7 +364,8 @@ function leadsNoSalesRun(snapshot: CeoControlCenterSnapshot): ScenarioRun {
     findings,
     actions: [
       { title: "Воронка", why: "Где отвал: счёт или оплата.", href: "/os/funnel" },
-      { title: "Менеджеры", why: "Сравнить CR при достаточной выборке.", href: "/os/managers" },
+      { title: "Срезы: менеджеры", why: "CR по команде на тех же фактах.", href: "/os/slices?dim=manager&metric=cr" },
+      { title: "Срезы: источники", why: "Сравнить с обработкой.", href: "/os/slices?dim=source&metric=cr" },
       { title: "Цикл сделки", why: "Лаг до оплаты.", href: "/os/sales-cycle" },
       { title: "Маркетинг или продажи?", why: "Отдельный спорный сценарий.", href: "/os/scenarios?scenario=marketing-vs-sales" }
     ],
@@ -415,7 +416,8 @@ function marketingVsSalesRun(snapshot: CeoControlCenterSnapshot): ScenarioRun {
       value: `${pct(row.cr)} · ${number(row.leads)} лидов · ${number(row.sales)} продаж`
     })),
     actions: [
-      { title: "Менеджеры", why: "Same month / different managers.", href: "/os/managers" },
+      { title: "Срезы: источник", why: "Сначала источник, потом менеджер.", href: "/os/slices?dim=source&metric=cr" },
+      { title: "Срезы: менеджеры", why: "Same month / different managers.", href: "/os/slices?dim=manager&metric=cr" },
       { title: "Воронка", why: "Лид → счёт vs счёт → оплата.", href: "/os/funnel" },
       { title: "Источники", why: "Качество данных SOURCE_ID.", href: "/os/sources" }
     ],

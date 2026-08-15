@@ -37,6 +37,7 @@ import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { MarketingPredictivePanel } from "@/components/analytics-os/marketing-predictive-panel";
 import { FactorAnalysisPanel } from "@/components/analytics-os/factor-analysis-panel";
 import { AnalysisScenariosPanel } from "@/components/analytics-os/analysis-scenarios-panel";
+import { AnalysisSlicesPanel } from "@/components/analytics-os/analysis-slices-panel";
 
 function StubPanel({ contour }: { contour: ContourDef }) {
   return (
@@ -209,6 +210,20 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
               {contour.id === "scenarios" && (
                 <Suspense fallback={<section className="aos-card"><p>Загрузка сценариев…</p></section>}>
                   <AnalysisScenariosPanel snapshot={snapshot} />
+                </Suspense>
+              )}
+              {contour.id === "slices" && (
+                <Suspense fallback={<section className="aos-card"><p>Загрузка срезов…</p></section>}>
+                  <AnalysisSlicesPanel
+                    period={period}
+                    country={country}
+                    managerId={managerId}
+                    productId={productId}
+                    setPeriod={setPeriod}
+                    setCountry={setCountry}
+                    setManagerId={setManagerId}
+                    setProductId={setProductId}
+                  />
                 </Suspense>
               )}
               {contour.id === "unit-economics" && <UnitEconomicsPanel snapshot={snapshot} />}

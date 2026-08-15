@@ -22,7 +22,8 @@ export type ContourId =
   | "plan"
   | "sources"
   | "factors"
-  | "scenarios";
+  | "scenarios"
+  | "slices";
 
 export type ContourDef = {
   id: ContourId;
@@ -207,6 +208,17 @@ export const ANALYTICS_CONTOURS: ContourDef[] = [
     onWheel: false
   },
   {
+    id: "slices",
+    number: 0,
+    title: "Срезы",
+    shortTitle: "Срезы",
+    subtitle: "Где результат: страна, продукт, источник, менеджер",
+    href: "/os/slices",
+    status: "live",
+    accent: "gold",
+    onWheel: false
+  },
+  {
     id: "plan",
     number: 0,
     title: "План / Факт / Прогноз",
@@ -243,6 +255,7 @@ const HUB_TILE_ORDER: ContourId[] = [
   "revenue",
   "factors",
   "scenarios",
+  "slices",
   "unit-economics",
   "products",
   "cohorts",
@@ -284,7 +297,7 @@ const BUSINESS_CONTOUR_ORDER: Array<{
     id: "analytics",
     title: "Аналитика",
     subtitle: "Общая картина бизнеса и клиентская база",
-    contourIds: ["revenue", "factors", "scenarios", "customers", "geography"]
+    contourIds: ["revenue", "factors", "scenarios", "slices", "customers", "geography"]
   },
   {
     id: "sales",
