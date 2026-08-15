@@ -244,7 +244,6 @@ export function AnalysisSlicesPanel({
     return b.revenue - a.revenue;
   });
   const selectedRow = sorted.find((row) => row.key === (report?.selectedKey || selected));
-  const kpis = report?.kpis;
 
   return (
     <div className="aos-slices">
@@ -315,30 +314,8 @@ export function AnalysisSlicesPanel({
         </section>
       ) : !report && state === "loading" ? (
         <section className="aos-slice-loading">Считаю срез по фактам цикла сделки…</section>
-      ) : report && kpis ? (
+      ) : report ? (
         <>
-          <section className="aos-slice-kpis" aria-label="Итог среза">
-            {(
-              [
-                ["leads", "Лиды", number(kpis.leads)],
-                ["sales", "Оплаты", number(kpis.sales)],
-                ["cr", "CR", kpis.cr == null ? "—" : pct(kpis.cr)],
-                ["revenue", "Выручка", eur(kpis.revenue)],
-                ["aov", "AOV", kpis.aov == null ? "—" : eur(kpis.aov)],
-                ["cycle", "Медиана цикла", kpis.medianCycleDays == null ? "—" : `${number(kpis.medianCycleDays, 1)} дн.`],
-                ["d7", "D7 CR", kpis.d7Cr == null ? "—" : pct(kpis.d7Cr)],
-                ["d30", "D30 CR", kpis.d30Cr == null ? "—" : pct(kpis.d30Cr)]
-              ] as const
-            ).map(([id, label, value]) => (
-              <div
-                key={id}
-                className={`aos-slice-kpi aos-slice-kpi--${id}${metric === id ? " is-focus" : ""}`}
-              >
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </div>
-            ))}
-          </section>
           {report.unknownShareLeads != null && report.unknownShareLeads > 0 ? (
             <p className="aos-slice-note">
               Не указан — {pct(report.unknownShareLeads)} лидов
