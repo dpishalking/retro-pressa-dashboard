@@ -1683,6 +1683,10 @@ td {
   gap: 1rem;
 }
 
+.aos-door--wide {
+  grid-column: 1 / -1;
+}
+
 .aos-door {
   position: relative;
   overflow: hidden;

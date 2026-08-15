@@ -12,7 +12,7 @@ import { eur, pct } from "@/lib/format";
 type DoorMetric = { label: string; value: string };
 
 type DoorDef = {
-  id: Exclude<BusinessContourId, "analytics"> | "factors";
+  id: Exclude<BusinessContourId, "analytics">;
   title: string;
   subtitle: string;
   icon: LucideIcon;
@@ -82,18 +82,6 @@ const DOORS: DoorDef[] = [
       { label: "Факт", value: formatMetricDisplay(snapshot.plan.factRevenue) },
       { label: "Прогноз", value: formatMetricDisplay(snapshot.plan.forecastRevenue) }
     ]
-  },
-  {
-    id: "factors",
-    title: "Факторный анализ",
-    subtitle: "Что съело план и куда жать",
-    icon: GitBranch,
-    href: "/os/factors",
-    metrics: (snapshot) => [
-      { label: "План", value: formatMetricDisplay(snapshot.plan.planRevenue) },
-      { label: "Факт", value: formatMetricDisplay(snapshot.plan.factRevenue) },
-      { label: "Разрыв", value: formatMetricDisplay(snapshot.plan.gap) }
-    ]
   }
 ];
 
@@ -102,7 +90,7 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
     <section className="aos-doors-band" aria-label="Направления бизнеса">
       <div className="aos-doors-band__head">
         <h2>Направления</h2>
-        <p>Рабочие контуры и факторный разбор месяца. Цифры — из текущей сводки.</p>
+        <p>Рабочие контуры. Цифры — из текущей сводки.</p>
       </div>
       <div className="aos-doors">
         {DOORS.map((door) => {
@@ -110,7 +98,7 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
           return (
             <Link
               key={door.id}
-              href={door.href || BUSINESS_CONTOUR_PATHS[door.id as Exclude<BusinessContourId, "analytics">]}
+              href={door.href || BUSINESS_CONTOUR_PATHS[door.id]}
               className={`aos-door aos-door--${door.id}`}
             >
               <div className="aos-door__art" aria-hidden="true">
@@ -155,12 +143,13 @@ function liveScenarioSignals(snapshot: CeoControlCenterSnapshot) {
 }
 
 const ANALYSIS_DOORS: Array<{
-  id: "scenarios" | "slices";
+  id: "scenarios" | "slices" | "factors";
   title: string;
   subtitle: string;
   icon: LucideIcon;
   href: string;
   cta: string;
+  wide?: boolean;
   metrics: (snapshot: CeoControlCenterSnapshot) => DoorMetric[];
 }> = [
   {
@@ -197,21 +186,42 @@ const ANALYSIS_DOORS: Array<{
         { label: metricLabel("aov"), value: formatMetricDisplay(snapshot.metrics.aov) }
       ];
     }
+  },
+  {
+    id: "factors",
+    title: "Факторный анализ",
+    subtitle: "Что съело план и куда жать",
+    icon: GitBranch,
+    href: "/os/factors",
+    cta: "Разобрать разрыв",
+    wide: true,
+    metrics: (snapshot) => [
+      { label: "План", value: formatMetricDisplay(snapshot.plan.planRevenue) },
+      { label: "Факт", value: formatMetricDisplay(snapshot.plan.factRevenue) },
+      { label: "Разрыв", value: formatMetricDisplay(snapshot.plan.gap) }
+    ]
   }
 ];
 
 export function ScenariosModule({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   return (
-    <section className="aos-doors-band" aria-label="Сценарии и срезы">
+    <section className="aos-doors-band" aria-label="Разбор">
       <div className="aos-doors-band__head">
         <h2>Разбор</h2>
-        <p>Сценарии — маршрут причины. Срезы — где результат. Цифры на плитках из текущей сводки.</p>
+        <p>
+          Сценарии — маршрут причины. Срезы — где результат. Факторный анализ — что съело план. Цифры на плитках из
+          текущей сводки.
+        </p>
       </div>
       <div className="aos-doors">
         {ANALYSIS_DOORS.map((door) => {
           const Icon = door.icon;
           return (
-            <Link key={door.id} href={door.href} className={`aos-door aos-door--${door.id}`}>
+            <Link
+              key={door.id}
+              href={door.href}
+              className={`aos-door aos-door--${door.id}${door.wide ? " aos-door--wide" : ""}`}
+            >
               <div className="aos-door__art" aria-hidden="true">
                 <span className="aos-door__shape aos-door__shape--a" />
                 <span className="aos-door__shape aos-door__shape--b" />
