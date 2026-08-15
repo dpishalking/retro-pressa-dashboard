@@ -65,6 +65,10 @@ export function FactorAnalysisPanel({ snapshot }: { snapshot: CeoControlCenterSn
           <Link href={report.pressHref} className="font-bold text-blue-700 hover:underline">
             Открыть этот рычаг →
           </Link>
+          {" · "}
+          <Link href="/os/scenarios?scenario=revenue-plan" className="font-bold text-blue-700 hover:underline">
+            Разобрать Gap →
+          </Link>
         </p>
       </section>
 

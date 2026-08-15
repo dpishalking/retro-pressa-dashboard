@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import type { AnalyticsMetricValue, CeoControlCenterSnapshot } from "@/types/analytics-os";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { decisionKpis } from "@/lib/analytics-os/block-decisions";
+import { KPI_SCENARIO_LINKS } from "@/lib/analytics-os/analysis-scenarios";
 import { metricDefinition, metricLabel } from "@/lib/analytics-os/metric-glossary";
 import { pct } from "@/lib/format";
 
@@ -95,6 +97,14 @@ function KpiCard({
       </div>
       <div className="aos-kpi__value">{formatMetricDisplay(metric)}</div>
       {hasPlan ? <div className="aos-kpi__plan">План {formatPlanValue(metric)}</div> : null}
+      {KPI_SCENARIO_LINKS[metricId] && (light === "scarlet" || light === "yellow") ? (
+        <Link
+          href={`/os/scenarios?scenario=${KPI_SCENARIO_LINKS[metricId].scenarioId}`}
+          className="aos-kpi__action"
+        >
+          {KPI_SCENARIO_LINKS[metricId].label}
+        </Link>
+      ) : null}
     </article>
   );
 }
