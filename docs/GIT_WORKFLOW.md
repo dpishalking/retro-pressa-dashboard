@@ -24,19 +24,23 @@ npm test
 
 ## Merge
 
-- Merge via PR into `main` when ready for production path
+- Default path: commit on `main` and push. That ships to production.
+- Use a PR only when the user asks for review, not for a normal task.
 - Avoid force-push to `main`
 
 ## Release / production
 
-- Push to `main` → GitHub Actions → Timeweb ([AUTO_DEPLOY.md](../AUTO_DEPLOY.md))
+- Push to `main` → GitHub Actions `Deploy Retro Pressa` → Timeweb ([AUTO_DEPLOY.md](../AUTO_DEPLOY.md))
+- Do not wait for a separate «деплой» command. Push is the deploy.
 - Confirm secrets present in GitHub Secrets
 - For sheet cutovers: dual-run → audit → explicit cutover decision
 
 ## Agent / Cursor policy
 
-- Commit and push **only on explicit user request**
+- After a code/config change: commit and `git push origin main` without asking
+- Do not write «напиши деплой, если выпускаем»
 - No amend of pushed commits without explicit request
+- Never commit `.env*`, `data/**`, or snapshots
 
 ## Not changing
 
