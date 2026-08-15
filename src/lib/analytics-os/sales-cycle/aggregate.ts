@@ -2,13 +2,6 @@ import { countUniqueLeads, countUniqueLeadsWithHistory } from "@/lib/analytics-o
 import { daysElapsedInPeriod } from "@/lib/analytics-os/period";
 import type { AnalyticsPeriod } from "@/types/analytics-os";
 import {
-  classifyAcquisitionChannel,
-  customerKindLabel,
-  trafficKindLabel,
-  type CustomerKind,
-  type TrafficKind
-} from "./cohort-dims";
-import {
   FINAL_REVENUE_HOURS,
   MATURITY_CHECKPOINTS,
   MIN_MATURE_COHORTS_FOR_FORECAST,
@@ -27,7 +20,6 @@ import {
 } from "./math";
 import type {
   BenchmarkPoint,
-  BreakdownRow,
   CashVsCohort,
   CohortGrain,
   CohortRow,
@@ -60,49 +52,6 @@ export type AggregateInput = {
   filters: SalesCyclePayload["filters"];
   availablePeriods: string[];
 };
-
-type EnrichedLead = AggregateInput["cohortLeads"][number] & {
-  channelKey: string;
-  channelLabel: string;
-  trafficKind: TrafficKind;
-  customerKind: CustomerKind;
-};
-
-function enrichLeads(
-  leads: AggregateInput["cohortLeads"],
-  facts: SalesCycleFact[]
-): EnrichedLead[] {
-  const firstPaidByContact = new Map<string, string>();
-  for (const fact of facts) {
-    if (!fact.customerKey || !fact.paidAt) continue;
-    const prev = firstPaidByContact.get(fact.customerKey);
-    if (!prev || fact.paidAt < prev) firstPaidByContact.set(fact.customerKey, fact.paidAt);
-  }
-
-  return leads.map((lead) => {
-    const channel = classifyAcquisitionChannel({
-      sourceId: lead.sourceId,
-      utmSource: lead.utmSource ?? null,
-      utmMedium: lead.utmMedium ?? null
-    });
-    let customerKind: CustomerKind = "unknown";
-    if (lead.contactId) {
-      const firstPaid = firstPaidByContact.get(lead.contactId);
-      if (firstPaid) {
-        customerKind = firstPaid < lead.dateCreate ? "returning" : "new";
-      } else {
-        customerKind = "new";
-      }
-    }
-    return {
-      ...lead,
-      channelKey: channel.key,
-      channelLabel: channel.label,
-      trafficKind: channel.trafficKind,
-      customerKind
-    };
-  });
-}
 
 function applyFilters(facts: SalesCycleFact[], filters: AggregateInput["filters"]): SalesCycleFact[] {
   return facts.filter((fact) => {
@@ -309,106 +258,6 @@ function buildCohortRows(
   return rows;
 }
 
-type BreakdownDim =
-  | "manager"
-  | "product"
-  | "country"
-  | "source"
-  | "channel"
-  | "gift"
-  | "customer"
-  | "traffic";
-
-function breakdown(
-  leads: EnrichedLead[],
-  facts: SalesCycleFact[],
-  dim: BreakdownDim,
-  asOf: Date
-): BreakdownRow[] {
-  const firstPay = firstPaymentByLead(facts);
-  const keys = new Map<string, string>();
-  const dealOnlyDims: BreakdownDim[] = ["product", "gift"];
-
-  const leadKey = (lead: EnrichedLead) => {
-    if (dim === "manager") return lead.assignedById || "unknown";
-    if (dim === "country") return lead.country || "—";
-    if (dim === "source") return lead.sourceId || "—";
-    if (dim === "channel") return lead.channelKey || "unknown";
-    if (dim === "traffic") return lead.trafficKind;
-    if (dim === "customer") return lead.customerKind;
-    return "all";
-  };
-  const leadLabel = (lead: EnrichedLead, key: string) => {
-    if (dim === "channel") return lead.channelLabel || key;
-    if (dim === "traffic") return trafficKindLabel(lead.trafficKind);
-    if (dim === "customer") return customerKindLabel(lead.customerKind);
-    return key;
-  };
-  const factKey = (fact: SalesCycleFact) => {
-    if (dim === "manager") return fact.managerId || "unknown";
-    if (dim === "product") return fact.productId || fact.productName || "—";
-    if (dim === "gift") return fact.giftType || "—";
-    if (dim === "country") return fact.country || "—";
-    if (dim === "source") return fact.sourceId || "—";
-    if (dim === "channel") return fact.channelKey || "unknown";
-    if (dim === "traffic") return fact.trafficKind;
-    if (dim === "customer") return fact.customerKind;
-    return "—";
-  };
-  const factLabel = (fact: SalesCycleFact, key: string) => {
-    if (dim === "manager") return fact.managerName || key;
-    if (dim === "product") return fact.productName || key;
-    if (dim === "gift") return fact.giftType || key;
-    if (dim === "channel") return fact.channelLabel || key;
-    if (dim === "traffic") return trafficKindLabel(fact.trafficKind);
-    if (dim === "customer") return customerKindLabel(fact.customerKind);
-    return key;
-  };
-
-  if (!dealOnlyDims.includes(dim)) {
-    for (const lead of leads) {
-      const key = leadKey(lead);
-      keys.set(key, leadLabel(lead, key));
-    }
-  }
-  for (const fact of facts) {
-    const key = factKey(fact);
-    keys.set(key, factLabel(fact, key));
-  }
-
-  const rows: BreakdownRow[] = [];
-  for (const [key, label] of keys) {
-    const dimLeads = dealOnlyDims.includes(dim) ? [] : leads.filter((l) => leadKey(l) === key);
-    const dimFacts = facts.filter((f) => factKey(f) === key);
-    const paidFirst = [...firstPay.values()].filter((f) => factKey(f) === key);
-    const leadHours = paidFirst.map((f) => f.leadToWonHours!).filter((h) => h >= 0);
-    const dealHours = dimFacts.map((f) => f.dealToWonHours).filter((h) => h >= 0);
-    const leadCount = dealOnlyDims.includes(dim) ? paidFirst.length : dimLeads.length;
-    const crAt = (hours: number) => {
-      if (dealOnlyDims.includes(dim) || !leadCount) return null;
-      const paid = paidFirst.filter((f) => f.leadToWonHours != null && f.leadToWonHours <= hours).length;
-      return roundPct(paid, leadCount);
-    };
-    const revenue = dimFacts.reduce((a, f) => a + f.revenue, 0);
-    rows.push({
-      key,
-      label,
-      leads: leadCount,
-      paid: dealOnlyDims.includes(dim) ? paidFirst.length : paidFirst.length,
-      revenue: Math.round(revenue * 100) / 100,
-      medianLeadToWonDays: roundDays(median(leadHours)),
-      medianDealToWonDays: roundDays(median(dealHours)),
-      d3Cr: crAt(96),
-      d7Cr: crAt(192),
-      d14Cr: crAt(360),
-      d30Cr: crAt(720),
-      revenuePerLead: leadCount ? Math.round((revenue / leadCount) * 100) / 100 : null,
-      aov: dimFacts.length ? Math.round((revenue / dimFacts.length) * 100) / 100 : null
-    });
-  }
-  return rows.sort((a, b) => b.revenue - a.revenue).slice(0, 40);
-}
-
 function buildBenchmark(cohorts: CohortRow[], focusMonth: string): BenchmarkPoint[] {
   const current = [...cohorts].reverse().find((c) => c.cohortKey.startsWith(focusMonth) || c.cohortStart.startsWith(focusMonth));
   const mature = cohorts.filter((c) => c.ageDays >= 30 && (!current || c.cohortKey !== current.cohortKey));
@@ -469,7 +318,7 @@ function buildForecast(cohorts: CohortRow[], focusMonth: string): SalesCyclePayl
 
 export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
   const facts = applyFilters(input.facts, input.filters);
-  const leads = filterLeads(enrichLeads(input.cohortLeads, input.facts), input.filters);
+  const leads = filterLeads(input.cohortLeads, input.filters);
   const withLeadHours = facts.filter((f) => f.leadToWonHours != null && f.leadToWonHours >= 0);
   const leadHours = withLeadHours.map((f) => f.leadToWonHours!);
   const dealHours = facts.map((f) => f.dealToWonHours).filter((h) => h >= 0);
@@ -545,15 +394,6 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
   const cohorts = buildCohortRows(leads, facts, input.cohortGrain, input.asOf);
   const cashVsCohort = buildCashVsCohort(facts, input.period);
 
-  // Dimension cuts on the Cohorts screen must match the selected month cohort —
-  // not the full multi-month Bitrix corpus (that made mini-KPI and tables disagree).
-  const periodLeadIds = new Set(periodLeads.map((lead) => lead.id));
-  const cohortFacts = facts.filter(
-    (fact) =>
-      (fact.leadId != null && periodLeadIds.has(fact.leadId)) ||
-      (fact.leadCreatedAt != null && monthKeyInTz(fact.leadCreatedAt) === input.period)
-  );
-
   const byMethod = {
     lead_id: facts.filter((f) => f.joinMethod === "lead_id").length,
     contact_id: facts.filter((f) => f.joinMethod === "contact_id").length,
@@ -579,7 +419,7 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
       useUnique
         ? `Unique Lead CR + история до ${input.period} (coverage ${Math.round(uniqueLeadStats.coverageWithIdentity * 100)}%, history dups ${uniqueLeadStats.historyDuplicates}).`
         : "Unique-lead dedup слабый → CR по карточкам (Created Lead CR).",
-      `Разрезы менеджер/канал/продукт — только когорта ${input.period} (${periodLeads.length} лидов).`
+      `Разрезы страна / менеджер / источник — в /os/slices на тех же фактах когорты ${input.period}.`
     ]
   };
 
@@ -601,16 +441,6 @@ export function aggregateSalesCycle(input: AggregateInput): SalesCyclePayload {
     revenueCohortMatrix: buildRevenueMatrix(facts),
     currentVsBenchmark: buildBenchmark(cohorts, input.period),
     forecast: buildForecast(cohorts, input.period),
-    breakdowns: {
-      managers: breakdown(periodLeads, cohortFacts, "manager", input.asOf),
-      products: breakdown(periodLeads, cohortFacts, "product", input.asOf),
-      countries: breakdown(periodLeads, cohortFacts, "country", input.asOf),
-      sources: breakdown(periodLeads, cohortFacts, "source", input.asOf),
-      channels: breakdown(periodLeads, cohortFacts, "channel", input.asOf),
-      gifts: breakdown(periodLeads, cohortFacts, "gift", input.asOf),
-      customers: breakdown(periodLeads, cohortFacts, "customer", input.asOf),
-      traffic: breakdown(periodLeads, cohortFacts, "traffic", input.asOf)
-    },
     dataQuality,
     availablePeriods: input.availablePeriods
   };

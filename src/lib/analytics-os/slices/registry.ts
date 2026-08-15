@@ -8,8 +8,6 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "country",
     dealOnly: false,
     supportsDrill: true,
-    detailRoute: "/os/geography",
-    detailLabel: "Подробнее о географии",
     nextHints: ["product", "source", "manager"]
   },
   {
@@ -28,8 +26,6 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "managerId",
     dealOnly: false,
     supportsDrill: true,
-    detailRoute: "/os/managers",
-    detailLabel: "Подробнее о менеджерах",
     nextHints: ["source", "product", "country"]
   },
   {
@@ -38,8 +34,6 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "sourceId",
     dealOnly: false,
     supportsDrill: true,
-    detailRoute: "/os/cohorts",
-    detailLabel: "Когорты по источнику",
     nextHints: ["manager", "product", "country"],
     coverageNote: "SOURCE_ID и UTM заполнены не у всех лидов. Пустые — «Не указан»."
   },
@@ -49,8 +43,6 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "channel",
     dealOnly: false,
     supportsDrill: true,
-    detailRoute: "/os/cohorts",
-    detailLabel: "Когорты по каналу",
     nextHints: ["source", "manager", "product"],
     coverageNote: "Канал из taxonomy Bitrix SOURCE_ID + UTM, не Ads API."
   },
@@ -126,4 +118,21 @@ export function parseSliceMetric(id: string | null | undefined): SliceMetricId {
 export function sliceMetricHint(id: SliceMetricId): string {
   const row = SLICE_METRICS.find((item) => item.id === id);
   return (row ? metricDefinition(row.glossaryId) : null) || "";
+}
+
+export function sliceExplorerHref(options: {
+  dim: SliceDimensionId;
+  metric?: SliceMetricId;
+  period?: string;
+  country?: string | null;
+  managerId?: string | null;
+  productId?: string | null;
+}): string {
+  const params = new URLSearchParams({ dim: options.dim });
+  if (options.metric) params.set("metric", options.metric);
+  if (options.period) params.set("period", options.period);
+  if (options.country) params.set("country", options.country);
+  if (options.managerId) params.set("managerId", options.managerId);
+  if (options.productId) params.set("productId", options.productId);
+  return `/os/slices?${params}`;
 }

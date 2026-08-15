@@ -71,7 +71,7 @@ export async function readSalesCycleCache(
     const stale = sourceMtime > 0 && cacheInfo.mtimeMs < sourceMtime;
     if (stale && !options.allowStale) return null;
     const parsed = JSON.parse(raw) as SalesCyclePayload;
-    if (!parsed || !Array.isArray(parsed.cohorts) || !parsed.breakdowns) return null;
+    if (!parsed || !Array.isArray(parsed.cohorts) || !parsed.summary) return null;
     return { payload: parsed, stale };
   } catch {
     return null;

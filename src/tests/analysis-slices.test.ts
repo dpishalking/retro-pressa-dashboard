@@ -4,7 +4,8 @@ import {
   buildSliceReport,
   emptySliceFilters,
   isUnknownSliceKey,
-  parseSliceDimension
+  parseSliceDimension,
+  sliceExplorerHref
 } from "@/lib/analytics-os/slices";
 
 function lead(partial: Partial<CycleLead> & Pick<CycleLead, "id" | "dateCreate">): CycleLead {
@@ -108,6 +109,14 @@ const sliceLeads = leads.map((item) => ({
 assert.equal(parseSliceDimension("missing"), "country");
 assert.equal(isUnknownSliceKey("—"), true);
 assert.equal(isUnknownSliceKey("unknown"), true);
+{
+  const href = new URL(sliceExplorerHref({ dim: "manager", metric: "cr", period: "2026-08", country: "Латвия" }), "https://rp-bi.site");
+  assert.equal(href.pathname, "/os/slices");
+  assert.equal(href.searchParams.get("dim"), "manager");
+  assert.equal(href.searchParams.get("metric"), "cr");
+  assert.equal(href.searchParams.get("period"), "2026-08");
+  assert.equal(href.searchParams.get("country"), "Латвия");
+}
 
 const countries = buildSliceReport({
   facts,

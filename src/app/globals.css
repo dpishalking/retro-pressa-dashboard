@@ -2668,6 +2668,13 @@ button.aos-link {
   text-align: left;
 }
 
+.aos-slice-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.9rem;
+  margin: 0 0 0.85rem;
+}
+
 .aos-slice-detail {
   font-size: 0.85rem;
   font-weight: 750;

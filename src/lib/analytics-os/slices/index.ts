@@ -5,6 +5,7 @@ export {
   getSliceDimension,
   parseSliceDimension,
   parseSliceMetric,
+  sliceExplorerHref,
   sliceMetricHint
 } from "./registry";
 export { buildSliceReport, emptySliceFilters, isUnknownSliceKey } from "./build-slices";

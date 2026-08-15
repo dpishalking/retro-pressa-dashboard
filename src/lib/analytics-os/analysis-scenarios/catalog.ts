@@ -96,7 +96,7 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     steps: [
       { title: "Разброс CR", check: "Менеджеры с ≥10 лидами", href: "/os/slices?dim=manager&metric=cr" },
       { title: "Воронка", check: "Лид → счёт vs счёт → оплата", href: "/os/funnel" },
-      { title: "Когорты", check: "Канал, если выборка есть", href: "/os/cohorts" }
+      { title: "Срезы: канал", check: "CR по каналу на тех же фактах", href: "/os/slices?dim=channel&metric=cr" }
     ]
   },
   {
@@ -288,7 +288,10 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     requiredMetrics: [],
     dimensions: ["manager", "country", "channel"],
     reuse: "/os/sales-cycle — не пишем вторую модель.",
-    steps: [{ title: "Цикл", check: "D0–D30, срезы", href: "/os/sales-cycle" }]
+    steps: [
+      { title: "Цикл", check: "D0–D30, медиана, касса vs когорта", href: "/os/sales-cycle" },
+      { title: "Срезы", check: "Менеджер / страна / канал", href: "/os/slices?dim=manager&metric=cr" }
+    ]
   },
   {
     id: "catch-plan",

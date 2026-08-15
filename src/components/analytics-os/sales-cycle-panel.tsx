@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { SalesCyclePayload } from "@/lib/analytics-os/sales-cycle";
+import { sliceExplorerHref } from "@/lib/analytics-os/slices";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 
@@ -362,53 +364,39 @@ export function SalesCyclePanel({
         </div>
       </section>
 
-      {(
-        [
-          ["Менеджеры", data.breakdowns.managers],
-          ["Продукты", data.breakdowns.products],
-          ["Страны", data.breakdowns.countries],
-          ["Источники", data.breakdowns.sources]
-        ] as const
-      ).map(([title, rows]) => (
-        <section className="aos-card" key={title}>
-          <div className="aos-section-head">
-            <div>
-              <h2>{title}</h2>
-              <p>Median cycle · CR · Revenue/Lead</p>
-            </div>
+      <section className="aos-card">
+        <div className="aos-section-head">
+          <div>
+            <h2>Разрезы когорты</h2>
+            <p>Страна, менеджер, источник — в Срезах на тех же фактах Bitrix, без второй таблицы.</p>
           </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>{title}</th>
-                  <th>Leads</th>
-                  <th>Paid</th>
-                  <th>Median L→W</th>
-                  <th>D7 CR</th>
-                  <th>D14 CR</th>
-                  <th>€/Lead</th>
-                  <th>Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.slice(0, 15).map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.label}</td>
-                    <td>{row.leads}</td>
-                    <td>{row.paid}</td>
-                    <td>{fmt(row.medianLeadToWonDays, " дн.")}</td>
-                    <td>{fmt(row.d7Cr, "%")}</td>
-                    <td>{fmt(row.d14Cr, "%")}</td>
-                    <td>{fmt(row.revenuePerLead)}</td>
-                    <td>{eur(row.revenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
+        </div>
+        <div className="aos-slice-jump">
+          {(
+            [
+              ["country", "Страна", "revenue"],
+              ["manager", "Менеджер", "cr"],
+              ["source", "Источник", "cr"],
+              ["product", "Продукт", "revenue"]
+            ] as const
+          ).map(([dim, label, metric]) => (
+            <Link
+              key={dim}
+              href={sliceExplorerHref({
+                dim,
+                metric,
+                period,
+                country,
+                managerId,
+                productId
+              })}
+              className="aos-slice-detail"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="aos-card">
         <div className="aos-section-head">

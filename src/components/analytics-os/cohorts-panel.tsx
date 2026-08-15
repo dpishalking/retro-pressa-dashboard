@@ -1,21 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { BreakdownRow, CohortRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
+import type { CohortRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
+import { SLICE_DIMENSIONS, sliceExplorerHref } from "@/lib/analytics-os/slices";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import { eur, number, pct } from "@/lib/format";
 
-type CohortTab =
-  | "month"
-  | "week"
-  | "country"
-  | "manager"
-  | "channel"
-  | "product"
-  | "gift"
-  | "customer"
-  | "traffic";
+type CohortTab = "month" | "week";
 
 const TABS: Array<{ id: CohortTab; label: string; hint: string }> = [
   {
@@ -27,76 +20,22 @@ const TABS: Array<{ id: CohortTab; label: string; hint: string }> = [
     id: "week",
     label: "Недели",
     hint: "Когорта = неделя создания лида. Оплаты этого лида считаются в той же недельной когорте."
-  },
-  {
-    id: "country",
-    label: "Страны",
-    hint: "По каждой стране: сколько лидов завели и сколько из них дошли до оплаты."
-  },
-  {
-    id: "manager",
-    label: "Менеджер",
-    hint: "Чьи лиды быстрее и чаще доходят до оплаты — вход в когорту по ответственному на лиде."
-  },
-  {
-    id: "channel",
-    label: "Источник / канал",
-    hint: "Форма, WhatsApp, реклама, органика и другие каналы входа лида."
-  },
-  {
-    id: "product",
-    label: "Продукт первой оплаты",
-    hint: "Что реально купили при первой оплате из когорты (среди оплативших)."
-  },
-  {
-    id: "gift",
-    label: "Тип подарка",
-    hint: "Оригинал, репродукция, поздравительная и другие типы по первой оплате."
-  },
-  {
-    id: "customer",
-    label: "Новый / повторный",
-    hint: "Новый клиент — первая оплата контакта. Повторный — уже был платёж раньше."
-  },
-  {
-    id: "traffic",
-    label: "Платный / органика",
-    hint: "Платный vs органический лид по UTM и источнику Bitrix — для оценки окупаемости когорты."
   }
 ];
+
+const SLICE_LINKS = SLICE_DIMENSIONS.filter((item) => item.id !== "time" && item.id !== "cohort");
 
 function cr(paid: number, leads: number): number | null {
   if (!leads) return null;
   return paid / leads;
 }
 
-function breakdownForTab(data: SalesCyclePayload, tab: CohortTab): BreakdownRow[] | null {
-  switch (tab) {
-    case "country":
-      return data.breakdowns.countries;
-    case "manager":
-      return data.breakdowns.managers;
-    case "channel":
-      return data.breakdowns.channels;
-    case "product":
-      return data.breakdowns.products;
-    case "gift":
-      return data.breakdowns.gifts;
-    case "customer":
-      return data.breakdowns.customers;
-    case "traffic":
-      return data.breakdowns.traffic;
-    default:
-      return null;
-  }
-}
-
 function focusCohort(rows: CohortRow[], period: string): CohortRow | undefined {
   return [...rows].reverse().find((row) => row.cohortKey.startsWith(period) || row.cohortStart.startsWith(period));
 }
 
-function buildCohortDecision(data: SalesCyclePayload, tab: CohortTab): string | null {
-  if (!data.cohorts.length && (tab === "month" || tab === "week")) {
+function buildCohortDecision(data: SalesCyclePayload): string | null {
+  if (!data.cohorts.length) {
     return "В снапшотах Bitrix нет лидов для когорт. Обновите синк Bitrix, затем нажмите «Посчитать».";
   }
 
@@ -109,49 +48,34 @@ function buildCohortDecision(data: SalesCyclePayload, tab: CohortTab): string | 
       ? mature.reduce((sum, row) => sum + (cr(row.paid, row.leads) || 0), 0) / mature.length
       : null;
   const currentCr = current ? cr(current.paid, current.leads) : null;
-
-  if (tab === "month" || tab === "week") {
-    const cash = data.cashVsCohort;
-    const parts: string[] = [];
-    if (current && currentCr != null && matureCr != null) {
-      const delta = currentCr - matureCr;
-      if (delta <= -0.015) {
-        parts.push(
-          `Когорта ${current.cohortKey} конвертит слабее зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Смотрите оффер и скрипт этой волны, не кассу месяца.`
-        );
-      } else if (delta >= 0.015) {
-        parts.push(
-          `Когорта ${current.cohortKey} пока лучше зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Масштабируйте тот же канал и скрипт.`
-        );
-      } else {
-        parts.push(
-          `Когорта ${current.cohortKey}: ${number(current.leads)} лидов → ${number(current.paid)} оплат (${pct(currentCr)}). Это рядом со зрелыми (${pct(matureCr)}).`
-        );
-      }
-    } else if (current) {
+  const cash = data.cashVsCohort;
+  const parts: string[] = [];
+  if (current && currentCr != null && matureCr != null) {
+    const delta = currentCr - matureCr;
+    if (delta <= -0.015) {
       parts.push(
-        `Когорта ${current.cohortKey}: ${number(current.leads)} лидов, ${number(current.paid)} оплат, ${eur(current.revenue)} выручки. Зрелых когорт для сравнения мало — смотрите D7/D30, когда пройдёт 30 дней.`
+        `Когорта ${current.cohortKey} конвертит слабее зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Смотрите оффер и скрипт этой волны, не кассу месяца.`
+      );
+    } else if (delta >= 0.015) {
+      parts.push(
+        `Когорта ${current.cohortKey} пока лучше зрелых: ${pct(currentCr)} против ${pct(matureCr)}. Масштабируйте тот же канал и скрипт.`
+      );
+    } else {
+      parts.push(
+        `Когорта ${current.cohortKey}: ${number(current.leads)} лидов → ${number(current.paid)} оплат (${pct(currentCr)}). Это рядом со зрелыми (${pct(matureCr)}).`
       );
     }
-    if (cash.cashRevenue > 0) {
-      parts.push(
-        `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт. Не смешивайте эти цифры в одном плане.`
-      );
-    }
-    return parts.length ? parts.join(" ") : null;
+  } else if (current) {
+    parts.push(
+      `Когорта ${current.cohortKey}: ${number(current.leads)} лидов, ${number(current.paid)} оплат, ${eur(current.revenue)} выручки. Зрелых когорт для сравнения мало — смотрите D7/D30, когда пройдёт 30 дней.`
+    );
   }
-
-  const rows = breakdownForTab(data, tab) || [];
-  const ranked = rows.filter((row) => row.leads >= 15 && cr(row.paid, row.leads) != null);
-  if (ranked.length < 2) {
-    return current
-      ? `Разрез «${TABS.find((item) => item.id === tab)?.label}»: мало строк с объёмом. Смотрите таблицу и сравнивайте с месячной когортой ${current.cohortKey}.`
-      : null;
+  if (cash.cashRevenue > 0) {
+    parts.push(
+      `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт. Не смешивайте эти цифры в одном плане.`
+    );
   }
-  const byCr = [...ranked].sort((a, b) => (cr(b.paid, b.leads) || 0) - (cr(a.paid, a.leads) || 0));
-  const best = byCr[0];
-  const worst = byCr[byCr.length - 1];
-  return `Лучше: ${best.label} — ${pct(cr(best.paid, best.leads)!)} с ${number(best.leads)} лидов. Слабее: ${worst.label} — ${pct(cr(worst.paid, worst.leads)!)}. Тяните скрипт и трафик к сильному сегменту, слабый разберите отдельно.`;
+  return parts.length ? parts.join(" ") : null;
 }
 
 function cohortLoadError(err: unknown): string {
@@ -255,40 +179,16 @@ export function CohortsPanel({
     };
   }, [period, grain, managerId, country, productId, reloadKey]);
 
-  const breakdownRows = data ? breakdownForTab(data, tab) : null;
   const current = data ? focusCohort(data.cohorts, data.period) : undefined;
-  const decision = data ? buildCohortDecision(data, tab) : null;
-  const isTimeTab = tab === "month" || tab === "week";
-  const mini = (() => {
-    if (!data) return null;
-    if (isTimeTab) {
-      if (!current) return null;
-      return {
+  const decision = data ? buildCohortDecision(data) : null;
+  const mini = current
+    ? {
         leadLabel: `Лиды когорты ${current.cohortKey}`,
         leads: current.leads,
         paid: current.paid,
         revenue: current.revenue
-      };
-    }
-    if (!breakdownRows?.length) {
-      if (!current) return null;
-      return {
-        leadLabel: `Итого когорта ${data.period}`,
-        leads: current.leads,
-        paid: current.paid,
-        revenue: current.revenue
-      };
-    }
-    // Same selected-month cohort as the table below (period-scoped breakdowns).
-    const leads = breakdownRows.reduce((sum, row) => sum + row.leads, 0);
-    const paid = breakdownRows.reduce((sum, row) => sum + row.paid, 0);
-    const revenue = breakdownRows.reduce((sum, row) => sum + row.revenue, 0);
-    const leadLabel =
-      tab === "product" || tab === "gift"
-        ? `Первые оплаты · ${data.period}`
-        : `Итого по таблице · ${data.period}`;
-    return { leadLabel, leads, paid, revenue };
-  })();
+      }
+    : null;
 
   return (
     <div className="aos-cohorts">
@@ -333,8 +233,26 @@ export function CohortsPanel({
         </div>
 
         <p className="aos-note" style={{ marginTop: 0 }}>
-          {tabMeta.hint}
+          {tabMeta.hint} Страна, менеджер, источник и остальные разрезы — в Срезах на тех же фактах.
         </p>
+
+        <div className="aos-slice-jump">
+          {SLICE_LINKS.map((item) => (
+            <Link
+              key={item.id}
+              href={sliceExplorerHref({
+                dim: item.id,
+                period,
+                country,
+                managerId,
+                productId
+              })}
+              className="aos-slice-detail"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
 
         {mini ? (
           <div className="aos-stat-grid">
@@ -365,12 +283,6 @@ export function CohortsPanel({
 
         {!data && state !== "error" ? (
           <p className="aos-muted">Загрузка когорт…</p>
-        ) : data && breakdownRows ? (
-          <BreakdownTable
-            rows={breakdownRows}
-            nameHeader={tabMeta.label}
-            leadHeader={tab === "product" || tab === "gift" ? "Первые оплаты" : "Лиды"}
-          />
         ) : data ? (
           <TimeCohortTable
             rows={data.cohorts}
@@ -382,7 +294,7 @@ export function CohortsPanel({
         <DecisionBrief body={decision} />
       </section>
 
-      {data && isTimeTab ? (
+      {data ? (
         <section className="aos-card">
           <div className="aos-section-head">
             <div>
@@ -467,59 +379,6 @@ function TimeCohortTable({
               </tr>
             );
           })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function BreakdownTable({
-  rows,
-  nameHeader,
-  leadHeader
-}: {
-  rows: BreakdownRow[];
-  nameHeader: string;
-  leadHeader: string;
-}) {
-  return (
-    <div className="table-scroll">
-      <table className="aos-table">
-        <thead>
-          <tr>
-            <th>{nameHeader}</th>
-            <th>{leadHeader}</th>
-            <th>Оплаты</th>
-            <th>Конверсия</th>
-            <th>Выручка</th>
-            <th>€ / лид</th>
-            <th>Медиана до оплаты</th>
-            <th>CR 7д</th>
-            <th>CR 30д</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length ? (
-            rows.map((row) => (
-              <tr key={row.key}>
-                <td>{row.label === "—" ? "Не указан" : row.label}</td>
-                <td>{number(row.leads)}</td>
-                <td>{number(row.paid)}</td>
-                <td>{cr(row.paid, row.leads) == null ? "—" : pct(cr(row.paid, row.leads)!)}</td>
-                <td>{eur(row.revenue)}</td>
-                <td>{row.revenuePerLead == null ? "—" : eur(row.revenuePerLead)}</td>
-                <td>{row.medianLeadToWonDays == null ? "—" : `${row.medianLeadToWonDays} дн.`}</td>
-                <td>{row.d7Cr == null ? "—" : `${row.d7Cr}%`}</td>
-                <td>{row.d30Cr == null ? "—" : `${row.d30Cr}%`}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={9} className="aos-muted">
-                Нет строк для этой когорты
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>

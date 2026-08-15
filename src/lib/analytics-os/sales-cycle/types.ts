@@ -82,22 +82,6 @@ export type RevenueMatrixCell = {
   orders: number;
 };
 
-export type BreakdownRow = {
-  key: string;
-  label: string;
-  leads: number;
-  paid: number;
-  revenue: number;
-  medianLeadToWonDays: number | null;
-  medianDealToWonDays: number | null;
-  d3Cr: number | null;
-  d7Cr: number | null;
-  d14Cr: number | null;
-  d30Cr: number | null;
-  revenuePerLead: number | null;
-  aov: number | null;
-};
-
 export type SalesCycleDataQuality = {
   totalWon: number;
   matchedWon: number;
@@ -170,16 +154,6 @@ export type SalesCyclePayload = {
     message: string;
     estimatedD30Revenue: number | null;
     confidence: "calculated" | "insufficient_history";
-  };
-  breakdowns: {
-    managers: BreakdownRow[];
-    products: BreakdownRow[];
-    countries: BreakdownRow[];
-    sources: BreakdownRow[];
-    channels: BreakdownRow[];
-    gifts: BreakdownRow[];
-    customers: BreakdownRow[];
-    traffic: BreakdownRow[];
   };
   dataQuality: SalesCycleDataQuality;
   availablePeriods: string[];
