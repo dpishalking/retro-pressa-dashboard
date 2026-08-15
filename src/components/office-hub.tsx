@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, GitBranch, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -38,14 +38,6 @@ const officeSections: OfficeSection[] = [
         icon: BarChart3,
         status: "active",
         accent: "text-blue-600 bg-blue-50"
-      },
-      {
-        href: "/os/factors",
-        title: "Факторный анализ",
-        description: "Что съело план и куда жать, чтобы расти.",
-        icon: GitBranch,
-        status: "active",
-        accent: "text-indigo-600 bg-indigo-50"
       }
     ]
   },
