@@ -159,7 +159,7 @@ function OfficeCardLink({ office, accessLevel }: { office: OfficeCard; accessLev
       </div>
       <h3 className="text-xl font-black text-slate-950">{office.title}</h3>
       <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{office.description}</p>
-      {isClickable ? <p className="mt-4 text-sm font-bold text-blue-600">Перейти →</p> : null}
+      {isClickable ? <p className="mt-4 text-sm font-bold text-rose-700">Перейти →</p> : null}
     </article>
   );
 
@@ -186,7 +186,7 @@ export function OfficeHub() {
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
       <header className="mb-10">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-extrabold uppercase tracking-normal text-blue-600">Retro Pressa</p>
+          <p className="text-sm font-extrabold uppercase tracking-normal text-rose-700">Retro Pressa</p>
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-slate-600">{user.name}</span>
             {canAccessUserManagement(user.accessLevel) ? (

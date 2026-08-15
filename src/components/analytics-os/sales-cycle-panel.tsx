@@ -100,14 +100,20 @@ export function SalesCyclePanel({
           </div>
           <div className="aos-sales-cycle__grain">
             <StatusBadge status={state === "ready" ? "partial" : state === "error" ? "no_data" : "calculated"} />
-            <label>
-              Зерно когорты
-              <select value={grain} onChange={(e) => setGrain(e.target.value as typeof grain)}>
-                <option value="month">Месяц</option>
-                <option value="week">Неделя</option>
-                <option value="day">День</option>
-              </select>
-            </label>
+            <div className="aos-unit-kinds" role="tablist" aria-label="Зерно когорты">
+              {(["month", "week", "day"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  role="tab"
+                  aria-selected={grain === item}
+                  className={`aos-unit-kind${grain === item ? " is-active" : ""}`}
+                  onClick={() => setGrain(item)}
+                >
+                  {item === "day" ? "День" : item === "week" ? "Неделя" : "Месяц"}
+                </button>
+              ))}
+            </div>
             {state === "error" ? (
               <button type="button" className="aos-link" onClick={() => setReloadKey((key) => key + 1)}>
                 Повторить
