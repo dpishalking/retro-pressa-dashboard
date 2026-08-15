@@ -26,7 +26,9 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "managerId",
     dealOnly: false,
     supportsDrill: true,
-    nextHints: ["source", "product", "country"]
+    nextHints: ["source", "product", "country"],
+    coverageNote:
+      "Выручка менеджера — оплаты лидов, созданных в этом месяце (когорта). Предиктивка считает кассу по дате оплаты. Лиды — ответственный на лиде, выручка — ответственный на сделке."
   },
   {
     id: "source",

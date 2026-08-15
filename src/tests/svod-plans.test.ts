@@ -11,7 +11,7 @@ import {
   resolveCompanyMonthPlan,
   sumSvodVerifiedLeads
 } from "@/lib/sales-os/svod-plans";
-import { collectMonthlyPlanFactCells, factValueForLabel } from "@/lib/sales-os/sync-monthly-plan-facts";
+import { collectMonthlyPlanFactCells, factValueForLabel, isDerivedPlanMetric, shiftFormulaColumn } from "@/lib/sales-os/sync-monthly-plan-facts";
 
 assert.equal(parseSvodPlanNumber("€36 274"), 36274);
 assert.equal(parseSvodPlanNumber("3 334"), 3334);
@@ -184,8 +184,26 @@ assert.equal(mtd851.paid + mtd851.organic, mtd851.total);
 
 assert.equal(factValueForLabel("Лиды", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 851);
 assert.equal(factValueForLabel("Оплаты шт.", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 147);
-assert.equal(factValueForLabel("ROAS", { revenue: 200, spend: 50, leads: 10, qualifiedLeads: 2, invoices: 1, sales: 1 }), 400);
+assert.equal(factValueForLabel("ROAS", { revenue: 200, spend: 50, leads: 10, qualifiedLeads: 2, invoices: 1, sales: 1 }), 4);
+assert.equal(factValueForLabel("Конверсия Лид в оплату", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 0.173);
+assert.equal(factValueForLabel("ROI", { revenue: 200, spend: 50, leads: 10, qualifiedLeads: 2, invoices: 1, sales: 1 }), null);
+assert.equal(shiftFormulaColumn("=H4/H5", 7, 9), "=J4/J5");
+assert.equal(shiftFormulaColumn("=(H4-H145)/H4", 7, 9), "=(J4-J145)/J4");
+assert.equal(isDerivedPlanMetric("CPL"), false);
+assert.equal(isDerivedPlanMetric("CAC"), true);
 assert.equal(factValueForLabel("CPL", { revenue: 200, spend: 851, leads: 851, qualifiedLeads: 2, invoices: 1, sales: 1 }), 1);
+assert.equal(
+  factValueForLabel("CPL", {
+    revenue: 200,
+    spend: 2000,
+    leads: 1000,
+    paidLeads: 800,
+    qualifiedLeads: 2,
+    invoices: 1,
+    sales: 1
+  }),
+  2.5
+);
 
 const factCells = collectMonthlyPlanFactCells(channelGrid, {
   obshie: { revenue: 13822, spend: 4067, leads: 851, qualifiedLeads: 200, invoices: 180, sales: 147 },
@@ -204,6 +222,81 @@ assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Кв�
 assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Счета шт")?.value, 40);
 assert.equal(factCells.find((c) => c.section === "organic" && c.label === "Оплаты шт.")?.value, 47);
 assert.equal(factCells.some((c) => c.section === "yandex"), false);
+
+const formulaCells = collectMonthlyPlanFactCells(
+  [
+    ["Показатели", "", "Август", "", "Август"],
+    ["", "", "План", "", "Факт"],
+    ["ОБЩИЕ"],
+    ["Выручка", "", "46676", "", ""],
+    ["Бюджет", "", "4500", "", ""],
+    ["ROAS", "", "1037%", "", ""],
+    ["ROI", "", "26%", "", ""]
+  ],
+  {
+    obshie: { revenue: 11988, spend: 1902, leads: 1070, qualifiedLeads: 435, invoices: 174, sales: 164 },
+    facebook: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null },
+    yandex: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null },
+    organic: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null }
+  },
+  {
+    formulaGrid: [
+      [],
+      [],
+      [],
+      ["Выручка", "", "=C28"],
+      ["Бюджет", "", "4500"],
+      ["ROAS", "", "=C4/C5"],
+      ["ROI", "", "=(C4-C145)/C4"]
+    ],
+    planCol: 2,
+    factCol: 4
+  }
+);
+assert.equal(formulaCells.find((c) => c.label === "ROAS")?.value, "=E4/E5");
+assert.equal(formulaCells.find((c) => c.label === "ROI")?.value, "=(E4-E145)/E4");
+assert.equal(formulaCells.find((c) => c.label === "Выручка")?.value, 11988);
+
+const cplFactCells = collectMonthlyPlanFactCells(
+  [
+    ["Показатели", "", "Август", "", "Август"],
+    ["", "", "План", "", "Факт"],
+    ["ОБЩИЕ"],
+    ["Бюджет", "", "4500", "", ""],
+    ["Лиды", "", "3334", "", ""],
+    ["CPL", "", "1.70", "", ""],
+    ["CAC", "", "8", "", ""]
+  ],
+  {
+    obshie: {
+      revenue: 11988,
+      spend: 2000,
+      leads: 1000,
+      paidLeads: 800,
+      qualifiedLeads: 435,
+      invoices: 174,
+      sales: 164
+    },
+    facebook: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null },
+    yandex: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null },
+    organic: { revenue: null, spend: null, leads: null, qualifiedLeads: null, invoices: null, sales: null }
+  },
+  {
+    formulaGrid: [
+      [],
+      [],
+      [],
+      ["Бюджет", "", "4500"],
+      ["Лиды", "", "3334"],
+      ["CPL", "", "=C4/C5"],
+      ["CAC", "", "=C4/C20"]
+    ],
+    planCol: 2,
+    factCol: 4
+  }
+);
+assert.equal(cplFactCells.find((c) => c.label === "CPL")?.value, 2.5);
+assert.equal(cplFactCells.find((c) => c.label === "CAC")?.value, "=E4/E20");
 
 const indentedOrganic: string[][] = [
   ["Показатели", "", "Август"],

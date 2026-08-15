@@ -70,9 +70,16 @@ function buildCohortDecision(data: SalesCyclePayload): string | null {
       `Когорта ${current.cohortKey}: ${number(current.leads)} лидов, ${number(current.paid)} оплат, ${eur(current.revenue)} выручки. Зрелых когорт для сравнения мало — смотрите D7/D30, когда пройдёт 30 дней.`
     );
   }
-  if (cash.cashRevenue > 0) {
+  if (cash.cashRevenue > 0 && current) {
+    const sameMonthCash = cash.fromSelectedCohort;
+    const cohortRev = current.revenue;
     parts.push(
-      `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт. Не смешивайте эти цифры в одном плане.`
+      `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}. Из них ${eur(sameMonthCash)} — оплаты этого месяца от лидов ${current.cohortKey}. ` +
+        `Выручка когорты ${eur(cohortRev)} — все первые оплаты этих лидов, в том числе если клиент заплатил позже. Это разные срезы, не одна цифра.`
+    );
+  } else if (cash.cashRevenue > 0) {
+    parts.push(
+      `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт.`
     );
   }
   return parts.length ? parts.join(" ") : null;
@@ -142,8 +149,8 @@ export function CohortsPanel({
 
   useEffect(() => {
     if (!period) {
-      setState("error");
-      setError("Нет периода для когорт. Дождитесь загрузки сводки или выберите месяц сверху.");
+      setState("loading");
+      setError("");
       return;
     }
     let cancelled = false;
@@ -151,6 +158,7 @@ export function CohortsPanel({
     const timeout = window.setTimeout(() => controller.abort(), 65_000);
     setState("loading");
     setError("");
+    setData(null);
     const params = new URLSearchParams({ period, cohort_grain: grain });
     if (managerId) params.set("managerId", managerId);
     if (country) params.set("country", country);
@@ -199,11 +207,15 @@ export function CohortsPanel({
             <p>Лид и его продажи в одной когорте · дата создания лида в Bitrix</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={state === "ready" ? "calculated" : state === "error" ? "no_data" : "partial"} />
+            {state === "loading" || refreshing ? (
+              <span className="aos-badge aos-badge--calculated">СЧИТАЮ</span>
+            ) : (
+              <StatusBadge status={state === "error" ? "no_data" : "calculated"} />
+            )}
             <button
               type="button"
               className="aos-link"
-              disabled={refreshing || !period}
+              disabled={refreshing || !period || state === "loading"}
               onClick={() => {
                 if (state === "error" && !refreshing) {
                   setReloadKey((key) => key + 1);
@@ -212,7 +224,7 @@ export function CohortsPanel({
                 void load(true);
               }}
             >
-              {refreshing ? "Считаю…" : state === "error" ? "Повторить" : "Посчитать"}
+              {refreshing || state === "loading" ? "Считаю…" : state === "error" ? "Повторить" : "Посчитать"}
             </button>
           </div>
         </div>
@@ -233,7 +245,8 @@ export function CohortsPanel({
         </div>
 
         <p className="aos-note" style={{ marginTop: 0 }}>
-          {tabMeta.hint} Страна, менеджер, источник и остальные разрезы — в Срезах на тех же фактах.
+          {tabMeta.hint} Выручка когорты — первые оплаты этих лидов (весь срок). Касса месяца — все оплаты,
+          которые пришли в выбранный месяц. Это не одна и та же сумма.
         </p>
 
         <div className="aos-slice-jump">
@@ -269,7 +282,7 @@ export function CohortsPanel({
               <strong>{cr(mini.paid, mini.leads) == null ? "—" : pct(cr(mini.paid, mini.leads)!)}</strong>
             </div>
             <div className="aos-stat">
-              <span>Выручка</span>
+              <span>Выручка когорты</span>
               <strong>{eur(mini.revenue)}</strong>
             </div>
           </div>
@@ -300,8 +313,9 @@ export function CohortsPanel({
             <div>
               <h2>Касса месяца vs когорта лидов</h2>
               <p>
-                Касса — оплаты, которые пришли в {data.cashVsCohort.cashPeriod}. Когорта — оплаты от
-                лидов, заведённых в этом месяце (даже если оплата позже).
+                Касса — все оплаты, которые пришли в {data.cashVsCohort.cashPeriod} (включая повторные).
+                «От лидов этого месяца» — только та часть кассы, где лид заведён в этом же месяце. Не
+                равна выручке когорты выше: там первые оплаты лидов за любой месяц оплаты.
               </p>
             </div>
           </div>

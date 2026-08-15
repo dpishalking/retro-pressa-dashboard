@@ -21,31 +21,27 @@ jobs:
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Refresh RP | Предиктивки
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=60 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
-          if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET is empty"
-            exit 1
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
           fi
-          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
-          ASOF="$(TZ=Europe/Moscow date +%Y-%m-%d)"
+          MONTH="$(TZ=Europe/Riga date +%Y-%m)"
+          ASOF="$(TZ=Europe/Riga date +%Y-%m-%d)"
           OUT="/tmp/cron-predictive-sheets.json"
           LOG="/tmp/cron-predictive-sheets.log"
           rm -f "$OUT" "$LOG"
           echo "predictive-sheets month=${MONTH} asOf=${ASOF}"
           nohup curl -sS --max-time 300 -o "$OUT" -w "\nHTTP %{http_code}\n" \
             -X POST http://127.0.0.1:4175/api/sync/predictive-sheets \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${SECRET}" \
+            "${AUTH_HEADERS[@]}" \
             -d "{\"month\":\"${MONTH}\",\"asOf\":\"${ASOF}\",\"skipFormatting\":true}" \
             >"$LOG" 2>&1 &
           PID=$!

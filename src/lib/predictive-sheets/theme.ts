@@ -1,5 +1,7 @@
 /** Professional neutral palette for Predictive Sheets (RGB 0–1). */
 
+import { PM_SHEETS } from "@/config/predictive-sheets";
+
 export function hexToRgb(hex: string): { red: number; green: number; blue: number } {
   const h = hex.replace("#", "");
   const n = Number.parseInt(h, 16);
@@ -123,17 +125,13 @@ export function pmHeaders(weekLabels: string[]): string[] {
 }
 
 export const PM_FOCUS: Record<string, string> = {
-  "01_MARKETING_GENERAL": "Смотрим: выручка, счета",
-  "02_MARKETING_PAID": "Смотрим: выручка, CPL",
-  "03_MARKETING_ORGANIC": "Смотрим: выручка, конверсия лид → оплата",
-  "04_SALES_GENERAL": "Смотрим: выручка, счета",
-  "05a_НАДЕЖДА": "Смотрим: выручка, ФОТ · Надежда",
-  "05b_АНАСТАСИЯ": "Смотрим: выручка, ФОТ · Анастасия",
-  "05c_ЕЛЕНА": "Смотрим: выручка, ФОТ · Елена",
-  "05d_ДАРЬЯ": "Смотрим: выручка, ФОТ · Дарья",
-  "05e_КРИСТИНА": "Смотрим: выручка, ФОТ · Кристина",
-  "05f_КИРА": "Смотрим: выручка, ФОТ · Кира",
-  "05g_МАРИЯ": "Смотрим: выручка, ФОТ · Мария",
-  "07_FINANCE": "Смотрим: касса, ФОТ, вклад после рекламы",
-  "08_MOTIVATION": "Смотрим: чек 80 €, лид→оплата 20%"
+  [PM_SHEETS.marketingGeneral]: "Смотрим: выручка, счета",
+  [PM_SHEETS.marketingPaid]: "Смотрим: выручка, CPL",
+  [PM_SHEETS.marketingOrganic]: "Смотрим: выручка, конверсия лид → оплата",
+  [PM_SHEETS.salesGeneral]: "Смотрим: выручка, счета",
+  [PM_SHEETS.salesNadezhda]: "Смотрим: выручка, ФОТ · Надежда",
+  [PM_SHEETS.salesAnastasia]: "Смотрим: выручка, ФОТ · Анастасия",
+  [PM_SHEETS.salesElena]: "Смотрим: выручка, ФОТ · Елена",
+  [PM_SHEETS.finance]: "Смотрим: касса, ФОТ, вклад после рекламы",
+  [PM_SHEETS.motivation]: "Смотрим: чек 80 €, лид→оплата 20%"
 };

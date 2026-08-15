@@ -651,7 +651,7 @@ td {
 
 .aos-filters__controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
   align-items: end;
 }
@@ -2649,44 +2649,110 @@ button.aos-link {
   background: #dbeafe;
 }
 
-.aos-slice-controls {
+.aos-slices {
+  display: grid;
+  gap: 1rem;
+}
+
+.aos-slice-hero {
+  border-radius: 24px;
+  padding: 1.35rem 1.4rem 1.2rem;
+  background:
+    radial-gradient(ellipse 70% 90% at 100% -10%, rgba(251, 113, 133, 0.28), transparent 52%),
+    radial-gradient(ellipse 50% 60% at 0% 100%, rgba(253, 186, 116, 0.18), transparent 46%),
+    linear-gradient(180deg, #fff7f8 0%, #ffffff 72%);
+  border: 1px solid #fce7eb;
+  box-shadow: 0 16px 36px rgba(136, 19, 55, 0.07);
+}
+
+.aos-slice-hero__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #be123c;
+}
+
+.aos-slice-hero h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.7rem;
+  letter-spacing: -0.03em;
+  color: #1c1917;
+}
+
+.aos-slice-hero > p {
+  margin: 0.4rem 0 0;
+  max-width: 40rem;
+  color: #57534e;
+  line-height: 1.45;
+}
+
+.aos-slice-chips,
+.aos-slice-metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem 1.1rem;
-  margin-top: 0.85rem;
+  gap: 0.45rem;
+  margin-top: 1rem;
 }
 
-.aos-slice-controls label {
-  display: grid;
-  gap: 0.3rem;
-  font-size: 0.72rem;
+.aos-slice-metrics {
+  margin-top: 0.65rem;
+}
+
+.aos-slice-chip,
+.aos-slice-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #f5d0d6;
+  background: rgba(255, 255, 255, 0.86);
+  color: #44403c;
+  border-radius: 999px;
+  padding: 0.42rem 0.8rem;
+  font-size: 0.86rem;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #64748b;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
-.aos-slice-controls select {
-  min-width: 12rem;
-  font-size: 0.92rem;
-  font-weight: 650;
-  text-transform: none;
-  letter-spacing: 0;
-  color: #0f172a;
+.aos-slice-chip:hover,
+.aos-slice-metric:hover {
+  transform: translateY(-1px);
+  border-color: #fb7185;
+  box-shadow: 0 8px 16px rgba(190, 18, 60, 0.1);
+}
+
+.aos-slice-chip.is-active {
+  background: linear-gradient(135deg, #9f1239, #fb7185);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(190, 18, 60, 0.22);
+}
+
+.aos-slice-metric {
+  padding: 0.32rem 0.72rem;
+  font-size: 0.8rem;
+}
+
+.aos-slice-metric.is-active {
+  background: #1c1917;
+  border-color: #1c1917;
+  color: #fff;
 }
 
 .aos-slice-crumbs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-top: 0.9rem;
+  margin-top: 0.95rem;
 }
 
 .aos-slice-crumbs button {
-  border: 1px solid #dbe7f5;
+  border: 1px solid #e7e5e4;
   background: #fff;
   border-radius: 999px;
-  padding: 0.25rem 0.7rem;
+  padding: 0.28rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 650;
   cursor: pointer;
@@ -2694,48 +2760,186 @@ button.aos-link {
 
 .aos-slice-crumbs button.is-active,
 .aos-slice-crumbs button:hover {
-  border-color: #93c5fd;
-  background: #eff6ff;
+  border-color: #fb7185;
+  background: #fff1f2;
+  color: #9f1239;
 }
 
-.aos-slice-rank {
+.aos-slice-loading {
+  padding: 1.4rem 1.2rem;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px dashed #f5d0d6;
+  color: #78716c;
+}
+
+.aos-slice-kpis {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-@media (min-width: 800px) {
-  .aos-slice-rank {
+.aos-slice-kpi {
+  min-height: 92px;
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #ece7e4;
+  box-shadow: 0 8px 20px rgba(28, 25, 23, 0.04);
+}
+
+.aos-slice-kpi span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.aos-slice-kpi strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  color: #1c1917;
+}
+
+.aos-slice-kpi--leads { background: linear-gradient(180deg, #eff6ff, #fff); }
+.aos-slice-kpi--sales { background: linear-gradient(180deg, #ecfdf5, #fff); }
+.aos-slice-kpi--cr { background: linear-gradient(180deg, #f5f3ff, #fff); }
+.aos-slice-kpi--revenue { background: linear-gradient(180deg, #fff1f2, #fff); }
+.aos-slice-kpi--aov { background: linear-gradient(180deg, #fffbeb, #fff); }
+.aos-slice-kpi--cycle { background: linear-gradient(180deg, #f8fafc, #fff); }
+.aos-slice-kpi--d7,
+.aos-slice-kpi--d30 { background: linear-gradient(180deg, #f0fdfa, #fff); }
+
+.aos-slice-kpi.is-focus {
+  border-color: #fb7185;
+  box-shadow: 0 12px 28px rgba(190, 18, 60, 0.12);
+  transform: translateY(-1px);
+}
+
+.aos-slice-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #78716c;
+}
+
+.aos-slice-spots {
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media (min-width: 860px) {
+  .aos-slice-spots {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-.aos-slice-rank h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
+.aos-slice-spot {
+  padding: 1.05rem 1.1rem 1rem;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ece7e4;
+  box-shadow: 0 10px 24px rgba(28, 25, 23, 0.04);
 }
 
-.aos-slice-rank ol {
+.aos-slice-spot--leaders {
+  background:
+    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(167, 243, 208, 0.35), transparent 50%),
+    #fff;
+}
+
+.aos-slice-spot--attention {
+  background:
+    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(254, 215, 170, 0.4), transparent 50%),
+    #fff;
+}
+
+.aos-slice-spot h3 {
   margin: 0;
-  padding-left: 1.15rem;
-  display: grid;
-  gap: 0.35rem;
+  font-size: 1.12rem;
 }
 
-.aos-slice-rank li {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+.aos-slice-spot > p {
+  margin: 0.25rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: #78716c;
 }
 
-.aos-slice-rank button {
-  border: 0;
-  background: none;
+.aos-slice-spot ol {
+  margin: 0;
   padding: 0;
-  font: inherit;
-  font-weight: 650;
-  color: #1d4ed8;
-  cursor: pointer;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.aos-slice-spot button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  border: 0;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  padding: 0.55rem 0.7rem;
   text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aos-slice-spot button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(28, 25, 23, 0.08);
+}
+
+.aos-slice-spot em {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.aos-slice-spot--leaders em {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aos-slice-spot--attention em {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.aos-slice-spot strong,
+.aos-slice-spot small {
+  display: block;
+}
+
+.aos-slice-spot small {
+  margin-top: 0.12rem;
+  color: #78716c;
+  font-size: 0.75rem;
+}
+
+.aos-slice-spot b {
+  font-size: 0.95rem;
+  color: #1c1917;
+}
+
+.aos-slice-board,
+.aos-slice-next-card {
+  padding: 1.1rem 1.15rem 1.15rem;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ece7e4;
+  box-shadow: 0 10px 24px rgba(28, 25, 23, 0.04);
 }
 
 .aos-slice-jump {
@@ -2748,21 +2952,38 @@ button.aos-link {
 .aos-slice-detail {
   font-size: 0.85rem;
   font-weight: 750;
-  color: #1d4ed8;
+  color: #be123c;
 }
 
 .aos-slice-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 0.35rem;
   font-size: 0.88rem;
 }
 
-.aos-slice-table th,
-.aos-slice-table td {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+.aos-slice-table th {
+  padding: 0.2rem 0.55rem 0.45rem;
   text-align: left;
-  vertical-align: top;
+  color: #78716c;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.aos-slice-table td {
+  padding: 0.62rem 0.55rem;
+  background: #fafaf9;
+  vertical-align: middle;
+}
+
+.aos-slice-table td:first-child {
+  border-radius: 12px 0 0 12px;
+  font-weight: 700;
+}
+
+.aos-slice-table td:last-child {
+  border-radius: 0 12px 12px 0;
 }
 
 .aos-slice-table th button {
@@ -2772,57 +2993,93 @@ button.aos-link {
   font: inherit;
   font-weight: 750;
   cursor: pointer;
+  color: inherit;
 }
 
 .aos-slice-table tbody tr {
   cursor: pointer;
 }
 
-.aos-slice-table tbody tr:hover,
-.aos-slice-table tbody tr.is-selected {
-  background: #f8fbff;
+.aos-slice-table tbody tr:hover td,
+.aos-slice-table tbody tr.is-selected td {
+  background: #fff1f2;
+}
+
+.aos-slice-row--strong td:first-child {
+  box-shadow: inset 3px 0 0 #16a34a;
+}
+
+.aos-slice-row--attention td:first-child {
+  box-shadow: inset 3px 0 0 #d97706;
+}
+
+.aos-slice-row--weak td:first-child {
+  box-shadow: inset 3px 0 0 #e11d48;
 }
 
 .aos-slice-table em {
   font-style: normal;
-  color: #64748b;
+  color: #78716c;
   font-size: 0.75rem;
 }
 
 .aos-slice-bar {
   display: block;
-  height: 4px;
-  margin-top: 0.25rem;
+  height: 5px;
+  margin-top: 0.28rem;
   border-radius: 99px;
-  background: #93c5fd;
+  background: linear-gradient(90deg, #fb7185, #fdba74);
 }
 
 .aos-slice-next {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.85rem;
+  gap: 0.55rem;
+  margin-bottom: 0.95rem;
 }
 
 .aos-slice-next button {
-  border: 1px solid #dbeafe;
-  background: #f8fbff;
-  border-radius: 10px;
-  padding: 0.45rem 0.7rem;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #f5d0d6;
+  background: #fff7f8;
+  border-radius: 14px;
+  padding: 0.65rem 0.85rem;
+  font-weight: 750;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aos-slice-next button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(190, 18, 60, 0.1);
 }
 
 .aos-slice-trend {
   margin: 0;
-  padding-left: 1.1rem;
+  padding: 0;
+  list-style: none;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
+}
+
+.aos-slice-trend li {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: #fafaf9;
 }
 
 .aos-slice-trend span {
   display: block;
-  color: #475569;
+  margin-top: 0.15rem;
+  color: #57534e;
   font-size: 0.85rem;
+}
+
+@media (max-width: 860px) {
+  .aos-slice-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 

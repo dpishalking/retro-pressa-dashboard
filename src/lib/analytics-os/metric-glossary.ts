@@ -78,7 +78,7 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   },
   product_margin_rate: {
     id: "product_margin_rate",
-    label: "Маржа средняя",
+    label: "Средняя маржа продуктов",
     definition: "Средняя валовая маржа по оплаченным заказам с себестоимостью из Product Hub."
   },
   delivery_revenue: {

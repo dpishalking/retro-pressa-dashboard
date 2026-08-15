@@ -3,6 +3,19 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  CalendarDays,
+  Clock,
+  Gift,
+  Globe2,
+  Layers,
+  Megaphone,
+  Package,
+  Radio,
+  UserRound,
+  Users,
+  type LucideIcon
+} from "lucide-react";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
 import {
   SLICE_DIMENSIONS,
@@ -35,6 +48,19 @@ const STATUS_LABEL: Record<SliceRow["status"], string> = {
   low_data: "Мало данных"
 };
 
+const DIM_ICONS: Record<SliceDimensionId, LucideIcon> = {
+  country: Globe2,
+  product: Package,
+  manager: UserRound,
+  source: Radio,
+  channel: Layers,
+  gift: Gift,
+  traffic: Megaphone,
+  customer: Users,
+  time: Clock,
+  cohort: CalendarDays
+};
+
 function crumbLabel(key: string, value: string): string {
   if (key === "country") return value;
   if (key === "managerId") return `Менеджер ${value}`;
@@ -47,6 +73,21 @@ function crumbLabel(key: string, value: string): string {
   if (key === "timeKey") return `Оплаты ${value}`;
   if (key === "cohortKey") return `Когорта ${value}`;
   return value;
+}
+
+function formatRowMetric(row: SliceRow, metric: SliceMetricId): string {
+  if (metric === "leads") return number(row.leads);
+  if (metric === "sales") return number(row.sales);
+  if (metric === "cr") return row.cr == null ? "—" : pct(row.cr);
+  if (metric === "aov") return row.aov == null ? "—" : eur(row.aov);
+  return eur(row.revenue);
+}
+
+function pillTone(status: SliceRow["status"]): string {
+  if (status === "strong") return "healthy";
+  if (status === "weak") return "problem";
+  if (status === "low_data") return "no_data";
+  return "attention";
 }
 
 export function AnalysisSlicesPanel({
@@ -202,50 +243,59 @@ export function AnalysisSlicesPanel({
     if (sortKey === "leads") return b.leads - a.leads;
     return b.revenue - a.revenue;
   });
+  const selectedRow = sorted.find((row) => row.key === (report?.selectedKey || selected));
+  const kpis = report?.kpis;
 
   return (
-    <>
-      <section className="aos-card">
-        <div className="aos-section-head">
-          <div>
-            <h2>Срезы</h2>
-            <p>
-              Exploration поверх тех же фактов, что когорты и цикл сделки: лиды Bitrix месяца создания и их оплаты.
-              Не путать с KPI сводки (лиды СВОД). Spend / CAC здесь нет — расход не размечен по срезу.
-            </p>
-          </div>
+    <div className="aos-slices">
+      <section className="aos-slice-hero">
+        <p className="aos-slice-hero__eyebrow">Исследование</p>
+        <h2>Где живёт результат</h2>
+        <p>
+          Выберите разрез, кликните строку и идите дальше. Те же факты, что когорты: лиды Bitrix и их оплаты.
+        </p>
+        <div className="aos-slice-chips" role="tablist" aria-label="Измерение">
+          {SLICE_DIMENSIONS.map((item) => {
+            const Icon = DIM_ICONS[item.id];
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={dim === item.id}
+                className={`aos-slice-chip${dim === item.id ? " is-active" : ""}`}
+                onClick={() => patchUrl({ dim: item.id, selected: null })}
+              >
+                <Icon size={16} strokeWidth={2.2} />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
-        <div className="aos-slice-controls">
-          <label>
-            Анализировать по
-            <select value={dim} onChange={(event) => patchUrl({ dim: event.target.value, selected: null })}>
-              {SLICE_DIMENSIONS.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Основной показатель
-            <select value={metric} onChange={(event) => patchUrl({ metric: event.target.value })}>
-              {SLICE_METRICS.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {(dim === "time" || dim === "cohort") && (
-            <label>
-              Зерно времени
-              <select value={grain} onChange={(event) => patchUrl({ grain: event.target.value, selected: null })}>
-                <option value="day">День</option>
-                <option value="week">Неделя</option>
-                <option value="month">Месяц</option>
-              </select>
-            </label>
-          )}
+        <div className="aos-slice-metrics" role="tablist" aria-label="Показатель">
+          {SLICE_METRICS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={metric === item.id}
+              className={`aos-slice-metric${metric === item.id ? " is-active" : ""}`}
+              onClick={() => patchUrl({ metric: item.id })}
+            >
+              {item.label}
+            </button>
+          ))}
+          {(dim === "time" || dim === "cohort") &&
+            (["day", "week", "month"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={`aos-slice-metric${grain === item ? " is-active" : ""}`}
+                onClick={() => patchUrl({ grain: item, selected: null })}
+              >
+                {item === "day" ? "День" : item === "week" ? "Неделя" : "Месяц"}
+              </button>
+            ))}
         </div>
         <nav className="aos-slice-crumbs" aria-label="Цепочка среза">
           <button type="button" onClick={clearAll} className={!crumbs.length ? "is-active" : ""}>
@@ -264,96 +314,87 @@ export function AnalysisSlicesPanel({
           <p>{error}</p>
         </section>
       ) : !report && state === "loading" ? (
-        <section className="aos-card">
-          <p>Считаю срез по фактам цикла сделки…</p>
-        </section>
-      ) : report ? (
+        <section className="aos-slice-loading">Считаю срез по фактам цикла сделки…</section>
+      ) : report && kpis ? (
         <>
-          <section className="aos-card">
-            <div className="aos-plan__grid">
-              <div>
-                <span>ЛИДЫ</span>
-                <strong>{number(report.kpis.leads)}</strong>
+          <section className="aos-slice-kpis" aria-label="Итог среза">
+            {(
+              [
+                ["leads", "Лиды", number(kpis.leads)],
+                ["sales", "Оплаты", number(kpis.sales)],
+                ["cr", "CR", kpis.cr == null ? "—" : pct(kpis.cr)],
+                ["revenue", "Выручка", eur(kpis.revenue)],
+                ["aov", "AOV", kpis.aov == null ? "—" : eur(kpis.aov)],
+                ["cycle", "Медиана цикла", kpis.medianCycleDays == null ? "—" : `${number(kpis.medianCycleDays, 1)} дн.`],
+                ["d7", "D7 CR", kpis.d7Cr == null ? "—" : pct(kpis.d7Cr)],
+                ["d30", "D30 CR", kpis.d30Cr == null ? "—" : pct(kpis.d30Cr)]
+              ] as const
+            ).map(([id, label, value]) => (
+              <div
+                key={id}
+                className={`aos-slice-kpi aos-slice-kpi--${id}${metric === id ? " is-focus" : ""}`}
+              >
+                <span>{label}</span>
+                <strong>{value}</strong>
               </div>
-              <div>
-                <span>ОПЛАТЫ</span>
-                <strong>{number(report.kpis.sales)}</strong>
-              </div>
-              <div>
-                <span>CR</span>
-                <strong>{report.kpis.cr == null ? "—" : pct(report.kpis.cr)}</strong>
-              </div>
-              <div>
-                <span>ВЫРУЧКА</span>
-                <strong>{eur(report.kpis.revenue)}</strong>
-              </div>
-              <div>
-                <span>AOV</span>
-                <strong>{report.kpis.aov == null ? "—" : eur(report.kpis.aov)}</strong>
-              </div>
-              <div>
-                <span>МЕДИАНА ЦИКЛА</span>
-                <strong>{report.kpis.medianCycleDays == null ? "—" : `${number(report.kpis.medianCycleDays, 1)} дн.`}</strong>
-              </div>
-              <div>
-                <span>D7 CR</span>
-                <strong>{report.kpis.d7Cr == null ? "—" : pct(report.kpis.d7Cr)}</strong>
-              </div>
-              <div>
-                <span>D30 CR</span>
-                <strong>{report.kpis.d30Cr == null ? "—" : pct(report.kpis.d30Cr)}</strong>
-              </div>
-            </div>
-            {report.unknownShareLeads != null && report.unknownShareLeads > 0 ? (
-              <p className="aos-muted" style={{ marginTop: "0.75rem" }}>
-                Не указан — {pct(report.unknownShareLeads)} лидов
-                {report.unknownShareRevenue != null ? ` · ${pct(report.unknownShareRevenue)} выручки` : ""}.
-              </p>
-            ) : null}
-            {report.coverageNote ? <p className="aos-muted">{report.coverageNote}</p> : null}
-            <DecisionBrief title="Ограничение" body={report.unavailable.join(" ")} />
+            ))}
           </section>
+          {report.unknownShareLeads != null && report.unknownShareLeads > 0 ? (
+            <p className="aos-slice-note">
+              Не указан — {pct(report.unknownShareLeads)} лидов
+              {report.unknownShareRevenue != null ? ` · ${pct(report.unknownShareRevenue)} выручки` : ""}.
+            </p>
+          ) : null}
+          {report.coverageNote ? <p className="aos-slice-note">{report.coverageNote}</p> : null}
 
-          <section className="aos-card">
-            <div className="aos-slice-rank">
-              <div>
-                <h3>Лидеры</h3>
-                {report.leaders.length ? (
-                  <ol>
-                    {report.leaders.map((row) => (
-                      <li key={row.key}>
-                        <button type="button" onClick={() => drill(row)}>
-                          {row.label}
-                        </button>
-                        <span>{eur(row.revenue)}</span>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="aos-muted">Недостаточно данных для рейтинга.</p>
-                )}
-              </div>
-              <div>
-                <h3>Зоны внимания</h3>
-                {report.attention.length ? (
-                  <ol>
-                    {report.attention.map((row) => (
-                      <li key={row.key}>
-                        <button type="button" onClick={() => drill(row)}>
-                          {row.label}
-                        </button>
-                        <span>{row.cr == null ? "—" : pct(row.cr)}</span>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="aos-muted">Нет строк с достаточной выборкой и CR ниже среднего.</p>
-                )}
-              </div>
+          <section className="aos-slice-spots">
+            <div className="aos-slice-spot aos-slice-spot--leaders">
+              <h3>Лидеры</h3>
+              <p>Сильные строки по выбранному показателю. Клик — в цепочку.</p>
+              {report.leaders.length ? (
+                <ol>
+                  {report.leaders.map((row, index) => (
+                    <li key={row.key}>
+                      <button type="button" onClick={() => drill(row)}>
+                        <em>{index + 1}</em>
+                        <span>
+                          <strong>{row.label}</strong>
+                          <small>{number(row.leads)} лидов · {number(row.sales)} оплат</small>
+                        </span>
+                        <b>{formatRowMetric(row, metric)}</b>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="aos-muted">Недостаточно данных для рейтинга.</p>
+              )}
+            </div>
+            <div className="aos-slice-spot aos-slice-spot--attention">
+              <h3>Зоны внимания</h3>
+              <p>Есть объём, но CR слабее среднего. Сюда стоит зайти.</p>
+              {report.attention.length ? (
+                <ol>
+                  {report.attention.map((row, index) => (
+                    <li key={row.key}>
+                      <button type="button" onClick={() => drill(row)}>
+                        <em>{index + 1}</em>
+                        <span>
+                          <strong>{row.label}</strong>
+                          <small>{row.cr == null ? "CR нет" : `CR ${pct(row.cr)}`}</small>
+                        </span>
+                        <b>{formatRowMetric(row, metric)}</b>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="aos-muted">Нет строк с достаточной выборкой и CR ниже среднего.</p>
+              )}
             </div>
           </section>
 
-          <section className="aos-card">
+          <section className="aos-slice-board">
             <div className="aos-section-head">
               <div>
                 <h2>{dimension?.label || "Срез"}</h2>
@@ -413,12 +454,12 @@ export function AnalysisSlicesPanel({
                     {sorted.map((row) => (
                       <tr
                         key={row.key}
-                        className={row.key === selected ? "is-selected" : ""}
+                        className={`${row.key === selected ? "is-selected" : ""} aos-slice-row--${row.status}`}
                         onClick={() => drill(row)}
                       >
                         <td>
                           {row.label}
-                          {row.unknown ? <em> unknown</em> : null}
+                          {row.unknown ? <em> не указан</em> : null}
                         </td>
                         <td>{number(row.leads)}</td>
                         <td>{number(row.sales)}</td>
@@ -428,12 +469,12 @@ export function AnalysisSlicesPanel({
                         <td>
                           {row.revenueShare == null ? "—" : pct(row.revenueShare)}
                           {row.revenueShare != null ? (
-                            <span className="aos-slice-bar" style={{ width: `${Math.max(4, row.revenueShare * 100)}%` }} />
+                            <span className="aos-slice-bar" style={{ width: `${Math.max(8, row.revenueShare * 100)}%` }} />
                           ) : null}
                         </td>
                         <td>{row.medianCycleDays == null ? "—" : `${number(row.medianCycleDays, 1)} дн.`}</td>
                         <td>
-                          <span className={`aos-scenario-pill aos-scenario-pill--${row.status === "strong" ? "healthy" : row.status === "weak" ? "problem" : row.status === "low_data" ? "no_data" : "attention"}`}>
+                          <span className={`aos-scenario-pill aos-scenario-pill--${pillTone(row.status)}`}>
                             {STATUS_LABEL[row.status]}
                           </span>
                         </td>
@@ -449,11 +490,11 @@ export function AnalysisSlicesPanel({
           </section>
 
           {report.selectedKey ? (
-            <section className="aos-card">
+            <section className="aos-slice-next-card">
               <div className="aos-section-head">
                 <div>
-                  <h2>Выбрано: {sorted.find((row) => row.key === report.selectedKey)?.label || report.selectedKey}</h2>
-                  <p>Динамика по времени и следующий шаг цепочки.</p>
+                  <h2>Дальше: {selectedRow?.label || report.selectedKey}</h2>
+                  <p>Смените измерение — фильтр уже записан. Смотрите, что внутри этой строки.</p>
                 </div>
               </div>
               {dimension?.nextHints.length ? (
@@ -461,9 +502,11 @@ export function AnalysisSlicesPanel({
                   {dimension.nextHints.map((id) => {
                     const next = getSliceDimension(id);
                     if (!next) return null;
+                    const Icon = DIM_ICONS[id];
                     return (
                       <button key={id} type="button" onClick={() => patchUrl({ dim: id })}>
-                        Дальше: {next.label}
+                        <Icon size={18} strokeWidth={2.1} />
+                        {next.label}
                       </button>
                     );
                   })}
@@ -486,8 +529,10 @@ export function AnalysisSlicesPanel({
               )}
             </section>
           ) : null}
+
+          <DecisionBrief title="Что здесь нет" body={report.unavailable.join(" ")} />
         </>
       ) : null}
-    </>
+    </div>
   );
 }
