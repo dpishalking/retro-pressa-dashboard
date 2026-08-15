@@ -74,7 +74,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     title: "Маркетинг и трафик",
     description: "Лендинги, офферы и целевая аудитория.",
     icon: Megaphone,
-    summaryMetricIds: ["leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
+    summaryMetricIds: ["paid_leads", "ad_spend", "cpl", "roas", "cac", "conversion_rate"],
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
       { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
@@ -525,7 +525,11 @@ export function BusinessContourScreen({ contourId }: { contourId: ContourId }) {
         <section className="mb-8">
           <div className="mb-4">
             <h2 className="text-2xl font-black text-slate-950">Сводка</h2>
-            <p className="mt-1 text-sm text-slate-600">Ключевые показатели направления.</p>
+            <p className="mt-1 text-sm text-slate-600">
+              {contourId === "marketing"
+                ? "CPL = рекламный бюджет СВОД / платные лиды. Органика в знаменатель не входит."
+                : "Ключевые показатели направления."}
+            </p>
           </div>
           {state === "error" && !snapshot ? (
             <p className="text-sm text-red-700">{error}</p>

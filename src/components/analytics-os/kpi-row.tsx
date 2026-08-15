@@ -23,6 +23,8 @@ const KPI_ORDER: Array<{ id: string; priority?: boolean }> = [
   { id: "product_aov", priority: true },
   { id: "product_revenue_net", priority: true },
   { id: "delivery_revenue" },
+  { id: "ad_spend", priority: true },
+  { id: "cpl" },
   { id: "cac" },
   { id: "repeat_rate" },
   { id: "pipeline_amount" },

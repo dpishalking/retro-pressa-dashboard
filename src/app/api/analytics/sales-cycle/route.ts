@@ -6,6 +6,8 @@ import type { CohortGrain } from "@/lib/analytics-os/sales-cycle/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 export const maxDuration = 120;
 
 const WORKER_TIMEOUT_MS = 55_000;
@@ -28,12 +30,14 @@ function cacheKeyFromRequest(request: NextRequest): SalesCycleCacheKey {
 }
 
 function workerUrlFor(request: NextRequest): URL {
-  const workerUrl = new URL(request.url);
-  workerUrl.protocol = "http:";
-  workerUrl.hostname = "127.0.0.1";
-  workerUrl.port = "4175";
+  const workerUrl = new URL(
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    "http://127.0.0.1:4175"
+  );
   return workerUrl;
 }
+
+const NO_STORE = { "cache-control": "private, no-store", vary: "Cookie" };
 
 async function proxyToWorker(request: NextRequest, timeoutMs: number): Promise<NextResponse> {
   const workerUrl = workerUrlFor(request);
@@ -51,7 +55,8 @@ async function proxyToWorker(request: NextRequest, timeoutMs: number): Promise<N
       status: response.status,
       headers: {
         "content-type": response.headers.get("content-type") || "application/json",
-        "cache-control": "private, max-age=60, stale-while-revalidate=300"
+        "cache-control": "private, no-store",
+        vary: "Cookie"
       }
     });
   } finally {
@@ -100,9 +105,7 @@ export async function GET(request: NextRequest) {
     const cached = await readSalesCycleCache(cacheKeyFromRequest(request), { allowStale: true });
     if (cached) {
       if (cached.stale) kickWorkerRefresh(request);
-      return NextResponse.json(cached.payload, {
-        headers: { "cache-control": "private, max-age=60, stale-while-revalidate=300" }
-      });
+      return NextResponse.json(cached.payload, { headers: NO_STORE });
     }
   }
 
@@ -115,9 +118,7 @@ export async function GET(request: NextRequest) {
       const timedOut = error instanceof Error && error.name === "AbortError";
       const stale = await readSalesCycleCache(cacheKeyFromRequest(request), { allowStale: true });
       if (stale) {
-        return NextResponse.json(stale.payload, {
-          headers: { "cache-control": "private, max-age=30" }
-        });
+        return NextResponse.json(stale.payload, { headers: NO_STORE });
       }
       if (process.env.NODE_ENV === "production") {
         return NextResponse.json(
@@ -142,9 +143,7 @@ export async function GET(request: NextRequest) {
       sourceId: searchParams.get("source") || searchParams.get("sourceId"),
       forceRefresh
     });
-    return NextResponse.json(payload, {
-      headers: { "cache-control": "private, max-age=60, stale-while-revalidate=300" }
-    });
+    return NextResponse.json(payload, { headers: NO_STORE });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось загрузить Sales Cycle";
     return NextResponse.json({ error: message }, { status: 500 });

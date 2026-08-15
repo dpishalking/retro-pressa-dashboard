@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import type { CohortRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CohortGrain, CohortRow, SalesCyclePayload } from "@/lib/analytics-os/sales-cycle/types";
 import { SLICE_DIMENSIONS, sliceExplorerHref } from "@/lib/analytics-os/slices";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
 import { DecisionBrief } from "@/components/analytics-os/decision-brief";
@@ -30,8 +30,30 @@ function cr(paid: number, leads: number): number | null {
   return paid / leads;
 }
 
+function payloadGrain(data: SalesCyclePayload): CohortGrain {
+  if (data.cohortGrain === "day" || data.cohortGrain === "week" || data.cohortGrain === "month") {
+    return data.cohortGrain;
+  }
+  const key = data.cohorts.find((row) => row.cohortKey)?.cohortKey || "";
+  if (/^\d{4}-W\d{2}$/.test(key)) return "week";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return "day";
+  return "month";
+}
+
+function matchesGrain(data: SalesCyclePayload, grain: CohortTab): boolean {
+  return payloadGrain(data) === grain;
+}
+
 function focusCohort(rows: CohortRow[], period: string): CohortRow | undefined {
-  return [...rows].reverse().find((row) => row.cohortKey.startsWith(period) || row.cohortStart.startsWith(period));
+  const monthEnd = `${period}-31`;
+  return [...rows]
+    .reverse()
+    .find(
+      (row) =>
+        row.cohortKey.startsWith(period) ||
+        row.cohortStart.startsWith(period) ||
+        (row.cohortStart <= monthEnd && row.cohortEnd >= `${period}-01`)
+    );
 }
 
 function buildCohortDecision(data: SalesCyclePayload): string | null {
@@ -70,14 +92,14 @@ function buildCohortDecision(data: SalesCyclePayload): string | null {
       `Когорта ${current.cohortKey}: ${number(current.leads)} лидов, ${number(current.paid)} оплат, ${eur(current.revenue)} выручки. Зрелых когорт для сравнения мало — смотрите D7/D30, когда пройдёт 30 дней.`
     );
   }
-  if (cash.cashRevenue > 0 && current) {
+  if (payloadGrain(data) === "month" && cash.cashRevenue > 0 && current) {
     const sameMonthCash = cash.fromSelectedCohort;
     const cohortRev = current.revenue;
     parts.push(
       `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}. Из них ${eur(sameMonthCash)} — оплаты этого месяца от лидов ${current.cohortKey}. ` +
         `Выручка когорты ${eur(cohortRev)} — все первые оплаты этих лидов, в том числе если клиент заплатил позже. Это разные срезы, не одна цифра.`
     );
-  } else if (cash.cashRevenue > 0) {
+  } else if (payloadGrain(data) === "month" && cash.cashRevenue > 0) {
     parts.push(
       `Касса ${cash.cashPeriod} = ${eur(cash.cashRevenue)}, из них ${eur(cash.fromSelectedCohort)} от лидов этого месяца. Остальное — хвост прошлых когорт.`
     );
@@ -113,82 +135,73 @@ export function CohortsPanel({
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const seqRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   const grain = tab === "week" ? "week" : "month";
   const tabMeta = TABS.find((item) => item.id === tab)!;
 
   const load = useCallback(
     async (refresh = false) => {
-      if (!period) return;
+      if (!period) {
+        setState("loading");
+        setError("");
+        setData(null);
+        return;
+      }
+      const seq = ++seqRef.current;
+      abortRef.current?.abort();
       const controller = new AbortController();
+      abortRef.current = controller;
       const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 65_000);
       setError("");
       if (refresh) setRefreshing(true);
-      else setState("loading");
+      else {
+        setState("loading");
+        setData(null);
+      }
       const params = new URLSearchParams({ period, cohort_grain: grain });
       if (managerId) params.set("managerId", managerId);
       if (country) params.set("country", country);
       if (productId) params.set("productId", productId);
       if (refresh) params.set("refresh", "1");
       try {
-        const res = await fetch(`/api/analytics/sales-cycle?${params}`, { signal: controller.signal });
-        const json = await res.json();
+        const res = await fetch(`/api/analytics/sales-cycle?${params}`, {
+          signal: controller.signal,
+          cache: "no-store"
+        });
+        const json = (await res.json()) as SalesCyclePayload & { error?: string };
+        if (seq !== seqRef.current) return;
         if (!res.ok) throw new Error(json.error || "Ошибка загрузки");
+        if (!matchesGrain(json, grain)) {
+          throw new Error("Сервер вернул когорты другого зерна. Нажмите «Повторить».");
+        }
         setData(json);
         setState("ready");
       } catch (err: unknown) {
+        if (seq !== seqRef.current) return;
         setError(cohortLoadError(err));
-        setState((current) => (current === "ready" ? "ready" : "error"));
+        setState("error");
+        if (!refresh) setData(null);
       } finally {
         window.clearTimeout(timeout);
-        setRefreshing(false);
+        if (seq === seqRef.current) setRefreshing(false);
       }
     },
     [period, grain, managerId, country, productId]
   );
 
   useEffect(() => {
-    if (!period) {
-      setState("loading");
-      setError("");
-      return;
-    }
-    let cancelled = false;
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 65_000);
-    setState("loading");
-    setError("");
-    setData(null);
-    const params = new URLSearchParams({ period, cohort_grain: grain });
-    if (managerId) params.set("managerId", managerId);
-    if (country) params.set("country", country);
-    if (productId) params.set("productId", productId);
-    fetch(`/api/analytics/sales-cycle?${params}`, { signal: controller.signal })
-      .then(async (res) => {
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Ошибка загрузки");
-        if (!cancelled) {
-          setData(json);
-          setState("ready");
-        }
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(cohortLoadError(err));
-        setState("error");
-      })
-      .finally(() => {
-        window.clearTimeout(timeout);
-      });
+    void load(false);
     return () => {
-      cancelled = true;
-      controller.abort();
-      window.clearTimeout(timeout);
+      seqRef.current += 1;
+      abortRef.current?.abort();
     };
-  }, [period, grain, managerId, country, productId, reloadKey]);
+  }, [load, reloadKey]);
 
-  const current = data ? focusCohort(data.cohorts, data.period) : undefined;
-  const decision = data ? buildCohortDecision(data) : null;
+  const view = data && matchesGrain(data, grain) ? data : null;
+  const current = view ? focusCohort(view.cohorts, view.period) : undefined;
+  const decision = view ? buildCohortDecision(view) : null;
   const mini = current
     ? {
         leadLabel: `Лиды когорты ${current.cohortKey}`,
@@ -294,26 +307,22 @@ export function CohortsPanel({
           </p>
         ) : null}
 
-        {!data && state !== "error" ? (
-          <p className="aos-muted">Загрузка когорт…</p>
-        ) : data ? (
-          <TimeCohortTable
-            rows={data.cohorts}
-            grain={tab === "week" ? "week" : "month"}
-            focusPeriod={data.period}
-          />
+        {!view && state !== "error" ? (
+          <p className="aos-muted">{grain === "week" ? "Загрузка недельных когорт…" : "Загрузка когорт…"}</p>
+        ) : view ? (
+          <TimeCohortTable rows={view.cohorts} grain={payloadGrain(view)} focusPeriod={view.period} />
         ) : null}
 
         <DecisionBrief body={decision} />
       </section>
 
-      {data ? (
+      {view && payloadGrain(view) === "month" ? (
         <section className="aos-card">
           <div className="aos-section-head">
             <div>
               <h2>Касса месяца vs когорта лидов</h2>
               <p>
-                Касса — все оплаты, которые пришли в {data.cashVsCohort.cashPeriod} (включая повторные).
+                Касса — все оплаты, которые пришли в {view.cashVsCohort.cashPeriod} (включая повторные).
                 «От лидов этого месяца» — только та часть кассы, где лид заведён в этом же месяце. Не
                 равна выручке когорты выше: там первые оплаты лидов за любой месяц оплаты.
               </p>
@@ -322,22 +331,24 @@ export function CohortsPanel({
           <div className="aos-stat-grid">
             <div className="aos-stat">
               <span>Касса месяца</span>
-              <strong>{eur(data.cashVsCohort.cashRevenue)}</strong>
+              <strong>{eur(view.cashVsCohort.cashRevenue)}</strong>
             </div>
             <div className="aos-stat">
               <span>От лидов этого месяца</span>
-              <strong>{eur(data.cashVsCohort.fromSelectedCohort)}</strong>
+              <strong>{eur(view.cashVsCohort.fromSelectedCohort)}</strong>
             </div>
             <div className="aos-stat">
               <span>От лидов прошлого месяца</span>
-              <strong>{eur(data.cashVsCohort.fromPreviousMonth)}</strong>
+              <strong>{eur(view.cashVsCohort.fromPreviousMonth)}</strong>
             </div>
             <div className="aos-stat">
               <span>От более старых лидов</span>
-              <strong>{eur(data.cashVsCohort.fromOlder)}</strong>
+              <strong>{eur(view.cashVsCohort.fromOlder)}</strong>
             </div>
           </div>
         </section>
+      ) : view ? (
+        <p className="aos-note">Касса месяца — календарный срез. Она на вкладке «Месяцы», не по неделям.</p>
       ) : null}
     </div>
   );
@@ -349,7 +360,7 @@ function TimeCohortTable({
   focusPeriod
 }: {
   rows: SalesCyclePayload["cohorts"];
-  grain: "month" | "week";
+  grain: CohortGrain;
   focusPeriod: string;
 }) {
   const list = [...rows].reverse().slice(0, grain === "week" ? 24 : 12);

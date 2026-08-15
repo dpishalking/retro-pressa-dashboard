@@ -1026,6 +1026,41 @@ export function DataQualityPanel({ snapshot }: { snapshot: CeoControlCenterSnaps
 
 export function MarketingPanel({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   const m = snapshot.marketing;
+  const deals = snapshot.funnel.find((stage) => stage.id === "deals");
+  const processSteps: Array<{
+    id: string;
+    label: string;
+    value: string;
+    status: typeof m.cpl.status;
+    cr?: typeof m.cpl;
+  }> = [
+    {
+      id: "sessions",
+      label: "Сессии GA4",
+      value: formatMetricDisplay(snapshot.metrics.sessions),
+      status: snapshot.metrics.sessions?.status ?? "no_data"
+    },
+    {
+      id: "leads",
+      label: "Лиды CRM",
+      value: formatMetricDisplay(snapshot.metrics.leads),
+      status: snapshot.metrics.leads?.status ?? "no_data",
+      cr: snapshot.metrics.session_to_lead_cr
+    },
+    {
+      id: "deals",
+      label: "Сделки",
+      value: deals?.count == null ? "—" : String(deals.count),
+      status: deals?.status ?? "no_data"
+    },
+    {
+      id: "paid",
+      label: "Оплаты",
+      value: formatMetricDisplay(snapshot.metrics.paid_orders),
+      status: snapshot.metrics.paid_orders?.status ?? "no_data",
+      cr: snapshot.metrics.conversion_rate
+    }
+  ];
   return (
     <section className="aos-card" id="aos-marketing">
       <div className="aos-section-head">
@@ -1036,6 +1071,19 @@ export function MarketingPanel({ snapshot }: { snapshot: CeoControlCenterSnapsho
         <Link href="/ad-analytics" className="aos-link">
           Реклама →
         </Link>
+      </div>
+      <p className="aos-muted" style={{ marginTop: 0 }}>
+        Процесс: сессии сайта → лиды СВОД → сделки → оплаты. Сопоставление по дате, не по user-id.
+      </p>
+      <div className="aos-stat-grid">
+        {processSteps.map((step) => (
+          <div key={step.id} className="aos-stat">
+            <span>{step.label}</span>
+            <strong>{step.value}</strong>
+            {step.cr ? <span className="aos-muted">CR {formatMetricDisplay(step.cr)}</span> : null}
+            <StatusBadge status={step.status} />
+          </div>
+        ))}
       </div>
       <div className="aos-stat-grid">
         {[

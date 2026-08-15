@@ -26,6 +26,16 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
     label: "Лиды",
     definition: "Проверенные лиды CRM из СВОД (день + органика), не сырые карточки Bitrix."
   },
+  sessions: {
+    id: "sessions",
+    label: "Сессии",
+    definition: "Сессии сайта из склада GA4 (27_GA4_Channel_Daily), не лиды CRM."
+  },
+  session_to_lead_cr: {
+    id: "session_to_lead_cr",
+    label: "Сессия → лид",
+    definition: "Лиды СВОД / сессии GA4 за тот же период. generate_lead в расчёт не входит."
+  },
   paid_leads: {
     id: "paid_leads",
     label: "Лиды платные",
@@ -99,7 +109,7 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
   cpl: {
     id: "cpl",
     label: "CPL",
-    definition: "Рекламный бюджет СВОД / проверенные лиды СВОД (день + органика)."
+    definition: "Рекламный бюджет СВОД / платные лиды СВОД (без органики)."
   },
   landing_cpl: {
     id: "landing_cpl",

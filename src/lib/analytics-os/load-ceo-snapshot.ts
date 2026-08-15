@@ -25,6 +25,7 @@ import {
   pipelineAgeAnalysis,
   sumDelivery,
 } from "@/lib/analytics-os/decision-extras";
+import { buildGa4TrafficMetrics, loadGa4WarehouseMonth } from "@/lib/analytics-os/ga4-warehouse";
 import { metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
   analyticsPeriodToLegacy,
@@ -45,6 +46,7 @@ import { buildUnitEconomicsUnits } from "@/lib/analytics-os/unit-economics-units
 import { attachDealCountries } from "@/lib/bitrix/deal-country";
 import { hydrateDealProducts, isMissingProductLabel } from "@/lib/bitrix/gift-type-resolver";
 import type {
+  AnalyticsMetricValue,
   AnalyticsPlanIndicator,
   AnalyticsProductMargin,
   CeoControlCenterSnapshot,
@@ -220,6 +222,9 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const { calendarDays } = periodCalendarBounds(period);
   const daysElapsed = daysElapsedInPeriod(period, now);
   const daysRemaining = Math.max(0, calendarDays - daysElapsed);
+  const currentMonthEarly = currentAnalyticsPeriod(now);
+  const throughDateEarly = period >= currentMonthEarly ? rigaYesterdayIso(now) : null;
+  const ga4Warehouse = await loadGa4WarehouseMonth({ month: period, throughDate: throughDateEarly });
 
   let monthlyPlanBundle: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>> | null = null;
   try {
@@ -255,6 +260,13 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const mariaRevenueValue = await loadMariaMonthRevenue(period);
 
   if (!snapshot) {
+    let emptySvodLeads: number | null = null;
+    try {
+      const svod = await pullSvodDailyLeads({ month: period });
+      emptySvodLeads = sumSvodVerifiedLeads(svod, { month: period, throughDate: throughDateEarly }).total;
+    } catch {
+      emptySvodLeads = null;
+    }
     return emptySnapshot({
       period,
       legacyPeriodKey: legacy,
@@ -267,7 +279,13 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       daysRemaining,
       filters,
       mariaRevenueValue,
-      adSpendInfo
+      adSpendInfo,
+      ga4Metrics: buildGa4TrafficMetrics({
+        warehouse: ga4Warehouse,
+        svodLeads: emptySvodLeads,
+        leadsSliced: false
+      }),
+      ga4Warehouse
     });
   }
 
@@ -376,6 +394,11 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   }
 
   const hasVerifiedLeads = verifiedLeads !== null;
+  const ga4Metrics = buildGa4TrafficMetrics({
+    warehouse: ga4Warehouse,
+    svodLeads: hasVerifiedLeads ? verifiedLeads.total : null,
+    leadsSliced
+  });
   const slicedLeadCount = uniqueLeadStats.coverageWithIdentity > 0.3 ? uniqueLeadStats.unique : leads.length;
   const leadsMetric = leadsSliced
     ? metricValue({
@@ -563,20 +586,24 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         });
 
   const cplValue =
+    leadsSliced || adSpendInfo.value == null || !verifiedLeads || verifiedLeads.paid <= 0
+      ? null
+      : adSpendInfo.value / verifiedLeads.paid;
+  const blendedCplValue =
     leadsSliced || adSpendInfo.value == null || !verifiedLeads || verifiedLeads.total <= 0
       ? null
       : adSpendInfo.value / verifiedLeads.total;
   const cplMetric = leadsSliced
-    ? noDataMetric("cpl", "ad_spend / leads", "Расход СВОД без разреза по стране — CPL не считаем", "eur")
+    ? noDataMetric("cpl", "ad_spend / paid_leads", "Расход СВОД без разреза по стране — CPL не считаем", "eur")
     : metricValue({
         metricId: "cpl",
         value: cplValue,
         status: cplValue == null ? "no_data" : "calculated",
         asOf: verifiedLeads?.lastDay ?? adSpendInfo.asOf,
-        source: "ad_spend / СВОД verified leads",
+        source: "ad_spend / СВОД paid leads",
         confidence: cplValue == null ? "low" : "medium",
         unit: "eur",
-        decisionHint: "Расход / верифицированные лиды"
+        decisionHint: "Расход / платные лиды (без органики)"
       });
 
   const cacMetric =
@@ -916,6 +943,8 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       roas: roasMetric,
       contribution_margin: contributionMetric,
       ad_spend: adSpendMetric,
+      sessions: ga4Metrics.sessions,
+      session_to_lead_cr: ga4Metrics.sessionToLeadCr,
       delivery_revenue: deliveryBlock.deliveryRevenue,
       product_revenue_net: deliveryBlock.productRevenue,
       delivery_share_pct: deliveryBlock.deliverySharePct
@@ -1023,7 +1052,9 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       cpl: cplMetric,
       cac: cacMetric,
       roas: roasMetric,
-      note: "Маркетинг частично. Детали — в разделе Реклама."
+      note: ga4Warehouse
+        ? `Сессии из склада GA4 (${ga4Warehouse.propertyId || "property"}). generate_lead=${ga4Warehouse.generateLeadEvents} — события сайта, не лиды CRM.`
+        : "Маркетинг частично. Склад GA4 пуст — сессии недоступны."
     },
     productMargin: productMarginBlock,
     unitEconomics: {
@@ -1032,7 +1063,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
         leads,
         catalog: marginCatalog,
         adSpend: adSpendInfo.value,
-        cpl: cplMetric.value,
+        cpl: blendedCplValue ?? cplMetric.value,
         cac: cacMetric.value
       }),
       adSpend: adSpendInfo.value,
@@ -1076,7 +1107,15 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
       { id: "sales_os", name: "Sales OS", connection: "partial", lastSync: null, note: "Экспорт опционально" },
       { id: "mother", name: "Mother OS", connection: "partial", lastSync: null, note: "Заказы через Bitrix" },
       { id: "traffic_os", name: "Traffic OS", connection: "partial", lastSync: null, note: "Cutover закрыт" },
-      { id: "ga4", name: "GA4", connection: "connected", lastSync: null, note: "Раздел Реклама" },
+      {
+        id: "ga4",
+        name: "GA4",
+        connection: ga4Warehouse ? "connected" : "partial",
+        lastSync: ga4Warehouse?.lastSync ?? null,
+        note: ga4Warehouse
+          ? `Traffic OS 27_GA4_Channel_Daily · ${ga4Warehouse.propertyId || "property"}`
+          : "Склад пуст — /ad-analytics читает API напрямую"
+      },
       { id: "svod", name: "СВОД", connection: "partial", lastSync: adSpendInfo.asOf, note: "Расход сводно" },
       {
         id: "monthly_plan",
@@ -1136,6 +1175,8 @@ function emptySnapshot(input: {
   filters: AnalyticsFilters;
   mariaRevenueValue: number | null;
   adSpendInfo: { value: number | null; asOf: string | null; source: string };
+  ga4Metrics: { sessions: AnalyticsMetricValue; sessionToLeadCr: AnalyticsMetricValue };
+  ga4Warehouse: { lastSync: string | null; propertyId: string | null } | null;
 }): CeoControlCenterSnapshot {
   const no = (id: string, source: string, unit?: "eur" | "count" | "pct" | "ratio") =>
     noDataMetric(id, source, "Нет данных за период", unit);
@@ -1194,7 +1235,9 @@ function emptySnapshot(input: {
             source: input.adSpendInfo.source,
             unit: "eur",
             confidence: "medium"
-          })
+          }),
+      sessions: input.ga4Metrics.sessions,
+      session_to_lead_cr: input.ga4Metrics.sessionToLeadCr
     },
     plan: {
       planRevenue: metricValue({
@@ -1245,7 +1288,9 @@ function emptySnapshot(input: {
       cpl: no("cpl", "marketing", "eur"),
       cac: no("cac", "marketing", "eur"),
       roas: no("roas", "marketing", "ratio"),
-      note: "Нет снимка Bitrix за период."
+      note: input.ga4Warehouse
+        ? `Сессии из склада GA4. Нет снимка Bitrix за период.`
+        : "Нет снимка Bitrix за период. Склад GA4 пуст."
     },
     productMargin: {
       cogs: no("product_cogs", "Product Hub", "eur"),
@@ -1302,6 +1347,15 @@ function emptySnapshot(input: {
     },
     sources: [
       { id: "bitrix", name: "Bitrix24", connection: "partial", lastSync: null, note: `Нет снимка за ${input.period}` },
+      {
+        id: "ga4",
+        name: "GA4",
+        connection: input.ga4Warehouse ? "connected" : "partial",
+        lastSync: input.ga4Warehouse?.lastSync ?? null,
+        note: input.ga4Warehouse
+          ? `Traffic OS 27_GA4_Channel_Daily · ${input.ga4Warehouse.propertyId || "property"}`
+          : "Склад пуст"
+      },
       { id: "product_hub", name: "Product Hub COGS", connection: "partial", lastSync: null },
       { id: "meta_ads", name: "Meta Ads API", connection: "not_connected", lastSync: null },
       { id: "google_ads", name: "Google Ads API", connection: "not_connected", lastSync: null }

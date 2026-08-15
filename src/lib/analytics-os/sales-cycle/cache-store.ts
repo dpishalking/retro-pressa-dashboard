@@ -72,6 +72,7 @@ export async function readSalesCycleCache(
     if (stale && !options.allowStale) return null;
     const parsed = JSON.parse(raw) as SalesCyclePayload;
     if (!parsed || !Array.isArray(parsed.cohorts) || !parsed.summary) return null;
+    if (parsed.cohortGrain && parsed.cohortGrain !== key.cohortGrain) return null;
     return { payload: parsed, stale };
   } catch {
     return null;

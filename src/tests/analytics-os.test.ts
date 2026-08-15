@@ -9,6 +9,11 @@ import {
   filterSnapshot,
   sumPaidRevenue
 } from "@/lib/analytics-os/aggregate-from-bitrix";
+import {
+  aggregateGa4ChannelDaily,
+  buildGa4TrafficMetrics,
+  sumGa4EventCount
+} from "@/lib/analytics-os/ga4-warehouse";
 import { displayMetricNumber, metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
   analyticsPeriodToLegacy,
@@ -268,5 +273,69 @@ const countryUnits = units.filter((unit) => unit.kind === "country");
 assert.equal(countryUnits.some((unit) => unit.name === "Латвия"), true);
 assert.equal(countryUnits.some((unit) => unit.name === "Германия"), true);
 assert.equal(countryUnits.some((unit) => unit.name === "Не указана"), false);
+
+const ga4Rows = [
+  { date: "2026-08-01", sessions: "100", users: "80", property_id: "482241067", sync_updated_at: "2026-08-14T17:00:00.000Z" },
+  { date: "2026-08-02", sessions: "50", users: "40", property_id: "482241067", sync_updated_at: "2026-08-14T17:00:00.000Z" },
+  { date: "2026-07-31", sessions: "999", users: "900", property_id: "482241067", sync_updated_at: "2026-08-14T17:00:00.000Z" },
+  { date: "2026-08-14", sessions: "10", users: "8", property_id: "482241067", sync_updated_at: "2026-08-14T17:00:00.000Z" }
+];
+const ga4Month = aggregateGa4ChannelDaily(ga4Rows, { month: "2026-08", throughDate: "2026-08-13" });
+assert.equal(ga4Month.sessions, 150);
+assert.equal(ga4Month.users, 120);
+assert.equal(ga4Month.rowCount, 2);
+assert.equal(ga4Month.propertyId, "482241067");
+
+const emptyMonth = aggregateGa4ChannelDaily(ga4Rows, { month: "2026-09" });
+assert.equal(emptyMonth.rowCount, 0);
+assert.equal(emptyMonth.sessions, 0);
+
+const generateLead = sumGa4EventCount(
+  [
+    { date: "2026-08-01", event_name: "generate_lead", event_count: "12" },
+    { date: "2026-08-01", event_name: "page_view", event_count: "400" },
+    { date: "2026-08-14", event_name: "generate_lead", event_count: "3" }
+  ],
+  { month: "2026-08", eventName: "generate_lead", throughDate: "2026-08-13" }
+);
+assert.equal(generateLead, 12);
+
+const noWarehouse = buildGa4TrafficMetrics({ warehouse: null, svodLeads: 80, leadsSliced: false });
+assert.equal(noWarehouse.sessions.status, "no_data");
+assert.equal(noWarehouse.sessions.value, null);
+assert.equal(noWarehouse.sessionToLeadCr.status, "no_data");
+assert.equal(noWarehouse.sessionToLeadCr.value, null);
+
+const withWarehouse = buildGa4TrafficMetrics({
+  warehouse: {
+    sessions: 200,
+    users: 160,
+    generateLeadEvents: 90,
+    lastSync: "2026-08-14T17:00:00.000Z",
+    propertyId: "482241067",
+    rowCount: 10
+  },
+  svodLeads: 40,
+  leadsSliced: false
+});
+assert.equal(withWarehouse.sessions.value, 200);
+assert.equal(withWarehouse.sessionToLeadCr.value, 0.2);
+assert.equal(withWarehouse.sessionToLeadCr.status, "calculated");
+assert.match(String(withWarehouse.sessions.decisionHint), /90/);
+
+const sliced = buildGa4TrafficMetrics({
+  warehouse: {
+    sessions: 200,
+    users: 160,
+    generateLeadEvents: 0,
+    lastSync: "2026-08-14T17:00:00.000Z",
+    propertyId: "482241067",
+    rowCount: 10
+  },
+  svodLeads: 40,
+  leadsSliced: true
+});
+assert.equal(sliced.sessions.value, 200);
+assert.equal(sliced.sessionToLeadCr.status, "no_data");
 
 console.log("analytics-os.test.ts: ok");

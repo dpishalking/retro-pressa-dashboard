@@ -176,6 +176,28 @@ assert.ok(Math.abs(hoursBetween("2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z") 
   assert.equal(julyCohort!.leads, 2);
   assert.equal("breakdowns" in payload, false);
 
+  const weekPayload = aggregateSalesCycle({
+    facts,
+    cohortLeads: leads.map((l) => ({
+      id: l.id,
+      dateCreate: l.dateCreate,
+      sourceId: l.sourceId,
+      country: l.country,
+      assignedById: l.assignedById
+    })),
+    period: "2026-07",
+    cohortGrain: "week",
+    asOf: new Date("2026-08-10T12:00:00Z"),
+    filters: { managerId: null, productId: null, country: null, sourceId: null },
+    availablePeriods: ["2026-06", "2026-07", "2026-08"]
+  });
+  assert.equal(weekPayload.cohortGrain, "week");
+  assert.ok(weekPayload.cohorts.some((row) => /^\d{4}-W\d{2}$/.test(row.cohortKey)));
+  assert.equal(
+    weekPayload.cohorts.some((row) => row.cohortKey === "2026-07"),
+    false
+  );
+
   // Fresh August day cohort is not D30-matured
   const dayPayload = aggregateSalesCycle({
     facts,
