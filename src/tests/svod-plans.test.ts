@@ -11,7 +11,12 @@ import {
   resolveCompanyMonthPlan,
   sumSvodVerifiedLeads
 } from "@/lib/sales-os/svod-plans";
-import { collectMonthlyPlanFactCells, factValueForLabel } from "@/lib/sales-os/sync-monthly-plan-facts";
+import {
+  collectMonthlyPlanFactCells,
+  factValueForLabel,
+  formatFactCellValue,
+  resolveFactRevenue
+} from "@/lib/sales-os/sync-monthly-plan-facts";
 
 assert.equal(parseSvodPlanNumber("€36 274"), 36274);
 assert.equal(parseSvodPlanNumber("3 334"), 3334);
@@ -185,7 +190,20 @@ assert.equal(mtd851.paid + mtd851.organic, mtd851.total);
 assert.equal(factValueForLabel("Лиды", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 851);
 assert.equal(factValueForLabel("Оплаты шт.", { revenue: 100, spend: 50, leads: 851, qualifiedLeads: 100, invoices: 20, sales: 147 }), 147);
 assert.equal(factValueForLabel("ROAS", { revenue: 200, spend: 50, leads: 10, qualifiedLeads: 2, invoices: 1, sales: 1 }), 400);
+assert.equal(factValueForLabel("ROI", { revenue: 11439, spend: 1761, leads: 990, qualifiedLeads: 411, invoices: 164, sales: 154 }), 549.6);
+assert.equal(factValueForLabel("ROMI", { revenue: 11439, spend: 1761, leads: 990, qualifiedLeads: 411, invoices: 164, sales: 154 }), 549.6);
+assert.equal(factValueForLabel("Конверсия Лид в оплату", { revenue: 11439, spend: 1761, leads: 990, qualifiedLeads: 411, invoices: 164, sales: 154 }), 15.6);
 assert.equal(factValueForLabel("CPL", { revenue: 200, spend: 851, leads: 851, qualifiedLeads: 2, invoices: 1, sales: 1 }), 1);
+assert.equal(formatFactCellValue("ROAS", 649.5), "649.5%");
+assert.equal(formatFactCellValue("ROI", 549.5), "549.5%");
+assert.equal(formatFactCellValue("ROMI", 549.5), "549.5%");
+assert.equal(formatFactCellValue("% квал лидов", 41.5), "41.5%");
+assert.equal(formatFactCellValue("Конверсия Лид в оплату", 15.6), "15.6%");
+assert.equal(formatFactCellValue("Выручка", 11439), 11439);
+assert.equal(resolveFactRevenue({ cash: 9000, svod: 12045, companyCash: 11439, leadShare: 764 / 990 }), 8827.67);
+assert.equal(resolveFactRevenue({ cash: 9000, svod: 12045, companyCash: 11439 }), 9000);
+assert.equal(resolveFactRevenue({ cash: null, svod: 12045, companyCash: 11439 }), 11439);
+assert.ok((resolveFactRevenue({ cash: null, svod: 12045, companyCash: 11439, leadShare: 764 / 990 }) ?? 0) < 11439);
 
 const factCells = collectMonthlyPlanFactCells(channelGrid, {
   obshie: { revenue: 13822, spend: 4067, leads: 851, qualifiedLeads: 200, invoices: 180, sales: 147 },
