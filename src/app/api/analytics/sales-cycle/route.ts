@@ -110,12 +110,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (!isWorker) {
-    // Cache miss: start a full warm so the next open of /os/cohorts hits disk.
-    if (!forceRefresh) kickWorkerWarm();
     try {
+      // Ask the worker for this key only. A full warm on the same process would
+      // block month/week GET and the browser dies on AbortError.
       return await proxyToWorker(request, WORKER_TIMEOUT_MS);
     } catch (error) {
       const timedOut = error instanceof Error && error.name === "AbortError";
+      if (!forceRefresh) kickWorkerWarm();
       const stale = await readSalesCycleCache(cacheKeyFromRequest(request), { allowStale: true });
       if (stale) {
         return NextResponse.json(stale.payload, { headers: NO_STORE });
@@ -124,8 +125,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           {
             error: timedOut
-              ? "Расчёт когорт не успел за 55с. Фоновый прогрев запущен — обновите страницу через 1–2 минуты или нажмите «Повторить»."
-              : "Кэш когорт пуст. Фоновый прогрев запущен — обновите страницу через 1–2 минуты."
+              ? "Расчёт когорт не успел за 55с. Фоновый прогрев запущен — нажмите «Посчитать» через минуту."
+              : "Кэш когорт пуст. Фоновый прогрев запущен — нажмите «Посчитать» через минуту."
           },
           { status: timedOut ? 504 : 503 }
         );

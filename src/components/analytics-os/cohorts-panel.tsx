@@ -134,7 +134,6 @@ export function CohortsPanel({
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const seqRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -153,13 +152,10 @@ export function CohortsPanel({
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-      const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 65_000);
+      const timeout = window.setTimeout(() => controller.abort(), refresh ? 120_000 : 90_000);
       setError("");
       if (refresh) setRefreshing(true);
-      else {
-        setState("loading");
-        setData(null);
-      }
+      else setState("loading");
       const params = new URLSearchParams({ period, cohort_grain: grain });
       if (managerId) params.set("managerId", managerId);
       if (country) params.set("country", country);
@@ -197,7 +193,7 @@ export function CohortsPanel({
       seqRef.current += 1;
       abortRef.current?.abort();
     };
-  }, [load, reloadKey]);
+  }, [load]);
 
   const view = data && matchesGrain(data, grain) ? data : null;
   const current = view ? focusCohort(view.cohorts, view.period) : undefined;
@@ -230,14 +226,10 @@ export function CohortsPanel({
               className="aos-link"
               disabled={refreshing || !period || state === "loading"}
               onClick={() => {
-                if (state === "error" && !refreshing) {
-                  setReloadKey((key) => key + 1);
-                  return;
-                }
                 void load(true);
               }}
             >
-              {refreshing || state === "loading" ? "Считаю…" : state === "error" ? "Повторить" : "Посчитать"}
+              {refreshing || state === "loading" ? "Считаю…" : "Посчитать"}
             </button>
           </div>
         </div>
