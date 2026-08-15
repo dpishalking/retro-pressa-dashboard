@@ -61,8 +61,8 @@ const DOORS: DoorDef[] = [
       return [
         { label: metricLabel("product_aov"), value: formatMetricDisplay(snapshot.metrics.product_aov) },
         {
-          label: metricLabel("product_revenue_net"),
-          value: formatMetricDisplay(snapshot.metrics.product_revenue_net)
+          label: metricLabel("product_margin_rate"),
+          value: formatMetricDisplay(snapshot.productMargin.marginRate)
         },
         {
           label: top ? "Топ SKU" : metricLabel("delivery_revenue"),
