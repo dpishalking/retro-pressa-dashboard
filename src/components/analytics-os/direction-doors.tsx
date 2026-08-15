@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, GitBranch, Megaphone, Package, Target, WalletCards, type LucideIcon } from "lucide-react";
+import { Database, GitBranch, Megaphone, Package, Search, Target, WalletCards, type LucideIcon } from "lucide-react";
 import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { BUSINESS_CONTOUR_PATHS, type BusinessContourId } from "@/lib/analytics-os/contours";
@@ -137,6 +137,23 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
           );
         })}
       </div>
+    </section>
+  );
+}
+
+export function ScenariosModule() {
+  return (
+    <section className="aos-sources-module" aria-label="Сценарии анализа">
+      <Link href="/os/scenarios" className="aos-sources-module__card">
+        <span className="aos-sources-module__icon">
+          <Search size={20} strokeWidth={2.1} />
+        </span>
+        <div>
+          <h2>Сценарии анализа</h2>
+          <p>Почему не выполняем план, вырос CAC, лиды без продаж — маршрут, не второй дашборд.</p>
+        </div>
+        <span className="aos-sources-module__cta">Разобрать причину →</span>
+      </Link>
     </section>
   );
 }

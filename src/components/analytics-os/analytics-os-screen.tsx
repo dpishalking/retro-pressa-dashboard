@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCeoSnapshot } from "@/components/analytics-os/use-ceo-snapshot";
 import { AnalyticsKpiRow } from "@/components/analytics-os/kpi-row";
 import { StatusBadge } from "@/components/analytics-os/format-metric";
-import { DirectionDoors, SourcesModule } from "@/components/analytics-os/direction-doors";
+import { DirectionDoors, ScenariosModule, SourcesModule } from "@/components/analytics-os/direction-doors";
 
 export function AnalyticsOsScreen() {
   const {
@@ -134,6 +134,7 @@ export function AnalyticsOsScreen() {
       ) : (
         <>
           <DirectionDoors snapshot={snapshot} />
+          <ScenariosModule />
           <SourcesModule snapshot={snapshot} />
         </>
       )}
