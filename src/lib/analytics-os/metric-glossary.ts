@@ -76,6 +76,11 @@ export const METRIC_GLOSSARY: Record<string, MetricGlossaryEntry> = {
     label: "Выручка продукта",
     definition: "Оплаченная касса минус доставка (5,5% выручки)."
   },
+  product_margin_rate: {
+    id: "product_margin_rate",
+    label: "Средняя маржа продуктов",
+    definition: "Средняя валовая маржа по оплаченным заказам с себестоимостью из Product Hub."
+  },
   delivery_revenue: {
     id: "delivery_revenue",
     label: "Доставка €",
