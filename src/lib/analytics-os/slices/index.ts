@@ -8,7 +8,6 @@ export {
   sliceMetricHint
 } from "./registry";
 export { buildSliceReport, emptySliceFilters, isUnknownSliceKey } from "./build-slices";
-export { loadSliceExplorer, filtersFromOptions } from "./load-slices";
 export type {
   SliceDimensionId,
   SliceFilters,
