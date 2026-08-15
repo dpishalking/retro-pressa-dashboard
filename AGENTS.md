@@ -86,9 +86,16 @@ data/manager-dialogs-sheet-state/
 .env / .env.local
 ```
 
-## Деплой
+## Деплой (автоматический)
 
-Push в `main` → GitHub Actions → Timeweb (`85.92.111.202`). См. `AUTO_DEPLOY.md`, `.github/workflows/deploy.yml`. Секреты — в GitHub Secrets, не в репозитории.
+После задачи с правками кода или конфига: коммит → `git push origin main`. Это и есть деплой.
+
+- Push в `main` → GitHub Actions `Deploy Retro Pressa` → Timeweb (`85.92.111.202`).
+- Не спрашивать «деплоить?» и не ждать слова «деплой».
+- PR — только если пользователь явно просит ветку/ревью, а не сразу прод.
+- Не force-push в `main`. Не коммитить `.env*`, `data/**`, снапшоты.
+
+Подробности: `AUTO_DEPLOY.md`, `.github/workflows/deploy.yml`, `.cursor/rules/git-deploy.mdc`. Секреты — в GitHub Secrets.
 
 ## Тесты
 

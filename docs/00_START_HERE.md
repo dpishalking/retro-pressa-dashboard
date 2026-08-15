@@ -44,7 +44,7 @@
 | Артефакты | [ARTIFACTS.md](./ARTIFACTS.md) |
 | Проблемы docs | [DOC_ISSUES.md](./DOC_ISSUES.md) |
 | Roadmap | [business-os/ROADMAP.md](./business-os/ROADMAP.md) |
-| Деплой | [../AUTO_DEPLOY.md](../AUTO_DEPLOY.md) |
+| Деплой | [../AUTO_DEPLOY.md](../AUTO_DEPLOY.md) — push в `main` = прод, без отдельной команды |
 
 ---
 

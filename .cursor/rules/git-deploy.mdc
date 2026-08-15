@@ -7,20 +7,22 @@ alwaysApply: true
 
 ## Сразу после задачи
 
-Правки кода/конфига → коммит релевантных файлов → `git push origin main`. Не спрашивать «деплоить?». Push в `main` и есть деплой.
+Правки кода/конфига → коммит релевантных файлов → `git push origin main`.
+
+Не спрашивать «деплоить?». Не писать «напиши деплой, если выпускаем». Push в `main` и есть деплой: Actions сам катит на Timeweb.
 
 Исключения: read-only («объясни», «найди файл»); секреты, `.env*`, `data/**`, снапшоты; force-push / destructive git; платежная логика и миграции, где нужен явный `Y`.
 
 ## Как едет на прод
 
-- Auto-deploy: push в `main` → `.github/workflows/deploy.yml` → Timeweb `85.92.111.202`.
+- Auto-deploy: push в `main` → `.github/workflows/deploy.yml` (`Deploy Retro Pressa`) → Timeweb `85.92.111.202`.
 - CI сам гоняет `npm test` и `npm run build`. Локально гонять полный билд перед каждым пушем не обязательно.
 - Секреты только в GitHub Actions Secrets (см. `AUTO_DEPLOY.md`).
 - `runtime-env.json` и `ecosystem.config.cjs` генерируются при деплое — не коммитить.
 
 ## PR
 
-- `gh pr create` с Summary + Test plan, если пользователь просит PR, а не сразу main.
+- Ветка и PR — только если пользователь явно просит ревью, а не сразу прод.
 - Не force-push в `main`.
 
 ## Env на сервере

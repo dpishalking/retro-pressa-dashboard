@@ -73,7 +73,7 @@ Do not invent a new order — follow existing npm scripts and dual-run docs:
 
 Follow [AUTO_DEPLOY.md](../AUTO_DEPLOY.md) and [GIT_WORKFLOW.md](./GIT_WORKFLOW.md).
 
-Push to `main` → GitHub Actions → Timeweb (see deploy workflow). Secrets stay in GitHub Secrets.
+Push to `main` → GitHub Actions `Deploy Retro Pressa` → Timeweb. No extra «деплой» step. Secrets stay in GitHub Secrets.
 
 ## 8. If sheets are wrong but code is fine
 

@@ -1,6 +1,6 @@
 # Автоматический деплой через GitHub Actions
 
-После настройки каждый push в ветку `main` будет автоматически обновлять сервер Timeweb `85.92.111.202`.
+Каждый push в `main` сам обновляет прод Timeweb `85.92.111.202`. Отдельной команды «деплой» нет: агент после задачи пушит `main`, Actions катит `Deploy Retro Pressa`.
 
 Workflow уже лежит в репозитории: [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
 
