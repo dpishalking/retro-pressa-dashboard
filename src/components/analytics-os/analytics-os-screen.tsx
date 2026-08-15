@@ -134,7 +134,7 @@ export function AnalyticsOsScreen() {
       ) : (
         <>
           <DirectionDoors snapshot={snapshot} />
-          <ScenariosModule />
+          <ScenariosModule snapshot={snapshot} />
           <SourcesModule snapshot={snapshot} />
         </>
       )}
