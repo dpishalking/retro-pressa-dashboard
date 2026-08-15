@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Suspense } from "react";
 import type { ContourDef } from "@/lib/analytics-os/contours";
 import {
   BUSINESS_CONTOUR_PATHS,
   businessContourForOsId,
+  contourSliceFilters,
   contourStatusLabel,
   siblingContours
 } from "@/lib/analytics-os/contours";
@@ -75,6 +77,18 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
   const businessId = businessContourForOsId(contour.id);
   const backHref = businessId ? BUSINESS_CONTOUR_PATHS[businessId] : "/hub";
   const siblings = siblingContours(contour.id);
+  const sliceFilters = contourSliceFilters(contour.id);
+  const showCountry = sliceFilters.includes("country");
+  const showManager = sliceFilters.includes("manager");
+  const showProduct = sliceFilters.includes("product");
+  const showFilterBar = sliceFilters.length > 0;
+
+  useEffect(() => {
+    const shown = new Set(contourSliceFilters(contour.id));
+    if (!shown.has("country")) setCountry("");
+    if (!shown.has("manager") && contour.id !== "managers") setManagerId("");
+    if (!shown.has("product")) setProductId("");
+  }, [contour.id, setCountry, setManagerId, setProductId]);
 
   return (
     <div className="aos-root aos-root--contour">
@@ -131,54 +145,66 @@ export function AnalyticsOsContourScreen({ contour }: { contour: ContourDef }) {
         </aside>
 
         <main className="aos-main">
-          <div className="aos-filters aos-filters--bar">
-            <p className="aos-filters__title">Фильтры</p>
-            <div className="aos-filters__controls">
-              <label>
-                Страна
-                <select value={country} onChange={(event) => setCountry(event.target.value)} disabled={!snapshot}>
-                  <option value="">Все</option>
-                  {(snapshot?.filterOptions.countries || []).filter(Boolean).map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Менеджер
-                <select value={managerId} onChange={(event) => setManagerId(event.target.value)} disabled={!snapshot}>
-                  <option value="">Все</option>
-                  {(snapshot?.filterOptions.managers || [])
-                    .filter((item) => item.id)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
-                Продукт
-                <select value={productId} onChange={(event) => setProductId(event.target.value)} disabled={!snapshot}>
-                  <option value="">Все</option>
-                  {(snapshot?.filterOptions.products || [])
-                    .filter((item) => item.id)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
+          {showFilterBar ? (
+            <div className="aos-filters aos-filters--bar">
+              <p className="aos-filters__title">Фильтры</p>
+              <div className="aos-filters__controls">
+                {showCountry ? (
+                  <label>
+                    Страна
+                    <select value={country} onChange={(event) => setCountry(event.target.value)} disabled={!snapshot}>
+                      <option value="">Все</option>
+                      {(snapshot?.filterOptions.countries || []).filter(Boolean).map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {showManager ? (
+                  <label>
+                    Менеджер
+                    <select value={managerId} onChange={(event) => setManagerId(event.target.value)} disabled={!snapshot}>
+                      <option value="">Все</option>
+                      {(snapshot?.filterOptions.managers || [])
+                        .filter((item) => item.id)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                ) : null}
+                {showProduct ? (
+                  <label>
+                    Продукт
+                    <select value={productId} onChange={(event) => setProductId(event.target.value)} disabled={!snapshot}>
+                      <option value="">Все</option>
+                      {(snapshot?.filterOptions.products || [])
+                        .filter((item) => item.id)
+                        .map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                ) : null}
+              </div>
+              {state === "loading" && snapshot ? (
+                <p className="aos-muted" style={{ margin: 0 }}>
+                  Обновляю срез…
+                </p>
+              ) : null}
+              {state === "error" ? <span className="aos-error">{error}</span> : null}
             </div>
-            {state === "loading" && snapshot ? (
-              <p className="aos-muted" style={{ margin: 0 }}>
-                Обновляю срез…
-              </p>
-            ) : null}
-            {state === "error" ? <span className="aos-error">{error}</span> : null}
-          </div>
+          ) : state === "error" ? (
+            <p className="aos-error">{error}</p>
+          ) : state === "loading" && snapshot ? (
+            <p className="aos-muted">Обновляю срез…</p>
+          ) : null}
 
           {!snapshot ? (
             <section className="aos-card">

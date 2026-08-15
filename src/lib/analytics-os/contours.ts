@@ -365,3 +365,29 @@ export function contourStatusLabel(status: ContourStatus): string {
   if (status === "partial") return "ЧАСТИЧНО";
   return "СКОРО";
 }
+
+/** Какие срезы страна/менеджер/продукт нужны на экране контура. */
+export type ContourSliceFilter = "country" | "manager" | "product";
+
+export function contourSliceFilters(id: ContourId): ContourSliceFilter[] {
+  switch (id) {
+    case "revenue":
+    case "funnel":
+    case "customers":
+    case "unit-economics":
+      return ["country", "manager", "product"];
+    case "sales-cycle":
+    case "cohorts":
+      return ["country", "manager"];
+    case "marketing":
+      return ["country", "product"];
+    case "products":
+      return ["country", "manager"];
+    case "managers":
+      return ["country", "product"];
+    case "geography":
+      return ["manager", "product"];
+    default:
+      return [];
+  }
+}
