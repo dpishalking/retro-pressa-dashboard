@@ -4,9 +4,10 @@ import Link from "next/link";
 import { BarChart3, Database, GitBranch, Megaphone, Package, Search, Target, WalletCards, type LucideIcon } from "lucide-react";
 import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
+import { ANALYSIS_SCENARIOS, runAnalysisScenario } from "@/lib/analytics-os/analysis-scenarios";
 import { BUSINESS_CONTOUR_PATHS, type BusinessContourId } from "@/lib/analytics-os/contours";
 import { metricLabel } from "@/lib/analytics-os/metric-glossary";
-import { pct } from "@/lib/format";
+import { eur, pct } from "@/lib/format";
 
 type DoorMetric = { label: string; value: string };
 
@@ -141,29 +142,101 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
   );
 }
 
-export function ScenariosModule() {
+function liveScenarioSignals(snapshot: CeoControlCenterSnapshot) {
+  let live = 0;
+  let alerts = 0;
+  for (const item of ANALYSIS_SCENARIOS) {
+    if (item.readiness !== "live") continue;
+    live += 1;
+    const ran = runAnalysisScenario(item.id, snapshot);
+    if (ran?.run.status === "problem" || ran?.run.status === "attention") alerts += 1;
+  }
+  return { live, alerts };
+}
+
+const ANALYSIS_DOORS: Array<{
+  id: "scenarios" | "slices";
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  href: string;
+  cta: string;
+  metrics: (snapshot: CeoControlCenterSnapshot) => DoorMetric[];
+}> = [
+  {
+    id: "scenarios",
+    title: "Сценарии анализа",
+    subtitle: "Почему так произошло и куда жать",
+    icon: Search,
+    href: "/os/scenarios",
+    cta: "Разобрать причину",
+    metrics: (snapshot) => {
+      const signals = liveScenarioSignals(snapshot);
+      return [
+        { label: "Разрыв", value: formatMetricDisplay(snapshot.plan.gap) },
+        { label: metricLabel("conversion_rate"), value: formatMetricDisplay(snapshot.metrics.conversion_rate) },
+        { label: metricLabel("cac"), value: formatMetricDisplay(snapshot.marketing.cac) },
+        { label: "Сигналы", value: `${signals.alerts} из ${signals.live}` }
+      ];
+    }
+  },
+  {
+    id: "slices",
+    title: "Срезы",
+    subtitle: "Страна → продукт → источник на фактах когорты",
+    icon: BarChart3,
+    href: "/os/slices",
+    cta: "Исследовать",
+    metrics: (snapshot) => {
+      const topCountry = snapshot.revenueTree.countries[0];
+      const topProduct = snapshot.revenueTree.products[0];
+      return [
+        { label: "Топ страна", value: topCountry?.name || "—" },
+        { label: "Выручка топа", value: topCountry ? eur(topCountry.revenue) : "—" },
+        { label: "Топ продукт", value: topProduct?.name || "—" },
+        { label: metricLabel("aov"), value: formatMetricDisplay(snapshot.metrics.aov) }
+      ];
+    }
+  }
+];
+
+export function ScenariosModule({ snapshot }: { snapshot: CeoControlCenterSnapshot }) {
   return (
-    <section className="aos-sources-module" aria-label="Сценарии и срезы">
-      <Link href="/os/scenarios" className="aos-sources-module__card">
-        <span className="aos-sources-module__icon">
-          <Search size={20} strokeWidth={2.1} />
-        </span>
-        <div>
-          <h2>Сценарии анализа</h2>
-          <p>Почему не выполняем план, вырос CAC, лиды без продаж — маршрут, не второй дашборд.</p>
-        </div>
-        <span className="aos-sources-module__cta">Разобрать причину →</span>
-      </Link>
-      <Link href="/os/slices" className="aos-sources-module__card" style={{ marginTop: "0.65rem" }}>
-        <span className="aos-sources-module__icon">
-          <BarChart3 size={20} strokeWidth={2.1} />
-        </span>
-        <div>
-          <h2>Срезы</h2>
-          <p>Страна → продукт → источник на тех же фактах, что когорты.</p>
-        </div>
-        <span className="aos-sources-module__cta">Исследовать →</span>
-      </Link>
+    <section className="aos-doors-band" aria-label="Сценарии и срезы">
+      <div className="aos-doors-band__head">
+        <h2>Разбор</h2>
+        <p>Сценарии — маршрут причины. Срезы — где результат. Цифры на плитках из текущей сводки.</p>
+      </div>
+      <div className="aos-doors">
+        {ANALYSIS_DOORS.map((door) => {
+          const Icon = door.icon;
+          return (
+            <Link key={door.id} href={door.href} className={`aos-door aos-door--${door.id}`}>
+              <div className="aos-door__art" aria-hidden="true">
+                <span className="aos-door__shape aos-door__shape--a" />
+                <span className="aos-door__shape aos-door__shape--b" />
+                <span className="aos-door__shape aos-door__shape--c" />
+              </div>
+              <div className="aos-door__body">
+                <span className="aos-door__icon">
+                  <Icon size={22} strokeWidth={2.1} />
+                </span>
+                <h3>{door.title}</h3>
+                <p>{door.subtitle}</p>
+                <dl className="aos-door__metrics">
+                  {door.metrics(snapshot).map((metric) => (
+                    <div key={metric.label}>
+                      <dt>{metric.label}</dt>
+                      <dd>{metric.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <span className="aos-door__cta">{door.cta}</span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </section>
   );
 }
