@@ -2773,53 +2773,6 @@ button.aos-link {
   color: #78716c;
 }
 
-.aos-slice-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.aos-slice-kpi {
-  min-height: 92px;
-  padding: 0.85rem 0.95rem;
-  border-radius: 18px;
-  background: #fff;
-  border: 1px solid #ece7e4;
-  box-shadow: 0 8px 20px rgba(28, 25, 23, 0.04);
-}
-
-.aos-slice-kpi span {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #78716c;
-}
-
-.aos-slice-kpi strong {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1.35rem;
-  letter-spacing: -0.03em;
-  color: #1c1917;
-}
-
-.aos-slice-kpi--leads { background: linear-gradient(180deg, #eff6ff, #fff); }
-.aos-slice-kpi--sales { background: linear-gradient(180deg, #ecfdf5, #fff); }
-.aos-slice-kpi--cr { background: linear-gradient(180deg, #f5f3ff, #fff); }
-.aos-slice-kpi--revenue { background: linear-gradient(180deg, #fff1f2, #fff); }
-.aos-slice-kpi--aov { background: linear-gradient(180deg, #fffbeb, #fff); }
-.aos-slice-kpi--cycle { background: linear-gradient(180deg, #f8fafc, #fff); }
-.aos-slice-kpi--d7,
-.aos-slice-kpi--d30 { background: linear-gradient(180deg, #f0fdfa, #fff); }
-
-.aos-slice-kpi.is-focus {
-  border-color: #fb7185;
-  box-shadow: 0 12px 28px rgba(190, 18, 60, 0.12);
-  transform: translateY(-1px);
-}
-
 .aos-slice-note {
   margin: 0;
   font-size: 0.82rem;
@@ -3077,9 +3030,4 @@ button.aos-link {
   font-size: 0.85rem;
 }
 
-@media (max-width: 860px) {
-  .aos-slice-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
