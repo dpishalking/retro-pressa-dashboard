@@ -243,16 +243,28 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          for i in 1 2 3 4 5; do
-            if ssh-keyscan -T 15 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
+          HOST="${{ secrets.DEPLOY_HOST }}"
+          USER="${{ secrets.DEPLOY_USER }}"
+          for i in 1 2 3 4 5 6 7 8; do
+            if ssh-keyscan -T 20 -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null && grep -q "$HOST" ~/.ssh/known_hosts; then
               break
             fi
             echo "ssh-keyscan attempt $i failed; retrying..."
-            sleep 3
+            sleep $((i * 3))
           done
-          if ! grep -q "${{ secrets.DEPLOY_HOST }}" ~/.ssh/known_hosts 2>/dev/null; then
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-              "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'echo ssh-ok'
+          ok=0
+          for i in 1 2 3 4 5 6; do
+            if ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=25 \
+              "$USER@$HOST" 'echo ssh-ok'; then
+              ok=1
+              break
+            fi
+            echo "ssh probe attempt $i failed; retrying..."
+            sleep $((i * 4))
+          done
+          if [ "$ok" != "1" ]; then
+            echo "SSH to deploy host failed after retries" >&2
+            exit 1
           fi
 
       - name: Upload archive
