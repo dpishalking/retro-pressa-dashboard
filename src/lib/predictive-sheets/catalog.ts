@@ -184,21 +184,21 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
   {
     metric_id: "mg_cpl",
     category: "Marketing",
-    metric_name: "CPL смешанный",
+    metric_name: "CPL",
     metric_type: "GUARDRAIL",
     direction: "LOWER_IS_BETTER",
     unit: "eur",
     kind: "rate",
     owner: "Маркетинг",
-    parent_metric_id: "mg_leads",
+    parent_metric_id: "mg_paid_leads",
     plan_source: "CEO План/факт / DERIVED",
-    fact_source: "Spend / Leads",
+    fact_source: "Spend / paid leads",
     forecast_method: "rate_current",
     is_primary: true,
     sheet: PM_SHEETS.marketingGeneral,
     section: "GUARDRAILS",
-    glossary: "Стоимость лида. LOWER_IS_BETTER.",
-    formulaHint: "Spend / Leads"
+    glossary: "Стоимость платного лида: рекламный бюджет / платные лиды. Органика в знаменатель не входит.",
+    formulaHint: "Spend / paid leads"
   },
   {
     metric_id: "mg_cac",
@@ -243,7 +243,7 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     category: "Marketing",
     metric_name: "Бюджет рекламы",
     metric_type: "CAPACITY",
-    direction: "HIGHER_IS_BETTER",
+    direction: "LOWER_IS_BETTER",
     unit: "eur",
     kind: "additive",
     owner: "Маркетинг",
@@ -254,7 +254,7 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     is_primary: true,
     sheet: PM_SHEETS.marketingGeneral,
     section: "CAPACITY",
-    glossary: "Бюджет / факт spend платного медиа.",
+    glossary: "Бюджет / факт spend. LOWER_IS_BETTER: превышение плана хуже.",
     formulaHint: "Σ spend"
   },
 
@@ -340,7 +340,7 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     category: "Paid",
     metric_name: "Расход",
     metric_type: "CAPACITY",
-    direction: "HIGHER_IS_BETTER",
+    direction: "LOWER_IS_BETTER",
     unit: "eur",
     kind: "additive",
     owner: "Маркетинг",
@@ -351,7 +351,7 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     is_primary: true,
     sheet: PM_SHEETS.marketingPaid,
     section: "CAPACITY",
-    glossary: "Расход paid-медиа.",
+    glossary: "Расход paid-медиа. LOWER_IS_BETTER: превышение плана хуже.",
     formulaHint: "Σ spend"
   },
   {
@@ -365,13 +365,13 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     owner: "Маркетинг",
     parent_metric_id: "mp_leads",
     plan_source: "DERIVED / CEO",
-    fact_source: "Spend / Leads",
+    fact_source: "Spend / paid leads",
     forecast_method: "rate_current",
     is_primary: true,
     sheet: PM_SHEETS.marketingPaid,
     section: "GUARDRAILS",
-    glossary: "CPL paid. LOWER_IS_BETTER.",
-    formulaHint: "Spend / Leads"
+    glossary: "CPL paid: рекламный бюджет / платные лиды. LOWER_IS_BETTER.",
+    formulaHint: "Spend / paid leads"
   },
   {
     metric_id: "mp_cpql",

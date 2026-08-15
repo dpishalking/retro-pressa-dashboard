@@ -4,7 +4,7 @@ export function quoteTab(title: string): string {
   return `'${title.replace(/'/g, "''")}'`;
 }
 
-/** Settings cell refs (91_SETTINGS layout). */
+/** Settings cell refs (91_НАСТРОЙКИ layout). */
 export const SETTINGS_REFS = {
   selectedPeriod: "B2",
   periodLabel: "B3",
@@ -51,7 +51,7 @@ export function formulaWeeklyPlan(opts: {
   const shareKey = (`w${opts.week1to5}Share` as keyof typeof SETTINGS_REFS);
   const share = settingsRef(shareKey, opts.settingsTab);
   if (opts.kind === "rate") {
-    return `""`;
+    return `IF(${opts.planCell}="","",${opts.planCell})`;
   }
   return `IF(OR(${opts.planCell}="",${linear}=FALSE),"",${opts.planCell}*${share})`;
 }
@@ -123,7 +123,7 @@ export function formulaPtf(opts: {
   factCell: string;
   planCell: string;
 }): string {
-  return `IF(OR(${opts.factCell}="",${opts.planCell}="",${opts.planCell}=0),"",${opts.factCell}/${opts.planCell}-1)`;
+  return `IF(OR(${opts.factCell}="",${opts.planCell}="",${opts.planCell}=0),"",ROUND(${opts.factCell}/${opts.planCell}-1,3))`;
 }
 
 export function formulaStatus(opts: {
@@ -134,18 +134,19 @@ export function formulaStatus(opts: {
   settingsTab: string;
 }): string {
   const green = settingsRef("greenThreshold", opts.settingsTab);
-  const yellow = settingsRef("yellowThreshold", opts.settingsTab);
   const fact = opts.factCell;
   const ptd = opts.planToDateCell;
   const plan = opts.planCell;
 
   if (opts.direction === "LOWER_IS_BETTER") {
+    // Under/at plan = green; overspend within (1 − greenThreshold) = yellow; beyond = red.
+    // greenThreshold 0.9 → yellow up to +10% overspend.
     return [
       `IF(${plan}="","● Нет плана",`,
       `IF(${fact}="","● Нет данных",`,
       `IF(OR(${ptd}="",${ptd}=0),"● Нет данных",`,
-      `IF(${ptd}/${fact}>=${green},"● В норме",`,
-      `IF(${ptd}/${fact}>=${yellow},"● Риск","● Срыв")))))`
+      `IF(${fact}<=${ptd},"● В норме",`,
+      `IF(${fact}/${ptd}<=(2-${green}),"● Риск","● Срыв")))))`
     ].join("");
   }
 
@@ -153,8 +154,10 @@ export function formulaStatus(opts: {
     `IF(${plan}="","● Нет плана",`,
     `IF(${fact}="","● Нет данных",`,
     `IF(OR(${ptd}="",${ptd}=0),"● Нет данных",`,
-    `IF(${fact}/${ptd}>=${green},"● В норме",`,
-    `IF(${fact}/${ptd}>=${yellow},"● Риск","● Срыв")))))`
+    // At/above plan = green; within greenThreshold under plan = yellow; else red.
+    // greenThreshold 0.9 → yellow from −10% to 0%.
+    `IF(${fact}>=${ptd},"● В норме",`,
+    `IF(${fact}/${ptd}>=${green},"● Риск","● Срыв")))))`
   ].join("");
 }
 

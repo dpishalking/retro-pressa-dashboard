@@ -10,6 +10,7 @@ export type PmSalesManager = {
   revenuePlan?: number;
 };
 
+/** Active roster only — departed managers are omitted until replacements are set. */
 export const PM_SALES_MANAGERS: PmSalesManager[] = [
   {
     bitrixId: "98908",
@@ -31,30 +32,6 @@ export const PM_SALES_MANAGERS: PmSalesManager[] = [
     fullName: "Jelena Zabkova",
     sheet: PM_SHEETS.salesElena,
     revenuePlan: 17000
-  },
-  {
-    bitrixId: "98726",
-    firstName: "Дарья",
-    fullName: "Дарья Летова",
-    sheet: PM_SHEETS.salesDarya
-  },
-  {
-    bitrixId: "98910",
-    firstName: "Кристина",
-    fullName: "Кристина Хмурец",
-    sheet: PM_SHEETS.salesKristina
-  },
-  {
-    bitrixId: "88130",
-    firstName: "Кира",
-    fullName: "Кира Самуйлова",
-    sheet: PM_SHEETS.salesKira
-  },
-  {
-    bitrixId: "46",
-    firstName: "Мария",
-    fullName: "Marija Patmalniece",
-    sheet: PM_SHEETS.salesMaria
   }
 ];
 
@@ -67,3 +44,11 @@ export function managerBySheet(sheetTitle: string): PmSalesManager | undefined {
 }
 
 export const PM_MANAGER_SHEETS = PM_SALES_MANAGERS.map((m) => m.sheet);
+
+/** Tabs to delete when managers leave (legacy sheets no longer in roster). */
+export const PM_RETIRED_MANAGER_SHEETS = [
+  "05d_ДАРЬЯ",
+  "05e_КРИСТИНА",
+  "05f_КИРА",
+  "05g_МАРИЯ"
+] as const;

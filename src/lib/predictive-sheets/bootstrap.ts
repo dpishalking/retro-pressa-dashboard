@@ -1,4 +1,4 @@
-import { PM_SHEETS, getPredictiveSheetsSpreadsheetId } from "@/config/predictive-sheets";
+import { PM_SHEETS, PM_SHEET_RENAME_FROM_EN, getPredictiveSheetsSpreadsheetId } from "@/config/predictive-sheets";
 import {
   ensureSheetRowCapacity,
   ensureSheetTab,
@@ -25,7 +25,7 @@ import { loadBitrixSalesFacts, type BitrixManagerFacts } from "@/lib/predictive-
 import { applyChannelFacts, loadSvodChannelFacts } from "@/lib/predictive-sheets/seed-from-channels";
 import { applyFinanceFacts } from "@/lib/predictive-sheets/seed-from-finance";
 import { buildMotivationSheet } from "@/lib/predictive-sheets/motivation-sheet";
-import { isManagerSheet, managerBySheet, PM_MANAGER_SHEETS, PM_SALES_MANAGERS } from "@/lib/predictive-sheets/managers";
+import { isManagerSheet, managerBySheet, PM_MANAGER_SHEETS, PM_RETIRED_MANAGER_SHEETS, PM_SALES_MANAGERS } from "@/lib/predictive-sheets/managers";
 import {
   PM_COL,
   PM_COLORS,
@@ -132,11 +132,13 @@ function emptyOrNum(v: number | null | undefined): CellValue {
 function detailSheetTitle(sheetTitle: string): string {
   const mgr = managerBySheet(sheetTitle);
   if (mgr) return `Продажи · ${mgr.firstName}`;
-  if (sheetTitle.includes("PAID")) return "Маркетинг · платный";
-  if (sheetTitle.includes("ORGANIC")) return "Маркетинг · органика";
-  if (sheetTitle.includes("SALES")) return "Продажи";
-  if (sheetTitle.includes("FINANCE")) return "Финансы";
-  if (sheetTitle.includes("MOTIVATION")) return "Мотивация";
+  if (sheetTitle === PM_SHEETS.marketingPaid) return "Маркетинг · платный";
+  if (sheetTitle === PM_SHEETS.marketingOrganic) return "Маркетинг · органика";
+  if (sheetTitle === PM_SHEETS.salesGeneral || sheetTitle === PM_SHEETS.salesManagers) {
+    return "Продажи";
+  }
+  if (sheetTitle === PM_SHEETS.finance) return "Финансы";
+  if (sheetTitle === PM_SHEETS.motivation) return "Мотивация";
   return "Маркетинг · общее";
 }
 
@@ -162,8 +164,8 @@ function buildSettingsRows(meta: ReturnType<typeof periodMeta>, seededFrom: stri
     ["Осталось дней", meta.remaining, ""],
     ["Дней в месяце", meta.totalDays, ""],
     ["Валюта", "EUR", ""],
-    ["Порог «в норме»", 0.9, "Факт / план на дату ≥ → в норме"],
-    ["Порог «риск»", 0.7, "Ниже — срыв"],
+    ["Порог «в норме»", 0.9, "Зелёный только ≥ плана; этот порог = нижняя граница жёлтого (−10%)"],
+    ["Порог «риск»", 0.7, "Устар.: красный теперь ниже порога «в норме» (−10%)"],
     ["Резать план по неделям", true, "TRUE = план месяца × доля дней недели"],
     ["Только рабочие дни", false, "FALSE = все календарные дни"],
     ["Обновлено", stamp, ""],
@@ -419,17 +421,14 @@ function fillMetricTriple(
       ? sheetFormula(`IF(${planLetter}${pr}="","",${planLetter}${pr})`)
       : sheetFormula(formulaPlanToDate({ planCell: `${planLetter}${pr}`, settingsTab }));
   for (let w = 1; w <= 5; w += 1) {
-    rows[pr - 1][PM_COL.w1 + w - 1] =
-      m.kind === "rate"
-        ? ""
-        : sheetFormula(
-            formulaWeeklyPlan({
-              planCell: `${planLetter}${pr}`,
-              week1to5: w,
-              kind: m.kind,
-              settingsTab
-            })
-          );
+    rows[pr - 1][PM_COL.w1 + w - 1] = sheetFormula(
+      formulaWeeklyPlan({
+        planCell: `${planLetter}${pr}`,
+        week1to5: w,
+        kind: m.kind,
+        settingsTab
+      })
+    );
   }
   if (seedVal.planNote) notes.push({ row: pr, col: PM_COL.plan, note: seedVal.planNote });
   else if (seedVal.plan == null) notes.push({ row: pr, col: PM_COL.plan, note: "нет плана" });
@@ -487,7 +486,7 @@ function fillMetricTriple(
   for (let w = 1; w <= 5; w += 1) {
     const letter = colLetter(PM_COL.w1 + w - 1);
     rows[tr - 1][PM_COL.w1 + w - 1] = sheetFormula(
-      `IF(OR(${letter}${fr}="",${letter}${pr}="",${letter}${pr}=0),"",${letter}${fr}/${letter}${pr}-1)`
+      formulaPtf({ factCell: `${letter}${fr}`, planCell: `${letter}${pr}` })
     );
   }
 }
@@ -540,6 +539,7 @@ function dashboardMetricRow(opts: {
   settingsTab: string;
   rawTab: string;
   kind: "additive" | "rate";
+  lowerIsBetter?: boolean;
 }): CellValue[] {
   const S = quoteTab(opts.settingsTab);
   const plan = rawIndex(opts.rawTab, "K", opts.metricId);
@@ -554,22 +554,33 @@ function dashboardMetricRow(opts: {
     opts.kind === "rate"
       ? `IF(D${r}="","",D${r})`
       : `IF(OR(D${r}="",${S}!B8<=0),"",D${r}/${S}!B8*${S}!B10)`;
-  const status = [
-    `IF(B${r}="","${PM_STATUS.noPlan}",`,
-    `IF(D${r}="","${PM_STATUS.noData}",`,
-    `IF(OR(C${r}="",C${r}=0),"${PM_STATUS.noData}",`,
-    `IF(D${r}/C${r}>=${S}!B12,"${PM_STATUS.onTrack}",`,
-    `IF(D${r}/C${r}>=${S}!B13,"${PM_STATUS.risk}","${PM_STATUS.offTrack}")))))`
-  ].join("");
+  const status = opts.lowerIsBetter
+    ? [
+        `IF(B${r}="","${PM_STATUS.noPlan}",`,
+        `IF(D${r}="","${PM_STATUS.noData}",`,
+        `IF(OR(C${r}="",C${r}=0),"${PM_STATUS.noData}",`,
+        `IF(D${r}<=C${r},"${PM_STATUS.onTrack}",`,
+        `IF(D${r}/C${r}<=(2-${S}!B12),"${PM_STATUS.risk}","${PM_STATUS.offTrack}")))))`
+      ].join("")
+    : [
+        `IF(B${r}="","${PM_STATUS.noPlan}",`,
+        `IF(D${r}="","${PM_STATUS.noData}",`,
+        `IF(OR(C${r}="",C${r}=0),"${PM_STATUS.noData}",`,
+        `IF(D${r}>=C${r},"${PM_STATUS.onTrack}",`,
+        `IF(D${r}/C${r}>=${S}!B12,"${PM_STATUS.risk}","${PM_STATUS.offTrack}")))))`
+      ].join("");
+  const gap = opts.lowerIsBetter
+    ? `IF(OR(F${r}="",B${r}=""),"",B${r}-F${r})`
+    : `IF(OR(F${r}="",B${r}=""),"",F${r}-B${r})`;
 
   return [
     opts.label,
     sheetFormula(plan),
     sheetFormula(ptd),
     sheetFormula(fact),
-    sheetFormula(`IF(OR(D${r}="",C${r}="",C${r}=0),"",D${r}/C${r}-1)`),
+    sheetFormula(formulaPtf({ factCell: `D${r}`, planCell: `C${r}` })),
     sheetFormula(forecast),
-    sheetFormula(`IF(OR(F${r}="",B${r}=""),"",F${r}-B${r})`),
+    sheetFormula(gap),
     ...weekCols.map((col) => sheetFormula(rawIndex(opts.rawTab, col, opts.metricId))),
     sheetFormula(status)
   ];
@@ -642,7 +653,17 @@ function buildDashboardRows(settingsTab: string, meta: ReturnType<typeof periodM
   rows.push(dashboardMetricRow({ label: lag[1].label, metricId: lag[1].id, row: 8, settingsTab, rawTab: RAW, kind: lag[1].kind }));
   rows.push(dashboardMetricRow({ label: lag[2].label, metricId: lag[2].id, row: 9, settingsTab, rawTab: RAW, kind: lag[2].kind }));
   rows.push(["LEAD — драйверы"]);
-  rows.push(dashboardMetricRow({ label: lead[0].label, metricId: lead[0].id, row: 11, settingsTab, rawTab: RAW, kind: lead[0].kind }));
+  rows.push(
+    dashboardMetricRow({
+      label: lead[0].label,
+      metricId: lead[0].id,
+      row: 11,
+      settingsTab,
+      rawTab: RAW,
+      kind: lead[0].kind,
+      lowerIsBetter: true
+    })
+  );
   rows.push(dashboardMetricRow({ label: lead[1].label, metricId: lead[1].id, row: 12, settingsTab, rawTab: RAW, kind: lead[1].kind }));
   rows.push(dashboardMetricRow({ label: lead[2].label, metricId: lead[2].id, row: 13, settingsTab, rawTab: RAW, kind: lead[2].kind }));
   rows.push(dashboardMetricRow({ label: lead[3].label, metricId: lead[3].id, row: 14, settingsTab, rawTab: RAW, kind: lead[3].kind }));
@@ -651,19 +672,20 @@ function buildDashboardRows(settingsTab: string, meta: ReturnType<typeof periodM
     "Первый сломанный драйвер",
     sheetFormula(
       [
+        `IF(M11="${PM_STATUS.offTrack}","Бюджет",`,
         `IF(M12="${PM_STATUS.offTrack}","Лиды",`,
         `IF(M13="${PM_STATUS.offTrack}","Квал. лиды",`,
         `IF(M14="${PM_STATUS.offTrack}","Счета",`,
         `IF(M8="${PM_STATUS.offTrack}","Оплаты",`,
         `IF(M7="${PM_STATUS.offTrack}","Выручка",`,
-        `IF(COUNTIF(M7:M14,"${PM_STATUS.offTrack}")=0,"Нет срыва","Недостаточно данных"))))))`
+        `IF(COUNTIF(M7:M14,"${PM_STATUS.offTrack}")=0,"Нет срыва","Недостаточно данных")))))))`
       ].join("")
     )
   ]);
   rows.push([
     "Куда смотреть",
     sheetFormula(
-      `IF(OR(B16="Лиды",B16="Квал. лиды"),"Маркетинг → 01 / 02 / 03",IF(OR(B16="Счета",B16="Оплаты",B16="Выручка"),"Продажи → 04","—"))`
+      `IF(OR(B16="Бюджет",B16="Лиды",B16="Квал. лиды"),"Маркетинг → 01 / 02 / 03",IF(OR(B16="Счета",B16="Оплаты",B16="Выручка"),"Продажи → 04","—"))`
     )
   ]);
   rows.push([
@@ -673,12 +695,12 @@ function buildDashboardRows(settingsTab: string, meta: ReturnType<typeof periodM
   rows.push([]);
   rows.push([
     "Как читать",
-    "План на дату — линейно MTD. % — факт к плану на дату. Прогноз — текущий темп до конца месяца. Средний чек не экстраполируется."
+    "План на дату — линейно MTD. % — факт к плану на дату. Бюджет: превышение плана хуже. Прогноз — текущий темп до конца месяца. Средний чек не экстраполируется."
   ]);
   rows.push([
     "Качество данных",
     `=${quoteTab(PM_SHEETS.diagnostics)}!B3`,
-    "Подробности: 94_DIAGNOSTICS"
+    "Подробности: 94_ДИАГНОСТИКА"
   ]);
 
   return rows;
@@ -691,7 +713,7 @@ function managerLayoutCell(metricId: string, col: number): { row: number; letter
   return { row, letter: colLetter(col) };
 }
 
-function buildManagersSheet(settingsTab: string): CellValue[][] {
+export function buildManagersSheet(settingsTab: string): CellValue[][] {
   const S = quoteTab(settingsTab);
   const ref = (sheet: string, metricId: string, col: number) => {
     const cell = managerLayoutCell(metricId, col);
@@ -742,7 +764,7 @@ function buildManagersSheet(settingsTab: string): CellValue[][] {
   rows.push([
     "Детализация",
     PM_MANAGER_SHEETS.join(" · "),
-    "Та же таблица, что 04_SALES_GENERAL, в разрезе менеджера"
+    "Та же таблица, что 04_ПРОДАЖИ, в разрезе менеджера"
   ]);
   return rows;
 }
@@ -825,8 +847,7 @@ function weekHeatmapRules(sheetId: number, blocks: MetricBlockLayout[]): unknown
     const planRow = group.items[0].planRow;
     const factA1 = `${colLetter(PM_COL.w1)}${factRow}`;
     const planA1 = `${colLetter(PM_COL.w1)}${planRow}`;
-    const ratio = group.lowerIsBetter ? `${planA1}/${factA1}` : `${factA1}/${planA1}`;
-    const denom = group.lowerIsBetter ? factA1 : planA1;
+    const ratio = `${factA1}/${planA1}`;
     const ranges = group.items.map((b) => ({
       sheetId,
       startRowIndex: b.factRow - 1,
@@ -834,16 +855,26 @@ function weekHeatmapRules(sheetId: number, blocks: MetricBlockLayout[]): unknown
       startColumnIndex: PM_COL.w1,
       endColumnIndex: PM_COL.w1 + 5
     }));
-    const base = `И(ЕЧИСЛО(${factA1});ЕЧИСЛО(${planA1});${denom}<>0`;
-    const specs = [
-      { formula: `=${base};${ratio}>=0,9)`, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText },
-      {
-        formula: `=${base};${ratio}>=0,7;${ratio}<0,9)`,
-        bg: PM_COLORS.yellowBg,
-        fg: PM_COLORS.yellowText
-      },
-      { formula: `=${base};${ratio}<0,7)`, bg: PM_COLORS.redBg, fg: PM_COLORS.redText }
-    ];
+    const base = `И(ЕЧИСЛО(${factA1});ЕЧИСЛО(${planA1});${planA1}<>0`;
+    const specs = group.lowerIsBetter
+      ? [
+          { formula: `=${base};${ratio}<=1)`, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText },
+          {
+            formula: `=${base};${ratio}>1;${ratio}<=1,1)`,
+            bg: PM_COLORS.yellowBg,
+            fg: PM_COLORS.yellowText
+          },
+          { formula: `=${base};${ratio}>1,1)`, bg: PM_COLORS.redBg, fg: PM_COLORS.redText }
+        ]
+      : [
+          { formula: `=${base};${ratio}>=1)`, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText },
+          {
+            formula: `=${base};${ratio}>=0,9;${ratio}<1)`,
+            bg: PM_COLORS.yellowBg,
+            fg: PM_COLORS.yellowText
+          },
+          { formula: `=${base};${ratio}<0,9)`, bg: PM_COLORS.redBg, fg: PM_COLORS.redText }
+        ];
     for (const spec of specs) {
       out.push({
         addConditionalFormatRule: {
@@ -860,6 +891,63 @@ function weekHeatmapRules(sheetId: number, blocks: MetricBlockLayout[]): unknown
     }
   }
   return out;
+}
+
+/** Unhide rows and re-apply number formats after each data write (cron skips full CF). */
+async function repairDetailLayout(
+  spreadsheetId: string,
+  sheetTitle: string,
+  layout: ReturnType<typeof layoutDetailSheet>
+) {
+  const sheetId = await getSheetIdByTitle(spreadsheetId, sheetTitle);
+  if (sheetId == null) return;
+  const lastDataRow = Math.max(10, ...layout.blocks.map((b) => b.ptfRow));
+  const clearToRow = Math.max(lastDataRow + 5, 60);
+  const requests: unknown[] = [
+    {
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: clearToRow },
+        properties: { hiddenByUser: false, pixelSize: 22 },
+        fields: "hiddenByUser,pixelSize"
+      }
+    }
+  ];
+  for (const b of layout.blocks) {
+    requests.push({
+      repeatCell: {
+        range: {
+          sheetId,
+          startRowIndex: b.ptfRow - 1,
+          endRowIndex: b.ptfRow,
+          startColumnIndex: PM_COL.w1,
+          endColumnIndex: PM_COL.forecast + 1
+        },
+        cell: {
+          userEnteredFormat: {
+            numberFormat: { type: "PERCENT", pattern: "0.0%" },
+            wrapStrategy: "CLIP"
+          }
+        },
+        fields: "userEnteredFormat.numberFormat,userEnteredFormat.wrapStrategy"
+      }
+    });
+    const unitPattern =
+      b.metric.unit === "eur" ? "#,##0.00 €" : b.metric.unit === "percent" ? '0.0" %"' : "#,##0.##";
+    requests.push({
+      repeatCell: {
+        range: {
+          sheetId,
+          startRowIndex: b.planRow - 1,
+          endRowIndex: b.factRow,
+          startColumnIndex: PM_COL.plan,
+          endColumnIndex: PM_COL.pace + 1
+        },
+        cell: { userEnteredFormat: { numberFormat: { type: "NUMBER", pattern: unitPattern }, wrapStrategy: "CLIP" } },
+        fields: "userEnteredFormat.numberFormat,userEnteredFormat.wrapStrategy"
+      }
+    });
+  }
+  await batchUpdate(spreadsheetId, requests);
 }
 
 async function applyDetailFormatting(
@@ -909,6 +997,13 @@ async function applyDetailFormatting(
           }
         },
         fields: "gridProperties.frozenRowCount,gridProperties.frozenColumnCount,gridProperties.hideGridlines"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: clearToRow },
+        properties: { hiddenByUser: false, pixelSize: 22 },
+        fields: "hiddenByUser,pixelSize"
       }
     },
     paint(0, clearToRow, 0, 20, {}, "userEnteredFormat")
@@ -989,8 +1084,9 @@ async function applyDetailFormatting(
       paint(b.ptfRow - 1, b.ptfRow, 0, PM_COL.count, {
         backgroundColor: PM_COLORS.ptfRow,
         textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+        wrapStrategy: "CLIP",
         borders: { bottom: { style: "SOLID", width: 1, color: PM_COLORS.border } }
-      }, "userEnteredFormat(backgroundColor,textFormat,borders)")
+      }, "userEnteredFormat(backgroundColor,textFormat,wrapStrategy,borders)")
     );
     requests.push(
       paint(b.planRow - 1, b.ptfRow, PM_COL.plan, PM_COL.status, {
@@ -1044,6 +1140,392 @@ async function applyDetailFormatting(
       }
     });
   }
+
+  await batchUpdate(spreadsheetId, requests);
+}
+
+export async function applyMotivationFormatting(spreadsheetId: string) {
+  const sheetId = await getSheetIdByTitle(spreadsheetId, PM_SHEETS.motivation);
+  if (sheetId == null) return;
+  await clearConditionalFormats(spreadsheetId, sheetId);
+
+  const headerRow = 2; // 0-based: row 3 in sheet
+  const dataStart = 3;
+  const dataEnd = dataStart + PM_SALES_MANAGERS.length;
+  const colCount = 14;
+
+  const paint = (
+    r1: number,
+    r2: number,
+    c1: number,
+    c2: number,
+    format: Record<string, unknown>,
+    fields: string
+  ) => ({
+    repeatCell: {
+      range: { sheetId, startRowIndex: r1, endRowIndex: r2, startColumnIndex: c1, endColumnIndex: c2 },
+      cell: { userEnteredFormat: format },
+      fields
+    }
+  });
+
+  const widths = [120, 110, 110, 100, 90, 100, 90, 110, 90, 90, 120, 120, 140, 320];
+  const requests: unknown[] = [
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId,
+          gridProperties: { hideGridlines: true, frozenRowCount: headerRow + 1, frozenColumnCount: 1 }
+        },
+        fields: "gridProperties.hideGridlines,gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    },
+    paint(0, 40, 0, colCount, {}, "userEnteredFormat"),
+    paint(0, 1, 0, 4, {
+      textFormat: { fontFamily: "Roboto", fontSize: 18, bold: true, foregroundColor: PM_COLORS.dark }
+    }, "userEnteredFormat.textFormat"),
+    paint(1, 2, 0, colCount, {
+      backgroundColor: PM_COLORS.secondaryBg,
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(1, 2, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text }
+    }, "userEnteredFormat.textFormat"),
+    paint(headerRow, headerRow + 1, 0, colCount, {
+      backgroundColor: PM_COLORS.sectionHeader,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.white },
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"),
+    paint(dataStart, dataEnd, 0, colCount, {
+      backgroundColor: PM_COLORS.white,
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(dataStart, dataEnd, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11 }
+    }, "userEnteredFormat.textFormat"),
+    paint(dataStart, dataEnd, 1, 10, {
+      horizontalAlignment: "RIGHT"
+    }, "userEnteredFormat.horizontalAlignment"),
+    paint(dataStart, dataEnd, 1, 4, {
+      numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 5, 6, {
+      numberFormat: { type: "NUMBER", pattern: '0.0" %"' }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 7, 10, {
+      numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 10, 12, {
+      horizontalAlignment: "CENTER",
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10 }
+    }, "userEnteredFormat(horizontalAlignment,textFormat)"),
+    paint(dataEnd + 1, dataEnd + 4, 0, colCount, {
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(textFormat,wrapStrategy)"),
+    paint(dataEnd + 1, dataEnd + 4, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text }
+    }, "userEnteredFormat.textFormat")
+  ];
+
+  for (let i = 0; i < widths.length; i += 1) {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
+        properties: { pixelSize: widths[i] },
+        fields: "pixelSize"
+      }
+    });
+  }
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+      properties: { pixelSize: 32 },
+      fields: "pixelSize"
+    }
+  });
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: headerRow, endIndex: headerRow + 1 },
+      properties: { pixelSize: 36 },
+      fields: "pixelSize"
+    }
+  });
+
+  for (const rule of PM_STATUS_CF) {
+    requests.push({
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [
+            {
+              sheetId,
+              startRowIndex: dataStart,
+              endRowIndex: dataEnd,
+              startColumnIndex: 10,
+              endColumnIndex: 12
+            }
+          ],
+          booleanRule: {
+            condition: { type: "TEXT_CONTAINS", values: [{ userEnteredValue: rule.text }] },
+            format: {
+              backgroundColor: rule.bg,
+              textFormat: { foregroundColor: rule.fg, bold: true }
+            }
+          }
+        },
+        index: 0
+      }
+    });
+  }
+
+  const yesNoCols = [
+    { start: 4, end: 5 },
+    { start: 6, end: 7 }
+  ];
+  for (const col of yesNoCols) {
+    requests.push({
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [
+            {
+              sheetId,
+              startRowIndex: dataStart,
+              endRowIndex: dataEnd,
+              startColumnIndex: col.start,
+              endColumnIndex: col.end
+            }
+          ],
+          booleanRule: {
+            condition: { type: "TEXT_EQ", values: [{ userEnteredValue: "да" }] },
+            format: {
+              backgroundColor: PM_COLORS.greenBg,
+              textFormat: { foregroundColor: PM_COLORS.greenText, bold: true }
+            }
+          }
+        },
+        index: 0
+      }
+    });
+    requests.push({
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [
+            {
+              sheetId,
+              startRowIndex: dataStart,
+              endRowIndex: dataEnd,
+              startColumnIndex: col.start,
+              endColumnIndex: col.end
+            }
+          ],
+          booleanRule: {
+            condition: { type: "TEXT_EQ", values: [{ userEnteredValue: "нет" }] },
+            format: {
+              backgroundColor: PM_COLORS.redBg,
+              textFormat: { foregroundColor: PM_COLORS.redText, bold: true }
+            }
+          }
+        },
+        index: 0
+      }
+    });
+  }
+
+  await batchUpdate(spreadsheetId, requests);
+}
+
+export async function applyManagersFormatting(spreadsheetId: string) {
+  const sheetId = await getSheetIdByTitle(spreadsheetId, PM_SHEETS.salesManagers);
+  if (sheetId == null) return;
+  await clearConditionalFormats(spreadsheetId, sheetId);
+
+  const headerRow = 2;
+  const dataStart = 3;
+  const dataEnd = dataStart + PM_SALES_MANAGERS.length;
+  const colCount = 13;
+
+  const paint = (
+    r1: number,
+    r2: number,
+    c1: number,
+    c2: number,
+    format: Record<string, unknown>,
+    fields: string
+  ) => ({
+    repeatCell: {
+      range: { sheetId, startRowIndex: r1, endRowIndex: r2, startColumnIndex: c1, endColumnIndex: c2 },
+      cell: { userEnteredFormat: format },
+      fields
+    }
+  });
+
+  const widths = [120, 120, 120, 110, 80, 90, 80, 80, 100, 110, 120, 140, 360];
+  const requests: unknown[] = [
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId,
+          gridProperties: { hideGridlines: true, frozenRowCount: headerRow + 1, frozenColumnCount: 1 }
+        },
+        fields: "gridProperties.hideGridlines,gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    },
+    paint(0, 40, 0, colCount, {}, "userEnteredFormat"),
+    paint(0, 1, 0, 4, {
+      textFormat: { fontFamily: "Roboto", fontSize: 18, bold: true, foregroundColor: PM_COLORS.dark }
+    }, "userEnteredFormat.textFormat"),
+    paint(1, 2, 0, colCount, {
+      backgroundColor: PM_COLORS.secondaryBg,
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(1, 2, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text }
+    }, "userEnteredFormat.textFormat"),
+    paint(headerRow, headerRow + 1, 0, colCount, {
+      backgroundColor: PM_COLORS.sectionHeader,
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.white },
+      horizontalAlignment: "CENTER",
+      verticalAlignment: "MIDDLE",
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)"),
+    paint(dataStart, dataEnd, 0, colCount, {
+      backgroundColor: PM_COLORS.white,
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text },
+      verticalAlignment: "MIDDLE"
+    }, "userEnteredFormat(backgroundColor,textFormat,verticalAlignment)"),
+    paint(dataStart, dataEnd, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 11 }
+    }, "userEnteredFormat.textFormat"),
+    paint(dataStart, dataEnd, 1, 10, {
+      horizontalAlignment: "RIGHT"
+    }, "userEnteredFormat.horizontalAlignment"),
+    paint(dataStart, dataEnd, 1, 4, {
+      numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 4, 8, {
+      numberFormat: { type: "NUMBER", pattern: "#,##0" }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 8, 9, {
+      numberFormat: { type: "NUMBER", pattern: '0.0" %"' }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 9, 10, {
+      numberFormat: { type: "NUMBER", pattern: "#,##0.00 €" }
+    }, "userEnteredFormat.numberFormat"),
+    paint(dataStart, dataEnd, 10, 11, {
+      horizontalAlignment: "CENTER",
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10 }
+    }, "userEnteredFormat(horizontalAlignment,textFormat)"),
+    paint(dataEnd + 1, dataEnd + 3, 0, colCount, {
+      textFormat: { fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.textSecondary },
+      wrapStrategy: "WRAP"
+    }, "userEnteredFormat(textFormat,wrapStrategy)"),
+    paint(dataEnd + 1, dataEnd + 3, 0, 1, {
+      textFormat: { bold: true, fontFamily: "Roboto", fontSize: 10, foregroundColor: PM_COLORS.text }
+    }, "userEnteredFormat.textFormat")
+  ];
+
+  for (let i = 0; i < widths.length; i += 1) {
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "COLUMNS", startIndex: i, endIndex: i + 1 },
+        properties: { pixelSize: widths[i] },
+        fields: "pixelSize"
+      }
+    });
+  }
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+      properties: { pixelSize: 32 },
+      fields: "pixelSize"
+    }
+  });
+  requests.push({
+    updateDimensionProperties: {
+      range: { sheetId, dimension: "ROWS", startIndex: headerRow, endIndex: headerRow + 1 },
+      properties: { pixelSize: 36 },
+      fields: "pixelSize"
+    }
+  });
+
+  for (const rule of PM_STATUS_CF) {
+    requests.push({
+      addConditionalFormatRule: {
+        rule: {
+          ranges: [
+            {
+              sheetId,
+              startRowIndex: dataStart,
+              endRowIndex: dataEnd,
+              startColumnIndex: 10,
+              endColumnIndex: 11
+            }
+          ],
+          booleanRule: {
+            condition: { type: "TEXT_CONTAINS", values: [{ userEnteredValue: rule.text }] },
+            format: {
+              backgroundColor: rule.bg,
+              textFormat: { foregroundColor: rule.fg, bold: true }
+            }
+          }
+        },
+        index: 0
+      }
+    });
+  }
+
+  // Gap: negative = red tint (behind plan), positive = green
+  requests.push({
+    addConditionalFormatRule: {
+      rule: {
+        ranges: [
+          {
+            sheetId,
+            startRowIndex: dataStart,
+            endRowIndex: dataEnd,
+            startColumnIndex: 3,
+            endColumnIndex: 4
+          }
+        ],
+        booleanRule: {
+          condition: { type: "NUMBER_LESS", values: [{ userEnteredValue: "0" }] },
+          format: {
+            backgroundColor: PM_COLORS.redBg,
+            textFormat: { foregroundColor: PM_COLORS.redText }
+          }
+        }
+      },
+      index: 0
+    }
+  });
+  requests.push({
+    addConditionalFormatRule: {
+      rule: {
+        ranges: [
+          {
+            sheetId,
+            startRowIndex: dataStart,
+            endRowIndex: dataEnd,
+            startColumnIndex: 3,
+            endColumnIndex: 4
+          }
+        ],
+        booleanRule: {
+          condition: { type: "NUMBER_GREATER", values: [{ userEnteredValue: "0" }] },
+          format: {
+            backgroundColor: PM_COLORS.greenBg,
+            textFormat: { foregroundColor: PM_COLORS.greenText }
+          }
+        }
+      },
+      index: 0
+    }
+  });
 
   await batchUpdate(spreadsheetId, requests);
 }
@@ -1183,23 +1665,31 @@ async function applyDashboardFormatting(spreadsheetId: string, meta: ReturnType<
     });
   }
 
-  const pctRange = {
-    sheetId,
-    startRowIndex: 6,
-    endRowIndex: 14,
-    startColumnIndex: 4,
-    endColumnIndex: 5
-  };
-  const pctFormulas = [
-    { formula: "=И(ЕЧИСЛО(E7);E7<-0,3)", bg: PM_COLORS.redBg, fg: PM_COLORS.redText },
-    { formula: "=И(ЕЧИСЛО(E7);E7>=-0,3;E7<-0,1)", bg: PM_COLORS.yellowBg, fg: PM_COLORS.yellowText },
-    { formula: "=И(ЕЧИСЛО(E7);E7>=-0,1)", bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText }
+  const pctCol = { startColumnIndex: 4, endColumnIndex: 5 };
+  const pctRules: Array<{
+    formula: string;
+    startRowIndex: number;
+    endRowIndex: number;
+    bg: { red: number; green: number; blue: number };
+    fg: { red: number; green: number; blue: number };
+  }> = [
+    // Higher-is-better: ≥ plan green, within −10% yellow, below −10% red.
+    { formula: "=И(ЕЧИСЛО(E7);E7<-0,1)", startRowIndex: 6, endRowIndex: 9, bg: PM_COLORS.redBg, fg: PM_COLORS.redText },
+    { formula: "=И(ЕЧИСЛО(E7);E7>=-0,1;E7<0)", startRowIndex: 6, endRowIndex: 9, bg: PM_COLORS.yellowBg, fg: PM_COLORS.yellowText },
+    { formula: "=И(ЕЧИСЛО(E7);E7>=0)", startRowIndex: 6, endRowIndex: 9, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText },
+    { formula: "=И(ЕЧИСЛО(E12);E12<-0,1)", startRowIndex: 11, endRowIndex: 14, bg: PM_COLORS.redBg, fg: PM_COLORS.redText },
+    { formula: "=И(ЕЧИСЛО(E12);E12>=-0,1;E12<0)", startRowIndex: 11, endRowIndex: 14, bg: PM_COLORS.yellowBg, fg: PM_COLORS.yellowText },
+    { formula: "=И(ЕЧИСЛО(E12);E12>=0)", startRowIndex: 11, endRowIndex: 14, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText },
+    // Budget is LOWER_IS_BETTER: ≤ plan green, overspend ≤10% yellow, >10% red.
+    { formula: "=И(ЕЧИСЛО(E11);E11>0,1)", startRowIndex: 10, endRowIndex: 11, bg: PM_COLORS.redBg, fg: PM_COLORS.redText },
+    { formula: "=И(ЕЧИСЛО(E11);E11>0;E11<=0,1)", startRowIndex: 10, endRowIndex: 11, bg: PM_COLORS.yellowBg, fg: PM_COLORS.yellowText },
+    { formula: "=И(ЕЧИСЛО(E11);E11<=0)", startRowIndex: 10, endRowIndex: 11, bg: PM_COLORS.greenBg, fg: PM_COLORS.greenText }
   ];
-  for (const rule of pctFormulas) {
+  for (const rule of pctRules) {
     requests.push({
       addConditionalFormatRule: {
         rule: {
-          ranges: [pctRange],
+          ranges: [{ sheetId, startRowIndex: rule.startRowIndex, endRowIndex: rule.endRowIndex, ...pctCol }],
           booleanRule: {
             condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: rule.formula }] },
             format: { backgroundColor: rule.bg, textFormat: { foregroundColor: rule.fg } }
@@ -1278,6 +1768,20 @@ export async function bootstrapPredictiveSheets(input?: {
   formatOnly?: boolean;
 }): Promise<BootstrapResult> {
   const spreadsheetId = input?.spreadsheetId || getPredictiveSheetsSpreadsheetId();
+  for (const [from, to] of Object.entries(PM_SHEET_RENAME_FROM_EN)) {
+    await renameSheetIfNeeded(spreadsheetId, from, to);
+  }
+  {
+    const titles = await listSheetTitles(spreadsheetId);
+    const deleteReqs: unknown[] = [];
+    for (const title of PM_RETIRED_MANAGER_SHEETS) {
+      if (!titles.includes(title)) continue;
+      const sheetId = await getSheetIdByTitle(spreadsheetId, title);
+      if (sheetId == null) continue;
+      deleteReqs.push({ deleteSheet: { sheetId } });
+    }
+    if (deleteReqs.length) await batchUpdate(spreadsheetId, deleteReqs);
+  }
   const period = input?.period || "2026-08";
   const meta = periodMeta(period, input?.asOfDate);
   const detailTitles = [
@@ -1292,6 +1796,8 @@ export async function bootstrapPredictiveSheets(input?: {
   if (input?.formatOnly) {
     await clearFrozenColumns(spreadsheetId, [...detailTitles, PM_SHEETS.salesManagers, PM_SHEETS.motivation]);
     await applyDashboardFormatting(spreadsheetId, meta);
+    await applyMotivationFormatting(spreadsheetId);
+    await applyManagersFormatting(spreadsheetId);
     for (const title of detailTitles) {
       await applyDetailFormatting(spreadsheetId, title, layoutDetailSheet(title), meta);
     }
@@ -1343,8 +1849,8 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.marketingPaid,
     PM_SHEETS.marketingOrganic,
     PM_SHEETS.salesGeneral,
-    ...PM_MANAGER_SHEETS,
     PM_SHEETS.salesManagers,
+    ...PM_MANAGER_SHEETS,
     PM_SHEETS.finance,
     PM_SHEETS.motivation,
     PM_SHEETS.actions,
@@ -1355,6 +1861,20 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.diagnostics,
     PM_SHEETS.rawData
   ];
+
+  /** Visible predictive models; service tabs stay in the book but hidden. */
+  const modelTabs = [
+    PM_SHEETS.dashboard,
+    PM_SHEETS.marketingGeneral,
+    PM_SHEETS.marketingPaid,
+    PM_SHEETS.marketingOrganic,
+    PM_SHEETS.salesGeneral,
+    PM_SHEETS.salesManagers,
+    ...PM_MANAGER_SHEETS,
+    PM_SHEETS.finance,
+    PM_SHEETS.motivation
+  ];
+  const serviceTabs = allTabs.filter((t) => !modelTabs.includes(t));
 
   const titlesNow = await listSheetTitles(spreadsheetId);
   for (const tab of allTabs) {
@@ -1447,9 +1967,15 @@ export async function bootstrapPredictiveSheets(input?: {
     PM_SHEETS.motivation
   ]);
 
+  for (const { title, layout } of detailLayouts) {
+    await repairDetailLayout(spreadsheetId, title, layout);
+  }
+
   // Formatting
   if (!input?.skipFormatting) {
     await applyDashboardFormatting(spreadsheetId, meta);
+    await applyMotivationFormatting(spreadsheetId);
+    await applyManagersFormatting(spreadsheetId);
     for (const { title, layout } of detailLayouts) {
       await applyDetailFormatting(spreadsheetId, title, layout, meta);
     }
@@ -1491,22 +2017,36 @@ export async function bootstrapPredictiveSheets(input?: {
       ]);
     }
 
-    // Hide technical sheets somewhat — keep accessible but tab color
-    for (const tech of [PM_SHEETS.rawData, PM_SHEETS.diagnostics]) {
-      const id = await getSheetIdByTitle(spreadsheetId, tech);
+    // Keep only predictive model tabs visible; settings/raw stay for formulas.
+    const visibility: unknown[] = [];
+    for (const title of modelTabs) {
+      const id = await getSheetIdByTitle(spreadsheetId, title);
       if (id == null) continue;
-      await batchUpdate(spreadsheetId, [
-        {
-          updateSheetProperties: {
-            properties: { sheetId: id, hidden: false, tabColorStyle: { rgbColor: PM_COLORS.headerBg } },
-            fields: "hidden,tabColorStyle"
-          }
+      visibility.push({
+        updateSheetProperties: {
+          properties: { sheetId: id, hidden: false },
+          fields: "hidden"
         }
-      ]);
+      });
     }
+    for (const title of serviceTabs) {
+      const id = await getSheetIdByTitle(spreadsheetId, title);
+      if (id == null) continue;
+      visibility.push({
+        updateSheetProperties: {
+          properties: {
+            sheetId: id,
+            hidden: true,
+            tabColorStyle: { rgbColor: PM_COLORS.headerBg }
+          },
+          fields: "hidden,tabColorStyle"
+        }
+      });
+    }
+    if (visibility.length) await batchUpdate(spreadsheetId, visibility);
 
-    // Reorder sheets
-    const order = allTabs;
+    // Reorder: models first, then hidden service tabs.
+    const order = [...modelTabs, ...serviceTabs];
     const reorder: unknown[] = [];
     for (let i = 0; i < order.length; i += 1) {
       const id = await getSheetIdByTitle(spreadsheetId, order[i]);

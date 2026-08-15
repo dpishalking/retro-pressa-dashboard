@@ -195,6 +195,19 @@ function rateFact(numer: number, denom: number): number | null {
   return Number(((numer / denom) * 100).toFixed(1));
 }
 
+function unitCost(spend: number, units: number): number | null {
+  if (!(units > 0)) return null;
+  return Number((spend / units).toFixed(2));
+}
+
+function weeklyUnitCost(spend: WeeklyFacts, units: WeeklyFacts): WeeklyFacts {
+  return spend.map((value, i) => {
+    const count = units[i];
+    if (value == null || count == null || !(count > 0)) return null;
+    return Number((value / count).toFixed(2));
+  }) as WeeklyFacts;
+}
+
 export function applyChannelFacts(seed: CeoSeedBundle, channels: ChannelMonthFacts): CeoSeedBundle {
   const p = { ...seed.paid };
   const o = { ...seed.organic };
@@ -208,10 +221,7 @@ export function applyChannelFacts(seed: CeoSeedBundle, channels: ChannelMonthFac
   p.leads = withFact(p.leads, paid.leads, paid.leadsByWeek);
   p.budget = withFact(p.budget, paid.spend, paid.spendByWeek);
   p.qualification_rate = withFact(p.qualification_rate, rateFact(paid.qualifiedLeads, paid.leads));
-  p.cpl = withFact(
-    p.cpl,
-    paid.leads > 0 ? Number((paid.spend / paid.leads).toFixed(2)) : null
-  );
+  p.cpl = withFact(p.cpl, unitCost(paid.spend, paid.leads), weeklyUnitCost(paid.spendByWeek, paid.leadsByWeek));
   p.cac = withFact(
     p.cac,
     paid.payments > 0 ? Number((paid.spend / paid.payments).toFixed(2)) : null
@@ -226,6 +236,11 @@ export function applyChannelFacts(seed: CeoSeedBundle, channels: ChannelMonthFac
   o.lead_to_payment_cr = withFact(o.lead_to_payment_cr, rateFact(org.payments, org.leads));
 
   g.budget = withFact(g.budget, channels.general.spend, channels.general.spendByWeek);
+  g.cpl = withFact(
+    g.cpl,
+    unitCost(paid.spend, paid.leads),
+    weeklyUnitCost(paid.spendByWeek, paid.leadsByWeek)
+  );
   if (g.leads?.fact == null) {
     g.leads = withFact(g.leads, channels.general.leads, channels.general.leadsByWeek);
   } else {

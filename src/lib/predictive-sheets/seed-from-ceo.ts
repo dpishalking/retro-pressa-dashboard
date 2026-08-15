@@ -152,6 +152,17 @@ function weeklyRate(num: Array<number | null> | undefined, den: Array<number | n
   return out;
 }
 
+function weeklyAverage(num: Array<number | null> | undefined, den: Array<number | null> | undefined): WeeklyFacts {
+  const out: WeeklyFacts = [null, null, null, null, null];
+  for (let i = 0; i < 5; i += 1) {
+    const n = num?.[i] ?? null;
+    const d = den?.[i] ?? null;
+    if (n == null || d == null || !(d > 0) || !Number.isFinite(n) || !Number.isFinite(d)) continue;
+    out[i] = Number((n / d).toFixed(2));
+  }
+  return out;
+}
+
 /** Overlay live Bitrix counts onto CEO plans. Does not invent weekly plans. */
 export function applyBitrixFacts(seed: CeoSeedBundle, bitrix: BitrixMonthFacts): CeoSeedBundle {
   const general = { ...seed.general };
@@ -177,7 +188,8 @@ export function applyBitrixFacts(seed: CeoSeedBundle, bitrix: BitrixMonthFacts):
     general.average_check = {
       plan: general.average_check?.plan ?? null,
       fact: Number((bitrix.revenue / bitrix.payments).toFixed(2)),
-      planNote: general.average_check?.planNote
+      planNote: general.average_check?.planNote,
+      weekFact: weeklyAverage(bitrix.revenueByWeek, bitrix.paymentsByWeek)
     };
   }
   general.invoice_to_payment_cr = {
@@ -230,7 +242,7 @@ export function seedForManager(
     qlPlan = Number((leadsPlan * (deptQl / deptLeads)).toFixed(2));
   }
 
-  const decompNote = "декомпозиция от плана выручки по бенчмаркам 04_SALES_GENERAL";
+  const decompNote = "декомпозиция от плана выручки по бенчмаркам 04_ПРОДАЖИ";
   const payroll = calendar
     ? managerPayrollSeedValues(facts, revPlan, calendar)
     : {};
@@ -284,6 +296,7 @@ export function seedForManager(
       average_check: {
         plan: checkPlan,
         fact: checkFact,
+        weekFact: weeklyAverage(facts.revenueByWeek, facts.paymentsByWeek),
         planNote: checkPlan != null ? "бенчмарк отдела (ставка)" : "нет плана"
       },
       invoice_to_payment_cr: {
@@ -369,29 +382,46 @@ export function seedForMetricId(
 
   // Derived plans when numerator/denominator exist
   if (metricId === "mg_average_check" || metricId === "sg_average_check") {
+    const weekFact = value.weekFact ?? weeklyAverage(g.revenue?.weekFact, g.payments?.weekFact);
     if (value.plan == null && g.revenue?.plan != null && g.payments?.plan != null && g.payments.plan > 0) {
       value = {
-        plan: g.revenue.plan / g.payments.plan,
+        plan: Number((g.revenue.plan / g.payments.plan).toFixed(2)),
         fact:
           value.fact ??
           (g.revenue?.fact != null && g.payments?.fact != null && g.payments.fact > 0
-            ? g.revenue.fact / g.payments.fact
+            ? Number((g.revenue.fact / g.payments.fact).toFixed(2))
             : null),
+        weekFact,
         planNote: "расчётный план"
       };
       return { ...value, derived: true };
+    }
+    if (weekFact.some((v) => v != null) && value.weekFact == null) {
+      return { ...value, weekFact };
     }
   }
   if (metricId === "mg_cpl" || metricId === "mp_cpl") {
-    const src = metricId === "mp_cpl" ? p : g;
-    if (value.plan == null && src.budget?.plan != null && src.leads?.plan != null && src.leads.plan > 0) {
+    const budget = metricId === "mp_cpl" ? p.budget : g.budget;
+    const paidLeads = p.leads;
+    if (value.plan == null && budget?.plan != null && paidLeads?.plan != null && paidLeads.plan > 0) {
       value = {
-        plan: src.budget.plan / src.leads.plan,
+        plan: budget.plan / paidLeads.plan,
         fact: value.fact,
         planNote: "расчётный план"
       };
-      return { ...value, derived: true };
     }
+    if (
+      value.fact == null &&
+      budget?.fact != null &&
+      paidLeads?.fact != null &&
+      paidLeads.fact > 0
+    ) {
+      value = {
+        ...value,
+        fact: Number((budget.fact / paidLeads.fact).toFixed(2))
+      };
+    }
+    if (value.planNote === "расчётный план") return { ...value, derived: true };
   }
   if (metricId === "mp_cpql") {
     if (p.budget?.plan != null && p.qualified_leads?.plan != null && p.qualified_leads.plan > 0) {
