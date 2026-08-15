@@ -31,6 +31,7 @@ const NAV: NavGroup[] = [
       { id: "overview", label: "Главный экран", enabled: true, section: "overview" },
       { id: "external", label: "Факторный анализ", enabled: true, href: "/os/factors" },
       { id: "external", label: "Сценарии анализа", enabled: true, href: "/os/scenarios" },
+      { id: "external", label: "Срезы", enabled: true, href: "/os/slices" },
       { id: "customers", label: "Клиенты", enabled: true, section: "customers" },
       { id: "countries", label: "Страны", enabled: true, section: "countries" },
       { id: "sources", label: "Источники", enabled: true, section: "sources" },

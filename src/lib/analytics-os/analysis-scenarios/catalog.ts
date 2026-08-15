@@ -80,7 +80,7 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     steps: [
       { title: "Темп лидов", check: "Лиды vs план MTD", href: "/os/factors" },
       { title: "Счёт и оплата", check: "Где отвал", href: "/os/funnel" },
-      { title: "Команда", check: "CR по менеджерам", href: "/os/managers" }
+      { title: "Команда", check: "CR по менеджерам", href: "/os/slices?dim=manager&metric=cr" }
     ]
   },
   {
@@ -94,7 +94,7 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     dimensions: ["manager"],
     reuse: "CR по менеджерам. Source × Manager в CEO-снимке нет — не утверждаем источник.",
     steps: [
-      { title: "Разброс CR", check: "Менеджеры с ≥10 лидами", href: "/os/managers" },
+      { title: "Разброс CR", check: "Менеджеры с ≥10 лидами", href: "/os/slices?dim=manager&metric=cr" },
       { title: "Воронка", check: "Лид → счёт vs счёт → оплата", href: "/os/funnel" },
       { title: "Когорты", check: "Канал, если выборка есть", href: "/os/cohorts" }
     ]
@@ -142,7 +142,7 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     dimensions: ["product"],
     reuse: "/os/products. Нет 7д vs 7д в CEO-снимке.",
     steps: [
-      { title: "Топ SKU", check: "Выручка и доля", href: "/os/products" },
+      { title: "Топ SKU", check: "Выручка и доля", href: "/os/slices?dim=product&metric=revenue" },
       { title: "Чек", check: "AOV продукта", href: "/os/unit-economics" },
       { title: "Гео", check: "Продукт × страна вручную", href: "/os/geography" }
     ]
@@ -174,9 +174,9 @@ export const ANALYSIS_SCENARIOS: AnalysisScenarioDef[] = [
     dimensions: ["country", "product", "manager"],
     reuse: "Фильтр страны уже режет CEO-снимок. План на срез общий — осторожно.",
     steps: [
-      { title: "Фильтр", check: "Страна на /os", href: "/os" },
-      { title: "Воронка", check: "Отвал в срезе", href: "/os/funnel" },
-      { title: "Менеджеры", check: "Кто ведёт рынок", href: "/os/managers" }
+      { title: "Страны", check: "Где просадка", href: "/os/slices?dim=country&metric=revenue" },
+      { title: "Продукт", check: "Что внутри страны", href: "/os/slices?dim=product&metric=revenue" },
+      { title: "Источник", check: "Откуда лиды", href: "/os/slices?dim=source&metric=cr" }
     ]
   },
   {

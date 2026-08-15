@@ -2579,3 +2579,173 @@ button.aos-link {
   background: #dbeafe;
 }
 
+.aos-slice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.1rem;
+  margin-top: 0.85rem;
+}
+
+.aos-slice-controls label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.aos-slice-controls select {
+  min-width: 12rem;
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #0f172a;
+}
+
+.aos-slice-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.aos-slice-crumbs button {
+  border: 1px solid #dbe7f5;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.aos-slice-crumbs button.is-active,
+.aos-slice-crumbs button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.aos-slice-rank {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 800px) {
+  .aos-slice-rank {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.aos-slice-rank h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.aos-slice-rank ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.aos-slice-rank li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.aos-slice-rank button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 650;
+  color: #1d4ed8;
+  cursor: pointer;
+  text-align: left;
+}
+
+.aos-slice-detail {
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: #1d4ed8;
+}
+
+.aos-slice-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.aos-slice-table th,
+.aos-slice-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.aos-slice-table th button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.aos-slice-table tbody tr {
+  cursor: pointer;
+}
+
+.aos-slice-table tbody tr:hover,
+.aos-slice-table tbody tr.is-selected {
+  background: #f8fbff;
+}
+
+.aos-slice-table em {
+  font-style: normal;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.aos-slice-bar {
+  display: block;
+  height: 4px;
+  margin-top: 0.25rem;
+  border-radius: 99px;
+  background: #93c5fd;
+}
+
+.aos-slice-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.aos-slice-next button {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aos-slice-trend {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.aos-slice-trend span {
+  display: block;
+  color: #475569;
+  font-size: 0.85rem;
+}
+

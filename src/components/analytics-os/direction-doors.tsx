@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, GitBranch, Megaphone, Package, Search, Target, WalletCards, type LucideIcon } from "lucide-react";
+import { BarChart3, Database, GitBranch, Megaphone, Package, Search, Target, WalletCards, type LucideIcon } from "lucide-react";
 import type { CeoControlCenterSnapshot } from "@/types/analytics-os";
 import { formatMetricDisplay } from "@/components/analytics-os/format-metric";
 import { BUSINESS_CONTOUR_PATHS, type BusinessContourId } from "@/lib/analytics-os/contours";
@@ -143,7 +143,7 @@ export function DirectionDoors({ snapshot }: { snapshot: CeoControlCenterSnapsho
 
 export function ScenariosModule() {
   return (
-    <section className="aos-sources-module" aria-label="Сценарии анализа">
+    <section className="aos-sources-module" aria-label="Сценарии и срезы">
       <Link href="/os/scenarios" className="aos-sources-module__card">
         <span className="aos-sources-module__icon">
           <Search size={20} strokeWidth={2.1} />
@@ -153,6 +153,16 @@ export function ScenariosModule() {
           <p>Почему не выполняем план, вырос CAC, лиды без продаж — маршрут, не второй дашборд.</p>
         </div>
         <span className="aos-sources-module__cta">Разобрать причину →</span>
+      </Link>
+      <Link href="/os/slices" className="aos-sources-module__card" style={{ marginTop: "0.65rem" }}>
+        <span className="aos-sources-module__icon">
+          <BarChart3 size={20} strokeWidth={2.1} />
+        </span>
+        <div>
+          <h2>Срезы</h2>
+          <p>Страна → продукт → источник на тех же фактах, что когорты.</p>
+        </div>
+        <span className="aos-sources-module__cta">Исследовать →</span>
       </Link>
     </section>
   );

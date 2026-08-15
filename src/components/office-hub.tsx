@@ -54,6 +54,14 @@ const officeSections: OfficeSection[] = [
         icon: Search,
         status: "active",
         accent: "text-violet-600 bg-violet-50"
+      },
+      {
+        href: "/os/slices",
+        title: "Срезы",
+        description: "Страна, продукт, источник, менеджер — один explorer.",
+        icon: BarChart3,
+        status: "active",
+        accent: "text-sky-600 bg-sky-50"
       }
     ]
   },

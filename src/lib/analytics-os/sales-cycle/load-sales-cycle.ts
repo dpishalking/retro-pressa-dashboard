@@ -30,7 +30,8 @@ const LEGACY_TO_ISO: Record<string, string> = {
   "august-2026": "2026-08"
 };
 
-async function loadCorpus() {
+/** Shared Bitrix corpus for sales-cycle and slices. No new warehouse. */
+export async function loadSalesCycleCorpus() {
   const periods = await listBitrixSnapshotPeriods();
   const leadsById = new Map<string, CycleLead>();
   const paidById = new Map<string, CyclePaidDeal>();
@@ -95,7 +96,7 @@ export async function loadSalesCycle(options: LoadSalesCycleOptions = {}): Promi
     if (cached) return cached.payload;
   }
 
-  const corpus = await loadCorpus();
+  const corpus = await loadSalesCycleCorpus();
   const facts = buildFactsFromCorpus({
     leads: corpus.leads,
     paidDeals: corpus.paidDeals
@@ -141,7 +142,7 @@ export async function warmSalesCycleCaches(options: {
   errors: Array<{ period: string; grain: CohortGrain; error: string }>;
 }> {
   const now = new Date();
-  const corpus = await loadCorpus();
+  const corpus = await loadSalesCycleCorpus();
   const facts = buildFactsFromCorpus({
     leads: corpus.leads,
     paidDeals: corpus.paidDeals
