@@ -10,17 +10,9 @@ import { eur, number, pct } from "@/lib/format";
 
 type CohortTab = "month" | "week";
 
-const TABS: Array<{ id: CohortTab; label: string; hint: string }> = [
-  {
-    id: "month",
-    label: "Месяцы",
-    hint: "Когорта = месяц, когда лид завели в Bitrix. Продажи этого лида остаются в той же когорте."
-  },
-  {
-    id: "week",
-    label: "Недели",
-    hint: "Когорта = неделя создания лида. Оплаты этого лида считаются в той же недельной когорте."
-  }
+const TABS: Array<{ id: CohortTab; label: string }> = [
+  { id: "month", label: "Месяцы" },
+  { id: "week", label: "Недели" }
 ];
 
 const SLICE_LINKS = SLICE_DIMENSIONS.filter((item) => item.id !== "time" && item.id !== "cohort");
@@ -138,7 +130,6 @@ export function CohortsPanel({
   const abortRef = useRef<AbortController | null>(null);
 
   const grain = tab === "week" ? "week" : "month";
-  const tabMeta = TABS.find((item) => item.id === tab)!;
 
   const load = useCallback(
     async (refresh = false) => {
@@ -248,11 +239,6 @@ export function CohortsPanel({
             </button>
           ))}
         </div>
-
-        <p className="aos-note" style={{ marginTop: 0 }}>
-          {tabMeta.hint} Выручка когорты — первые оплаты этих лидов (весь срок). Касса месяца — все оплаты,
-          которые пришли в выбранный месяц. Это не одна и та же сумма.
-        </p>
 
         <div className="aos-slice-jump">
           {SLICE_LINKS.map((item) => (
