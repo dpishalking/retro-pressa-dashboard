@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadSliceExplorer } from "@/lib/analytics-os/slices";
+import { loadSliceExplorer } from "@/lib/analytics-os/slices/load-slices";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
