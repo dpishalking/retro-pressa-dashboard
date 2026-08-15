@@ -43,19 +43,11 @@ export function AnalysisScenariosPanel({ snapshot }: { snapshot: CeoControlCente
 
   return (
     <>
-      <section className="aos-card">
-        <div className="aos-section-head">
-          <div>
-            <h2>Сценарии анализа</h2>
-            <p>
-              Дашборды отвечают «что происходит». Сценарий — маршрут «почему» и «куда жать». Не вторая аналитика:
-              те же сводка, факторы, воронка и план.
-            </p>
-          </div>
-        </div>
-        <p className="aos-muted" style={{ margin: 0 }}>
-          {liveCount} сценариев считаются по CEO-снимку. Остальные ведут на существующие экраны или честно говорят,
-          каких данных нет (Ads API, JTBD, день-к-дню).
+      <section className="aos-slice-hero">
+        <p className="aos-slice-hero__eyebrow">Разбор</p>
+        <h2>Почему так и куда жать</h2>
+        <p>
+          Дашборды отвечают «что происходит». Сценарий — маршрут причины. {liveCount} считаются по текущей сводке.
         </p>
       </section>
 

@@ -62,11 +62,11 @@ export function FactorAnalysisPanel({ snapshot }: { snapshot: CeoControlCenterSn
         ) : null}
         <DecisionBrief title="Куда жать" body={report.pressNow} />
         <p style={{ margin: "0.75rem 0 0" }}>
-          <Link href={report.pressHref} className="font-bold text-blue-700 hover:underline">
+          <Link href={report.pressHref} className="aos-link">
             Открыть этот рычаг →
           </Link>
           {" · "}
-          <Link href="/os/scenarios?scenario=revenue-plan" className="font-bold text-blue-700 hover:underline">
+          <Link href="/os/scenarios?scenario=revenue-plan" className="aos-link">
             Разобрать Gap →
           </Link>
         </p>
