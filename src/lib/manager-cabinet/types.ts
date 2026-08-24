@@ -1,4 +1,6 @@
 import type { ManagerPayrollResult } from "@/lib/payroll/types";
+import type { OnboardingStage } from "@/lib/manager-cabinet/track";
+import type { AccessLevel } from "@/types/auth";
 
 export type CabinetWindow = "month" | "h1" | "h2";
 
@@ -44,6 +46,30 @@ export type ManagerCabinetShifts = {
   matchedName: string | null;
 };
 
+export type ManagerOnboardingSlice = {
+  start: string;
+  end: string;
+  day: number;
+  days: number;
+  payments: number;
+  revenueEur: number;
+  payEur: number;
+};
+
+export type ManagerOnboardingPay = {
+  stage: OnboardingStage;
+  waitingApproval: boolean;
+  internship: ManagerOnboardingSlice;
+  trial: ManagerOnboardingSlice;
+  trialBonusRub: number;
+  trialBonusEur: number;
+  trialBonusApplied: boolean;
+  salesTarget: number;
+  rubPerEur: number;
+  fxSource: string;
+  totalEur: number;
+};
+
 export type ManagerCabinetPayload = {
   ok: true;
   linked: boolean;
@@ -52,7 +78,7 @@ export type ManagerCabinetPayload = {
   windowStart: string;
   windowEnd: string;
   availablePeriods: string[];
-  viewer: { id: string; name: string; accessLevel: string };
+  viewer: { id: string; name: string; accessLevel: AccessLevel };
   roster: BitrixRosterEntry[];
   selected: {
     authUserId: string | null;
@@ -71,6 +97,7 @@ export type ManagerCabinetPayload = {
   message: string | null;
   helloName: string;
   payTips: CabinetPayTip[];
+  onboarding: ManagerOnboardingPay | null;
 };
 
 export type YesterdayCoachReview = {

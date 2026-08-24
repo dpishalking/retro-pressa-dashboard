@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
 import { canAccessManagerCabinet, canPickCabinetManager } from "@/lib/manager-cabinet/access";
 import { packYesterdayDialogs } from "@/lib/manager-cabinet/coach";
-import { messageDayIso } from "@/lib/manager-cabinet/dates";
+import { addCalendarDays, messageDayIso } from "@/lib/manager-cabinet/dates";
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName, namesMatch } from "@/lib/manager-cabinet/match";
-import { buildPayTips } from "@/lib/manager-cabinet/pay-tips";
+import { buildOnboardingPayTips, buildPayTips } from "@/lib/manager-cabinet/pay-tips";
 import { cabinetWindowBounds } from "@/lib/manager-cabinet/period";
 import {
   firstCabinetManagerId,
@@ -13,6 +13,12 @@ import {
   resolveCabinetTarget
 } from "@/lib/manager-cabinet/resolve-target";
 import { staticRoster } from "@/lib/manager-cabinet/roster";
+import {
+  bonusEurFromRub,
+  buildOnboardingWindows,
+  calculateOnboardingPay,
+  resolveOnboardingStage
+} from "@/lib/manager-cabinet/track";
 import { prorateByShifts } from "@/lib/payroll/calculator";
 import type { BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
 
@@ -236,6 +242,101 @@ assert.equal(messageDayIso("23.08.2026 18:11"), "2026-08-23");
   assert.match(blob, /ещё примерно 11/);
   assert.equal(blob.includes("конверсия"), false);
   assert.equal(blob.includes("CR"), false);
+}
+
+assert.equal(addCalendarDays("2026-08-01", 2), "2026-08-03");
+assert.equal(addCalendarDays("2026-08-30", 4), "2026-09-03");
+
+{
+  const windows = buildOnboardingWindows("2026-08-10");
+  assert.equal(windows.internshipEnd, "2026-08-12");
+  assert.equal(windows.trialStart, "2026-08-13");
+  assert.equal(windows.trialEnd, "2026-08-17");
+}
+
+assert.equal(resolveOnboardingStage({ mopPayTrack: null }, "2026-08-10"), "regular");
+assert.equal(resolveOnboardingStage({ mopPayTrack: "regular" }, "2026-08-10"), "regular");
+assert.equal(
+  resolveOnboardingStage({ mopPayTrack: "auto", internshipStartedOn: "2026-08-10" }, "2026-08-12"),
+  "internship"
+);
+assert.equal(
+  resolveOnboardingStage({ mopPayTrack: "auto", internshipStartedOn: "2026-08-10" }, "2026-08-13"),
+  "trial"
+);
+assert.equal(
+  resolveOnboardingStage({ mopPayTrack: "auto", internshipStartedOn: "2026-08-10" }, "2026-08-20"),
+  "trial"
+);
+assert.equal(
+  resolveOnboardingStage(
+    { mopPayTrack: "auto", internshipStartedOn: "2026-08-10", approvedAt: "2026-08-18T10:00:00.000Z" },
+    "2026-08-20"
+  ),
+  "regular"
+);
+
+{
+  const noBonus = calculateOnboardingPay({
+    internship: { payments: 2, revenueEur: 1000 },
+    trial: { payments: 4, revenueEur: 2000 },
+    trialStarted: true,
+    rubPerEur: 100
+  });
+  assert.equal(noBonus.internshipPayEur, 110);
+  assert.equal(noBonus.trialCommissionEur, 200);
+  assert.equal(noBonus.trialBonusApplied, false);
+  assert.equal(noBonus.trialBonusEur, 0);
+  assert.equal(noBonus.totalEur, 310);
+
+  const withBonus = calculateOnboardingPay({
+    internship: { payments: 1, revenueEur: 500 },
+    trial: { payments: 5, revenueEur: 800 },
+    trialStarted: true,
+    rubPerEur: 100
+  });
+  assert.equal(withBonus.internshipPayEur, 55);
+  assert.equal(withBonus.trialCommissionEur, 80);
+  assert.equal(withBonus.trialBonusApplied, true);
+  assert.equal(withBonus.trialBonusEur, 80);
+  assert.equal(withBonus.totalEur, 215);
+  assert.equal(bonusEurFromRub(8000, 80), 100);
+}
+
+{
+  const tips = buildOnboardingPayTips({
+    stage: "trial",
+    waitingApproval: false,
+    internship: {
+      start: "2026-08-10",
+      end: "2026-08-12",
+      day: 3,
+      days: 3,
+      payments: 1,
+      revenueEur: 500,
+      payEur: 55
+    },
+    trial: {
+      start: "2026-08-13",
+      end: "2026-08-17",
+      day: 2,
+      days: 5,
+      payments: 2,
+      revenueEur: 200,
+      payEur: 20
+    },
+    trialBonusRub: 8000,
+    trialBonusEur: 0,
+    trialBonusApplied: false,
+    salesTarget: 5,
+    rubPerEur: 100,
+    fxSource: "fallback-100",
+    totalEur: 75
+  });
+  const blob = tips.map((tip) => `${tip.title} ${tip.text}`).join(" ");
+  assert.match(blob, /11%/);
+  assert.match(blob, /10%/);
+  assert.match(blob, /8 000/);
 }
 
 console.log("manager-cabinet.test.ts: ok");

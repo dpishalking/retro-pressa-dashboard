@@ -79,3 +79,40 @@ export function aggregateManagerCabinetFacts(input: {
     deals
   };
 }
+
+export function mergeCabinetFacts(
+  rows: ManagerCabinetFacts[],
+  bitrixUserId: string,
+  managerName: string
+): ManagerCabinetFacts {
+  const deals = new Map<string, CabinetDealRow>();
+  let leads = 0;
+  let qualifiedLeads = 0;
+  let invoices = 0;
+  let payments = 0;
+  let revenueEur = 0;
+  for (const row of rows) {
+    leads += row.leads;
+    qualifiedLeads += row.qualifiedLeads;
+    invoices += row.invoices;
+    payments += row.payments;
+    revenueEur += row.revenueEur;
+    for (const deal of row.deals) deals.set(deal.id, deal);
+  }
+  revenueEur = round2(revenueEur);
+  const dealRows = [...deals.values()].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return {
+    bitrixUserId,
+    managerName,
+    leads,
+    qualifiedLeads,
+    invoices,
+    payments,
+    revenueEur,
+    avgCheckEur: payments > 0 ? round2(revenueEur / payments) : null,
+    invoiceCrPct: leads > 0 ? invoices / leads : null,
+    paymentCrPct: leads > 0 ? payments / leads : null,
+    qualifiedCrPct: leads > 0 ? qualifiedLeads / leads : null,
+    deals: dealRows
+  };
+}

@@ -11,17 +11,32 @@ import type { AnalyticsPeriod } from "@/types/analytics-os";
 import { findUserById, listPublicUsers, listTraineeUsers } from "@/lib/auth/store";
 import { listBitrixSnapshotPeriods, readBitrixSnapshot, type BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
 import { canPickCabinetManager } from "@/lib/manager-cabinet/access";
-import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
+import { aggregateManagerCabinetFacts, mergeCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName } from "@/lib/manager-cabinet/match";
 import { cabinetWindowBounds, parseCabinetWindow } from "@/lib/manager-cabinet/period";
-import { firstNameFrom } from "@/lib/manager-cabinet/dates";
-import { buildPayTips } from "@/lib/manager-cabinet/pay-tips";
+import { firstNameFrom, monthsInRange, rigaDateIso } from "@/lib/manager-cabinet/dates";
+import { buildOnboardingPayTips, buildPayTips } from "@/lib/manager-cabinet/pay-tips";
 import { resolveCabinetTarget } from "@/lib/manager-cabinet/resolve-target";
 import { loadBitrixRoster, revenuePlanForBitrixId } from "@/lib/manager-cabinet/roster";
+import {
+  buildOnboardingWindows,
+  calculateOnboardingPay,
+  dayNumberInWindow,
+  INTERNSHIP_COMMISSION_PCT,
+  INTERNSHIP_DAYS,
+  resolveOnboardingStage,
+  TRIAL_BONUS_RUB,
+  TRIAL_COMMISSION_PCT,
+  TRIAL_DAYS,
+  TRIAL_SALES_TARGET
+} from "@/lib/manager-cabinet/track";
+import { loadRubPerEur } from "@/lib/fx/rub-eur";
 import type {
   CabinetWindow,
+  ManagerCabinetFacts,
   ManagerCabinetPayload,
-  ManagerCabinetShifts
+  ManagerCabinetShifts,
+  ManagerOnboardingPay
 } from "@/lib/manager-cabinet/types";
 import { calculateManagerPayroll, prorateByShifts } from "@/lib/payroll/calculator";
 import { DEFAULT_PAYROLL_PARAMS } from "@/lib/payroll/defaults";
@@ -65,6 +80,29 @@ async function availablePeriods(): Promise<string[]> {
     /* snapshots optional */
   }
   return [...keys].sort();
+}
+
+async function factsForRange(input: {
+  bitrixUserId: string;
+  managerName: string;
+  start: string;
+  end: string;
+}): Promise<ManagerCabinetFacts> {
+  const rows: ManagerCabinetFacts[] = [];
+  for (const month of monthsInRange(input.start, input.end)) {
+    const snapshot = await loadSnapshot(parseAnalyticsPeriod(month));
+    if (!snapshot) continue;
+    rows.push(
+      aggregateManagerCabinetFacts({
+        snapshot,
+        bitrixUserId: input.bitrixUserId,
+        managerName: input.managerName,
+        start: input.start,
+        end: input.end
+      })
+    );
+  }
+  return mergeCabinetFacts(rows, input.bitrixUserId, input.managerName);
 }
 
 export { resolveBitrixUserId } from "@/lib/manager-cabinet/resolve-target";
@@ -177,7 +215,8 @@ export async function loadManagerCabinet(input: {
         ? "В Bitrix нет менеджеров для просмотра. Обновите синхронизацию CRM."
         : "Аккаунт не привязан к менеджеру Bitrix. РОП может указать ответственного в «Доступах».",
       helloName,
-      payTips: []
+      payTips: [],
+      onboarding: null
     };
   }
 
@@ -196,7 +235,8 @@ export async function loadManagerCabinet(input: {
       snapshotAsOf: null,
       message: `Нет снимка Bitrix за ${period}. Обновите синхронизацию CRM.`,
       helloName,
-      payTips: []
+      payTips: [],
+      onboarding: null
     };
   }
 
@@ -236,6 +276,77 @@ export async function loadManagerCabinet(input: {
     }
   );
 
+  const payUser = target.authUserId ? await findUserById(target.authUserId) : null;
+  const asOf = rigaDateIso();
+  const stage = resolveOnboardingStage(
+    {
+      mopPayTrack: payUser?.mopPayTrack,
+      internshipStartedOn: payUser?.internshipStartedOn,
+      approvedAt: payUser?.approvedAt
+    },
+    asOf
+  );
+
+  let onboarding: ManagerOnboardingPay | null = null;
+  if (stage !== "regular" && payUser?.internshipStartedOn) {
+    const windows = buildOnboardingWindows(payUser.internshipStartedOn);
+    const trialStarted = asOf >= windows.trialStart;
+    const internshipFacts = await factsForRange({
+      bitrixUserId,
+      managerName,
+      start: windows.start,
+      end: windows.internshipEnd
+    });
+    const trialFacts = trialStarted
+      ? await factsForRange({
+          bitrixUserId,
+          managerName,
+          start: windows.trialStart,
+          end: windows.trialEnd
+        })
+      : mergeCabinetFacts([], bitrixUserId, managerName);
+    const fx = await loadRubPerEur();
+    const pay = calculateOnboardingPay({
+      internship: internshipFacts,
+      trial: trialFacts,
+      trialStarted,
+      rubPerEur: fx.rubPerEur
+    });
+    onboarding = {
+      stage,
+      waitingApproval: stage === "trial" && asOf > windows.trialEnd && !payUser.approvedAt,
+      internship: {
+        start: windows.start,
+        end: windows.internshipEnd,
+        day: dayNumberInWindow(asOf, windows.start, windows.internshipEnd, INTERNSHIP_DAYS),
+        days: INTERNSHIP_DAYS,
+        payments: internshipFacts.payments,
+        revenueEur: internshipFacts.revenueEur,
+        payEur: pay.internshipPayEur
+      },
+      trial: {
+        start: windows.trialStart,
+        end: windows.trialEnd,
+        day: asOf < windows.trialStart ? 0 : dayNumberInWindow(asOf, windows.trialStart, windows.trialEnd, TRIAL_DAYS),
+        days: TRIAL_DAYS,
+        payments: trialFacts.payments,
+        revenueEur: trialFacts.revenueEur,
+        payEur: pay.trialCommissionEur
+      },
+      trialBonusRub: TRIAL_BONUS_RUB,
+      trialBonusEur: pay.trialBonusEur,
+      trialBonusApplied: pay.trialBonusApplied,
+      salesTarget: TRIAL_SALES_TARGET,
+      rubPerEur: fx.rubPerEur,
+      fxSource: fx.source,
+      totalEur: pay.totalEur
+    };
+    payroll.mopPayEur = pay.totalEur;
+    payroll.commissionPct = stage === "internship" ? INTERNSHIP_COMMISSION_PCT : TRIAL_COMMISSION_PCT;
+    payroll.conversionBonusApplied = false;
+    payroll.checkBonusApplied = false;
+  }
+
   return {
     ...base,
     linked: true,
@@ -249,12 +360,15 @@ export async function loadManagerCabinet(input: {
     snapshotAsOf: snapshot.createdAt,
     message: null,
     helloName,
-    payTips: buildPayTips({
-      facts,
-      payroll,
-      shifts,
-      salaryProratedEur,
-      softBonusesOnFullMonth: applySoftBonuses
-    })
+    payTips: onboarding
+      ? buildOnboardingPayTips(onboarding)
+      : buildPayTips({
+          facts,
+          payroll,
+          shifts,
+          salaryProratedEur,
+          softBonusesOnFullMonth: applySoftBonuses
+        }),
+    onboarding
   };
 }

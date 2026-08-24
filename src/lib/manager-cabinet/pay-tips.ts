@@ -1,5 +1,5 @@
 import { eur } from "@/lib/format";
-import type { CabinetPayTip, ManagerCabinetFacts, ManagerCabinetShifts } from "@/lib/manager-cabinet/types";
+import type { CabinetPayTip, ManagerCabinetFacts, ManagerCabinetShifts, ManagerOnboardingPay } from "@/lib/manager-cabinet/types";
 import { DEFAULT_PAYROLL_PARAMS } from "@/lib/payroll/defaults";
 import type { ManagerPayrollResult, PayrollParams } from "@/lib/payroll/types";
 
@@ -93,5 +93,48 @@ export function buildPayTips(input: {
     text: `К выплате сейчас ${money(input.payroll.mopPayEur)}.`
   });
 
+  return tips;
+}
+
+export function buildOnboardingPayTips(onboarding: ManagerOnboardingPay): CabinetPayTip[] {
+  const tips: CabinetPayTip[] = [
+    {
+      title: onboarding.stage === "internship" ? "Сейчас стажировка" : "Сейчас тест",
+      text:
+        onboarding.stage === "internship"
+          ? `День ${onboarding.internship.day} из ${onboarding.internship.days}. За эти 3 дня тебе 11% с оплаченных сделок. Оклада пока нет.`
+          : `День ${Math.max(1, onboarding.trial.day)} из ${onboarding.trial.days}. За эти 5 дней подряд — 10% с оплаченных сделок.`
+    },
+    {
+      title: "Стажировка 11%",
+      text: `С ${onboarding.internship.start} по ${onboarding.internship.end}: купили ${onboarding.internship.payments}, касса ${money(onboarding.internship.revenueEur)}. Тебе ${money(onboarding.internship.payEur)}.`
+    }
+  ];
+
+  if (onboarding.trial.day > 0 || onboarding.stage === "trial") {
+    const left = Math.max(0, onboarding.salesTarget - onboarding.trial.payments);
+    tips.push({
+      title: "Тест 10%",
+      text: `С ${onboarding.trial.start} по ${onboarding.trial.end}: купили ${onboarding.trial.payments} из ${onboarding.salesTarget}, касса ${money(onboarding.trial.revenueEur)}. Тебе ${money(onboarding.trial.payEur)}.`
+    });
+    tips.push({
+      title: "Бонус 8 000 ₽",
+      text: onboarding.trialBonusApplied
+        ? `Пять продаж за пять дней есть. Бонус ≈ ${money(onboarding.trialBonusEur)} (курс ${onboarding.rubPerEur.toFixed(2)} ₽ за 1 €).`
+        : `Ещё нет. Нужно ${onboarding.salesTarget} продаж за 5 дней подряд. Сейчас ${onboarding.trial.payments}, осталось ${left}.`
+    });
+  }
+
+  if (onboarding.waitingApproval) {
+    tips.push({
+      title: "Дальше",
+      text: "Тестовые 5 дней прошли. Общие условия (оклад и бонусы) включатся, когда РОП одобрит в «Доступах»."
+    });
+  }
+
+  tips.push({
+    title: "Итого",
+    text: `К выплате сейчас ${money(onboarding.totalEur)}.`
+  });
   return tips;
 }

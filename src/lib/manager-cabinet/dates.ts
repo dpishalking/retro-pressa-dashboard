@@ -32,3 +32,23 @@ export function firstNameFrom(name: string | null | undefined): string {
   const token = (name || "").trim().split(/\s+/)[0];
   return token || "коллега";
 }
+
+export function addCalendarDays(iso: string, days: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  utc.setUTCDate(utc.getUTCDate() + days);
+  return utc.toISOString().slice(0, 10);
+}
+
+export function monthsInRange(start: string, end: string): string[] {
+  const months: string[] = [];
+  let cursor = start.slice(0, 7);
+  const last = end.slice(0, 7);
+  while (cursor && last && cursor <= last) {
+    months.push(cursor);
+    const [year, month] = cursor.split("-").map(Number);
+    const next = month === 12 ? `${year + 1}-01` : `${year}-${String((month ?? 1) + 1).padStart(2, "0")}`;
+    cursor = next;
+  }
+  return months;
+}

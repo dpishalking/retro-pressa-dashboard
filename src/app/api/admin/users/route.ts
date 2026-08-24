@@ -8,7 +8,7 @@ import {
 import { loadBitrixRoster } from "@/lib/manager-cabinet/roster";
 import { createUser, deleteUser, findUserById, listPublicUsers, listTraineeUsers, updateUser } from "@/lib/auth/store";
 import { readSessionCookie } from "@/lib/auth/session";
-import type { AccessLevel } from "@/types/auth";
+import type { AccessLevel, MopPayTrack } from "@/types/auth";
 
 function readSession(request: Request) {
   const session = readSessionCookie(request.headers.get("cookie"));
@@ -44,6 +44,9 @@ export async function POST(request: Request) {
       accessLevel?: AccessLevel;
       active?: boolean;
       bitrixUserId?: string | null;
+      mopPayTrack?: MopPayTrack | null;
+      internshipStartedOn?: string | null;
+      approvedAt?: string | null;
     };
 
     if (!body.login || !body.password || !body.accessLevel) {
@@ -58,7 +61,10 @@ export async function POST(request: Request) {
       name: body.name ?? body.login,
       accessLevel: body.accessLevel,
       active: body.active,
-      bitrixUserId: body.bitrixUserId
+      bitrixUserId: body.bitrixUserId,
+      mopPayTrack: body.mopPayTrack,
+      internshipStartedOn: body.internshipStartedOn,
+      approvedAt: body.approvedAt
     });
 
     return NextResponse.json({ user }, { status: 201 });
@@ -83,6 +89,9 @@ export async function PUT(request: Request) {
       accessLevel?: AccessLevel;
       active?: boolean;
       bitrixUserId?: string | null;
+      mopPayTrack?: MopPayTrack | null;
+      internshipStartedOn?: string | null;
+      approvedAt?: string | null;
     };
 
     if (!body.id) {
@@ -103,7 +112,10 @@ export async function PUT(request: Request) {
       name: body.name,
       accessLevel: body.accessLevel,
       active: body.active,
-      bitrixUserId: body.bitrixUserId
+      bitrixUserId: body.bitrixUserId,
+      mopPayTrack: body.mopPayTrack,
+      internshipStartedOn: body.internshipStartedOn,
+      approvedAt: body.approvedAt
     });
 
     return NextResponse.json({ user });

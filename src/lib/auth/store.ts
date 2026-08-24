@@ -2,6 +2,7 @@ import { copyFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { AppUser, AppUserPublic, UsersCatalog } from "@/types/auth";
 import { hashPassword } from "@/lib/auth/password";
+import { rigaDateIso } from "@/lib/manager-cabinet/dates";
 import { generateId } from "@/lib/training/id";
 import { registerTrainerManager } from "@/lib/training/trainer-api";
 
@@ -39,7 +40,13 @@ function sleep(ms: number) {
 
 function toPublicUser(user: AppUser): AppUserPublic {
   const { passwordHash: _passwordHash, ...publicUser } = user;
-  return { ...publicUser, bitrixUserId: user.bitrixUserId ?? null };
+  return {
+    ...publicUser,
+    bitrixUserId: user.bitrixUserId ?? null,
+    mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
+    internshipStartedOn: user.internshipStartedOn ?? null,
+    approvedAt: user.approvedAt ?? null
+  };
 }
 
 async function ensureAuthDir() {
@@ -57,6 +64,9 @@ function defaultAdminUser(): AppUser {
     name: "Администратор",
     accessLevel: "admin",
     bitrixUserId: null,
+    mopPayTrack: null,
+    internshipStartedOn: null,
+    approvedAt: null,
     active: true,
     createdAt: now,
     updatedAt: now
@@ -82,7 +92,10 @@ function normalizeCatalog(catalog: UsersCatalog): UsersCatalog {
     ...catalog,
     users: catalog.users.map((user) => ({
       ...user,
-      bitrixUserId: user.bitrixUserId ?? null
+      bitrixUserId: user.bitrixUserId ?? null,
+      mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
+      internshipStartedOn: user.internshipStartedOn ?? null,
+      approvedAt: user.approvedAt ?? null
     }))
   };
 }
@@ -227,6 +240,16 @@ function normalizeBitrixUserId(value: string | null | undefined): string | null 
   return trimmed ? trimmed : null;
 }
 
+function normalizeIsoDay(value: string | null | undefined): string | null {
+  const day = value?.trim() ?? "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
+
+function normalizePayTrack(value: AppUser["mopPayTrack"] | undefined, accessLevel: AppUser["accessLevel"]): AppUser["mopPayTrack"] {
+  if (value === "auto" || value === "internship" || value === "trial" || value === "regular") return value;
+  return accessLevel === "mop" ? "regular" : null;
+}
+
 type CreateUserInput = {
   login: string;
   password: string;
@@ -234,6 +257,9 @@ type CreateUserInput = {
   accessLevel: AppUser["accessLevel"];
   active?: boolean;
   bitrixUserId?: string | null;
+  mopPayTrack?: AppUser["mopPayTrack"];
+  internshipStartedOn?: string | null;
+  approvedAt?: string | null;
 };
 
 export async function createUser(input: CreateUserInput): Promise<AppUserPublic> {
@@ -246,6 +272,8 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
     }
 
     const now = new Date().toISOString();
+    const mopTrack =
+      input.accessLevel === "mop" ? normalizePayTrack(input.mopPayTrack ?? "auto", "mop") : null;
     const user: AppUser = {
       id: generateId("user"),
       login: normalizedLogin,
@@ -253,6 +281,12 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
       name: input.name.trim() || normalizedLogin,
       accessLevel: input.accessLevel,
       bitrixUserId: normalizeBitrixUserId(input.bitrixUserId),
+      mopPayTrack: mopTrack,
+      internshipStartedOn:
+        mopTrack && mopTrack !== "regular"
+          ? normalizeIsoDay(input.internshipStartedOn) || rigaDateIso()
+          : normalizeIsoDay(input.internshipStartedOn),
+      approvedAt: mopTrack === "regular" ? input.approvedAt || now : null,
       active: input.active ?? true,
       createdAt: now,
       updatedAt: now
@@ -277,6 +311,9 @@ type UpdateUserInput = {
   accessLevel?: AppUser["accessLevel"];
   active?: boolean;
   bitrixUserId?: string | null;
+  mopPayTrack?: AppUser["mopPayTrack"];
+  internshipStartedOn?: string | null;
+  approvedAt?: string | null;
 };
 
 export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic> {
@@ -298,6 +335,22 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
     if (input.accessLevel !== undefined) current.accessLevel = input.accessLevel;
     if (input.active !== undefined) current.active = input.active;
     if (input.bitrixUserId !== undefined) current.bitrixUserId = normalizeBitrixUserId(input.bitrixUserId);
+    if (input.mopPayTrack !== undefined || input.internshipStartedOn !== undefined || input.approvedAt !== undefined) {
+      const nextLevel = input.accessLevel ?? current.accessLevel;
+      if (nextLevel === "mop") {
+        if (input.mopPayTrack !== undefined) current.mopPayTrack = normalizePayTrack(input.mopPayTrack, "mop");
+        if (input.internshipStartedOn !== undefined) current.internshipStartedOn = normalizeIsoDay(input.internshipStartedOn);
+        if (input.approvedAt !== undefined) current.approvedAt = input.approvedAt;
+        if (current.mopPayTrack === "regular" && !current.approvedAt) current.approvedAt = new Date().toISOString();
+        if (current.mopPayTrack === "auto" && !current.internshipStartedOn) {
+          current.internshipStartedOn = rigaDateIso();
+        }
+      } else {
+        current.mopPayTrack = null;
+        current.internshipStartedOn = null;
+        current.approvedAt = null;
+      }
+    }
     if (input.password) current.passwordHash = hashPassword(input.password);
     current.updatedAt = new Date().toISOString();
 

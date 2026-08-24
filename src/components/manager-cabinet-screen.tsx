@@ -140,8 +140,10 @@ export function ManagerCabinetScreen() {
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               {canPick
-                ? "Лиды, сделки и зарплата по факту Bitrix. Оклад пропорционален сменам, процент — с кассы, мягкий оклад считается за полный месяц."
-                : "Здесь только твои заявки, оплаты и зарплата. Вчерашние чаты разбираем простыми словами: что вышло и что сказать точнее."}
+                ? "Лиды, сделки и зарплата по факту Bitrix. Новые менеджеры сначала идут 3 дня стажировки и 5 дней теста, потом общие условия после одобрения."
+                : payload?.onboarding
+                  ? "Сначала стажировка 3 дня (11% с оплат), потом 5 дней теста (10% и бонус 8 000 ₽ за 5 продаж). Оклада пока нет."
+                  : "Здесь только твои заявки, оплаты и зарплата. Вчерашние чаты разбираем простыми словами: что вышло и что сказать точнее."}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -325,7 +327,9 @@ export function ManagerCabinetScreen() {
             <div className="card p-5">
               <div className="mb-4 flex items-center gap-2">
                 <Wallet size={18} className="text-amber-700" />
-                <h2 className="text-lg font-black text-slate-950">Зарплата</h2>
+                <h2 className="text-lg font-black text-slate-950">
+                  {payload.onboarding ? "Деньги на старте" : "Зарплата"}
+                </h2>
               </div>
               {payroll ? (
                 <div className="space-y-3 text-sm">
@@ -346,38 +350,89 @@ export function ManagerCabinetScreen() {
             </div>
 
             <div className="space-y-3">
-              <article className="card flex items-start gap-3 p-4">
-                <Target size={18} className="mt-0.5 text-sky-700" />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Касса</p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">{eur(facts.revenueEur)}</p>
-                  <p className="mt-1 text-xs text-slate-500">оплатили {number(facts.payments, 0)}</p>
-                </div>
-              </article>
-              <article className="card flex items-start gap-3 p-4">
-                <Filter size={18} className="mt-0.5 text-sky-700" />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Сколько покупают</p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">
-                    {facts.paymentCrPct == null ? "—" : `${Math.round(facts.paymentCrPct * 100)} из 100`}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    бонус с {Math.round(DEFAULT_PAYROLL_PARAMS.conversionPlanPct * 100)} из 100
-                  </p>
-                </div>
-              </article>
-              <article className="card flex items-start gap-3 p-4">
-                <Banknote size={18} className="mt-0.5 text-emerald-700" />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Чек</p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">
-                    {facts.avgCheckEur == null ? "—" : eur(facts.avgCheckEur)}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    бонус с {eur(DEFAULT_PAYROLL_PARAMS.checkPlanEur)}
-                  </p>
-                </div>
-              </article>
+              {payload.onboarding ? (
+                <>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Target size={18} className="mt-0.5 text-sky-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Стажировка</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">
+                        день {payload.onboarding.internship.day} из {payload.onboarding.internship.days}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        11% · купили {number(payload.onboarding.internship.payments, 0)} · {eur(payload.onboarding.internship.payEur)}
+                      </p>
+                    </div>
+                  </article>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Filter size={18} className="mt-0.5 text-sky-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Тест 5 дней</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">
+                        {payload.onboarding.trial.day > 0
+                          ? `${payload.onboarding.trial.payments} из ${payload.onboarding.salesTarget}`
+                          : "ещё не начался"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {payload.onboarding.trial.day > 0
+                          ? `день ${payload.onboarding.trial.day} из ${payload.onboarding.trial.days} · 10% · ${eur(payload.onboarding.trial.payEur)}`
+                          : "после 3 дней стажировки"}
+                      </p>
+                    </div>
+                  </article>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Banknote size={18} className="mt-0.5 text-emerald-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Бонус 8 000 ₽</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">
+                        {payload.onboarding.trialBonusApplied ? eur(payload.onboarding.trialBonusEur) : "ещё нет"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {payload.onboarding.trialBonusApplied
+                          ? `курс ${payload.onboarding.rubPerEur.toFixed(2)} ₽ за 1 €`
+                          : payload.onboarding.waitingApproval
+                            ? "пять дней теста прошли. Общие условия — после одобрения РОПа"
+                            : `нужно ${payload.onboarding.salesTarget} продаж за 5 дней подряд`}
+                      </p>
+                    </div>
+                  </article>
+                </>
+              ) : (
+                <>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Target size={18} className="mt-0.5 text-sky-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Касса</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">{eur(facts.revenueEur)}</p>
+                      <p className="mt-1 text-xs text-slate-500">оплатили {number(facts.payments, 0)}</p>
+                    </div>
+                  </article>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Filter size={18} className="mt-0.5 text-sky-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Сколько покупают</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">
+                        {facts.paymentCrPct == null ? "—" : `${Math.round(facts.paymentCrPct * 100)} из 100`}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        бонус с {Math.round(DEFAULT_PAYROLL_PARAMS.conversionPlanPct * 100)} из 100
+                      </p>
+                    </div>
+                  </article>
+                  <article className="card flex items-start gap-3 p-4">
+                    <Banknote size={18} className="mt-0.5 text-emerald-700" />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Чек</p>
+                      <p className="mt-1 text-2xl font-black text-slate-950">
+                        {facts.avgCheckEur == null ? "—" : eur(facts.avgCheckEur)}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        бонус с {eur(DEFAULT_PAYROLL_PARAMS.checkPlanEur)}
+                      </p>
+                    </div>
+                  </article>
+                </>
+              )}
             </div>
           </section>
 

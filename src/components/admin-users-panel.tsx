@@ -7,8 +7,10 @@ import { accessLevelLabel, accessLevelScope } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
-import type { AccessLevel, AppUserPublic } from "@/types/auth";
+import type { AccessLevel, AppUserPublic, MopPayTrack } from "@/types/auth";
 import type { BitrixRosterEntry } from "@/lib/manager-cabinet/types";
+
+type PayTrackChoice = "auto" | "regular";
 
 type UserFormState = {
   login: string;
@@ -17,16 +19,42 @@ type UserFormState = {
   accessLevel: AccessLevel;
   active: boolean;
   bitrixUserId: string;
+  mopPayTrack: PayTrackChoice;
+  internshipStartedOn: string;
+  approvedAt: string | null;
 };
 
-const emptyForm: UserFormState = {
-  login: "",
-  password: "",
-  name: "",
-  accessLevel: "mop",
-  active: true,
-  bitrixUserId: ""
-};
+function rigaToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Riga" }).format(new Date());
+}
+
+function emptyUserForm(): UserFormState {
+  return {
+    login: "",
+    password: "",
+    name: "",
+    accessLevel: "mop",
+    active: true,
+    bitrixUserId: "",
+    mopPayTrack: "auto",
+    internshipStartedOn: rigaToday(),
+    approvedAt: null
+  };
+}
+
+function formPayTrack(user: AppUserPublic): PayTrackChoice {
+  if (user.accessLevel !== "mop") return "auto";
+  if (user.mopPayTrack === "regular" || user.approvedAt) return "regular";
+  return "auto";
+}
+
+function mopPayStageLabel(user: AppUserPublic): string {
+  if (user.accessLevel !== "mop") return "—";
+  if (user.mopPayTrack === "regular" || user.approvedAt) return "Общие";
+  if (user.mopPayTrack === "internship") return "Стажировка";
+  if (user.mopPayTrack === "trial") return "Тест";
+  return "Старт 3+5";
+}
 
 function generatePassword(length = 14): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -63,7 +91,9 @@ function buildAccessMessage(input: {
     `Доступные разделы: ${accessLevelScope(input.accessLevel)}`,
     `Статус: ${input.active ? "активен" : "отключён"}`,
     "",
-    "После входа откроется рабочий кабинет. Регистрация недоступна — используйте только эти данные."
+    input.accessLevel === "mop"
+      ? "После входа откроется личный кабинет продаж (/me). Регистрация недоступна — используйте только эти данные."
+      : "После входа откроется рабочий кабинет. Регистрация недоступна — используйте только эти данные."
   ].join("\n");
 }
 
@@ -76,7 +106,7 @@ export function AdminUsersPanel() {
   const [bitrixManagers, setBitrixManagers] = useState<BitrixRosterEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<UserFormState>(emptyForm);
+  const [form, setForm] = useState<UserFormState>(emptyUserForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -133,14 +163,17 @@ export function AdminUsersPanel() {
       name: user.name,
       accessLevel: user.accessLevel,
       active: user.active,
-      bitrixUserId: user.bitrixUserId ?? ""
+      bitrixUserId: user.bitrixUserId ?? "",
+      mopPayTrack: formPayTrack(user),
+      internshipStartedOn: user.internshipStartedOn || rigaToday(),
+      approvedAt: user.approvedAt
     });
     setCopied(false);
   };
 
   const resetForm = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm(emptyUserForm());
     setCopied(false);
   };
 
@@ -165,23 +198,39 @@ export function AdminUsersPanel() {
     setError(null);
 
     try {
+      const accessLevel = canManageManagersOnly ? "mop" : form.accessLevel;
+      const mopPay: {
+        mopPayTrack?: MopPayTrack | null;
+        internshipStartedOn?: string | null;
+        approvedAt?: string | null;
+      } =
+        accessLevel === "mop"
+          ? {
+              mopPayTrack: form.mopPayTrack,
+              internshipStartedOn: form.internshipStartedOn || null,
+              approvedAt: form.mopPayTrack === "regular" ? form.approvedAt || new Date().toISOString() : null
+            }
+          : { mopPayTrack: null, internshipStartedOn: null, approvedAt: null };
+
       const payload = editingId
         ? {
             id: editingId,
             login: form.login,
             name: form.name,
-            accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
+            accessLevel,
             active: form.active,
             bitrixUserId: form.bitrixUserId,
+            ...mopPay,
             ...(form.password ? { password: form.password } : {})
           }
         : {
             login: form.login,
             password: form.password,
             name: form.name,
-            accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
+            accessLevel,
             active: form.active,
-            bitrixUserId: form.bitrixUserId
+            bitrixUserId: form.bitrixUserId,
+            ...mopPay
           };
 
       const response = await fetch("/api/admin/users", {
@@ -193,6 +242,39 @@ export function AdminUsersPanel() {
       if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить пользователя");
 
       resetForm();
+      await loadUsers();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Ошибка сохранения");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveRegular = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const approvedAt = form.approvedAt || new Date().toISOString();
+      const response = await fetch("/api/admin/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingId,
+          login: form.login,
+          name: form.name,
+          accessLevel: "mop",
+          active: form.active,
+          bitrixUserId: form.bitrixUserId,
+          mopPayTrack: "regular",
+          internshipStartedOn: form.internshipStartedOn || null,
+          approvedAt,
+          ...(form.password ? { password: form.password } : {})
+        })
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Не удалось одобрить менеджера");
+      setForm((prev) => ({ ...prev, mopPayTrack: "regular", approvedAt }));
       await loadUsers();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Ошибка сохранения");
@@ -320,6 +402,53 @@ export function AdminUsersPanel() {
               </label>
             ) : null}
 
+            {form.accessLevel === "mop" || canManageManagersOnly ? (
+              <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Условия оплаты
+                  <select
+                    className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                    value={form.mopPayTrack}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        mopPayTrack: event.target.value as PayTrackChoice,
+                        approvedAt: event.target.value === "regular" ? prev.approvedAt : null
+                      }))
+                    }
+                  >
+                    <option value="auto">Авто: стажировка 3 дня → тест 5 дней</option>
+                    <option value="regular">Сразу общие условия</option>
+                  </select>
+                </label>
+                {form.mopPayTrack === "auto" ? (
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Первый день стажировки
+                    <input
+                      type="date"
+                      className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                      value={form.internshipStartedOn}
+                      onChange={(event) => setForm((prev) => ({ ...prev, internshipStartedOn: event.target.value }))}
+                      required
+                    />
+                  </label>
+                ) : null}
+                <p className="text-xs leading-5 text-slate-600">
+                  3 дня — 11% с оплаченных сделок. Потом 5 дней подряд — 10%, и 8 000 ₽ (в евро по курсу ЦБ), если за эти 5 дней 5 продаж. Общие условия (оклад и бонусы) — после кнопки «Одобрить».
+                </p>
+                {editingId && form.mopPayTrack !== "regular" ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void handleApproveRegular()}
+                    className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60"
+                  >
+                    {saving ? "Сохранение..." : "Одобрить на общие условия"}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             {isFullAdmin ? (
               <label className="block text-sm font-semibold text-slate-700">
                 Уровень доступа
@@ -404,6 +533,7 @@ export function AdminUsersPanel() {
                   <th>Имя</th>
                   <th>Bitrix</th>
                   <th>Доступ</th>
+                  <th>Оплата</th>
                   <th>Статус</th>
                   <th>Действия</th>
                 </tr>
@@ -411,11 +541,11 @@ export function AdminUsersPanel() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6}>Загрузка...</td>
+                    <td colSpan={7}>Загрузка...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
+                    <td colSpan={7}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
                   </tr>
                 ) : (
                   users.map((user) => (
@@ -428,6 +558,7 @@ export function AdminUsersPanel() {
                           "—"}
                       </td>
                       <td>{accessLevelLabel(user.accessLevel)}</td>
+                      <td>{mopPayStageLabel(user)}</td>
                       <td>{user.active ? "Активен" : "Отключён"}</td>
                       <td>
                         <div className="flex gap-2">
