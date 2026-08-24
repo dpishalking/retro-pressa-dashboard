@@ -8,6 +8,7 @@ import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel, AppUserPublic } from "@/types/auth";
+import type { BitrixRosterEntry } from "@/lib/manager-cabinet/types";
 
 type UserFormState = {
   login: string;
@@ -15,6 +16,7 @@ type UserFormState = {
   name: string;
   accessLevel: AccessLevel;
   active: boolean;
+  bitrixUserId: string;
 };
 
 const emptyForm: UserFormState = {
@@ -22,7 +24,8 @@ const emptyForm: UserFormState = {
   password: "",
   name: "",
   accessLevel: "mop",
-  active: true
+  active: true,
+  bitrixUserId: ""
 };
 
 function generatePassword(length = 14): string {
@@ -70,6 +73,7 @@ export function AdminUsersPanel() {
   const isRopManager = viewer?.accessLevel === "rop";
   const canManageManagersOnly = isRopManager;
   const [users, setUsers] = useState<AppUserPublic[]>([]);
+  const [bitrixManagers, setBitrixManagers] = useState<BitrixRosterEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<UserFormState>(emptyForm);
@@ -101,9 +105,14 @@ export function AdminUsersPanel() {
     setError(null);
     try {
       const response = await fetch("/api/admin/users");
-      const data = (await response.json()) as { users?: AppUserPublic[]; error?: string };
+      const data = (await response.json()) as {
+        users?: AppUserPublic[];
+        bitrixManagers?: BitrixRosterEntry[];
+        error?: string;
+      };
       if (!response.ok) throw new Error(data.error ?? "Не удалось загрузить пользователей");
       setUsers(data.users ?? []);
+      setBitrixManagers(data.bitrixManagers ?? []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Ошибка загрузки");
     } finally {
@@ -123,7 +132,8 @@ export function AdminUsersPanel() {
       password: "",
       name: user.name,
       accessLevel: user.accessLevel,
-      active: user.active
+      active: user.active,
+      bitrixUserId: user.bitrixUserId ?? ""
     });
     setCopied(false);
   };
@@ -162,6 +172,7 @@ export function AdminUsersPanel() {
             name: form.name,
             accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
             active: form.active,
+            bitrixUserId: form.bitrixUserId,
             ...(form.password ? { password: form.password } : {})
           }
         : {
@@ -169,7 +180,8 @@ export function AdminUsersPanel() {
             password: form.password,
             name: form.name,
             accessLevel: canManageManagersOnly ? "mop" : form.accessLevel,
-            active: form.active
+            active: form.active,
+            bitrixUserId: form.bitrixUserId
           };
 
       const response = await fetch("/api/admin/users", {
@@ -237,8 +249,8 @@ export function AdminUsersPanel() {
         </div>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
           {isFullAdmin
-            ? "Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику, инструменты РОП и обучение, менеджер — только обучение."
-            : "Создавайте и редактируйте аккаунты менеджеров для обучения. РОП может заводить только менеджеров — администраторов и других РОП здесь создать нельзя."}
+            ? "Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику и команду, менеджер — обучение, мотивацию и личные продажи."
+            : "Создавайте аккаунты менеджеров и привязывайте их к ответственному в Bitrix. РОП может заводить только менеджеров."}
         </p>
       </header>
 
@@ -290,6 +302,24 @@ export function AdminUsersPanel() {
               />
             </label>
 
+            {form.accessLevel === "mop" || canManageManagersOnly ? (
+              <label className="block text-sm font-semibold text-slate-700">
+                Менеджер в Bitrix
+                <select
+                  className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm"
+                  value={form.bitrixUserId}
+                  onChange={(event) => setForm((prev) => ({ ...prev, bitrixUserId: event.target.value }))}
+                >
+                  <option value="">Не привязан</option>
+                  {bitrixManagers.map((row) => (
+                    <option key={row.bitrixId} value={row.bitrixId}>
+                      {row.name} ({row.bitrixId})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
             {isFullAdmin ? (
               <label className="block text-sm font-semibold text-slate-700">
                 Уровень доступа
@@ -300,12 +330,12 @@ export function AdminUsersPanel() {
                 >
                   <option value="admin">Администратор — все разделы</option>
                   <option value="rop">РОП — аналитика, инструменты РОП, обучение</option>
-                  <option value="mop">Менеджер — только обучение</option>
+                  <option value="mop">Менеджер — обучение, мотивация, личные продажи</option>
                 </select>
               </label>
             ) : (
               <p className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
-                Уровень доступа: <span className="font-bold">Менеджер — только обучение</span>
+                Уровень доступа: <span className="font-bold">Менеджер — обучение, мотивация, личные продажи</span>
               </p>
             )}
 
@@ -372,6 +402,7 @@ export function AdminUsersPanel() {
                 <tr>
                   <th>Логин</th>
                   <th>Имя</th>
+                  <th>Bitrix</th>
                   <th>Доступ</th>
                   <th>Статус</th>
                   <th>Действия</th>
@@ -380,17 +411,22 @@ export function AdminUsersPanel() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5}>Загрузка...</td>
+                    <td colSpan={6}>Загрузка...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
+                    <td colSpan={6}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id}>
                       <td>{user.login}</td>
                       <td>{user.name}</td>
+                      <td>
+                        {bitrixManagers.find((row) => row.bitrixId === user.bitrixUserId)?.name ||
+                          user.bitrixUserId ||
+                          "—"}
+                      </td>
                       <td>{accessLevelLabel(user.accessLevel)}</td>
                       <td>{user.active ? "Активен" : "Отключён"}</td>
                       <td>

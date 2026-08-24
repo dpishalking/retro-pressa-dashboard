@@ -109,3 +109,10 @@ export function deriveRevenueFromPayments(
   if (!Number.isFinite(payments) || !Number.isFinite(avgCheckEur)) return null;
   return payments * avgCheckEur;
 }
+
+/** Prorate a monthly figure by worked shifts vs the 15-shift norm. */
+export function prorateByShifts(monthlyEur: number, shifts: number, normShifts: number): number {
+  if (!(Number.isFinite(monthlyEur) && Number.isFinite(shifts) && Number.isFinite(normShifts))) return 0;
+  if (normShifts <= 0) return monthlyEur;
+  return monthlyEur * (shifts / normShifts);
+}

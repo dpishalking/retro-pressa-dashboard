@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calculateManagerPayroll, calculatePayrollBoard } from "@/lib/payroll/calculator";
+import { calculateManagerPayroll, calculatePayrollBoard, prorateByShifts } from "@/lib/payroll/calculator";
 import type { PayrollParams } from "@/lib/payroll/types";
 
 const month1Params: PayrollParams = {
@@ -141,5 +141,7 @@ const month1Params: PayrollParams = {
   assert.equal(Math.round(board.totals.expenseEur), 5679);
   assert.ok(board.totals.fotShare != null && Math.abs(board.totals.fotShare - 5679 / 34800) < 1e-9);
 }
+
+assert.equal(Number(prorateByShifts(4000, 7, 15).toFixed(2)), 1866.67);
 
 console.log("payroll-calculator.test.ts: ok");

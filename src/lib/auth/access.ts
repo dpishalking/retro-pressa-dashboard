@@ -5,8 +5,8 @@ import { USER_MANAGEMENT_PATH, canAccessUserManagement } from "@/lib/auth/admin-
 /** Route prefixes each access level may visit. Admin uses wildcard. */
 export const ACCESS_ROUTE_PREFIXES: Record<AccessLevel, string[] | "*"> = {
   admin: "*",
-  rop: [HUB_PATH, "/analytics", "/os", "/ad-analytics", "/predictive", "/rop", "/training", "/products", "/motivation", "/utm", "/sales", "/marketing", "/product", "/finance", USER_MANAGEMENT_PATH],
-  mop: [HUB_PATH, "/training", "/motivation"],
+  rop: [HUB_PATH, "/analytics", "/os", "/ad-analytics", "/predictive", "/rop", "/training", "/products", "/motivation", "/utm", "/sales", "/marketing", "/product", "/finance", "/me", USER_MANAGEMENT_PATH],
+  mop: [HUB_PATH, "/training", "/motivation", "/me"],
   partner: [PARTNERS_PATH]
 };
 
@@ -38,6 +38,10 @@ export function canAccessRoute(accessLevel: AccessLevel, pathname: string): bool
 
   // Motivation board is for the whole sales team, including managers (mop).
   if (normalized === "/motivation" || normalized.startsWith("/motivation/")) {
+    return accessLevel === "admin" || accessLevel === "rop" || accessLevel === "mop";
+  }
+
+  if (normalized === "/me" || normalized.startsWith("/me/")) {
     return accessLevel === "admin" || accessLevel === "rop" || accessLevel === "mop";
   }
 
@@ -75,7 +79,7 @@ export function accessLevelScope(level: AccessLevel): string {
     case "rop":
       return "аналитика, маркетинг и трафик, предиктивные модели, инструменты РОП, обучение менеджеров, продукты, мотивация";
     case "mop":
-      return "обучение менеджеров, мотивация";
+      return "обучение, мотивация и личные продажи";
     case "partner":
       return "кабинет партнёрской программы";
   }

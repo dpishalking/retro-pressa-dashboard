@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -45,14 +45,24 @@ const officeSections: OfficeSection[] = [
     id: "sales",
     title: "Продажи",
     subtitle: "Сводка, прогноз, воронка и команда.",
-    cards: [{
-      href: "/sales",
-      title: "Продажи",
-      description: "Сводка, прогноз и работа команды продаж.",
-      icon: Target,
-      status: "active",
-      accent: "text-amber-600 bg-amber-50"
-    }]
+    cards: [
+      {
+        href: "/sales",
+        title: "Продажи",
+        description: "Сводка, прогноз и работа команды продаж.",
+        icon: Target,
+        status: "active",
+        accent: "text-amber-600 bg-amber-50"
+      },
+      {
+        href: "/me",
+        title: "Кабинеты менеджеров",
+        description: "Личные лиды, сделки, конверсии и зарплата.",
+        icon: UserRound,
+        status: "active",
+        accent: "text-amber-600 bg-amber-50"
+      }
+    ]
   },
   {
     id: "marketing",
@@ -109,6 +119,14 @@ const officeSections: OfficeSection[] = [
 ];
 
 const managerServices: OfficeCard[] = [
+  {
+    href: "/me",
+    title: "Мои продажи",
+    description: "Лиды, сделки, средний чек, конверсия и зарплата.",
+    icon: UserRound,
+    status: "active",
+    accent: "text-amber-600 bg-amber-50"
+  },
   {
     href: "/training",
     title: "Обучение",

@@ -6,6 +6,8 @@ export type AppUser = {
   passwordHash: string;
   name: string;
   accessLevel: AccessLevel;
+  /** Bitrix user id (ASSIGNED_BY_ID). Links mop login to CRM stats. */
+  bitrixUserId: string | null;
   active: boolean;
   createdAt: string;
   updatedAt: string;

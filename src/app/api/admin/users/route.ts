@@ -5,6 +5,7 @@ import {
   assertRopCanModifyUser,
   canAccessUserManagement
 } from "@/lib/auth/admin-users-auth";
+import { loadBitrixRoster } from "@/lib/manager-cabinet/roster";
 import { createUser, deleteUser, findUserById, listPublicUsers, listTraineeUsers, updateUser } from "@/lib/auth/store";
 import { readSessionCookie } from "@/lib/auth/session";
 import type { AccessLevel } from "@/types/auth";
@@ -25,7 +26,8 @@ export async function GET(request: Request) {
 
   const users =
     session.accessLevel === "rop" ? await listTraineeUsers() : await listPublicUsers();
-  return NextResponse.json({ users });
+  const bitrixManagers = await loadBitrixRoster().catch(() => []);
+  return NextResponse.json({ users, bitrixManagers });
 }
 
 export async function POST(request: Request) {
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
       name?: string;
       accessLevel?: AccessLevel;
       active?: boolean;
+      bitrixUserId?: string | null;
     };
 
     if (!body.login || !body.password || !body.accessLevel) {
@@ -54,7 +57,8 @@ export async function POST(request: Request) {
       password: body.password,
       name: body.name ?? body.login,
       accessLevel: body.accessLevel,
-      active: body.active
+      active: body.active,
+      bitrixUserId: body.bitrixUserId
     });
 
     return NextResponse.json({ user }, { status: 201 });
@@ -78,6 +82,7 @@ export async function PUT(request: Request) {
       name?: string;
       accessLevel?: AccessLevel;
       active?: boolean;
+      bitrixUserId?: string | null;
     };
 
     if (!body.id) {
@@ -97,7 +102,8 @@ export async function PUT(request: Request) {
       password: body.password,
       name: body.name,
       accessLevel: body.accessLevel,
-      active: body.active
+      active: body.active,
+      bitrixUserId: body.bitrixUserId
     });
 
     return NextResponse.json({ user });

@@ -39,7 +39,7 @@ function sleep(ms: number) {
 
 function toPublicUser(user: AppUser): AppUserPublic {
   const { passwordHash: _passwordHash, ...publicUser } = user;
-  return publicUser;
+  return { ...publicUser, bitrixUserId: user.bitrixUserId ?? null };
 }
 
 async function ensureAuthDir() {
@@ -56,6 +56,7 @@ function defaultAdminUser(): AppUser {
     passwordHash: hashPassword(password),
     name: "Администратор",
     accessLevel: "admin",
+    bitrixUserId: null,
     active: true,
     createdAt: now,
     updatedAt: now
@@ -76,11 +77,21 @@ function isValidCatalog(value: unknown): value is UsersCatalog {
   return catalog.version === 1 && Array.isArray(catalog.users) && catalog.users.length > 0;
 }
 
+function normalizeCatalog(catalog: UsersCatalog): UsersCatalog {
+  return {
+    ...catalog,
+    users: catalog.users.map((user) => ({
+      ...user,
+      bitrixUserId: user.bitrixUserId ?? null
+    }))
+  };
+}
+
 async function readCatalogFile(filePath: string): Promise<UsersCatalog | null> {
   try {
     const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as unknown;
-    return isValidCatalog(parsed) ? parsed : null;
+    return isValidCatalog(parsed) ? normalizeCatalog(parsed) : null;
   } catch {
     return null;
   }
@@ -211,12 +222,18 @@ export async function findUserById(id: string): Promise<AppUser | null> {
   return catalog.users.find((user) => user.id === id) ?? null;
 }
 
+function normalizeBitrixUserId(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed ? trimmed : null;
+}
+
 type CreateUserInput = {
   login: string;
   password: string;
   name: string;
   accessLevel: AppUser["accessLevel"];
   active?: boolean;
+  bitrixUserId?: string | null;
 };
 
 export async function createUser(input: CreateUserInput): Promise<AppUserPublic> {
@@ -235,6 +252,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
       passwordHash: hashPassword(input.password),
       name: input.name.trim() || normalizedLogin,
       accessLevel: input.accessLevel,
+      bitrixUserId: normalizeBitrixUserId(input.bitrixUserId),
       active: input.active ?? true,
       createdAt: now,
       updatedAt: now
@@ -258,6 +276,7 @@ type UpdateUserInput = {
   name?: string;
   accessLevel?: AppUser["accessLevel"];
   active?: boolean;
+  bitrixUserId?: string | null;
 };
 
 export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic> {
@@ -278,6 +297,7 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
     if (input.name !== undefined) current.name = input.name.trim() || current.login;
     if (input.accessLevel !== undefined) current.accessLevel = input.accessLevel;
     if (input.active !== undefined) current.active = input.active;
+    if (input.bitrixUserId !== undefined) current.bitrixUserId = normalizeBitrixUserId(input.bitrixUserId);
     if (input.password) current.passwordHash = hashPassword(input.password);
     current.updatedAt = new Date().toISOString();
 

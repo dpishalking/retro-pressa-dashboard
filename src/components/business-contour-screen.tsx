@@ -66,6 +66,7 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
         description: "Калькулятор ФОТ: факт Bitrix или ручной сценарий.",
         href: "/sales/payroll"
       },
+      { title: "Кабинеты менеджеров", description: "Лиды, сделки и зарплата по каждому МОП.", href: "/me" },
       { title: "Мотивация", description: "Бонусы и фокус месяца.", href: "/motivation" },
       { title: "Обучение", description: "Продукты, CRM и прогресс команды.", href: "/training" }
     ]

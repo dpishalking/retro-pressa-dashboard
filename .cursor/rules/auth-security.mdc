@@ -20,7 +20,7 @@ alwaysApply: false
 |-------|--------|
 | admin | всё + digital-twin + training/admin |
 | rop | hub, analytics, ad-analytics, rop, training, products, motivation, user management |
-| mop | hub, training, products, motivation |
+| mop | hub, training, motivation, личные продажи |
 
 Новый защищённый маршрут → `canAccessRoute` + при необходимости middleware admin check.
 
