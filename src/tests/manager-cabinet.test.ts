@@ -4,7 +4,11 @@ import { canAccessManagerCabinet, canPickCabinetManager } from "@/lib/manager-ca
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName, namesMatch } from "@/lib/manager-cabinet/match";
 import { cabinetWindowBounds } from "@/lib/manager-cabinet/period";
-import { resolveBitrixUserId, resolveCabinetTarget } from "@/lib/manager-cabinet/resolve-target";
+import {
+  firstCabinetManagerId,
+  resolveBitrixUserId,
+  resolveCabinetTarget
+} from "@/lib/manager-cabinet/resolve-target";
 import { staticRoster } from "@/lib/manager-cabinet/roster";
 import { prorateByShifts } from "@/lib/payroll/calculator";
 import type { BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
@@ -71,6 +75,10 @@ assert.equal(namesMatch("Кира", "Надежда Веклич"), false);
   });
   assert.equal(mopUnlinked.bitrixUserId, null);
   assert.equal(mopUnlinked.authName, "Дарья");
+
+  assert.equal(firstCabinetManagerId(roster, null), "98908");
+  assert.equal(firstCabinetManagerId(roster, "3290"), "3290");
+  assert.equal(firstCabinetManagerId(roster, ""), "98908");
 }
 
 assert.equal(Math.round(prorateByShifts(4000, 7, 15) * 100) / 100, 1866.67);

@@ -83,7 +83,18 @@ export function resolveCabinetTarget(input: {
     }
   }
 
-  const first = input.roster.find((row) => row.activeRoster) ?? input.roster[0];
+  const firstId = firstCabinetManagerId(input.roster, null);
+  const first = firstId ? input.roster.find((row) => row.bitrixId === firstId) : undefined;
   if (!first) return empty;
   return fromRoster(first, authForBitrix(first.bitrixId, input.users));
+}
+
+/** Prefer an already selected Bitrix id, otherwise the first active roster manager. */
+export function firstCabinetManagerId(
+  roster: BitrixRosterEntry[],
+  selectedId?: string | null
+): string | null {
+  const selected = selectedId?.trim() || null;
+  if (selected && roster.some((row) => row.bitrixId === selected)) return selected;
+  return roster.find((row) => row.activeRoster)?.bitrixId ?? roster[0]?.bitrixId ?? null;
 }

@@ -8,6 +8,7 @@ import { currentAnalyticsPeriod } from "@/lib/analytics-os/period";
 import { eur, number, pct } from "@/lib/format";
 import { canPickCabinetManager } from "@/lib/manager-cabinet/access";
 import { cabinetWindowLabel } from "@/lib/manager-cabinet/period";
+import { firstCabinetManagerId } from "@/lib/manager-cabinet/resolve-target";
 import type { CabinetWindow, ManagerCabinetPayload } from "@/lib/manager-cabinet/types";
 import { DEFAULT_PAYROLL_PARAMS } from "@/lib/payroll/defaults";
 import { useAuth } from "@/components/auth-provider";
@@ -35,16 +36,17 @@ function Kpi({
 }
 
 export function ManagerCabinetScreen() {
-  const { user } = useAuth();
-  const canPick = canPickCabinetManager(user?.accessLevel);
+  const { user, loading } = useAuth();
   const [period, setPeriod] = useState(currentAnalyticsPeriod());
   const [windowKey, setWindowKey] = useState<CabinetWindow>("month");
   const [managerId, setManagerId] = useState("");
   const [payload, setPayload] = useState<ManagerCabinetPayload | null>(null);
   const [status, setStatus] = useState<LoadStatus>({ state: "idle", message: "" });
   const loadSeq = useRef(0);
+  const canPick = canPickCabinetManager(payload?.viewer.accessLevel ?? user?.accessLevel);
 
   const load = useCallback(async () => {
+    if (loading) return;
     const seq = ++loadSeq.current;
     setStatus({ state: "loading", message: "Считаю показатели из Bitrix…" });
     try {
@@ -58,8 +60,10 @@ export function ManagerCabinetScreen() {
       }
       setPayload(data);
       if (data.period) setPeriod(data.period);
-      if (canPick && !managerId && data.selected.bitrixUserId) {
-        setManagerId(data.selected.bitrixUserId);
+      const picker = canPickCabinetManager(data.viewer.accessLevel);
+      if (picker && !managerId) {
+        const nextId = firstCabinetManagerId(data.roster, data.selected.bitrixUserId);
+        if (nextId) setManagerId(nextId);
       }
       setStatus({ state: "ok", message: "" });
     } catch (error) {
@@ -69,7 +73,7 @@ export function ManagerCabinetScreen() {
         message: error instanceof Error ? error.message : "Ошибка загрузки"
       });
     }
-  }, [period, windowKey, managerId, canPick]);
+  }, [period, windowKey, managerId, canPick, loading]);
 
   useEffect(() => {
     void load();
@@ -78,6 +82,13 @@ export function ManagerCabinetScreen() {
   const facts = payload?.facts;
   const payroll = payload?.payroll;
   const periods = payload?.availablePeriods?.length ? payload.availablePeriods : [period];
+  const selectedBitrixId = managerId || payload?.selected.bitrixUserId || "";
+  const selectedLabel =
+    payload?.roster.find((row) => row.bitrixId === selectedBitrixId)?.name ||
+    (payload?.linked ? payload.selected.managerName : null);
+  const hideStaleUnlinked =
+    canPick && payload != null && !payload.linked && payload.roster.length > 0;
+  const banner = hideStaleUnlinked ? null : payload?.message;
 
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
@@ -97,13 +108,19 @@ export function ManagerCabinetScreen() {
           <div className="flex flex-wrap items-center gap-2">
             {canPick ? (
               <select
-                value={managerId || payload?.selected.bitrixUserId || ""}
+                value={selectedBitrixId}
                 onChange={(event) => setManagerId(event.target.value)}
                 className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
               >
+                {selectedBitrixId ? null : (
+                  <option value="" disabled>
+                    Менеджер
+                  </option>
+                )}
                 {(payload?.roster || []).map((row) => (
                   <option key={row.bitrixId} value={row.bitrixId}>
                     {row.name}
+                    {row.activeRoster ? "" : " · архив"}
                   </option>
                 ))}
               </select>
@@ -144,11 +161,31 @@ export function ManagerCabinetScreen() {
             </button>
           </div>
         </div>
-        {payload?.selected.managerName ? (
+        {canPick && payload?.roster.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {payload.roster
+              .filter((row) => row.activeRoster)
+              .map((row) => (
+                <button
+                  key={row.bitrixId}
+                  type="button"
+                  onClick={() => setManagerId(row.bitrixId)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                    selectedBitrixId === row.bitrixId
+                      ? "bg-slate-900 text-white"
+                      : "border border-[var(--line)] bg-white text-slate-700"
+                  }`}
+                >
+                  {row.firstName || row.name}
+                </button>
+              ))}
+          </div>
+        ) : null}
+        {selectedLabel ? (
           <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
             <UserRound size={16} />
-            {payload.selected.managerName}
-            {payload.windowStart && payload.windowEnd
+            {selectedLabel}
+            {payload?.windowStart && payload.windowEnd
               ? ` · ${payload.windowStart} — ${payload.windowEnd}`
               : null}
           </p>
@@ -158,9 +195,9 @@ export function ManagerCabinetScreen() {
             {status.message}
           </p>
         ) : null}
-        {payload?.message ? (
+        {banner ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {payload.message}
+            {banner}
           </p>
         ) : null}
       </header>
@@ -309,7 +346,7 @@ export function ManagerCabinetScreen() {
             )}
           </section>
         </>
-      ) : status.state === "loading" ? (
+      ) : status.state === "loading" || loading ? (
         <p className="text-sm text-slate-600">Загружаю кабинет…</p>
       ) : null}
     </main>

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       window: params.get("window"),
       managerId: params.get("managerId")
     });
-    return NextResponse.json(payload, { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" } });
+    return NextResponse.json(payload, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof ManagerCabinetAccessError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
