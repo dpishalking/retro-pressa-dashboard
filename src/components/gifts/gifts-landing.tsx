@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { GiftCarousel } from "@/components/gifts/gift-carousel";
 import {
   addonGifts,
   coreGifts,
@@ -50,39 +50,17 @@ function YellowButton({
   );
 }
 
-function GiftPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  return (
-    <div className={`relative overflow-hidden bg-neutral-100 ${className ?? ""}`}>
-      <Image src={src} alt={alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" unoptimized />
-    </div>
-  );
+function giftSlides(gift: GiftLandingItem): string[] {
+  return [gift.image, ...gift.gallery];
 }
 
 function GiftBlock({ gift, reverse }: { gift: GiftLandingItem; reverse: boolean }) {
   return (
     <article id={gift.id} className="scroll-mt-28">
       <div
-        className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-16 ${reverse ? "lg:[&>div:first-child]:order-2" : ""}`}
+        className={`grid items-start gap-10 lg:grid-cols-2 lg:items-center lg:gap-16 ${reverse ? "lg:[&>div:first-child]:order-2" : ""}`}
       >
-        <div>
-          <GiftPhoto
-            src={gift.image}
-            alt={gift.title}
-            className="aspect-[4/3] rounded-[30px] shadow-[0_7px_19px_rgba(0,11,48,0.11)]"
-          />
-          {gift.gallery.length > 0 ? (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {gift.gallery.map((src) => (
-                <GiftPhoto
-                  key={src}
-                  src={src}
-                  alt=""
-                  className="aspect-[4/3] rounded-2xl shadow-[0_4px_12px_rgba(0,11,48,0.08)]"
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <GiftCarousel images={giftSlides(gift)} alt={gift.title} />
 
         <div>
           <p className="text-[13px] font-light uppercase tracking-[1.9px] text-[var(--gf-ink)]">
@@ -200,9 +178,11 @@ export function GiftsLanding() {
               <article
                 key={gift.id}
                 id={gift.id}
-                className="scroll-mt-28 overflow-hidden rounded-[24px] border border-[var(--gf-line)] shadow-[0_9px_10px_rgba(0,11,48,0.11)]"
+                className="scroll-mt-28 rounded-[24px] border border-[var(--gf-line)] shadow-[0_9px_10px_rgba(0,11,48,0.11)]"
               >
-                <GiftPhoto src={gift.image} alt={gift.title} className="aspect-[16/10]" />
+                <div className="p-4 pb-0 sm:p-5 sm:pb-0">
+                  <GiftCarousel images={giftSlides(gift)} alt={gift.title} />
+                </div>
                 <div className="p-6 sm:p-8">
                   <p className="text-[13px] font-light uppercase tracking-[1.9px]">
                     № {gift.number} · {gift.kicker}
