@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, Library, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -122,15 +122,23 @@ const managerServices: OfficeCard[] = [
   {
     href: "/me",
     title: "Мои продажи",
-    description: "Лиды, сделки, средний чек, конверсия и зарплата.",
+    description: "Твои заявки, оплаты, зарплата и разбор вчерашних чатов.",
     icon: UserRound,
     status: "active",
     accent: "text-amber-600 bg-amber-50"
   },
   {
+    href: "/training/knowledge-base",
+    title: "База знаний",
+    description: "Шпаргалки по продуктам, возражениям и частым вопросам.",
+    icon: Library,
+    status: "active",
+    accent: "text-sky-600 bg-sky-50"
+  },
+  {
     href: "/training",
     title: "Обучение",
-    description: "Продукты, CRM, база знаний и ваш прогресс.",
+    description: "Уроки, CRM и твой прогресс.",
     icon: BookOpen,
     status: "active",
     accent: "text-rose-600 bg-rose-50"
@@ -227,7 +235,14 @@ export function OfficeHub() {
             </button>
           </div>
         </div>
-        <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Рабочий кабинет</h1>
+        <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">
+          {user.accessLevel === "mop" ? `Привет, ${user.name.split(/\s+/)[0] || user.name}` : "Рабочий кабинет"}
+        </h1>
+        {user.accessLevel === "mop" ? (
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+            Это твой кабинет. Здесь продажи и зарплата, шпаргалки и обучение — без чужих цифр.
+          </p>
+        ) : null}
         {denied ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             У вашего аккаунта нет доступа к этому разделу.

@@ -1,9 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
 import {
-  HUB_PATH,
   MD_PUBLIC_PREFIX,
-  PARTNERS_PATH,
   PARTNERS_REGISTER_API,
   PARTNERS_REGISTER_PATH,
   PRODUCT_CARDS_PUBLIC_PREFIX,
@@ -155,7 +153,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const fallbackPath = homePathForAccessLevel(session.accessLevel);
-  const deniedUrl = new URL(fallbackPath === HUB_PATH ? HUB_PATH : PARTNERS_PATH, request.url);
+  const deniedUrl = new URL(fallbackPath, request.url);
   deniedUrl.searchParams.set("denied", "1");
   return NextResponse.redirect(deniedUrl);
 }

@@ -56,7 +56,9 @@ export function canSeeOfficeSection(accessLevel: AccessLevel, href: string): boo
 }
 
 export function homePathForAccessLevel(level: AccessLevel): string {
-  return level === "partner" ? PARTNERS_PATH : HUB_PATH;
+  if (level === "partner") return PARTNERS_PATH;
+  if (level === "mop") return "/me";
+  return HUB_PATH;
 }
 
 export function accessLevelLabel(level: AccessLevel): string {
@@ -79,7 +81,7 @@ export function accessLevelScope(level: AccessLevel): string {
     case "rop":
       return "аналитика, маркетинг и трафик, предиктивные модели, инструменты РОП, обучение менеджеров, продукты, мотивация";
     case "mop":
-      return "обучение, мотивация и личные продажи";
+      return "личные продажи, база знаний, обучение и мотивация";
     case "partner":
       return "кабинет партнёрской программы";
   }

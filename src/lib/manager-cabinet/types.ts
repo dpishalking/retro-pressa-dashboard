@@ -2,6 +2,11 @@ import type { ManagerPayrollResult } from "@/lib/payroll/types";
 
 export type CabinetWindow = "month" | "h1" | "h2";
 
+export type CabinetPayTip = {
+  title: string;
+  text: string;
+};
+
 export type BitrixRosterEntry = {
   bitrixId: string;
   name: string;
@@ -64,4 +69,23 @@ export type ManagerCabinetPayload = {
   softBonusesOnFullMonth: boolean;
   snapshotAsOf: string | null;
   message: string | null;
+  helloName: string;
+  payTips: CabinetPayTip[];
+};
+
+export type YesterdayCoachReview = {
+  day: string;
+  dialogs: number;
+  headline: string | null;
+  good: string[];
+  better: string[];
+  tryToday: string | null;
+  emptyHint: string | null;
+};
+
+export type ManagerCoachPayload = {
+  ok: true;
+  managerName: string | null;
+  firstName: string;
+  review: YesterdayCoachReview;
 };

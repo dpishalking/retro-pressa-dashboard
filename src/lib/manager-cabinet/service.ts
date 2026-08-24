@@ -14,6 +14,8 @@ import { canPickCabinetManager } from "@/lib/manager-cabinet/access";
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName } from "@/lib/manager-cabinet/match";
 import { cabinetWindowBounds, parseCabinetWindow } from "@/lib/manager-cabinet/period";
+import { firstNameFrom } from "@/lib/manager-cabinet/dates";
+import { buildPayTips } from "@/lib/manager-cabinet/pay-tips";
 import { resolveCabinetTarget } from "@/lib/manager-cabinet/resolve-target";
 import { loadBitrixRoster, revenuePlanForBitrixId } from "@/lib/manager-cabinet/roster";
 import type {
@@ -99,16 +101,10 @@ async function loadShifts(input: {
   }
 }
 
-export async function loadManagerCabinet(input: {
+export async function resolveCabinetSessionTarget(input: {
   session: SessionUser;
-  period?: string | null;
-  window?: string | null;
   managerId?: string | null;
-}): Promise<ManagerCabinetPayload> {
-  const period = parseAnalyticsPeriod(input.period);
-  const window: CabinetWindow = parseCabinetWindow(input.window);
-  const { start, end } = cabinetWindowBounds(period, window);
-  const periods = await availablePeriods();
+}) {
   const roster = await loadBitrixRoster();
   const selfRecord = await findUserById(input.session.id);
   const self: AppUserPublic | null = selfRecord
@@ -129,8 +125,23 @@ export async function loadManagerCabinet(input: {
     users: catalog,
     roster
   });
+  return { roster, target };
+}
+
+export async function loadManagerCabinet(input: {
+  session: SessionUser;
+  period?: string | null;
+  window?: string | null;
+  managerId?: string | null;
+}): Promise<ManagerCabinetPayload> {
+  const period = parseAnalyticsPeriod(input.period);
+  const window: CabinetWindow = parseCabinetWindow(input.window);
+  const { start, end } = cabinetWindowBounds(period, window);
+  const periods = await availablePeriods();
+  const { roster, target } = await resolveCabinetSessionTarget(input);
   const bitrixUserId = target.bitrixUserId;
   const managerName = target.managerName;
+  const helloName = firstNameFrom(managerName || target.authName || input.session.name);
 
   const base = {
     ok: true as const,
@@ -164,7 +175,9 @@ export async function loadManagerCabinet(input: {
       snapshotAsOf: null,
       message: picker
         ? "В Bitrix нет менеджеров для просмотра. Обновите синхронизацию CRM."
-        : "Аккаунт не привязан к менеджеру Bitrix. РОП может указать ответственного в «Доступах»."
+        : "Аккаунт не привязан к менеджеру Bitrix. РОП может указать ответственного в «Доступах».",
+      helloName,
+      payTips: []
     };
   }
 
@@ -181,7 +194,9 @@ export async function loadManagerCabinet(input: {
       salaryProratedEur: null,
       softBonusesOnFullMonth: window === "month",
       snapshotAsOf: null,
-      message: `Нет снимка Bitrix за ${period}. Обновите синхронизацию CRM.`
+      message: `Нет снимка Bitrix за ${period}. Обновите синхронизацию CRM.`,
+      helloName,
+      payTips: []
     };
   }
 
@@ -232,6 +247,14 @@ export async function loadManagerCabinet(input: {
     salaryProratedEur,
     softBonusesOnFullMonth: applySoftBonuses,
     snapshotAsOf: snapshot.createdAt,
-    message: null
+    message: null,
+    helloName,
+    payTips: buildPayTips({
+      facts,
+      payroll,
+      shifts,
+      salaryProratedEur,
+      softBonusesOnFullMonth: applySoftBonuses
+    })
   };
 }

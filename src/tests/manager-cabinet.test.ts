@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { canAccessRoute } from "@/lib/auth/access";
+import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
 import { canAccessManagerCabinet, canPickCabinetManager } from "@/lib/manager-cabinet/access";
+import { packYesterdayDialogs } from "@/lib/manager-cabinet/coach";
+import { messageDayIso } from "@/lib/manager-cabinet/dates";
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName, namesMatch } from "@/lib/manager-cabinet/match";
+import { buildPayTips } from "@/lib/manager-cabinet/pay-tips";
 import { cabinetWindowBounds } from "@/lib/manager-cabinet/period";
 import {
   firstCabinetManagerId,
@@ -18,6 +21,9 @@ assert.equal(canAccessManagerCabinet("mop"), true);
 assert.equal(canPickCabinetManager("mop"), false);
 assert.equal(canPickCabinetManager("rop"), true);
 assert.equal(canAccessRoute("partner", "/me"), false);
+assert.equal(homePathForAccessLevel("mop"), "/me");
+assert.equal(homePathForAccessLevel("admin"), "/hub");
+assert.equal(canAccessRoute("mop", "/training/knowledge-base"), true);
 
 {
   const h1 = cabinetWindowBounds("2026-08", "h1");
@@ -129,6 +135,107 @@ assert.equal(Math.round(prorateByShifts(4000, 7, 15) * 100) / 100, 1866.67);
     end: "2026-08-31"
   });
   assert.equal(month.leads, 2);
+}
+
+assert.equal(messageDayIso("2026-08-23T18:11:00"), "2026-08-23");
+assert.equal(messageDayIso("23.08.2026 18:11"), "2026-08-23");
+
+{
+  const packs = packYesterdayDialogs(
+    [
+      {
+        date: "2026-08-23T10:00:00",
+        channel: "whatsapp",
+        dialogId: "d1",
+        sender: "Надежда Веклич",
+        senderRole: "manager",
+        text: "Газета 49 евро",
+        manager: "Надежда Веклич",
+        stage: "closing",
+        outcome: "in_progress",
+        orderAmount: null,
+        intents: []
+      },
+      {
+        date: "2026-08-23T10:01:00",
+        channel: "whatsapp",
+        dialogId: "d1",
+        sender: "Клиент",
+        senderRole: "client",
+        text: "Сколько с доставкой?",
+        manager: "Надежда Веклич",
+        stage: "closing",
+        outcome: "in_progress",
+        orderAmount: null,
+        intents: []
+      },
+      {
+        date: "2026-08-22T10:00:00",
+        channel: "whatsapp",
+        dialogId: "d2",
+        sender: "Елена",
+        senderRole: "manager",
+        text: "Другой день",
+        manager: "Jelena Zabkova",
+        stage: "closing",
+        outcome: "unknown",
+        orderAmount: null,
+        intents: []
+      }
+    ],
+    "Надежда Веклич",
+    "2026-08-23"
+  );
+  assert.equal(packs.length, 1);
+  assert.equal(packs[0]?.dialogId, "d1");
+}
+
+{
+  const tips = buildPayTips({
+    facts: {
+      bitrixUserId: "98908",
+      managerName: "Надежда",
+      leads: 220,
+      qualifiedLeads: 148,
+      invoices: 40,
+      payments: 33,
+      revenueEur: 2196,
+      avgCheckEur: 67,
+      invoiceCrPct: 0.18,
+      paymentCrPct: 0.15,
+      qualifiedCrPct: 0.67,
+      deals: []
+    },
+    payroll: {
+      id: "98908",
+      name: "Надежда",
+      revenueEur: 2196,
+      leads: 220,
+      leadsPerDay: 10,
+      invoiceCrPct: 0.18,
+      invoices: 40,
+      paymentCrPct: 0.15,
+      payments: 33,
+      avgCheckEur: 67,
+      mopPayEur: 376,
+      mopShareOfRevenue: 0.17,
+      ropEur: 22,
+      totalEur: 398,
+      totalShareOfRevenue: 0.18,
+      usedPlanRate: false,
+      conversionBonusApplied: false,
+      checkBonusApplied: false,
+      commissionPct: 0.07
+    },
+    shifts: { worked: 7, norm: 15, source: "schedule", matchedName: "Надежда" },
+    salaryProratedEur: 104,
+    softBonusesOnFullMonth: true
+  });
+  const blob = tips.map((tip) => tip.text).join(" ");
+  assert.match(blob, /закрыто 7/);
+  assert.match(blob, /ещё примерно 11/);
+  assert.equal(blob.includes("конверсия"), false);
+  assert.equal(blob.includes("CR"), false);
 }
 
 console.log("manager-cabinet.test.ts: ok");
