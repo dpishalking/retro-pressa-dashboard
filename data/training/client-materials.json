@@ -236,6 +236,24 @@
       "sortOrder": 10
     },
     {
+      "id": "congratulatory-magazine-nauka-i-zhizn-alexander",
+      "title": "Наука и жизнь — поздравительный журнал",
+      "description": "Пример поздравительного журнала: архивная «Наука и жизнь» с персональной обложкой и заголовком про героя.",
+      "category": "Поздравительный журнал",
+      "type": "image",
+      "url": "/training/congratulatory-magazine/nauka-i-zhizn-alexander-cover.jpg",
+      "sortOrder": 11
+    },
+    {
+      "id": "congratulatory-magazine-karavan-istoriy-georgiy",
+      "title": "Караван историй — поздравительный журнал",
+      "description": "Спецвыпуск «Караван историй» с персональной обложкой: герой на обложке, заголовки про его жизнь, QR-код на оживающее фото.",
+      "category": "Поздравительный журнал",
+      "type": "image",
+      "url": "/training/congratulatory-magazine/karavan-istoriy-georgiy-cover.jpg",
+      "sortOrder": 12
+    },
+    {
       "id": "gift-edition-site-photo",
       "title": "Персонализированное издание — фото с сайта",
       "description": "Визуал персонализированной газеты Party Page.",

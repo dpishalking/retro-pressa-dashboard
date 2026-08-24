@@ -74,7 +74,7 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     visualTabName: "Визуал",
     economyTabName: "Экономика",
     visualSource: {
-      trainingProductId: "gift-edition",
+      trainingProductId: "glossy-magazine",
       clientMaterialCategories: ["Персонализированный журнал"],
     },
     economySource: {},

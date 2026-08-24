@@ -111,11 +111,11 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     moments: ["день рождения", "юбилей", "подарок человеку, который любит читать"],
     gets: ["ретро-журнал из своего месяца", "личное поздравление внутри", "формат, который сохраняют"],
     price: "135 €",
-    image: "/training/magazine-from-date/krestyanka-1993-03.png",
+    image: "/training/congratulatory-magazine/karavan-istoriy-georgiy-cover.jpg",
     gallery: [
-      "/training/magazine-from-date/rabotnitsa-1993-03.png",
-      "/training/magazine-from-date/za-rulem-1993-03.png",
-      "/training/magazine-from-date/semya-i-shkola-1987-02.png"
+      "/training/congratulatory-magazine/nauka-i-zhizn-alexander-cover.jpg",
+      "/training/magazine-from-date/krestyanka-1993-03.png",
+      "/training/magazine-from-date/rabotnitsa-1993-03.png"
     ]
   },
   {
