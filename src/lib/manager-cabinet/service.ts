@@ -14,9 +14,9 @@ import { canPickCabinetManager } from "@/lib/manager-cabinet/access";
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName } from "@/lib/manager-cabinet/match";
 import { cabinetWindowBounds, parseCabinetWindow } from "@/lib/manager-cabinet/period";
+import { resolveCabinetTarget } from "@/lib/manager-cabinet/resolve-target";
 import { loadBitrixRoster, revenuePlanForBitrixId } from "@/lib/manager-cabinet/roster";
 import type {
-  BitrixRosterEntry,
   CabinetWindow,
   ManagerCabinetPayload,
   ManagerCabinetShifts
@@ -65,14 +65,7 @@ async function availablePeriods(): Promise<string[]> {
   return [...keys].sort();
 }
 
-export function resolveBitrixUserId(
-  user: { bitrixUserId?: string | null; name: string },
-  roster: BitrixRosterEntry[]
-): string | null {
-  const stored = user.bitrixUserId?.trim();
-  if (stored) return stored;
-  return matchUniqueByName(user.name, roster)?.bitrixId ?? null;
-}
+export { resolveBitrixUserId } from "@/lib/manager-cabinet/resolve-target";
 
 async function loadShifts(input: {
   period: string;
@@ -106,60 +99,6 @@ async function loadShifts(input: {
   }
 }
 
-function pickAuthUser(
-  session: SessionUser,
-  requested: string | null,
-  users: AppUserPublic[],
-  roster: BitrixRosterEntry[]
-): AppUserPublic | null {
-  if (!canPickCabinetManager(session.accessLevel)) {
-    return users.find((user) => user.id === session.id) ?? {
-      id: session.id,
-      login: session.login,
-      name: session.name,
-      accessLevel: session.accessLevel,
-      bitrixUserId: null,
-      active: true,
-      createdAt: "",
-      updatedAt: ""
-    };
-  }
-  if (requested) {
-    const byAuth = users.find((user) => user.id === requested);
-    if (byAuth) return byAuth;
-    const byBitrix = users.find((user) => user.bitrixUserId === requested);
-    if (byBitrix) return byBitrix;
-    const rosterHit = roster.find((row) => row.bitrixId === requested);
-    if (rosterHit) {
-      return {
-        id: "",
-        login: "",
-        name: rosterHit.name,
-        accessLevel: "mop",
-        bitrixUserId: rosterHit.bitrixId,
-        active: true,
-        createdAt: "",
-        updatedAt: ""
-      };
-    }
-  }
-  return (
-    users.find((user) => user.accessLevel === "mop" && user.active) ??
-    (roster[0]
-      ? {
-          id: "",
-          login: "",
-          name: roster[0].name,
-          accessLevel: "mop" as const,
-          bitrixUserId: roster[0].bitrixId,
-          active: true,
-          createdAt: "",
-          updatedAt: ""
-        }
-      : users[0] ?? null)
-  );
-}
-
 export async function loadManagerCabinet(input: {
   session: SessionUser;
   period?: string | null;
@@ -183,15 +122,15 @@ export async function loadManagerCabinet(input: {
       ? [self]
       : [];
 
-  const selectedUser = pickAuthUser(
-    input.session,
-    canPickCabinetManager(input.session.accessLevel) ? input.managerId?.trim() || null : input.session.id,
-    catalog,
+  const target = resolveCabinetTarget({
+    accessLevel: input.session.accessLevel,
+    sessionId: input.session.id,
+    requestedId: canPickCabinetManager(input.session.accessLevel) ? input.managerId?.trim() || null : null,
+    users: catalog,
     roster
-  );
-  const bitrixUserId = selectedUser ? resolveBitrixUserId(selectedUser, roster) : null;
-  const rosterRow = bitrixUserId ? roster.find((row) => row.bitrixId === bitrixUserId) : null;
-  const managerName = rosterRow?.name || selectedUser?.name || null;
+  });
+  const bitrixUserId = target.bitrixUserId;
+  const managerName = target.managerName;
 
   const base = {
     ok: true as const,
@@ -203,14 +142,15 @@ export async function loadManagerCabinet(input: {
     viewer: { id: input.session.id, name: input.session.name, accessLevel: input.session.accessLevel },
     roster,
     selected: {
-      authUserId: selectedUser?.id || null,
-      authName: selectedUser?.name || null,
+      authUserId: target.authUserId,
+      authName: target.authName,
       bitrixUserId,
       managerName
     }
   };
 
   if (!bitrixUserId || !managerName) {
+    const picker = canPickCabinetManager(input.session.accessLevel);
     return {
       ...base,
       linked: false,
@@ -222,7 +162,9 @@ export async function loadManagerCabinet(input: {
       salaryProratedEur: null,
       softBonusesOnFullMonth: window === "month",
       snapshotAsOf: null,
-      message: "Аккаунт не привязан к менеджеру Bitrix. РОП может указать ответственного в «Доступах»."
+      message: picker
+        ? "В Bitrix нет менеджеров для просмотра. Обновите синхронизацию CRM."
+        : "Аккаунт не привязан к менеджеру Bitrix. РОП может указать ответственного в «Доступах»."
     };
   }
 

@@ -25,24 +25,22 @@ export async function loadBitrixRoster(): Promise<BitrixRosterEntry[]> {
   for (const row of staticRoster()) byId.set(row.bitrixId, row);
 
   const periods = await listBitrixSnapshotPeriods();
-  const latest = periods.at(-1);
-  if (latest) {
-    const snapshot = await readBitrixSnapshot(latest);
-    if (snapshot) {
-      for (const row of [...snapshot.leads, ...snapshot.paidDeals]) {
-        const id = row.assignedById;
-        if (!id || byId.has(id)) continue;
-        const name = row.managerName || `ID ${id}`;
-        if (/^ID\s+\d+$/i.test(name)) continue;
-        if (/tehniskais|frigatnet|admin/i.test(name)) continue;
-        byId.set(id, {
-          bitrixId: id,
-          name,
-          firstName: firstNameFromFull(name),
-          revenuePlan: null,
-          activeRoster: false
-        });
-      }
+  for (const period of periods) {
+    const snapshot = await readBitrixSnapshot(period);
+    if (!snapshot) continue;
+    for (const row of [...snapshot.leads, ...snapshot.paidDeals]) {
+      const id = row.assignedById;
+      if (!id || byId.has(id)) continue;
+      const name = (row.managerName || "").trim() || `ID ${id}`;
+      if (/^ID\s+\d+$/i.test(name)) continue;
+      if (/tehniskais|frigatnet|\badmin\b/i.test(name)) continue;
+      byId.set(id, {
+        bitrixId: id,
+        name,
+        firstName: firstNameFromFull(name),
+        revenuePlan: null,
+        activeRoster: false
+      });
     }
   }
 

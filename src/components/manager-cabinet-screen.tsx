@@ -86,7 +86,9 @@ export function ManagerCabinetScreen() {
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-extrabold uppercase tracking-normal text-amber-700">Продажи</p>
-            <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">Мои продажи</h1>
+            <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">
+              {canPick ? "Кабинеты менеджеров" : "Мои продажи"}
+            </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               Лиды, сделки и зарплата по факту Bitrix. Оклад пропорционален сменам, процент — с кассы,
               мягкий оклад (чек и сквозная конверсия) считается за полный месяц.
@@ -95,7 +97,7 @@ export function ManagerCabinetScreen() {
           <div className="flex flex-wrap items-center gap-2">
             {canPick ? (
               <select
-                value={managerId}
+                value={managerId || payload?.selected.bitrixUserId || ""}
                 onChange={(event) => setManagerId(event.target.value)}
                 className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700"
               >

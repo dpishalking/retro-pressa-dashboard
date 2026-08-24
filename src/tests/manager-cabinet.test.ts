@@ -4,7 +4,7 @@ import { canAccessManagerCabinet, canPickCabinetManager } from "@/lib/manager-ca
 import { aggregateManagerCabinetFacts } from "@/lib/manager-cabinet/facts";
 import { matchUniqueByName, namesMatch } from "@/lib/manager-cabinet/match";
 import { cabinetWindowBounds } from "@/lib/manager-cabinet/period";
-import { resolveBitrixUserId } from "@/lib/manager-cabinet/service";
+import { resolveBitrixUserId, resolveCabinetTarget } from "@/lib/manager-cabinet/resolve-target";
 import { staticRoster } from "@/lib/manager-cabinet/roster";
 import { prorateByShifts } from "@/lib/payroll/calculator";
 import type { BitrixSnapshot } from "@/lib/bitrix/snapshot-store";
@@ -34,6 +34,43 @@ assert.equal(namesMatch("Кира", "Надежда Веклич"), false);
   assert.equal(resolveBitrixUserId({ bitrixUserId: "98908", name: "X" }, roster), "98908");
   assert.equal(resolveBitrixUserId({ bitrixUserId: null, name: "Надежда" }, roster), "98908");
   assert.equal(matchUniqueByName("Надежда", roster)?.bitrixId, "98908");
+
+  const darya = {
+    id: "user-darya",
+    name: "Дарья",
+    bitrixUserId: null,
+    accessLevel: "mop" as const,
+    active: true
+  };
+  const adminDefault = resolveCabinetTarget({
+    accessLevel: "admin",
+    sessionId: "admin",
+    requestedId: null,
+    users: [darya],
+    roster
+  });
+  assert.equal(adminDefault.bitrixUserId, "98908");
+  assert.equal(adminDefault.managerName, "Надежда Веклич");
+
+  const adminPicked = resolveCabinetTarget({
+    accessLevel: "admin",
+    sessionId: "admin",
+    requestedId: "3290",
+    users: [darya],
+    roster
+  });
+  assert.equal(adminPicked.bitrixUserId, "3290");
+  assert.equal(adminPicked.managerName, "Anastasija Zabkova");
+
+  const mopUnlinked = resolveCabinetTarget({
+    accessLevel: "mop",
+    sessionId: "user-darya",
+    requestedId: "98908",
+    users: [darya],
+    roster
+  });
+  assert.equal(mopUnlinked.bitrixUserId, null);
+  assert.equal(mopUnlinked.authName, "Дарья");
 }
 
 assert.equal(Math.round(prorateByShifts(4000, 7, 15) * 100) / 100, 1866.67);
