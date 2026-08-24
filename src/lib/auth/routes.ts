@@ -27,5 +27,8 @@ export const PARTNERS_REGISTER_API = "/api/partners/register";
 /** Public partner webinar landing. */
 export const WEBINAR_PATH = "/webinar";
 
+/** Public catalog of gifts from product passports. */
+export const GIFTS_PATH = "/gifts";
+
 /** Public webinar registration API. */
 export const WEBINAR_REGISTER_API = "/api/webinar/register";

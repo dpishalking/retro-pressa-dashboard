@@ -10,7 +10,8 @@ import {
   PRODUCT_VIEW_PUBLIC_PREFIX,
   UTM_GENERATOR_PUBLIC_PATH,
   WEBINAR_PATH,
-  WEBINAR_REGISTER_API
+  WEBINAR_REGISTER_API,
+  GIFTS_PATH
 } from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
@@ -21,7 +22,8 @@ const PUBLIC_PAGE_PREFIXES = [
   PRODUCT_CARDS_PUBLIC_PREFIX,
   MD_PUBLIC_PREFIX,
   PARTNERS_REGISTER_PATH,
-  WEBINAR_PATH
+  WEBINAR_PATH,
+  GIFTS_PATH
 ];
 const LOGIN_PATH = "/";
 const CRON_API_PREFIXES = [
