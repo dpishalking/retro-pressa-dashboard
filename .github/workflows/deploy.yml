@@ -293,93 +293,8 @@ jobs:
           if ! command -v pm2 > /dev/null; then
             npm install -g pm2
           fi
-          if ! command -v git > /dev/null; then
-            echo "git is required for trainer backend deploy" >&2
-            exit 1
-          fi
 
-          BACKEND_DATA="/opt/pressa-backend-shared/data"
-          BACKEND_ENV="/opt/pressa-backend/runtime-env.json"
-          PRESSA_SRC="/opt/pressa-src"
-          mkdir -p "$BACKEND_DATA" /opt/pressa-backend
-
-          OVERLAY_DIR="/tmp/trainer-backend-overlay"
-          if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
-            mkdir -p /tmp/overlay-fallback
-            tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /tmp/overlay-fallback ./trainer-backend-overlay
-            OVERLAY_DIR="/tmp/overlay-fallback/trainer-backend-overlay"
-          fi
-          if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
-            echo "Trainer overlay missing on server" >&2
-            exit 1
-          fi
-
-          if [ ! -d "$PRESSA_SRC/.git" ]; then
-            git clone --depth 1 https://github.com/dpishalking/pressa.git "$PRESSA_SRC"
-          else
-            cd "$PRESSA_SRC"
-            git fetch --depth 1 origin main
-            git reset --hard origin/main
-          fi
-
-          node "$OVERLAY_DIR/apply-patch.mjs" "$PRESSA_SRC/gift-ai"
-          cd "$PRESSA_SRC/gift-ai"
-          npm ci
-          npm run build -w backend
-          cp /tmp/trainer-backend-env.json "$BACKEND_ENV"
-          chmod 600 "$BACKEND_ENV"
-
-          cat > "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs" <<'PM2BACKEND'
-          const runtimeEnv = require("/opt/pressa-backend/runtime-env.json");
-
-          module.exports = {
-            apps: [
-              {
-                name: "pressa-backend",
-                script: "dist/index.js",
-                cwd: "/opt/pressa-src/gift-ai/backend",
-                env: {
-                  ...runtimeEnv,
-                  NODE_ENV: "production"
-                }
-              }
-            ]
-          };
-          PM2BACKEND
-
-          if pm2 describe pressa-backend > /dev/null; then
-            pm2 delete pressa-backend
-          fi
-          pm2 start "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs"
-          sleep 5
-          curl -f -sS http://127.0.0.1:3100/health > /dev/null
-          curl -f -sS http://127.0.0.1:3100/trainer/scenarios > /dev/null
-          if ! node -e "const env=require('$BACKEND_ENV'); if(!env.GEMINI_API_KEY){process.exit(1)}"; then
-            echo "WARNING: GEMINI_API_KEY is empty — trainer bot replies will fail until the secret is set" >&2
-          fi
-          node - <<'NODE'
-          const env = require("/opt/pressa-backend/runtime-env.json");
-          const ids = String(env.TRAINER_NOTIFY_TELEGRAM_IDS || env.ROP_ALERTS_TELEGRAM_CHAT_IDS || env.ADMIN_TELEGRAM_IDS || "")
-            .split(",")
-            .map((id) => id.trim())
-            .filter(Boolean);
-          const token = env.TRAINER_BOT_TOKEN || env.TRAINER_NOTIFY_BOT_TOKEN || "";
-          console.log("Trainer notify recipients:", ids.length ? ids.join(", ") : "NONE");
-          console.log("Trainer notify bot token:", token ? "configured" : "MISSING");
-          if (!ids.length) {
-            console.warn("Add GitHub secret TRAINER_NOTIFY_TELEGRAM_IDS (ROP Telegram chat id)");
-          }
-          NODE
-          echo "Railway trainer-bot should use API_URL=${TRAINER_BACKEND_PUBLIC_URL:-http://85.92.111.202:3100} to reach this backend"
-
-          # Trainer Telegram bot runs on Railway only (retro-pressa-bot / trainer-bot).
-          # Never start it on VPS — duplicate token causes silent failures in Telegram.
-          if pm2 describe pressa-trainer-bot > /dev/null 2>&1; then
-            pm2 delete pressa-trainer-bot || pm2 stop pressa-trainer-bot || true
-            pm2 save
-          fi
-          echo "Trainer bot: Railway only (not VPS)"
-
+          # Main app first — trainer backend can OOM on this VPS and must not block site deploys.
           APP_DIR="/opt/retro-pressa"
           APP_SHARED_DIR="/opt/retro-pressa-shared"
           APP_DATA_DIR="$APP_SHARED_DIR/data"
@@ -547,6 +462,104 @@ jobs:
           sleep 5
           curl -f -sS --max-time 10 http://127.0.0.1:4174/api/health
           curl -f -sS --max-time 10 http://127.0.0.1:4175/api/health
+          echo "Main app deployed"
+
+          # Trainer backend — best effort (tsc may OOM on this host).
+          set +e
+          (
+            set -e
+            if ! command -v git > /dev/null; then
+              echo "git is required for trainer backend deploy" >&2
+              exit 1
+            fi
+
+            BACKEND_DATA="/opt/pressa-backend-shared/data"
+            BACKEND_ENV="/opt/pressa-backend/runtime-env.json"
+            PRESSA_SRC="/opt/pressa-src"
+            mkdir -p "$BACKEND_DATA" /opt/pressa-backend
+
+            OVERLAY_DIR="/tmp/trainer-backend-overlay"
+            if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
+              mkdir -p /tmp/overlay-fallback
+              tar -xzf /tmp/retro-pressa-deploy.tar.gz -C /tmp/overlay-fallback ./trainer-backend-overlay
+              OVERLAY_DIR="/tmp/overlay-fallback/trainer-backend-overlay"
+            fi
+            if [ ! -f "$OVERLAY_DIR/manager-sessions.ts" ]; then
+              echo "Trainer overlay missing on server" >&2
+              exit 1
+            fi
+
+            if [ ! -d "$PRESSA_SRC/.git" ]; then
+              git clone --depth 1 https://github.com/dpishalking/pressa.git "$PRESSA_SRC"
+            else
+              cd "$PRESSA_SRC"
+              git fetch --depth 1 origin main
+              git reset --hard origin/main
+            fi
+
+            node "$OVERLAY_DIR/apply-patch.mjs" "$PRESSA_SRC/gift-ai"
+            cd "$PRESSA_SRC/gift-ai"
+            npm ci
+            npm run build -w backend
+            cp /tmp/trainer-backend-env.json "$BACKEND_ENV"
+            chmod 600 "$BACKEND_ENV"
+
+            cat > "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs" <<'PM2BACKEND'
+            const runtimeEnv = require("/opt/pressa-backend/runtime-env.json");
+
+            module.exports = {
+              apps: [
+                {
+                  name: "pressa-backend",
+                  script: "dist/index.js",
+                  cwd: "/opt/pressa-src/gift-ai/backend",
+                  env: {
+                    ...runtimeEnv,
+                    NODE_ENV: "production"
+                  }
+                }
+              ]
+            };
+            PM2BACKEND
+
+            if pm2 describe pressa-backend > /dev/null; then
+              pm2 delete pressa-backend
+            fi
+            pm2 start "$PRESSA_SRC/gift-ai/backend/ecosystem.config.cjs"
+            sleep 5
+            curl -f -sS http://127.0.0.1:3100/health > /dev/null
+            curl -f -sS http://127.0.0.1:3100/trainer/scenarios > /dev/null
+            if ! node -e "const env=require('$BACKEND_ENV'); if(!env.GEMINI_API_KEY){process.exit(1)}"; then
+              echo "WARNING: GEMINI_API_KEY is empty — trainer bot replies will fail until the secret is set" >&2
+            fi
+            node - <<'NODE'
+            const env = require("/opt/pressa-backend/runtime-env.json");
+            const ids = String(env.TRAINER_NOTIFY_TELEGRAM_IDS || env.ROP_ALERTS_TELEGRAM_CHAT_IDS || env.ADMIN_TELEGRAM_IDS || "")
+              .split(",")
+              .map((id) => id.trim())
+              .filter(Boolean);
+            const token = env.TRAINER_BOT_TOKEN || env.TRAINER_NOTIFY_BOT_TOKEN || "";
+            console.log("Trainer notify recipients:", ids.length ? ids.join(", ") : "NONE");
+            console.log("Trainer notify bot token:", token ? "configured" : "MISSING");
+            if (!ids.length) {
+              console.warn("Add GitHub secret TRAINER_NOTIFY_TELEGRAM_IDS (ROP Telegram chat id)");
+            }
+            NODE
+            echo "Railway trainer-bot should use API_URL=${TRAINER_BACKEND_PUBLIC_URL:-http://85.92.111.202:3100} to reach this backend"
+
+            # Trainer Telegram bot runs on Railway only (retro-pressa-bot / trainer-bot).
+            # Never start it on VPS — duplicate token causes silent failures in Telegram.
+            if pm2 describe pressa-trainer-bot > /dev/null 2>&1; then
+              pm2 delete pressa-trainer-bot || pm2 stop pressa-trainer-bot || true
+              pm2 save
+            fi
+            echo "Trainer bot: Railway only (not VPS)"
+          )
+          TRAINER_STATUS=$?
+          set -e
+          if [ "$TRAINER_STATUS" != "0" ]; then
+            echo "WARNING: trainer backend deploy failed (exit $TRAINER_STATUS); main app is already live"
+          fi
 
           # Allow large PDF uploads for /products (default nginx limit is often 1m).
           if command -v nginx > /dev/null; then
