@@ -180,7 +180,7 @@ const SEEDS: ProductSeed[] = [
     titleName: "Книга жизни",
     category: "Масштаб жизни",
     shortWhat: "Книга в твёрдом переплёте: один год — один газетный блок.",
-    priceFrom: 200,
+    priceFrom: 240,
     cogs: 73,
     leadTime: "от 14 дней",
     included: "подбор газет по годам/регионам, сборка, печать",

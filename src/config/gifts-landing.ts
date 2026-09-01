@@ -173,7 +173,7 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     forWhom: "Родителям, бабушке, дедушке и юбиляру 50, 60, 70, 80, 90 лет.",
     moments: ["большой юбилей", "подарок папе или маме", "торжественное поздравление"],
     gets: ["книга, которую листает вся семья", "сильный вау на юбилее", "история жизни через газеты"],
-    price: "до 200 €",
+    price: "от 240 €",
     image: "/training/life-book/diana-kanberg-cover.png",
     gallery: [
       "/training/newspaper-from-date/pravda-izvestiya-stack.png",
