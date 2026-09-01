@@ -269,9 +269,11 @@ jobs:
 
       - name: Upload archive
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+          SSH=(ssh -i ~/.ssh/deploy_key -o ServerAliveInterval=15 -o ServerAliveCountMax=120 -o ConnectTimeout=30)
+          "${SSH[@]}" "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "rm -rf /tmp/trainer-backend-overlay /tmp/overlay-fallback"
-          scp -i ~/.ssh/deploy_key retro-pressa-deploy.tar.gz \
+          scp -i ~/.ssh/deploy_key -o ServerAliveInterval=15 -o ServerAliveCountMax=120 \
+            retro-pressa-deploy.tar.gz \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-deploy.tar.gz"
           scp -i ~/.ssh/deploy_key runtime-env.json \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/retro-pressa-runtime-env.json"
@@ -282,7 +284,11 @@ jobs:
 
       - name: Deploy on server
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << 'EOF'
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=120 \
+            -o ConnectTimeout=30 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" << 'EOF'
           set -e
           if ! command -v pm2 > /dev/null; then
             npm install -g pm2
