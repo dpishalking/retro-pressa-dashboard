@@ -516,19 +516,7 @@ jobs:
             if ! node -e "const env=require('$BACKEND_ENV'); if(!env.GEMINI_API_KEY){process.exit(1)}"; then
               echo "WARNING: GEMINI_API_KEY is empty — trainer bot replies will fail until the secret is set" >&2
             fi
-            node - <<'NODE'
-            const env = require("/opt/pressa-backend/runtime-env.json");
-            const ids = String(env.TRAINER_NOTIFY_TELEGRAM_IDS || env.ROP_ALERTS_TELEGRAM_CHAT_IDS || env.ADMIN_TELEGRAM_IDS || "")
-              .split(",")
-              .map((id) => id.trim())
-              .filter(Boolean);
-            const token = env.TRAINER_BOT_TOKEN || env.TRAINER_NOTIFY_BOT_TOKEN || "";
-            console.log("Trainer notify recipients:", ids.length ? ids.join(", ") : "NONE");
-            console.log("Trainer notify bot token:", token ? "configured" : "MISSING");
-            if (!ids.length) {
-              console.warn("Add GitHub secret TRAINER_NOTIFY_TELEGRAM_IDS (ROP Telegram chat id)");
-            }
-            NODE
+            node -e 'const env=require("/opt/pressa-backend/runtime-env.json"); const ids=String(env.TRAINER_NOTIFY_TELEGRAM_IDS||env.ROP_ALERTS_TELEGRAM_CHAT_IDS||env.ADMIN_TELEGRAM_IDS||"").split(",").map((id)=>id.trim()).filter(Boolean); const token=env.TRAINER_BOT_TOKEN||env.TRAINER_NOTIFY_BOT_TOKEN||""; console.log("Trainer notify recipients:", ids.length?ids.join(", "):"NONE"); console.log("Trainer notify bot token:", token?"configured":"MISSING"); if(!ids.length) console.warn("Add GitHub secret TRAINER_NOTIFY_TELEGRAM_IDS (ROP Telegram chat id)");'
             echo "Railway trainer-bot should use API_URL=${TRAINER_BACKEND_PUBLIC_URL:-http://85.92.111.202:3100} to reach this backend"
 
             # Trainer Telegram bot runs on Railway only (retro-pressa-bot / trainer-bot).
