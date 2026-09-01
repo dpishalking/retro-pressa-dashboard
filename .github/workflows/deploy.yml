@@ -504,29 +504,7 @@ jobs:
             cp /tmp/trainer-backend-env.json "$BACKEND_ENV"
             chmod 600 "$BACKEND_ENV"
 
-            node - <<'NODE'
-            const fs = require("node:fs");
-            const path = "/opt/pressa-src/gift-ai/backend/ecosystem.config.cjs";
-            fs.writeFileSync(
-              path,
-              `const runtimeEnv = require("/opt/pressa-backend/runtime-env.json");
-
-module.exports = {
-  apps: [
-    {
-      name: "pressa-backend",
-      script: "dist/index.js",
-      cwd: "/opt/pressa-src/gift-ai/backend",
-      env: {
-        ...runtimeEnv,
-        NODE_ENV: "production"
-      }
-    }
-  ]
-};
-`
-            );
-            NODE
+            node -e 'require("fs").writeFileSync("/opt/pressa-src/gift-ai/backend/ecosystem.config.cjs", "const runtimeEnv = require(\"/opt/pressa-backend/runtime-env.json\");\nmodule.exports = { apps: [{ name: \"pressa-backend\", script: \"dist/index.js\", cwd: \"/opt/pressa-src/gift-ai/backend\", env: { ...runtimeEnv, NODE_ENV: \"production\" } }] };\n")'
 
             if pm2 describe pressa-backend > /dev/null; then
               pm2 delete pressa-backend
