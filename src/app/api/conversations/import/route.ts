@@ -4,6 +4,7 @@ import { importAndAnalyzeConversationsWithDiagnostics, tryParseConversationSnaps
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
 import { writeConversationSnapshot, writePeriodArchiveSnapshot } from "@/lib/conversation-snapshot-store";
 import type { PeriodKey } from "@/types/metrics";
+import { PERIOD_KEYS } from "@/types/metrics";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -66,8 +67,8 @@ export async function POST(request: Request) {
     const uploads = formData.getAll("files").filter((item): item is File => item instanceof File);
     const source = String(formData.get("source") ?? "manual") as "manual" | "gift-ai" | "bitrix";
     const periodRaw = String(formData.get("periodKey") ?? "");
-    const periodKey = (["may-2026", "june-2026", "july-2026", "august-2026"] as const).includes(periodRaw as PeriodKey)
-      ? periodRaw as PeriodKey
+    const periodKey = (PERIOD_KEYS as readonly string[]).includes(periodRaw)
+      ? (periodRaw as PeriodKey)
       : null;
     const label = String(formData.get("label") ?? "").trim();
 

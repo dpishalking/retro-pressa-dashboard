@@ -6,14 +6,16 @@ const LEGACY_TO_ISO: Record<PeriodKey, AnalyticsPeriod> = {
   "may-2026": "2026-05",
   "june-2026": "2026-06",
   "july-2026": "2026-07",
-  "august-2026": "2026-08"
+  "august-2026": "2026-08",
+  "september-2026": "2026-09"
 };
 
 const ISO_TO_LEGACY: Record<string, PeriodKey> = {
   "2026-05": "may-2026",
   "2026-06": "june-2026",
   "2026-07": "july-2026",
-  "2026-08": "august-2026"
+  "2026-08": "august-2026",
+  "2026-09": "september-2026"
 };
 
 export function isAnalyticsPeriod(value: string): value is AnalyticsPeriod {

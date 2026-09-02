@@ -208,6 +208,14 @@ function weeklyUnitCost(spend: WeeklyFacts, units: WeeklyFacts): WeeklyFacts {
   }) as WeeklyFacts;
 }
 
+function weeklyRoasPercent(revenue: WeeklyFacts, spend: WeeklyFacts): WeeklyFacts {
+  return revenue.map((value, i) => {
+    const cost = spend[i];
+    if (value == null || cost == null || !(cost > 0)) return null;
+    return Number(((value / cost) * 100).toFixed(1));
+  }) as WeeklyFacts;
+}
+
 export function applyChannelFacts(seed: CeoSeedBundle, channels: ChannelMonthFacts): CeoSeedBundle {
   const p = { ...seed.paid };
   const o = { ...seed.organic };
@@ -224,9 +232,14 @@ export function applyChannelFacts(seed: CeoSeedBundle, channels: ChannelMonthFac
   p.cpl = withFact(p.cpl, unitCost(paid.spend, paid.leads), weeklyUnitCost(paid.spendByWeek, paid.leadsByWeek));
   p.cac = withFact(
     p.cac,
-    paid.payments > 0 ? Number((paid.spend / paid.payments).toFixed(2)) : null
+    paid.payments > 0 ? Number((paid.spend / paid.payments).toFixed(2)) : null,
+    weeklyUnitCost(paid.spendByWeek, paid.paymentsByWeek)
   );
-  p.roas = withFact(p.roas, paid.spend > 0 ? Number(((paid.revenue / paid.spend) * 100).toFixed(1)) : null);
+  p.roas = withFact(
+    p.roas,
+    paid.spend > 0 ? Number(((paid.revenue / paid.spend) * 100).toFixed(1)) : null,
+    weeklyRoasPercent(paid.revenueByWeek, paid.spendByWeek)
+  );
 
   o.revenue = withFact(o.revenue, org.revenue, org.revenueByWeek);
   o.payments = withFact(o.payments, org.payments, org.paymentsByWeek);

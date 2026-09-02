@@ -46,7 +46,8 @@ const periodLabelMap: Record<PeriodKey, string> = {
   "may-2026": "Май 2026",
   "june-2026": "Июнь 2026",
   "july-2026": "Июль 2026",
-  "august-2026": "Август 2026"
+  "august-2026": "Август 2026",
+  "september-2026": "Сентябрь 2026"
 };
 
 const bundledExports: Partial<Record<PeriodKey, string>> = {

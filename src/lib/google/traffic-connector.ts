@@ -244,7 +244,8 @@ function monthRangeForPeriod(period: PeriodKey) {
     "may-2026": { year: 2026, month: 5 },
     "june-2026": { year: 2026, month: 6 },
     "july-2026": { year: 2026, month: 7 },
-    "august-2026": { year: 2026, month: 8 }
+    "august-2026": { year: 2026, month: 8 },
+    "september-2026": { year: 2026, month: 9 }
   };
   const { year, month } = mapping[period];
   return {

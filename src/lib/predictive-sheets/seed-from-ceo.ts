@@ -422,6 +422,23 @@ export function seedForMetricId(
       };
     }
     if (value.planNote === "расчётный план") return { ...value, derived: true };
+    if (value.weekFact?.some((v) => v != null)) return value;
+  }
+  if (metricId === "mg_cac" || metricId === "mp_cac") {
+    const spend = metricId === "mp_cac" ? p.budget : g.budget;
+    const payments = metricId === "mp_cac" ? p.payments : g.payments;
+    const weekFact = value.weekFact ?? weeklyAverage(spend?.weekFact, payments?.weekFact);
+    if (weekFact.some((v) => v != null) && value.weekFact == null) {
+      return { ...value, weekFact };
+    }
+  }
+  if (metricId === "mg_roas" || metricId === "mp_roas" || metricId === "fn_roas") {
+    const revenue = metricId === "mp_roas" ? p.revenue : g.revenue;
+    const spend = metricId === "mp_roas" ? p.budget : g.budget;
+    const weekFact = value.weekFact ?? weeklyRate(revenue?.weekFact, spend?.weekFact);
+    if (weekFact.some((v) => v != null) && value.weekFact == null) {
+      return { ...value, weekFact };
+    }
   }
   if (metricId === "mp_cpql") {
     if (p.budget?.plan != null && p.qualified_leads?.plan != null && p.qualified_leads.plan > 0) {

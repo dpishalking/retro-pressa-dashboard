@@ -23,26 +23,26 @@ jobs:
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Sales OS
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=120 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
-          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          MONTH="$(TZ=Europe/Riga date +%Y-%m)"
           OUT="/tmp/cron-sales-os.json"
           LOG="/tmp/cron-sales-os.log"
           rm -f "$OUT" "$LOG"
           echo "sales-os month=${MONTH}"
           nohup curl -sS --max-time 900 -o "$OUT" -w "\nHTTP %{http_code}\n" \
             -X POST http://127.0.0.1:4175/api/sync/sales-os \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${SECRET}" \
+            "${AUTH_HEADERS[@]}" \
             -d "{\"periods\":[\"${MONTH}\"]}" \
             >"$LOG" 2>&1 &
           PID=$!
@@ -70,18 +70,19 @@ jobs:
 
       - name: Marketing Planning ROM
         continue-on-error: true
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=120 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
-          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          MONTH="$(TZ=Europe/Riga date +%Y-%m)"
           OUT="/tmp/cron-marketing-planning.json"
           LOG="/tmp/cron-marketing-planning.log"
           rm -f "$OUT" "$LOG"
@@ -89,8 +90,7 @@ jobs:
           # Light module set: Performance grids + facts (full "all" OOMs standalone Node).
           nohup curl -sS --max-time 600 -o "$OUT" -w "\nHTTP %{http_code}\n" \
             -X POST http://127.0.0.1:4175/api/sync/marketing-planning \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${SECRET}" \
+            "${AUTH_HEADERS[@]}" \
             -d "{\"periods\":[\"${MONTH}\"],\"modules\":[\"facts\",\"paid_planning\",\"marketing_planning\",\"organic_planning\"]}" \
             >"$LOG" 2>&1 &
           PID=$!
@@ -117,22 +117,23 @@ jobs:
           EOF
 
       - name: Predictive front
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
+        continue-on-error: true
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=60 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
-          MONTH="$(TZ=Europe/Moscow date +%Y-%m)"
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          MONTH="$(TZ=Europe/Riga date +%Y-%m)"
           echo "predictive-front month=${MONTH}"
           curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/predictive-front \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${SECRET}" \
+            "${AUTH_HEADERS[@]}" \
             -d "{\"month\":\"${MONTH}\"}"
           echo
           EOF

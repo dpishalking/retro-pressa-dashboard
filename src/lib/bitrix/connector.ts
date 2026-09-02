@@ -267,7 +267,8 @@ const workingDaysByPeriod: Record<PeriodKey, number> = {
   "may-2026": 21,
   "june-2026": 21,
   "july-2026": 23,
-  "august-2026": 21
+  "august-2026": 21,
+  "september-2026": 22
 };
 
 function monthRangeForPeriod(period: PeriodKey, now = new Date()) {
@@ -275,7 +276,8 @@ function monthRangeForPeriod(period: PeriodKey, now = new Date()) {
     "may-2026": { year: 2026, month: 5 },
     "june-2026": { year: 2026, month: 6 },
     "july-2026": { year: 2026, month: 7 },
-    "august-2026": { year: 2026, month: 8 }
+    "august-2026": { year: 2026, month: 8 },
+    "september-2026": { year: 2026, month: 9 }
   };
   const { year, month } = months[period];
   const start = new Date(Date.UTC(year, month - 1, 1));

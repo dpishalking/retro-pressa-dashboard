@@ -4,14 +4,16 @@ const periodByMonth: Record<number, PeriodKey> = {
   5: "may-2026",
   6: "june-2026",
   7: "july-2026",
-  8: "august-2026"
+  8: "august-2026",
+  9: "september-2026"
 };
 
 const isoMonthByPeriod: Record<PeriodKey, string> = {
   "may-2026": "2026-05",
   "june-2026": "2026-06",
   "july-2026": "2026-07",
-  "august-2026": "2026-08"
+  "august-2026": "2026-08",
+  "september-2026": "2026-09"
 };
 
 /** PeriodKey → calendar month YYYY-MM. */
@@ -53,5 +55,5 @@ export function moscowYesterdayIso(now = new Date()) {
 
 export function moscowPeriodKey(now = new Date()): PeriodKey {
   const { month } = moscowParts(now);
-  return periodByMonth[month] ?? "august-2026";
+  return periodByMonth[month] ?? "september-2026";
 }

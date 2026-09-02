@@ -1,8 +1,8 @@
 export type Status = "green" | "orange" | "red";
 
-export type PeriodKey = "may-2026" | "june-2026" | "july-2026" | "august-2026";
+export type PeriodKey = "may-2026" | "june-2026" | "july-2026" | "august-2026" | "september-2026";
 
-export const PERIOD_KEYS: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026"];
+export const PERIOD_KEYS: PeriodKey[] = ["may-2026", "june-2026", "july-2026", "august-2026", "september-2026"];
 
 export type MonthlyMetrics = {
   month: PeriodKey;

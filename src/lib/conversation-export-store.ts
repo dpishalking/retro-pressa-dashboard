@@ -8,7 +8,8 @@ const periodSlug: Record<PeriodKey, string> = {
   "may-2026": "2026-05",
   "june-2026": "2026-06",
   "july-2026": "2026-07",
-  "august-2026": "2026-08"
+  "august-2026": "2026-08",
+  "september-2026": "2026-09"
 };
 
 function extensionOf(filename: string) {

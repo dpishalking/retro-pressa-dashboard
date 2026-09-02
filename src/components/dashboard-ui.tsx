@@ -600,9 +600,10 @@ function elapsedDaysForPeriod(period: string) {
     "may-2026": { year: 2026, monthIndex: 4, days: 31 },
     "june-2026": { year: 2026, monthIndex: 5, days: 30 },
     "july-2026": { year: 2026, monthIndex: 6, days: 31 },
-    "august-2026": { year: 2026, monthIndex: 7, days: 31 }
+    "august-2026": { year: 2026, monthIndex: 7, days: 31 },
+    "september-2026": { year: 2026, monthIndex: 8, days: 30 }
   };
-  const selected = months[period] ?? months["august-2026"];
+  const selected = months[period] ?? months["september-2026"];
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const periodStart = new Date(selected.year, selected.monthIndex, 1);

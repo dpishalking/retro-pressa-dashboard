@@ -11,6 +11,7 @@ const periodSlug: Record<PeriodKey, string> = {
   "june-2026": "2026-06",
   "july-2026": "2026-07",
   "august-2026": "2026-08",
+  "september-2026": "2026-09",
 };
 
 type GiftAiDialog = {

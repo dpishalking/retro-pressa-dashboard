@@ -8,6 +8,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Configure SSH
@@ -18,20 +19,21 @@ jobs:
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Run daily sync on server
-        env:
-          CRON_SYNC_SECRET: ${{ secrets.CRON_SYNC_SECRET }}
         run: |
-          ssh -i ~/.ssh/deploy_key "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            CRON_SYNC_SECRET="$CRON_SYNC_SECRET" \
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             bash -s << 'EOF'
           set -euo pipefail
-          SECRET="${CRON_SYNC_SECRET:-}"
-          if [ -z "$SECRET" ]; then
-            echo "CRON_SYNC_SECRET is empty"
-            exit 1
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
           fi
-          curl -f -sS -X POST http://127.0.0.1:4175/api/rop/daily-sync \
-            -H "Content-Type: application/json" \
-            -H "x-cron-secret: ${SECRET}" \
+          echo "rop daily-sync"
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/rop/daily-sync \
+            "${AUTH_HEADERS[@]}" \
             -d '{"refresh":true,"daysBack":3,"dialogLimit":250,"incremental":true,"exportToSheet":true,"manager":"*","sheetMode":"incremental"}'
+          echo
           EOF

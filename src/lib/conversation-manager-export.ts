@@ -11,6 +11,7 @@ const periodFiles: Record<PeriodKey, string> = {
   "june-2026": "retro-pressa-conversations-2026-06.json",
   "july-2026": "retro-pressa-conversations-2026-07.json",
   "august-2026": "retro-pressa-conversations-2026-08.json",
+  "september-2026": "retro-pressa-conversations-2026-09.json",
 };
 
 export type ManagerDialogExportRow = {
