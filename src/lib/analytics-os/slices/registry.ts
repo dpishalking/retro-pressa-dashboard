@@ -8,7 +8,9 @@ export const SLICE_DIMENSIONS: SliceDimensionDef[] = [
     filterKey: "country",
     dealOnly: false,
     supportsDrill: true,
-    nextHints: ["product", "source", "manager"]
+    nextHints: ["product", "source", "manager"],
+    coverageNote:
+      "Страна — поле Bitrix на карточке лида, не гео GA4 и не IP. WhatsApp / Telegram / Wazzup его почти не заполняют, поэтому они попадают в «Не указана»."
   },
   {
     id: "product",
