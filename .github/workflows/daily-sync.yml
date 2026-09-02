@@ -36,4 +36,9 @@ jobs:
             "${AUTH_HEADERS[@]}" \
             -d '{"refresh":true,"daysBack":3,"dialogLimit":250,"incremental":true,"exportToSheet":true,"manager":"*","sheetMode":"incremental"}'
           echo
+          echo "rop alerts (Сводка дня)"
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/rop-alerts \
+            "${AUTH_HEADERS[@]}" \
+            -d '{"includeDialogs":true}'
+          echo
           EOF
