@@ -12,9 +12,9 @@ type RopTile = {
 
 const tiles: RopTile[] = [
   {
-    href: "/rop/conversations",
-    title: "Анализ переписок",
-    description: "Дневные и месячные срезы переписок из Bitrix: качество, возражения, конверсия и потери.",
+    href: "/rop/conversations?tab=feedback",
+    title: "ОС по чатам и анализ",
+    description: "Обратная связь менеджерам по чатам за день + срезы качества, возражений и потерь.",
     icon: MessageSquare,
     status: "active"
   },

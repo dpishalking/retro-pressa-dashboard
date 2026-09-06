@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { eur, number, pct } from "@/lib/format";
 import { readJsonResponse } from "@/lib/api-response";
 import { inferPeriodKeyFromLabel } from "@/lib/conversation-periods";
+import { RopManagerChatFeedbackPanel } from "@/components/rop-manager-chat-feedback-panel";
 import type { ConversationDashboardMetrics, ConversationRopReport, GeminiConversationSummary, PeriodKey } from "@/types/metrics";
 
 type ConversationHistoryItem = {
@@ -81,11 +82,14 @@ const archiveLabelMap: Record<"may" | "june" | "july" | "august", string> = {
   august: "августовский"
 };
 const periodOptions: Array<{ value: PeriodKey; label: string }> = [
+  { value: "september-2026", label: "Сентябрь 2026" },
   { value: "august-2026", label: "Август 2026" },
   { value: "july-2026", label: "Июль 2026" },
   { value: "june-2026", label: "Июнь 2026" },
   { value: "may-2026", label: "Май 2026" }
 ];
+
+type ConversationsTab = "analysis" | "feedback";
 
 type SyncStatus = { state: "idle" | "loading" | "ok" | "warning" | "error"; message: string };
 
@@ -128,7 +132,12 @@ export function RopConversationsScreen() {
   const [ropReport, setRopReport] = useState<ConversationRopReport | null>(null);
   const [ropReportError, setRopReportError] = useState<string>("");
   const [selectedImportedAt, setSelectedImportedAt] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("august-2026");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("september-2026");
+  const [activeTab, setActiveTab] = useState<ConversationsTab>(() => {
+    if (typeof window === "undefined") return "feedback";
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return tab === "analysis" ? "analysis" : "feedback";
+  });
   const [status, setStatus] = useState<SyncStatus>({ state: "idle", message: "" });
 
   useEffect(() => {
@@ -360,6 +369,31 @@ export function RopConversationsScreen() {
         К плитке РОП
       </Link>
 
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("feedback")}
+          className={`rounded-full px-4 py-2 text-sm font-bold ${
+            activeTab === "feedback" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          }`}
+        >
+          ОС по чатам менеджеров
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("analysis")}
+          className={`rounded-full px-4 py-2 text-sm font-bold ${
+            activeTab === "analysis" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          }`}
+        >
+          Анализ переписок
+        </button>
+      </div>
+
+      {activeTab === "feedback" ? <RopManagerChatFeedbackPanel /> : null}
+
+      {activeTab === "analysis" ? (
+      <>
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">Инструменты РОП</p>
@@ -756,7 +790,9 @@ export function RopConversationsScreen() {
       ) : (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-slate-500">
           Пока нет сохранённого среза переписок. Загрузите архив кнопкой «Загрузить{" "}
-          {selectedPeriod === "august-2026"
+          {selectedPeriod === "september-2026"
+            ? "сентябрь"
+            : selectedPeriod === "august-2026"
             ? "август"
             : selectedPeriod === "july-2026"
               ? "июль"
@@ -766,6 +802,8 @@ export function RopConversationsScreen() {
           » — или возьмите свежий срез из Битрикс для июля/августа.
         </section>
       )}
+      </>
+      ) : null}
     </main>
   );
 }
