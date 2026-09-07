@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Trash2, Truck, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Target, Trash2, Truck, X } from "lucide-react";
+import Link from "next/link";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -68,6 +69,32 @@ const LIVE_LINKS = [
     Icon: Pencil
   }
 ] as const;
+
+function PlaybooksSection() {
+  return (
+    <section className="card border-blue-200 bg-blue-50/50 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+            <Target size={22} />
+          </span>
+          <div>
+            <h2 className="text-xl font-black text-slate-950">Плейбук Забковых</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Интерактивная инфографика: цена + закрытие = оплата. Для новичков и разбора с РОП.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/training/playbooks/zabkova-close"
+          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+        >
+          Открыть инфографику
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 function LiveLinksSection() {
   return (
@@ -915,6 +942,7 @@ export function KnowledgeBase() {
         </p>
       </section>
 
+      <PlaybooksSection />
       <LiveLinksSection />
 
       <CityRoutingSection />
