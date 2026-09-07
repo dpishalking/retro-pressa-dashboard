@@ -288,122 +288,384 @@ function money(value: number) {
   return String(Math.round(value * 100) / 100);
 }
 
+const CONTROL_COLS = 12;
+
+function rgb(r: number, g: number, b: number) {
+  return { red: r, green: g, blue: b };
+}
+
 async function formatControlTab(input: {
   spreadsheetId: string;
   sheetId: number;
   managerCount: number;
 }) {
-  const headerRow = 10; // 0-based: row 11 in sheet is manager table header
-  const firstDataRow = headerRow + 1;
+  // Layout (0-based):
+  // 0 title, 1 updated, 2 spacer, 3 KPI labels, 4 KPI values, 5 spacer, 6 section, 7 table header, 8+ data
+  const kpiLabelRow = 3;
+  const kpiValueRow = 4;
+  const sectionRow = 6;
+  const headerRow = 7;
+  const firstDataRow = 8;
   const lastDataRow = headerRow + Math.max(1, input.managerCount);
+  const colWidths = [190, 58, 52, 72, 68, 58, 82, 68, 72, 62, 78, 72];
+
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      requests: [
-        {
-          updateSheetProperties: {
-            properties: {
-              sheetId: input.sheetId,
-              gridProperties: { frozenRowCount: 11 }
-            },
-            fields: "gridProperties.frozenRowCount"
-          }
-        },
-        {
-          repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 2 },
-            cell: {
-              userEnteredFormat: {
-                textFormat: { bold: true, fontSize: 14, foregroundColor: { red: 1, green: 1, blue: 1 } },
-                backgroundColor: { red: 0.12, green: 0.23, blue: 0.37 }
-              }
-            },
-            fields: "userEnteredFormat(textFormat,backgroundColor)"
-          }
-        },
-        {
-          repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 9, startColumnIndex: 0, endColumnIndex: 1 },
-            cell: {
-              userEnteredFormat: {
-                textFormat: { bold: true },
-                backgroundColor: { red: 0.93, green: 0.95, blue: 0.98 }
-              }
-            },
-            fields: "userEnteredFormat(textFormat,backgroundColor)"
-          }
-        },
-        {
-          repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 9, startColumnIndex: 1, endColumnIndex: 2 },
-            cell: {
-              userEnteredFormat: {
-                textFormat: { bold: true, fontSize: 12 },
-                horizontalAlignment: "RIGHT"
-              }
-            },
-            fields: "userEnteredFormat(textFormat,horizontalAlignment)"
-          }
-        },
-        {
-          repeatCell: {
-            range: {
-              sheetId: input.sheetId,
-              startRowIndex: headerRow,
-              endRowIndex: headerRow + 1,
-              startColumnIndex: 0,
-              endColumnIndex: 12
-            },
-            cell: {
-              userEnteredFormat: {
-                textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
-                backgroundColor: { red: 0.2, green: 0.45, blue: 0.72 }
-              }
-            },
-            fields: "userEnteredFormat(textFormat,backgroundColor)"
-          }
-        },
-        {
-          repeatCell: {
-            range: {
-              sheetId: input.sheetId,
-              startRowIndex: firstDataRow,
-              endRowIndex: lastDataRow + 1,
-              startColumnIndex: 1,
-              endColumnIndex: 12
-            },
-            cell: {
-              userEnteredFormat: { horizontalAlignment: "CENTER" }
-            },
-            fields: "userEnteredFormat.horizontalAlignment"
-          }
-        },
-        {
-          updateDimensionProperties: {
-            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: 1 },
-            properties: { pixelSize: 220 },
-            fields: "pixelSize"
-          }
-        },
-        {
-          updateDimensionProperties: {
-            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 12 },
-            properties: { pixelSize: 95 },
-            fields: "pixelSize"
-          }
-        }
-      ]
-    })
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Shift board format failed: ${response.status} ${body.slice(0, 200)}`);
+  const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`;
+
+  async function batchUpdate(requests: unknown[]) {
+    const response = await fetch(sheetsUrl, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ requests })
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Shift board format failed: ${response.status} ${body.slice(0, 280)}`);
+    }
   }
+
+  // Clear leftover freeze/merges from older layouts so new merges can span full width.
+  await batchUpdate([
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId: input.sheetId,
+          gridProperties: { frozenRowCount: 0, frozenColumnCount: 0 }
+        },
+        fields: "gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    },
+    {
+      unmergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 80,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        }
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 80,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: { userEnteredFormat: {} },
+        fields: "userEnteredFormat"
+      }
+    }
+  ]);
+
+  const mergeKpiPairs = Array.from({ length: 6 }, (_, index) => ({
+    mergeCells: {
+      range: {
+        sheetId: input.sheetId,
+        startRowIndex: kpiLabelRow,
+        endRowIndex: kpiLabelRow + 1,
+        startColumnIndex: index * 2,
+        endColumnIndex: index * 2 + 2
+      },
+      mergeType: "MERGE_ALL"
+    }
+  })).concat(
+    Array.from({ length: 6 }, (_, index) => ({
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiValueRow,
+          endRowIndex: kpiValueRow + 1,
+          startColumnIndex: index * 2,
+          endColumnIndex: index * 2 + 2
+        },
+        mergeType: "MERGE_ALL"
+      }
+    }))
+  );
+
+  await batchUpdate([
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 1,
+          endRowIndex: 2,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: sectionRow,
+          endRowIndex: sectionRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    ...mergeKpiPairs,
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 16, foregroundColor: rgb(1, 1, 1) },
+            backgroundColor: rgb(0.12, 0.23, 0.37),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 1,
+          endRowIndex: 2,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { fontSize: 10, foregroundColor: rgb(0.35, 0.4, 0.48) },
+            backgroundColor: rgb(0.94, 0.96, 0.98),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiLabelRow,
+          endRowIndex: kpiLabelRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(0.28, 0.35, 0.45) },
+            backgroundColor: rgb(0.9, 0.93, 0.97),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiValueRow,
+          endRowIndex: kpiValueRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 18, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: sectionRow,
+          endRowIndex: sectionRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 11, foregroundColor: rgb(0.15, 0.22, 0.32) },
+            backgroundColor: rgb(0.93, 0.95, 0.97),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: headerRow,
+          endRowIndex: headerRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(1, 1, 1) },
+            backgroundColor: rgb(0.2, 0.45, 0.72),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            wrapStrategy: "WRAP"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: firstDataRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: 1
+        },
+        cell: {
+          userEnteredFormat: {
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: firstDataRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: 1,
+          endColumnIndex: CONTROL_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      updateBorders: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: headerRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: CONTROL_COLS
+        },
+        top: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        bottom: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        left: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        right: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        innerHorizontal: { style: "SOLID", width: 1, color: rgb(0.88, 0.91, 0.94) },
+        innerVertical: { style: "SOLID", width: 1, color: rgb(0.88, 0.91, 0.94) }
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+        properties: { pixelSize: 42 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: 1, endIndex: 2 },
+        properties: { pixelSize: 26 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiLabelRow, endIndex: kpiLabelRow + 1 },
+        properties: { pixelSize: 24 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiValueRow, endIndex: kpiValueRow + 1 },
+        properties: { pixelSize: 44 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: sectionRow, endIndex: sectionRow + 1 },
+        properties: { pixelSize: 28 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: headerRow, endIndex: headerRow + 1 },
+        properties: { pixelSize: 36 },
+        fields: "pixelSize"
+      }
+    },
+    ...colWidths.map((pixelSize, index) => ({
+      updateDimensionProperties: {
+        range: {
+          sheetId: input.sheetId,
+          dimension: "COLUMNS",
+          startIndex: index,
+          endIndex: index + 1
+        },
+        properties: { pixelSize },
+        fields: "pixelSize"
+      }
+    })),
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId: input.sheetId,
+          gridProperties: { frozenRowCount: headerRow + 1, frozenColumnCount: 0 }
+        },
+        fields: "gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    }
+  ]);
 }
 
 export async function syncShiftBoard(options: {
@@ -582,16 +844,26 @@ export async function syncShiftBoard(options: {
     const totalProductsInPayments = managers.reduce((sum, row) => sum + row.productsInPayments, 0);
 
     const controlRows: string[][] = [
-      ["СМЕНА СЕГОДНЯ", day],
-      ["Обновлено", syncedAt],
+      [`СМЕНА СЕГОДНЯ · ${day}`],
+      [`Обновлено: ${syncedAt} (Europe/Riga)`],
       [],
-      ["Лиды сегодня", String(totalLeads)],
-      ["Счета сегодня", String(totalInvoices)],
-      ["Оплаты сегодня", String(totalPayments)],
-      ["Выручка сегодня, EUR", money(totalRevenueEur)],
-      ["Средний чек, EUR", avgCheckLabel(totalRevenueEur, totalPayments)],
-      ["Товаров на оплату", productsPerPaymentLabel(totalProductsInPayments, totalPayments)],
+      ["Лиды", "", "Счета", "", "Оплаты", "", "Выручка, €", "", "Ср. чек, €", "", "Тов. на оплату", ""],
+      [
+        String(totalLeads),
+        "",
+        String(totalInvoices),
+        "",
+        String(totalPayments),
+        "",
+        money(totalRevenueEur),
+        "",
+        avgCheckLabel(totalRevenueEur, totalPayments),
+        "",
+        productsPerPaymentLabel(totalProductsInPayments, totalPayments),
+        ""
+      ],
       [],
+      ["По менеджерам"],
       [
         "Менеджер",
         "Лиды",
@@ -599,12 +871,12 @@ export async function syncShiftBoard(options: {
         "В работе",
         "Сделки",
         "Счета",
-        "Сумма счетов",
+        "Σ счетов",
         "Товаров",
-        "Тов./оплата",
+        "Тов/опл",
         "Оплаты",
-        "Выручка EUR",
-        "Средний чек"
+        "Выручка",
+        "Ср.чек"
       ]
     ];
     for (const row of managers) {
