@@ -187,6 +187,16 @@ async function loadOnShiftNames(day: string): Promise<string[]> {
   }
 }
 
+type ManagerTabBuild = {
+  rows: string[][];
+  leadHeaderRow: number;
+  leadCount: number;
+  invoiceHeaderRow: number;
+  invoiceCount: number;
+  paymentHeaderRow: number;
+  paymentCount: number;
+};
+
 function buildManagerRows(input: {
   day: string;
   syncedAt: string;
@@ -196,7 +206,7 @@ function buildManagerRows(input: {
   invoices: BitrixInvoice[];
   payments: BitrixSnapshotDeal[];
   productCounts: Map<string, number>;
-}): string[][] {
+}): ManagerTabBuild {
   const statusCounts: Record<string, number> = {};
   for (const lead of input.leads) {
     const key = String(lead.STATUS_ID || "?");
@@ -212,30 +222,42 @@ function buildManagerRows(input: {
     (sum, row) => sum + (input.productCounts.get(paymentSpaId(String(row.id || ""))) || 0),
     0
   );
+  const scheduleLabel = input.onShift ? "да (справочно)" : "нет / не в графике";
 
   const rows: string[][] = [
-    ["Поле", "Значение"],
-    ["Дата", input.day],
-    ["Обновлено", input.syncedAt],
-    ["Менеджер", input.fullName],
-    ["На смене по графику", input.onShift ? "да (справочно)" : "нет / не в графике"],
-    ["Лиды сегодня", String(input.leads.length)],
-    ["NEW", String(statusCounts.NEW || 0)],
-    ["IN_PROCESS", String(statusCounts.IN_PROCESS || 0)],
-    ["CONVERTED", String(statusCounts.CONVERTED || 0)],
-    ["Счета сегодня", String(input.invoices.length)],
-    ["Сумма счетов (как в CRM)", money(invoiceSum)],
-    ["Товаров в счетах", String(productsInInvoices)],
-    ["Оплаты сегодня", String(input.payments.length)],
-    ["Товаров в оплатах", String(productsInPayments)],
-    ["Товаров на оплату", productsPerPaymentLabel(productsInPayments, input.payments.length)],
-    ["Сумма оплат, EUR", money(paymentSumEur)],
-    ["Средний чек, EUR", avgCheckLabel(paymentSumEur, input.payments.length)],
+    [`МЕНЕДЖЕР · ${input.fullName}`],
+    [
+      `Дата: ${input.day}  ·  Обновлено: ${input.syncedAt}  ·  NEW ${statusCounts.NEW || 0}  ·  В работе ${statusCounts.IN_PROCESS || 0}  ·  Сделки ${statusCounts.CONVERTED || 0}  ·  График: ${scheduleLabel}`
+    ],
     [],
-    ["Лиды"],
-    ["ID", "Название", "Статус", "Источник", "Создан", "Ссылка"]
+    ["Лиды", "", "Счета", "", "Оплаты", "", "Выручка, €", ""],
+    [
+      String(input.leads.length),
+      "",
+      String(input.invoices.length),
+      "",
+      String(input.payments.length),
+      "",
+      money(paymentSumEur),
+      ""
+    ],
+    ["Ср. чек, €", "", "Тов. на оплату", "", "Товаров", "", "Σ счетов", ""],
+    [
+      avgCheckLabel(paymentSumEur, input.payments.length),
+      "",
+      productsPerPaymentLabel(productsInPayments, input.payments.length),
+      "",
+      String(productsInInvoices),
+      "",
+      money(invoiceSum),
+      ""
+    ],
+    [],
+    ["Лиды"]
   ];
 
+  const leadHeaderRow = rows.length;
+  rows.push(["ID", "Название", "Статус", "Источник", "Создан", "Ссылка", "", ""]);
   for (const lead of input.leads) {
     const id = String(lead.ID || "");
     rows.push([
@@ -244,12 +266,15 @@ function buildManagerRows(input: {
       String(lead.STATUS_ID || ""),
       String(lead.SOURCE_ID || ""),
       formatDateTime(lead.DATE_CREATE),
-      id ? leadUrl(id) : ""
+      id ? leadUrl(id) : "",
+      "",
+      ""
     ]);
   }
 
   rows.push([]);
   rows.push(["Счета"]);
+  const invoiceHeaderRow = rows.length;
   rows.push(["ID", "Название", "Стадия", "Сумма", "Валюта", "Товаров", "Создан", "Ссылка"]);
   for (const invoice of input.invoices) {
     const id = String(invoice.id || "");
@@ -267,7 +292,8 @@ function buildManagerRows(input: {
 
   rows.push([]);
   rows.push(["Оплаты"]);
-  rows.push(["ID", "Название", "Дата оплаты", "Сумма EUR", "Товаров", "Сделка", "Ссылка"]);
+  const paymentHeaderRow = rows.length;
+  rows.push(["ID", "Название", "Дата оплаты", "Сумма EUR", "Товаров", "Сделка", "Ссылка", ""]);
   for (const payment of input.payments) {
     const spaId = paymentSpaId(String(payment.id || ""));
     rows.push([
@@ -277,11 +303,20 @@ function buildManagerRows(input: {
       String(payment.opportunity ?? ""),
       String(input.productCounts.get(spaId) || 0),
       payment.parentDealId || "",
-      spaId ? invoiceUrl(spaId) : ""
+      spaId ? invoiceUrl(spaId) : "",
+      ""
     ]);
   }
 
-  return rows;
+  return {
+    rows,
+    leadHeaderRow,
+    leadCount: input.leads.length,
+    invoiceHeaderRow,
+    invoiceCount: input.invoices.length,
+    paymentHeaderRow,
+    paymentCount: input.payments.length
+  };
 }
 
 function money(value: number) {
@@ -668,6 +703,439 @@ async function formatControlTab(input: {
   ]);
 }
 
+const MANAGER_COLS = 8;
+
+async function shiftBoardBatchUpdate(spreadsheetId: string, requests: unknown[]) {
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ requests })
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Shift board format failed: ${response.status} ${body.slice(0, 280)}`);
+  }
+}
+
+function mergePairRequests(sheetId: number, rowIndex: number, pairCount: number) {
+  return Array.from({ length: pairCount }, (_, index) => ({
+    mergeCells: {
+      range: {
+        sheetId,
+        startRowIndex: rowIndex,
+        endRowIndex: rowIndex + 1,
+        startColumnIndex: index * 2,
+        endColumnIndex: index * 2 + 2
+      },
+      mergeType: "MERGE_ALL"
+    }
+  }));
+}
+
+function tableFormatRequests(input: {
+  sheetId: number;
+  headerRow: number;
+  rowCount: number;
+  colCount: number;
+}) {
+  const firstDataRow = input.headerRow + 1;
+  const lastDataRow = input.headerRow + Math.max(1, input.rowCount);
+  return [
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: input.headerRow - 1,
+          endRowIndex: input.headerRow,
+          startColumnIndex: 0,
+          endColumnIndex: input.colCount
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 11, foregroundColor: rgb(0.15, 0.22, 0.32) },
+            backgroundColor: rgb(0.93, 0.95, 0.97),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: input.headerRow,
+          endRowIndex: input.headerRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: input.colCount
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(1, 1, 1) },
+            backgroundColor: rgb(0.2, 0.45, 0.72),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            wrapStrategy: "WRAP"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: firstDataRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: input.colCount
+        },
+        cell: {
+          userEnteredFormat: {
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat.verticalAlignment"
+      }
+    },
+    {
+      updateBorders: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: input.headerRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: input.colCount
+        },
+        top: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        bottom: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        left: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        right: { style: "SOLID", width: 1, color: rgb(0.78, 0.84, 0.9) },
+        innerHorizontal: { style: "SOLID", width: 1, color: rgb(0.88, 0.91, 0.94) },
+        innerVertical: { style: "SOLID", width: 1, color: rgb(0.88, 0.91, 0.94) }
+      }
+    }
+  ];
+}
+
+async function formatManagerTab(input: {
+  spreadsheetId: string;
+  sheetId: number;
+  layout: ManagerTabBuild;
+}) {
+  const kpiLabelRow1 = 3;
+  const kpiValueRow1 = 4;
+  const kpiLabelRow2 = 5;
+  const kpiValueRow2 = 6;
+  const leadSectionRow = input.layout.leadHeaderRow - 1;
+  const invoiceSectionRow = input.layout.invoiceHeaderRow - 1;
+  const paymentSectionRow = input.layout.paymentHeaderRow - 1;
+  const endRow = Math.max(
+    input.layout.paymentHeaderRow + Math.max(1, input.layout.paymentCount) + 2,
+    40
+  );
+  const colWidths = [78, 260, 120, 100, 90, 80, 130, 220];
+
+  await shiftBoardBatchUpdate(input.spreadsheetId, [
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId: input.sheetId,
+          gridProperties: { frozenRowCount: 0, frozenColumnCount: 0 }
+        },
+        fields: "gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    },
+    {
+      unmergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: endRow,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        }
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: endRow,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: { userEnteredFormat: {} },
+        fields: "userEnteredFormat"
+      }
+    }
+  ]);
+
+  await shiftBoardBatchUpdate(input.spreadsheetId, [
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 1,
+          endRowIndex: 2,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: leadSectionRow,
+          endRowIndex: leadSectionRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: invoiceSectionRow,
+          endRowIndex: invoiceSectionRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: paymentSectionRow,
+          endRowIndex: paymentSectionRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    ...mergePairRequests(input.sheetId, kpiLabelRow1, 4),
+    ...mergePairRequests(input.sheetId, kpiValueRow1, 4),
+    ...mergePairRequests(input.sheetId, kpiLabelRow2, 4),
+    ...mergePairRequests(input.sheetId, kpiValueRow2, 4),
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 16, foregroundColor: rgb(1, 1, 1) },
+            backgroundColor: rgb(0.12, 0.23, 0.37),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: 1,
+          endRowIndex: 2,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { fontSize: 10, foregroundColor: rgb(0.35, 0.4, 0.48) },
+            backgroundColor: rgb(0.94, 0.96, 0.98),
+            horizontalAlignment: "LEFT",
+            verticalAlignment: "MIDDLE",
+            wrapStrategy: "WRAP"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiLabelRow1,
+          endRowIndex: kpiLabelRow1 + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(0.28, 0.35, 0.45) },
+            backgroundColor: rgb(0.9, 0.93, 0.97),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiValueRow1,
+          endRowIndex: kpiValueRow1 + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 18, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiLabelRow2,
+          endRowIndex: kpiLabelRow2 + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(0.28, 0.35, 0.45) },
+            backgroundColor: rgb(0.9, 0.93, 0.97),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiValueRow2,
+          endRowIndex: kpiValueRow2 + 1,
+          startColumnIndex: 0,
+          endColumnIndex: MANAGER_COLS
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 16, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE"
+          }
+        },
+        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+      }
+    },
+    ...tableFormatRequests({
+      sheetId: input.sheetId,
+      headerRow: input.layout.leadHeaderRow,
+      rowCount: input.layout.leadCount,
+      colCount: 6
+    }),
+    ...tableFormatRequests({
+      sheetId: input.sheetId,
+      headerRow: input.layout.invoiceHeaderRow,
+      rowCount: input.layout.invoiceCount,
+      colCount: MANAGER_COLS
+    }),
+    ...tableFormatRequests({
+      sheetId: input.sheetId,
+      headerRow: input.layout.paymentHeaderRow,
+      rowCount: input.layout.paymentCount,
+      colCount: 7
+    }),
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+        properties: { pixelSize: 42 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: 1, endIndex: 2 },
+        properties: { pixelSize: 34 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiValueRow1, endIndex: kpiValueRow1 + 1 },
+        properties: { pixelSize: 42 },
+        fields: "pixelSize"
+      }
+    },
+    {
+      updateDimensionProperties: {
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiValueRow2, endIndex: kpiValueRow2 + 1 },
+        properties: { pixelSize: 38 },
+        fields: "pixelSize"
+      }
+    },
+    ...colWidths.map((pixelSize, index) => ({
+      updateDimensionProperties: {
+        range: {
+          sheetId: input.sheetId,
+          dimension: "COLUMNS",
+          startIndex: index,
+          endIndex: index + 1
+        },
+        properties: { pixelSize },
+        fields: "pixelSize"
+      }
+    })),
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId: input.sheetId,
+          gridProperties: {
+            frozenRowCount: 8,
+            frozenColumnCount: 0
+          }
+        },
+        fields: "gridProperties.frozenRowCount,gridProperties.frozenColumnCount"
+      }
+    }
+  ]);
+}
+
 export async function syncShiftBoard(options: {
   spreadsheetId?: string;
   day?: string;
@@ -917,21 +1385,30 @@ export async function syncShiftBoard(options: {
         (row) => String(row.assignedById || "") === manager.bitrixUserId
       );
       const managerPayments = payments.filter((row) => String(row.assignedById || "") === manager.bitrixUserId);
+      const managerSheet = buildManagerRows({
+        day,
+        syncedAt,
+        fullName: manager.fullName,
+        onShift: manager.onShift,
+        leads: managerLeads,
+        invoices: managerInvoices,
+        payments: managerPayments,
+        productCounts
+      });
       await writeSheetTab({
         spreadsheetId,
         tabTitle: manager.tabTitle,
-        rows: buildManagerRows({
-          day,
-          syncedAt,
-          fullName: manager.fullName,
-          onShift: manager.onShift,
-          leads: managerLeads,
-          invoices: managerInvoices,
-          payments: managerPayments,
-          productCounts
-        }),
+        rows: managerSheet.rows,
         clearRange: `'${manager.tabTitle.replace(/'/g, "''")}'!A:Z`
       });
+      const managerSheetId = await getSheetIdByTitle(spreadsheetId, manager.tabTitle);
+      if (managerSheetId != null) {
+        await formatManagerTab({
+          spreadsheetId,
+          sheetId: managerSheetId,
+          layout: managerSheet
+        });
+      }
     }
 
     if (toRemove.length) {
