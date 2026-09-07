@@ -5,6 +5,8 @@ import {
 } from "@/config/shift-board";
 import { bitrixListAll, bitrixResult } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
+import type { BitrixSnapshotDeal } from "@/lib/bitrix/snapshot-store";
+import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
 import {
   deleteSheetTabs,
   ensureSheetTab,
@@ -48,6 +50,8 @@ export type ShiftBoardManagerSnapshot = {
   statusCounts: Record<string, number>;
   invoices: number;
   invoiceSum: number;
+  payments: number;
+  paymentSumEur: number;
 };
 
 export type ShiftBoardSyncResult = {
@@ -96,9 +100,13 @@ function invoiceUrl(id: string) {
   return `${PORTAL}/crm/type/31/details/${id}/`;
 }
 
-function formatDateTime(value?: string) {
+function paymentSpaId(dealId: string): string {
+  return dealId.replace(/^si31-/, "");
+}
+
+function formatDateTime(value?: string | null) {
   if (!value) return "";
-  return value.replace("T", " ").slice(0, 16);
+  return String(value).replace("T", " ").slice(0, 16);
 }
 
 function asNumber(value: unknown) {
@@ -124,6 +132,7 @@ function buildManagerRows(input: {
   onShift: boolean;
   leads: BitrixLead[];
   invoices: BitrixInvoice[];
+  payments: BitrixSnapshotDeal[];
 }): string[][] {
   const statusCounts: Record<string, number> = {};
   for (const lead of input.leads) {
@@ -131,6 +140,7 @@ function buildManagerRows(input: {
     statusCounts[key] = (statusCounts[key] || 0) + 1;
   }
   const invoiceSum = input.invoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const paymentSumEur = input.payments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
 
   const rows: string[][] = [
     ["Поле", "Значение"],
@@ -144,6 +154,8 @@ function buildManagerRows(input: {
     ["CONVERTED", String(statusCounts.CONVERTED || 0)],
     ["Счета сегодня", String(input.invoices.length)],
     ["Сумма счетов (как в CRM)", String(Math.round(invoiceSum * 100) / 100)],
+    ["Оплаты сегодня", String(input.payments.length)],
+    ["Сумма оплат, EUR", String(Math.round(paymentSumEur * 100) / 100)],
     [],
     ["Лиды"],
     ["ID", "Название", "Статус", "Источник", "Создан", "Ссылка"]
@@ -174,6 +186,21 @@ function buildManagerRows(input: {
       String(invoice.currencyId || "EUR"),
       formatDateTime(invoice.createdTime || invoice.movedTime),
       id ? invoiceUrl(id) : ""
+    ]);
+  }
+
+  rows.push([]);
+  rows.push(["Оплаты"]);
+  rows.push(["ID", "Название", "Дата оплаты", "Сумма EUR", "Сделка", "Ссылка"]);
+  for (const payment of input.payments) {
+    const spaId = paymentSpaId(String(payment.id || ""));
+    rows.push([
+      spaId,
+      payment.title || "",
+      payment.paymentDate || payment.closeDate || "",
+      String(payment.opportunity ?? ""),
+      payment.parentDealId || "",
+      spaId ? invoiceUrl(spaId) : ""
     ]);
   }
 
@@ -278,10 +305,13 @@ export async function syncShiftBoard(options: {
   }
   const invoices = [...invoicesById.values()];
 
+  const payments = await listPaidSmartInvoicesForPeriod(day, day);
+
   const assigneeIds = [
     ...new Set([
       ...leads.map((row) => String(row.ASSIGNED_BY_ID || "")),
-      ...invoices.map((row) => String(row.assignedById || ""))
+      ...invoices.map((row) => String(row.assignedById || "")),
+      ...payments.map((row) => String(row.assignedById || ""))
     ].filter(Boolean))
   ];
   const names = await loadUserNames(assigneeIds);
@@ -299,6 +329,12 @@ export async function syncShiftBoard(options: {
     if (!id || SKIP_MANAGER.test(name)) continue;
     activeIds.add(id);
   }
+  for (const payment of payments) {
+    const id = String(payment.assignedById || "");
+    const name = names.get(id) || payment.managerName || "";
+    if (!id || SKIP_MANAGER.test(name)) continue;
+    activeIds.add(id);
+  }
 
   const managers: ShiftBoardManagerSnapshot[] = [];
   const usedTitles = new Set<string>([SHIFT_BOARD_CONTROL_TAB]);
@@ -309,6 +345,7 @@ export async function syncShiftBoard(options: {
     const onShift = onShiftNames.some((shiftName) => namesMatch(shiftName, fullName));
     const managerLeads = leads.filter((row) => String(row.ASSIGNED_BY_ID || "") === bitrixUserId);
     const managerInvoices = invoices.filter((row) => String(row.assignedById || "") === bitrixUserId);
+    const managerPayments = payments.filter((row) => String(row.assignedById || "") === bitrixUserId);
     const statusCounts: Record<string, number> = {};
     for (const lead of managerLeads) {
       const key = String(lead.STATUS_ID || "?");
@@ -322,7 +359,9 @@ export async function syncShiftBoard(options: {
       leads: managerLeads.length,
       statusCounts,
       invoices: managerInvoices.length,
-      invoiceSum: managerInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0)
+      invoiceSum: managerInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0),
+      payments: managerPayments.length,
+      paymentSumEur: managerPayments.reduce((sum, row) => sum + asNumber(row.opportunity), 0)
     });
   }
 
@@ -336,12 +375,15 @@ export async function syncShiftBoard(options: {
       leads: 0,
       statusCounts: {},
       invoices: 0,
-      invoiceSum: 0
+      invoiceSum: 0,
+      payments: 0,
+      paymentSumEur: 0
     });
   }
 
   managers.sort((a, b) => {
     if (a.onShift !== b.onShift) return a.onShift ? -1 : 1;
+    if (b.paymentSumEur !== a.paymentSumEur) return b.paymentSumEur - a.paymentSumEur;
     return b.leads - a.leads || a.fullName.localeCompare(b.fullName, "ru");
   });
 
@@ -360,9 +402,21 @@ export async function syncShiftBoard(options: {
       ["Обновлено", syncedAt],
       ["Активных менеджеров", String(managers.length)],
       ["На смене по графику", String(managers.filter((row) => row.onShift).length)],
-      ["Правило", "Лист есть, если менеджер на смене или уже взял лид/счёт сегодня"],
+      ["Правило", "Лист есть, если менеджер на смене или уже взял лид/счёт/оплату сегодня"],
       [],
-      ["Менеджер", "Лист", "На смене", "Лиды", "NEW", "В работе", "Сделки", "Счета", "Сумма счетов"]
+      [
+        "Менеджер",
+        "Лист",
+        "На смене",
+        "Лиды",
+        "NEW",
+        "В работе",
+        "Сделки",
+        "Счета",
+        "Сумма счетов",
+        "Оплаты",
+        "Оплаты EUR"
+      ]
     ];
     for (const row of managers) {
       controlRows.push([
@@ -374,7 +428,9 @@ export async function syncShiftBoard(options: {
         String(row.statusCounts.IN_PROCESS || 0),
         String(row.statusCounts.CONVERTED || 0),
         String(row.invoices),
-        String(Math.round(row.invoiceSum * 100) / 100)
+        String(Math.round(row.invoiceSum * 100) / 100),
+        String(row.payments),
+        String(Math.round(row.paymentSumEur * 100) / 100)
       ]);
     }
     await writeSheetTab({
@@ -389,6 +445,7 @@ export async function syncShiftBoard(options: {
       const managerInvoices = invoices.filter(
         (row) => String(row.assignedById || "") === manager.bitrixUserId
       );
+      const managerPayments = payments.filter((row) => String(row.assignedById || "") === manager.bitrixUserId);
       await writeSheetTab({
         spreadsheetId,
         tabTitle: manager.tabTitle,
@@ -398,7 +455,8 @@ export async function syncShiftBoard(options: {
           fullName: manager.fullName,
           onShift: manager.onShift,
           leads: managerLeads,
-          invoices: managerInvoices
+          invoices: managerInvoices,
+          payments: managerPayments
         }),
         clearRange: `'${manager.tabTitle.replace(/'/g, "''")}'!A:Z`
       });
