@@ -1,0 +1,40 @@
+name: Shift Board Hourly Sync
+
+# Every hour — refresh manager shift board (one Google tab per active manager).
+on:
+  schedule:
+    - cron: "10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Refresh shift board
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          echo "shift-board sync"
+          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/shift-board \
+            "${AUTH_HEADERS[@]}" \
+            -d '{}'
+          echo
+          EOF

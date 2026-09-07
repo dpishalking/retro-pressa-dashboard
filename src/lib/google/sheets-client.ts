@@ -375,6 +375,42 @@ export async function ensureSheetTab(spreadsheetId: string, title: string): Prom
   }
 }
 
+/** Delete sheets by title. Keeps at least one sheet in the spreadsheet. */
+export async function deleteSheetTabs(spreadsheetId: string, titles: string[]): Promise<string[]> {
+  const wanted = new Set(titles.map((title) => title.trim()).filter(Boolean));
+  if (!wanted.size) return [];
+
+  const tabs = await listSpreadsheetTabs(spreadsheetId);
+  if (tabs.length <= 1) return [];
+
+  const toDelete = tabs.filter((tab) => wanted.has(tab.title));
+  if (!toDelete.length) return [];
+
+  // Never delete the last remaining sheet.
+  const remaining = tabs.length - toDelete.length;
+  const safeDelete = remaining > 0 ? toDelete : toDelete.slice(0, Math.max(0, toDelete.length - 1));
+  if (!safeDelete.length) return [];
+
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: safeDelete.map((tab) => ({ deleteSheet: { sheetId: tab.sheetId } })),
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      `Google Sheets delete tab failed: ${(data as { error?: { message?: string } }).error?.message || response.status}`
+    );
+  }
+  return safeDelete.map((tab) => tab.title);
+}
+
 export async function getFirstSheetTitle(spreadsheetId: string): Promise<string> {
   const titles = await listSheetTitles(spreadsheetId);
   const title = titles[0];

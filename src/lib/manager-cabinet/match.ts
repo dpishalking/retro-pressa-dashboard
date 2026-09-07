@@ -9,7 +9,18 @@ const TRANSLIT_FIRST: Record<string, string> = {
   kristina: "кристина",
   kira: "кира",
   maria: "мария",
-  marija: "мария"
+  marija: "мария",
+  leonid: "леонид",
+  veranika: "вероника",
+  veronika: "вероника",
+  albina: "альбина",
+  tatyana: "татьяна",
+  tatjana: "татьяна",
+  irina: "ирина",
+  ksenia: "ксения",
+  kseniya: "ксения",
+  ekaterina: "екатерина",
+  catherine: "екатерина"
 };
 
 export function normalizePersonName(value: string): string {
