@@ -10,6 +10,8 @@ import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
 import {
   deleteSheetTabs,
   ensureSheetTab,
+  getGoogleAccessToken,
+  getSheetIdByTitle,
   listSpreadsheetTabs,
   writeSheetTab
 } from "@/lib/google/sheets-client";
@@ -207,6 +209,128 @@ function buildManagerRows(input: {
   return rows;
 }
 
+function money(value: number) {
+  return String(Math.round(value * 100) / 100);
+}
+
+async function formatControlTab(input: {
+  spreadsheetId: string;
+  sheetId: number;
+  managerCount: number;
+}) {
+  const headerRow = 8; // 0-based: row 9 in sheet is manager table header
+  const firstDataRow = headerRow + 1;
+  const lastDataRow = headerRow + Math.max(1, input.managerCount);
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${input.spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          updateSheetProperties: {
+            properties: {
+              sheetId: input.sheetId,
+              gridProperties: { frozenRowCount: 9 }
+            },
+            fields: "gridProperties.frozenRowCount"
+          }
+        },
+        {
+          repeatCell: {
+            range: { sheetId: input.sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 2 },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { bold: true, fontSize: 14, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                backgroundColor: { red: 0.12, green: 0.23, blue: 0.37 }
+              }
+            },
+            fields: "userEnteredFormat(textFormat,backgroundColor)"
+          }
+        },
+        {
+          repeatCell: {
+            range: { sheetId: input.sheetId, startRowIndex: 2, endRowIndex: 6, startColumnIndex: 0, endColumnIndex: 1 },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { bold: true },
+                backgroundColor: { red: 0.93, green: 0.95, blue: 0.98 }
+              }
+            },
+            fields: "userEnteredFormat(textFormat,backgroundColor)"
+          }
+        },
+        {
+          repeatCell: {
+            range: { sheetId: input.sheetId, startRowIndex: 2, endRowIndex: 6, startColumnIndex: 1, endColumnIndex: 2 },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { bold: true, fontSize: 12 },
+                horizontalAlignment: "RIGHT"
+              }
+            },
+            fields: "userEnteredFormat(textFormat,horizontalAlignment)"
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId: input.sheetId,
+              startRowIndex: headerRow,
+              endRowIndex: headerRow + 1,
+              startColumnIndex: 0,
+              endColumnIndex: 9
+            },
+            cell: {
+              userEnteredFormat: {
+                textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                backgroundColor: { red: 0.2, green: 0.45, blue: 0.72 }
+              }
+            },
+            fields: "userEnteredFormat(textFormat,backgroundColor)"
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId: input.sheetId,
+              startRowIndex: firstDataRow,
+              endRowIndex: lastDataRow + 1,
+              startColumnIndex: 1,
+              endColumnIndex: 9
+            },
+            cell: {
+              userEnteredFormat: { horizontalAlignment: "CENTER" }
+            },
+            fields: "userEnteredFormat.horizontalAlignment"
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: 1 },
+            properties: { pixelSize: 220 },
+            fields: "pixelSize"
+          }
+        },
+        {
+          updateDimensionProperties: {
+            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 9 },
+            properties: { pixelSize: 110 },
+            fields: "pixelSize"
+          }
+        }
+      ]
+    })
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Shift board format failed: ${response.status} ${body.slice(0, 200)}`);
+  }
+}
+
 export async function syncShiftBoard(options: {
   spreadsheetId?: string;
   day?: string;
@@ -354,18 +478,22 @@ export async function syncShiftBoard(options: {
   if (!dryRun) {
     await ensureSheetTab(spreadsheetId, SHIFT_BOARD_CONTROL_TAB);
 
+    const totalLeads = managers.reduce((sum, row) => sum + row.leads, 0);
+    const totalInvoices = managers.reduce((sum, row) => sum + row.invoices, 0);
+    const totalPayments = managers.reduce((sum, row) => sum + row.payments, 0);
+    const totalRevenueEur = managers.reduce((sum, row) => sum + row.paymentSumEur, 0);
+
     const controlRows: string[][] = [
-      ["Поле", "Значение"],
-      ["Дата", day],
+      ["СМЕНА СЕГОДНЯ", day],
       ["Обновлено", syncedAt],
-      ["Активных менеджеров", String(managers.length)],
-      ["В графике сегодня (справочно)", String(managers.filter((row) => row.onShift).length)],
-      ["Правило", "Лист только если сегодня есть лид, счёт или оплата. График пока не решающий — много новичков вне графика."],
+      [],
+      ["Лиды сегодня", String(totalLeads)],
+      ["Счета сегодня", String(totalInvoices)],
+      ["Оплаты сегодня", String(totalPayments)],
+      ["Выручка сегодня, EUR", money(totalRevenueEur)],
       [],
       [
         "Менеджер",
-        "Лист",
-        "В графике",
         "Лиды",
         "NEW",
         "В работе",
@@ -373,22 +501,20 @@ export async function syncShiftBoard(options: {
         "Счета",
         "Сумма счетов",
         "Оплаты",
-        "Оплаты EUR"
+        "Выручка EUR"
       ]
     ];
     for (const row of managers) {
       controlRows.push([
         row.fullName,
-        row.tabTitle,
-        row.onShift ? "да" : "—",
         String(row.leads),
         String(row.statusCounts.NEW || 0),
         String(row.statusCounts.IN_PROCESS || 0),
         String(row.statusCounts.CONVERTED || 0),
         String(row.invoices),
-        String(Math.round(row.invoiceSum * 100) / 100),
+        money(row.invoiceSum),
         String(row.payments),
-        String(Math.round(row.paymentSumEur * 100) / 100)
+        money(row.paymentSumEur)
       ]);
     }
     await writeSheetTab({
@@ -397,6 +523,15 @@ export async function syncShiftBoard(options: {
       rows: controlRows,
       clearRange: `'${SHIFT_BOARD_CONTROL_TAB}'!A:Z`
     });
+
+    const controlSheetId = await getSheetIdByTitle(spreadsheetId, SHIFT_BOARD_CONTROL_TAB);
+    if (controlSheetId != null) {
+      await formatControlTab({
+        spreadsheetId,
+        sheetId: controlSheetId,
+        managerCount: managers.length
+      });
+    }
 
     for (const manager of managers) {
       const managerLeads = leads.filter((row) => String(row.ASSIGNED_BY_ID || "") === manager.bitrixUserId);
