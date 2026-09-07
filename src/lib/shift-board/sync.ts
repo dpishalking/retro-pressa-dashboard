@@ -56,6 +56,8 @@ export type ShiftBoardManagerSnapshot = {
   paymentSumEur: number;
   avgCheckEur: number | null;
   productsInInvoices: number;
+  productsInPayments: number;
+  productsPerPayment: number | null;
 };
 
 export type ShiftBoardSyncResult = {
@@ -128,6 +130,16 @@ function avgCheckLabel(sum: number, count: number): string {
   return value == null ? "—" : money(value);
 }
 
+function calcProductsPerPayment(products: number, payments: number): number | null {
+  if (!payments) return null;
+  return Math.round((products / payments) * 100) / 100;
+}
+
+function productsPerPaymentLabel(products: number, payments: number): string {
+  const value = calcProductsPerPayment(products, payments);
+  return value == null ? "—" : money(value);
+}
+
 function productCountFromBatchResult(result: unknown): number {
   const rows = Array.isArray(result)
     ? result
@@ -196,6 +208,10 @@ function buildManagerRows(input: {
     (sum, row) => sum + (input.productCounts.get(String(row.id || "")) || 0),
     0
   );
+  const productsInPayments = input.payments.reduce(
+    (sum, row) => sum + (input.productCounts.get(paymentSpaId(String(row.id || ""))) || 0),
+    0
+  );
 
   const rows: string[][] = [
     ["Поле", "Значение"],
@@ -211,6 +227,8 @@ function buildManagerRows(input: {
     ["Сумма счетов (как в CRM)", money(invoiceSum)],
     ["Товаров в счетах", String(productsInInvoices)],
     ["Оплаты сегодня", String(input.payments.length)],
+    ["Товаров в оплатах", String(productsInPayments)],
+    ["Товаров на оплату", productsPerPaymentLabel(productsInPayments, input.payments.length)],
     ["Сумма оплат, EUR", money(paymentSumEur)],
     ["Средний чек, EUR", avgCheckLabel(paymentSumEur, input.payments.length)],
     [],
@@ -275,7 +293,7 @@ async function formatControlTab(input: {
   sheetId: number;
   managerCount: number;
 }) {
-  const headerRow = 9; // 0-based: row 10 in sheet is manager table header
+  const headerRow = 10; // 0-based: row 11 in sheet is manager table header
   const firstDataRow = headerRow + 1;
   const lastDataRow = headerRow + Math.max(1, input.managerCount);
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
@@ -291,7 +309,7 @@ async function formatControlTab(input: {
           updateSheetProperties: {
             properties: {
               sheetId: input.sheetId,
-              gridProperties: { frozenRowCount: 10 }
+              gridProperties: { frozenRowCount: 11 }
             },
             fields: "gridProperties.frozenRowCount"
           }
@@ -310,7 +328,7 @@ async function formatControlTab(input: {
         },
         {
           repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 8, startColumnIndex: 0, endColumnIndex: 1 },
+            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 9, startColumnIndex: 0, endColumnIndex: 1 },
             cell: {
               userEnteredFormat: {
                 textFormat: { bold: true },
@@ -322,7 +340,7 @@ async function formatControlTab(input: {
         },
         {
           repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 8, startColumnIndex: 1, endColumnIndex: 2 },
+            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 9, startColumnIndex: 1, endColumnIndex: 2 },
             cell: {
               userEnteredFormat: {
                 textFormat: { bold: true, fontSize: 12 },
@@ -339,7 +357,7 @@ async function formatControlTab(input: {
               startRowIndex: headerRow,
               endRowIndex: headerRow + 1,
               startColumnIndex: 0,
-              endColumnIndex: 11
+              endColumnIndex: 12
             },
             cell: {
               userEnteredFormat: {
@@ -357,7 +375,7 @@ async function formatControlTab(input: {
               startRowIndex: firstDataRow,
               endRowIndex: lastDataRow + 1,
               startColumnIndex: 1,
-              endColumnIndex: 11
+              endColumnIndex: 12
             },
             cell: {
               userEnteredFormat: { horizontalAlignment: "CENTER" }
@@ -374,8 +392,8 @@ async function formatControlTab(input: {
         },
         {
           updateDimensionProperties: {
-            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 11 },
-            properties: { pixelSize: 100 },
+            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 12 },
+            properties: { pixelSize: 95 },
             fields: "pixelSize"
           }
         }
@@ -520,6 +538,10 @@ export async function syncShiftBoard(options: {
       (sum, row) => sum + (productCounts.get(String(row.id || "")) || 0),
       0
     );
+    const productsInPayments = managerPayments.reduce(
+      (sum, row) => sum + (productCounts.get(paymentSpaId(String(row.id || ""))) || 0),
+      0
+    );
     managers.push({
       bitrixUserId,
       fullName,
@@ -532,7 +554,9 @@ export async function syncShiftBoard(options: {
       payments: managerPayments.length,
       paymentSumEur,
       avgCheckEur: avgCheck(paymentSumEur, managerPayments.length),
-      productsInInvoices
+      productsInInvoices,
+      productsInPayments,
+      productsPerPayment: calcProductsPerPayment(productsInPayments, managerPayments.length)
     });
   }
 
@@ -555,6 +579,7 @@ export async function syncShiftBoard(options: {
     const totalInvoices = managers.reduce((sum, row) => sum + row.invoices, 0);
     const totalPayments = managers.reduce((sum, row) => sum + row.payments, 0);
     const totalRevenueEur = managers.reduce((sum, row) => sum + row.paymentSumEur, 0);
+    const totalProductsInPayments = managers.reduce((sum, row) => sum + row.productsInPayments, 0);
 
     const controlRows: string[][] = [
       ["СМЕНА СЕГОДНЯ", day],
@@ -565,6 +590,7 @@ export async function syncShiftBoard(options: {
       ["Оплаты сегодня", String(totalPayments)],
       ["Выручка сегодня, EUR", money(totalRevenueEur)],
       ["Средний чек, EUR", avgCheckLabel(totalRevenueEur, totalPayments)],
+      ["Товаров на оплату", productsPerPaymentLabel(totalProductsInPayments, totalPayments)],
       [],
       [
         "Менеджер",
@@ -575,6 +601,7 @@ export async function syncShiftBoard(options: {
         "Счета",
         "Сумма счетов",
         "Товаров",
+        "Тов./оплата",
         "Оплаты",
         "Выручка EUR",
         "Средний чек"
@@ -590,6 +617,7 @@ export async function syncShiftBoard(options: {
         String(row.invoices),
         money(row.invoiceSum),
         String(row.productsInInvoices),
+        row.productsPerPayment == null ? "—" : money(row.productsPerPayment),
         String(row.payments),
         money(row.paymentSumEur),
         row.avgCheckEur == null ? "—" : money(row.avgCheckEur)
