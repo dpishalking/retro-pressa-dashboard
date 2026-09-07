@@ -3,7 +3,7 @@ import {
   SHIFT_BOARD_CONTROL_TAB,
   shiftBoardSpreadsheetUrl
 } from "@/config/shift-board";
-import { bitrixListAll, bitrixResult } from "@/lib/bitrix/rest-client";
+import { bitrixListAll } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import type { BitrixSnapshotDeal } from "@/lib/bitrix/snapshot-store";
 import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
@@ -147,7 +147,7 @@ function buildManagerRows(input: {
     ["Дата", input.day],
     ["Обновлено", input.syncedAt],
     ["Менеджер", input.fullName],
-    ["На смене по графику", input.onShift ? "да" : "нет (берёт лиды)"],
+    ["На смене по графику", input.onShift ? "да (справочно)" : "нет / не в графике"],
     ["Лиды сегодня", String(input.leads.length)],
     ["NEW", String(statusCounts.NEW || 0)],
     ["IN_PROCESS", String(statusCounts.IN_PROCESS || 0)],
@@ -207,33 +207,6 @@ function buildManagerRows(input: {
   return rows;
 }
 
-async function resolveShiftOnlyManagers(
-  onShiftNames: string[],
-  already: Array<{ fullName: string }>
-): Promise<Array<{ bitrixUserId: string; fullName: string }>> {
-  const found: Array<{ bitrixUserId: string; fullName: string }> = [];
-  for (const shiftName of onShiftNames) {
-    if (already.some((row) => namesMatch(shiftName, row.fullName))) continue;
-    try {
-      const rows = await bitrixResult<Array<{ ID?: string; NAME?: string; LAST_NAME?: string; ACTIVE?: boolean }>>(
-        "user.search",
-        { FILTER: { NAME: shiftName } }
-      );
-      const active = (rows || []).filter((row) => row.ACTIVE !== false && row.ID);
-      const match =
-        active.find((row) => namesMatch(shiftName, `${row.NAME || ""} ${row.LAST_NAME || ""}`.trim())) ||
-        active[0];
-      if (!match?.ID) continue;
-      const fullName = `${match.NAME || ""} ${match.LAST_NAME || ""}`.trim() || shiftName;
-      if (SKIP_MANAGER.test(fullName)) continue;
-      found.push({ bitrixUserId: String(match.ID), fullName });
-    } catch {
-      /* skip unresolved */
-    }
-  }
-  return found;
-}
-
 export async function syncShiftBoard(options: {
   spreadsheetId?: string;
   day?: string;
@@ -255,7 +228,8 @@ export async function syncShiftBoard(options: {
     .replace(",", "");
 
   const { from, to } = dayRange(day);
-  const onShiftNames = await loadOnShiftNames(day);
+  // Schedule is optional hint only — many new managers are not in the roster yet.
+  const scheduleNames = await loadOnShiftNames(day);
 
   const leads = await bitrixListAll<BitrixLead>(
     "crm.lead.list",
@@ -342,7 +316,7 @@ export async function syncShiftBoard(options: {
   for (const bitrixUserId of [...activeIds]) {
     const fullName = names.get(bitrixUserId) || `ID ${bitrixUserId}`;
     if (SKIP_MANAGER.test(fullName)) continue;
-    const onShift = onShiftNames.some((shiftName) => namesMatch(shiftName, fullName));
+    const inSchedule = scheduleNames.some((shiftName) => namesMatch(shiftName, fullName));
     const managerLeads = leads.filter((row) => String(row.ASSIGNED_BY_ID || "") === bitrixUserId);
     const managerInvoices = invoices.filter((row) => String(row.assignedById || "") === bitrixUserId);
     const managerPayments = payments.filter((row) => String(row.assignedById || "") === bitrixUserId);
@@ -355,7 +329,7 @@ export async function syncShiftBoard(options: {
       bitrixUserId,
       fullName,
       tabTitle: uniqueTabTitle(sanitizeTabTitle(fullName), usedTitles),
-      onShift,
+      onShift: inSchedule,
       leads: managerLeads.length,
       statusCounts,
       invoices: managerInvoices.length,
@@ -365,26 +339,10 @@ export async function syncShiftBoard(options: {
     });
   }
 
-  const shiftOnly = await resolveShiftOnlyManagers(onShiftNames, managers);
-  for (const row of shiftOnly) {
-    managers.push({
-      bitrixUserId: row.bitrixUserId,
-      fullName: row.fullName,
-      tabTitle: uniqueTabTitle(sanitizeTabTitle(row.fullName), usedTitles),
-      onShift: true,
-      leads: 0,
-      statusCounts: {},
-      invoices: 0,
-      invoiceSum: 0,
-      payments: 0,
-      paymentSumEur: 0
-    });
-  }
-
   managers.sort((a, b) => {
-    if (a.onShift !== b.onShift) return a.onShift ? -1 : 1;
     if (b.paymentSumEur !== a.paymentSumEur) return b.paymentSumEur - a.paymentSumEur;
-    return b.leads - a.leads || a.fullName.localeCompare(b.fullName, "ru");
+    if (b.leads !== a.leads) return b.leads - a.leads;
+    return a.fullName.localeCompare(b.fullName, "ru");
   });
 
   const desiredTitles = new Set([SHIFT_BOARD_CONTROL_TAB, ...managers.map((row) => row.tabTitle)]);
@@ -401,13 +359,13 @@ export async function syncShiftBoard(options: {
       ["Дата", day],
       ["Обновлено", syncedAt],
       ["Активных менеджеров", String(managers.length)],
-      ["На смене по графику", String(managers.filter((row) => row.onShift).length)],
-      ["Правило", "Лист есть, если менеджер на смене или уже взял лид/счёт/оплату сегодня"],
+      ["В графике сегодня (справочно)", String(managers.filter((row) => row.onShift).length)],
+      ["Правило", "Лист только если сегодня есть лид, счёт или оплата. График пока не решающий — много новичков вне графика."],
       [],
       [
         "Менеджер",
         "Лист",
-        "На смене",
+        "В графике",
         "Лиды",
         "NEW",
         "В работе",
@@ -422,7 +380,7 @@ export async function syncShiftBoard(options: {
       controlRows.push([
         row.fullName,
         row.tabTitle,
-        row.onShift ? "да" : "нет",
+        row.onShift ? "да" : "—",
         String(row.leads),
         String(row.statusCounts.NEW || 0),
         String(row.statusCounts.IN_PROCESS || 0),
