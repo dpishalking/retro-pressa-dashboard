@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Как продавали Забковы — Retro Pressa</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap");
+
+    :root {
+      --ink: #141820;
+      --muted: #5b6472;
+      --line: #e6e9ef;
+      --paper: #fbfaf8;
+      --card: #ffffff;
+      --rose: #be123c;
+      --rose-soft: #fff1f4;
+      --blue: #1d4ed8;
+      --blue-soft: #eff6ff;
+      --green: #047857;
+      --green-soft: #ecfdf5;
+      --amber: #92400e;
+      --amber-soft: #fffbeb;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      background: #d7dbe3;
+      font-family: "Manrope", system-ui, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto 12mm;
+      padding: 14mm 15mm 18mm;
+      background: var(--paper);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+    }
+    .page:last-child {
+      page-break-after: auto;
+      break-after: auto;
+      margin-bottom: 0;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin: 0 0 10px;
+    }
+
+    h1 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 38px;
+      line-height: 1.08;
+      font-weight: 700;
+      margin: 0 0 14px;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 26px;
+      line-height: 1.15;
+      font-weight: 700;
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 800;
+      margin: 0 0 8px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .lead {
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--ink);
+      max-width: 520px;
+      font-weight: 600;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.9fr;
+      gap: 22px;
+      align-items: stretch;
+      min-height: 240mm;
+      padding-bottom: 10mm;
+    }
+
+    .hero-card {
+      background: var(--ink);
+      color: white;
+      border-radius: 24px;
+      padding: 22px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-card p {
+      color: rgba(255,255,255,0.78);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .hero-card .big {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 34px;
+      line-height: 1.15;
+      color: white;
+      font-weight: 700;
+      margin-top: 18px;
+    }
+
+    .meta {
+      margin-top: 18px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .callout {
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: var(--amber-soft);
+      border: 1px solid #f6e0b8;
+      margin: 14px 0 16px;
+    }
+    .callout strong {
+      display: block;
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .callout p {
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .stat .label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat .value {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat .note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .stat.good .value { color: var(--green); }
+    .stat.bad .value { color: var(--rose); }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+      margin: 8px 0 10px;
+    }
+    .bar-row .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .track {
+      height: 10px;
+      border-radius: 999px;
+      background: #edf0f5;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+    .fill.good { background: var(--green); width: 100%; }
+    .fill.bad { background: var(--rose); width: 19%; }
+    .fill.neutral { background: #94a3b8; width: 50%; }
+
+    .footnote {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .step {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      min-height: 132px;
+    }
+    .step .n {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--rose-soft);
+      color: var(--rose);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .step h3 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .step p {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .situation {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .situation .num {
+      color: var(--rose);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .situation h3 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .box {
+      border-radius: 10px;
+      padding: 9px 11px;
+      margin-top: 8px;
+    }
+    .box.client { background: #f4f5f7; }
+    .box.script { background: var(--blue-soft); border: 1px solid #dbe7ff; }
+    .box.live { background: var(--green-soft); border: 1px solid #cceede; }
+    .box .k {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .box.client .k { color: #475569; }
+    .box.script .k { color: var(--blue); }
+    .box.live .k { color: var(--green); }
+    .box p, .box pre {
+      margin: 0;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--ink);
+      white-space: pre-wrap;
+      font-family: "Manrope", system-ui, sans-serif;
+    }
+    .box.client p { font-weight: 700; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: white;
+    }
+    .panel h3 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .checks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .checks li {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 10px;
+      align-items: start;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .checks .box-check {
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+      border: 1.5px solid #94a3b8;
+      border-radius: 4px;
+    }
+
+    .agenda {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+      counter-reset: step;
+    }
+    .agenda li {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .agenda li::before {
+      counter-increment: step;
+      content: counter(step);
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--rose-soft);
+      color: var(--rose);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    td:first-child { font-weight: 800; width: 22%; }
+
+    .footer {
+      position: absolute;
+      left: 16mm;
+      right: 16mm;
+      bottom: 10mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #8a93a1;
+      font-weight: 600;
+    }
+
+    @media print {
+      html, body { background: white; }
+      .page {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Retro Pressa · обучение менеджеров</p>
+        <h1>Как продавали Забковы</h1>
+        <p class="lead">
+          Простая памятка для новых менеджеров и для разбора с руководителем.
+          На реальных диалогах Анастасии и Елены Забковых.
+        </p>
+        <p class="meta">Май–август 2026 · оплаченные и неоплаченные заявки · открытые линии Bitrix</p>
+      </div>
+      <div class="hero-card">
+        <div>
+          <p class="eyebrow" style="color:#fda4af;">Главное</p>
+          <div class="big">Назвать цену.<br/>Помочь выбрать.<br/>Сразу предложить оформить заказ.</div>
+        </div>
+        <p>Одной скорости ответа мало. Нужна понятная цепочка до оплаты.</p>
+      </div>
+    </div>
+    <div class="footer"><span>Retro Pressa</span><span>1 / 4</span></div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Цифры</p>
+    <h2>Что показали диалоги</h2>
+    <div class="callout">
+      <strong>Главное одной фразой</strong>
+      <p>Не надо просто «отвечать быстрее». Нужно сделать три простых шага: назвать цену, помочь выбрать один вариант и сразу предложить оформить заказ.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat good">
+        <div class="label">Цена и оформление вместе</div>
+        <div class="value">100%</div>
+        <div class="note">таких диалогов закончились оплатой</div>
+      </div>
+      <div class="stat bad">
+        <div class="label">Только цена, без оформления</div>
+        <div class="value">19%</div>
+        <div class="note">таких диалогов закончились оплатой</div>
+      </div>
+      <div class="stat">
+        <div class="label">У тех, кто оплатил</div>
+        <div class="value" style="font-size:28px;">около 2,5 часов</div>
+        <div class="note">обычно до первой цены в чате</div>
+      </div>
+      <div class="stat">
+        <div class="label">У тех, кто не оплатил</div>
+        <div class="value" style="font-size:28px;">около 5 часов</div>
+        <div class="note">обычно до первой цены в чате</div>
+      </div>
+    </div>
+
+    <div class="bars">
+      <div class="bar-row">
+        <div class="top"><span>Назвали цену и сразу предложили оформить заказ</span><span>100%</span></div>
+        <div class="track"><div class="fill good"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="top"><span>Назвали цену, но не предложили оформить</span><span>19%</span></div>
+        <div class="track"><div class="fill bad"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="top"><span>В чате цену не нашли</span><span>50%</span></div>
+        <div class="track"><div class="fill neutral"></div></div>
+      </div>
+    </div>
+    <p class="footnote">Иногда цену в чате не видно, потому что счёт ушёл другим способом. Главное сравнение другое: если цену назвали и сразу предложили оформить — почти всегда была оплата. Если цену назвали и остановились — оплат почти не было.</p>
+
+    <h2 style="margin-top:22px;">Три простых шага</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <h3>Назвать цену</h3>
+        <p>Напишите диапазон или точную сумму. Особенно если клиент спросил «сколько стоит».</p>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <h3>Помочь выбрать</h3>
+        <p>Предложите один–два понятных варианта и спросите: какой берём?</p>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <h3>Предложить оформить</h3>
+        <p>Напишите «оформляем», попросите имя и телефон, скажите сумму и как оплатить.</p>
+      </div>
+    </div>
+    <div class="footer"><span>Retro Pressa · Как продавали Забковы</span><span>2 / 4</span></div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Живые ситуации</p>
+    <h2>Что отвечать клиенту</h2>
+    <p style="margin-bottom:14px;">Тексты собраны из реальных оплаченных диалогов Анастасии и Елены.</p>
+
+    <article class="situation">
+      <div class="num">Ситуация 1</div>
+      <h3>Клиент сразу спрашивает цену</h3>
+      <div class="box client"><div class="k">Клиент</div><p>Сколько стоит газета? Вы доставите к нам?</p></div>
+      <div class="box script"><div class="k">Ответ</div><pre>Добрый день! Это [Имя], менеджер retro-pressa.
+Стоимость изданий — от 15 до 64 евро. Доставляем по всему миру.
+Напишите, пожалуйста, дату рождения именинника и город. Я сразу пришлю, что есть в архиве, уже с ценами.
+
+Когда клиент назвал дату:
+Отлично! Оригинальная газета «Правда» за [дата] стоит 45 евро. Вам подходит?
+Тогда оформляю счёт. Напишите имя и телефон. Доставка — [сумма] евро.
+Оплатить можно переводом, картой, PayPal или Wise. Как вам удобнее?</pre></div>
+      <div class="box live"><div class="k">Как было вживую</div><p>Так делала Анастасия: в первом сообщении назвала диапазон цен, потом сказала точную цену «Правда — 45 евро», и клиент оплатил.</p></div>
+    </article>
+
+    <article class="situation">
+      <div class="num">Ситуация 2</div>
+      <h3>Клиент спрашивает, что есть на дату</h3>
+      <div class="box client"><div class="k">Клиент</div><p>День рождения мужа — 3 июня 1976 года. Что у вас есть? «За рулём» или «Правда»?</p></div>
+      <div class="box script"><div class="k">Ответ</div><pre>За [месяц и год] в архиве есть: [три–пять вариантов].
+Журнал «За рулём» — 142 рубля. Любая репродукция газеты — 145 рублей. Доставка — [сумма].
+Оригинала газеты именно на этот день нет. Репродукция — точная копия.
+Какой вариант берём? Могу сразу оформить заказ.</pre></div>
+      <div class="box live"><div class="k">Как было вживую</div><p>Так делала Елена: цены написала в одном сообщении, спросила «желаете оформить заказ?» — и получила оплату 407 рублей.</p></div>
+    </article>
+    <div class="footer"><span>Retro Pressa · Как продавали Забковы</span><span>3 / 4</span></div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Ещё ситуации и разбор</p>
+    <h2>Довести до оплаты</h2>
+
+    <article class="situation">
+      <div class="num">Ситуация 3</div>
+      <h3>Клиент уже выбрал, но ещё не оплатил</h3>
+      <div class="box client"><div class="k">Клиент</div><p>Супер, меня устраивает. Как забронировать?</p></div>
+      <div class="box script"><div class="k">Ответ</div><pre>Отлично, фиксируем: [издание] за [дата], сумма [N] (доставка [сумма] или самовывоз).
+Оформляем заказ?
+Если да — пришлите имя, телефон и почту. Если нужна доставка — ещё и адрес.
+Счёт отправлю сразу.</pre></div>
+    </article>
+
+    <article class="situation">
+      <div class="num">Ситуация 4</div>
+      <h3>Клиент говорит «надо подумать»</h3>
+      <div class="box client"><div class="k">Клиент</div><p>Мне надо подумать. А как происходит оплата?</p></div>
+      <div class="box script"><div class="k">Ответ</div><pre>Конечно. Напомню: [издание] стоит [цена], доставка — [сумма], срок — [срок].
+Могу сегодня прислать счёт. Оплатить можно до вечера или до завтра — как вам удобно.
+Как вам проще оплатить: картой, переводом или через ЕРИП? Пришлю один удобный вариант.</pre></div>
+    </article>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Проверьте себя перед отправкой</h3>
+        <ul class="checks">
+          <li><span class="box-check"></span><span>В сообщении есть цена: диапазон или точная сумма?</span></li>
+          <li><span class="box-check"></span><span>Клиенту предложено выбрать один понятный вариант?</span></li>
+          <li><span class="box-check"></span><span>Есть фраза про оформление или просьба прислать данные?</span></li>
+          <li><span class="box-check"></span><span>Назван способ оплаты или спросили, как удобнее оплатить?</span></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Разбор с руководителем за 15 минут</h3>
+        <ol class="agenda">
+          <li>Показать 100% против 19%. Одной цены мало.</li>
+          <li>Выбрать одну ситуацию. Менеджер пишет свой ответ.</li>
+          <li>Проверить три шага: цена, выбор, оформление.</li>
+          <li>Разобрать вчерашний чат: где остановились.</li>
+          <li>Задание на сегодня: три диалога с ценой и оформлением.</li>
+        </ol>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>На что смотреть</th>
+          <th>Хорошо</th>
+          <th>Плохо</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Цена</td>
+          <td>Есть сумма уже в первых ответах</td>
+          <td>Долгий разговор без суммы</td>
+        </tr>
+        <tr>
+          <td>Выбор</td>
+          <td>Один–два варианта и вопрос «какой берём»</td>
+          <td>Бесконечный подбор без решения</td>
+        </tr>
+        <tr>
+          <td>Оформление</td>
+          <td>Просят данные и дают способ оплаты</td>
+          <td>Пишут «напишите, если решите»</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="footer"><span>Retro Pressa · Как продавали Забковы</span><span>4 / 4</span></div>
+  </section>
+</body>
+</html>

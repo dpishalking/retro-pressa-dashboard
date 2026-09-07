@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ClipboardCopy, GraduationCap, Target, Users } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Download, GraduationCap, Target, Users } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 
 type Audience = "manager" | "rop";
@@ -144,6 +144,16 @@ export function ZabkovaClosePlaybookScreen() {
       description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах Анастасии и Елены Забковых."
       backHref="/training/knowledge-base"
       backLabel="К базе знаний"
+      actions={
+        <a
+          href="/training/zabkova-kak-prodavali.pdf"
+          download="Как продавали Забковы.pdf"
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+        >
+          <Download size={16} />
+          Скачать PDF
+        </a>
+      }
     >
       <div className="mb-6 flex flex-wrap gap-2">
         <button

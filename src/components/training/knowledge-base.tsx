@@ -85,12 +85,21 @@ function PlaybooksSection() {
             </p>
           </div>
         </div>
-        <Link
-          href="/training/playbooks/zabkova-close"
-          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
-        >
-          Открыть памятку
-        </Link>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <a
+            href="/training/zabkova-kak-prodavali.pdf"
+            download="Как продавали Забковы.pdf"
+            className="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50"
+          >
+            Скачать PDF
+          </a>
+          <Link
+            href="/training/playbooks/zabkova-close"
+            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          >
+            Открыть памятку
+          </Link>
+        </div>
       </div>
     </section>
   );
