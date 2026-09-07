@@ -3,7 +3,7 @@ import {
   SHIFT_BOARD_CONTROL_TAB,
   shiftBoardSpreadsheetUrl
 } from "@/config/shift-board";
-import { bitrixListAll } from "@/lib/bitrix/rest-client";
+import { bitrixBatch, bitrixListAll, chunkIds } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import type { BitrixSnapshotDeal } from "@/lib/bitrix/snapshot-store";
 import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
@@ -54,6 +54,8 @@ export type ShiftBoardManagerSnapshot = {
   invoiceSum: number;
   payments: number;
   paymentSumEur: number;
+  avgCheckEur: number | null;
+  productsInInvoices: number;
 };
 
 export type ShiftBoardSyncResult = {
@@ -116,6 +118,52 @@ function asNumber(value: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function avgCheck(sum: number, count: number): number | null {
+  if (!count) return null;
+  return Math.round((sum / count) * 100) / 100;
+}
+
+function avgCheckLabel(sum: number, count: number): string {
+  const value = avgCheck(sum, count);
+  return value == null ? "—" : money(value);
+}
+
+function productCountFromBatchResult(result: unknown): number {
+  const rows = Array.isArray(result)
+    ? result
+    : result && typeof result === "object" && Array.isArray((result as { productRows?: unknown[] }).productRows)
+      ? (result as { productRows: unknown[] }).productRows
+      : [];
+  let total = 0;
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const qty = asNumber((row as { quantity?: unknown }).quantity);
+    total += qty > 0 ? qty : 1;
+  }
+  return total;
+}
+
+async function loadInvoiceProductCounts(invoiceIds: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const unique = [...new Set(invoiceIds.map(String).filter(Boolean))];
+  for (const chunk of chunkIds(unique, 20)) {
+    const cmd: Record<string, string> = {};
+    chunk.forEach((id, index) => {
+      cmd[`p${index}`] =
+        `crm.item.productrow.list?filter[%3DownerType]=SI&filter[%3DownerId]=${encodeURIComponent(id)}`;
+    });
+    try {
+      const result = await bitrixBatch<unknown>(cmd);
+      chunk.forEach((id, index) => {
+        map.set(id, productCountFromBatchResult(result[`p${index}`]));
+      });
+    } catch {
+      chunk.forEach((id) => map.set(id, 0));
+    }
+  }
+  return map;
+}
+
 async function loadOnShiftNames(day: string): Promise<string[]> {
   try {
     const schedule = await loadManagerSchedule(day.slice(0, 7));
@@ -135,6 +183,7 @@ function buildManagerRows(input: {
   leads: BitrixLead[];
   invoices: BitrixInvoice[];
   payments: BitrixSnapshotDeal[];
+  productCounts: Map<string, number>;
 }): string[][] {
   const statusCounts: Record<string, number> = {};
   for (const lead of input.leads) {
@@ -143,6 +192,10 @@ function buildManagerRows(input: {
   }
   const invoiceSum = input.invoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const paymentSumEur = input.payments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const productsInInvoices = input.invoices.reduce(
+    (sum, row) => sum + (input.productCounts.get(String(row.id || "")) || 0),
+    0
+  );
 
   const rows: string[][] = [
     ["Поле", "Значение"],
@@ -155,9 +208,11 @@ function buildManagerRows(input: {
     ["IN_PROCESS", String(statusCounts.IN_PROCESS || 0)],
     ["CONVERTED", String(statusCounts.CONVERTED || 0)],
     ["Счета сегодня", String(input.invoices.length)],
-    ["Сумма счетов (как в CRM)", String(Math.round(invoiceSum * 100) / 100)],
+    ["Сумма счетов (как в CRM)", money(invoiceSum)],
+    ["Товаров в счетах", String(productsInInvoices)],
     ["Оплаты сегодня", String(input.payments.length)],
-    ["Сумма оплат, EUR", String(Math.round(paymentSumEur * 100) / 100)],
+    ["Сумма оплат, EUR", money(paymentSumEur)],
+    ["Средний чек, EUR", avgCheckLabel(paymentSumEur, input.payments.length)],
     [],
     ["Лиды"],
     ["ID", "Название", "Статус", "Источник", "Создан", "Ссылка"]
@@ -177,7 +232,7 @@ function buildManagerRows(input: {
 
   rows.push([]);
   rows.push(["Счета"]);
-  rows.push(["ID", "Название", "Стадия", "Сумма", "Валюта", "Создан", "Ссылка"]);
+  rows.push(["ID", "Название", "Стадия", "Сумма", "Валюта", "Товаров", "Создан", "Ссылка"]);
   for (const invoice of input.invoices) {
     const id = String(invoice.id || "");
     rows.push([
@@ -186,6 +241,7 @@ function buildManagerRows(input: {
       String(invoice.stageId || ""),
       String(invoice.opportunity ?? ""),
       String(invoice.currencyId || "EUR"),
+      String(input.productCounts.get(id) || 0),
       formatDateTime(invoice.createdTime || invoice.movedTime),
       id ? invoiceUrl(id) : ""
     ]);
@@ -193,7 +249,7 @@ function buildManagerRows(input: {
 
   rows.push([]);
   rows.push(["Оплаты"]);
-  rows.push(["ID", "Название", "Дата оплаты", "Сумма EUR", "Сделка", "Ссылка"]);
+  rows.push(["ID", "Название", "Дата оплаты", "Сумма EUR", "Товаров", "Сделка", "Ссылка"]);
   for (const payment of input.payments) {
     const spaId = paymentSpaId(String(payment.id || ""));
     rows.push([
@@ -201,6 +257,7 @@ function buildManagerRows(input: {
       payment.title || "",
       payment.paymentDate || payment.closeDate || "",
       String(payment.opportunity ?? ""),
+      String(input.productCounts.get(spaId) || 0),
       payment.parentDealId || "",
       spaId ? invoiceUrl(spaId) : ""
     ]);
@@ -218,7 +275,7 @@ async function formatControlTab(input: {
   sheetId: number;
   managerCount: number;
 }) {
-  const headerRow = 8; // 0-based: row 9 in sheet is manager table header
+  const headerRow = 9; // 0-based: row 10 in sheet is manager table header
   const firstDataRow = headerRow + 1;
   const lastDataRow = headerRow + Math.max(1, input.managerCount);
   const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
@@ -234,7 +291,7 @@ async function formatControlTab(input: {
           updateSheetProperties: {
             properties: {
               sheetId: input.sheetId,
-              gridProperties: { frozenRowCount: 9 }
+              gridProperties: { frozenRowCount: 10 }
             },
             fields: "gridProperties.frozenRowCount"
           }
@@ -253,7 +310,7 @@ async function formatControlTab(input: {
         },
         {
           repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 2, endRowIndex: 6, startColumnIndex: 0, endColumnIndex: 1 },
+            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 8, startColumnIndex: 0, endColumnIndex: 1 },
             cell: {
               userEnteredFormat: {
                 textFormat: { bold: true },
@@ -265,7 +322,7 @@ async function formatControlTab(input: {
         },
         {
           repeatCell: {
-            range: { sheetId: input.sheetId, startRowIndex: 2, endRowIndex: 6, startColumnIndex: 1, endColumnIndex: 2 },
+            range: { sheetId: input.sheetId, startRowIndex: 3, endRowIndex: 8, startColumnIndex: 1, endColumnIndex: 2 },
             cell: {
               userEnteredFormat: {
                 textFormat: { bold: true, fontSize: 12 },
@@ -282,7 +339,7 @@ async function formatControlTab(input: {
               startRowIndex: headerRow,
               endRowIndex: headerRow + 1,
               startColumnIndex: 0,
-              endColumnIndex: 9
+              endColumnIndex: 11
             },
             cell: {
               userEnteredFormat: {
@@ -300,7 +357,7 @@ async function formatControlTab(input: {
               startRowIndex: firstDataRow,
               endRowIndex: lastDataRow + 1,
               startColumnIndex: 1,
-              endColumnIndex: 9
+              endColumnIndex: 11
             },
             cell: {
               userEnteredFormat: { horizontalAlignment: "CENTER" }
@@ -317,8 +374,8 @@ async function formatControlTab(input: {
         },
         {
           updateDimensionProperties: {
-            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 9 },
-            properties: { pixelSize: 110 },
+            range: { sheetId: input.sheetId, dimension: "COLUMNS", startIndex: 1, endIndex: 11 },
+            properties: { pixelSize: 100 },
             fields: "pixelSize"
           }
         }
@@ -405,6 +462,14 @@ export async function syncShiftBoard(options: {
 
   const payments = await listPaidSmartInvoicesForPeriod(day, day);
 
+  const productCountIds = [
+    ...new Set([
+      ...invoices.map((row) => String(row.id || "")),
+      ...payments.map((row) => paymentSpaId(String(row.id || "")))
+    ].filter(Boolean))
+  ];
+  const productCounts = await loadInvoiceProductCounts(productCountIds);
+
   const assigneeIds = [
     ...new Set([
       ...leads.map((row) => String(row.ASSIGNED_BY_ID || "")),
@@ -449,6 +514,12 @@ export async function syncShiftBoard(options: {
       const key = String(lead.STATUS_ID || "?");
       statusCounts[key] = (statusCounts[key] || 0) + 1;
     }
+    const invoiceSum = managerInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+    const paymentSumEur = managerPayments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+    const productsInInvoices = managerInvoices.reduce(
+      (sum, row) => sum + (productCounts.get(String(row.id || "")) || 0),
+      0
+    );
     managers.push({
       bitrixUserId,
       fullName,
@@ -457,9 +528,11 @@ export async function syncShiftBoard(options: {
       leads: managerLeads.length,
       statusCounts,
       invoices: managerInvoices.length,
-      invoiceSum: managerInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0),
+      invoiceSum,
       payments: managerPayments.length,
-      paymentSumEur: managerPayments.reduce((sum, row) => sum + asNumber(row.opportunity), 0)
+      paymentSumEur,
+      avgCheckEur: avgCheck(paymentSumEur, managerPayments.length),
+      productsInInvoices
     });
   }
 
@@ -491,6 +564,7 @@ export async function syncShiftBoard(options: {
       ["Счета сегодня", String(totalInvoices)],
       ["Оплаты сегодня", String(totalPayments)],
       ["Выручка сегодня, EUR", money(totalRevenueEur)],
+      ["Средний чек, EUR", avgCheckLabel(totalRevenueEur, totalPayments)],
       [],
       [
         "Менеджер",
@@ -500,8 +574,10 @@ export async function syncShiftBoard(options: {
         "Сделки",
         "Счета",
         "Сумма счетов",
+        "Товаров",
         "Оплаты",
-        "Выручка EUR"
+        "Выручка EUR",
+        "Средний чек"
       ]
     ];
     for (const row of managers) {
@@ -513,8 +589,10 @@ export async function syncShiftBoard(options: {
         String(row.statusCounts.CONVERTED || 0),
         String(row.invoices),
         money(row.invoiceSum),
+        String(row.productsInInvoices),
         String(row.payments),
-        money(row.paymentSumEur)
+        money(row.paymentSumEur),
+        row.avgCheckEur == null ? "—" : money(row.avgCheckEur)
       ]);
     }
     await writeSheetTab({
@@ -549,7 +627,8 @@ export async function syncShiftBoard(options: {
           onShift: manager.onShift,
           leads: managerLeads,
           invoices: managerInvoices,
-          payments: managerPayments
+          payments: managerPayments,
+          productCounts
         }),
         clearRange: `'${manager.tabTitle.replace(/'/g, "''")}'!A:Z`
       });
