@@ -19,81 +19,83 @@ type Situation = {
 const SITUATIONS: Situation[] = [
   {
     id: "ask_price",
-    label: "Сразу «Сколько стоит?»",
-    client: "Сколько стоит газета? Доставите в Латвию / к нам?",
-    why: "Цена в первом ответе. Не каталог без цифр.",
+    label: "Клиент сразу спрашивает цену",
+    client: "Сколько стоит газета? Вы доставите к нам?",
+    why: "В первом ответе уже должна быть цена. Нельзя отвечать длинным списком без цифр.",
     script: `Добрый день! Это [Имя], менеджер retro-pressa.
-Стоимость изданий — от 15 до 64 €, доставка по всему миру.
-Напишите дату рождения именинника и город — сразу пришлю, что есть в архиве, с ценами.
+Стоимость изданий — от 15 до 64 евро. Доставляем по всему миру.
+Напишите, пожалуйста, дату рождения именинника и город. Я сразу пришлю, что есть в архиве, уже с ценами.
 
-[после даты]
-Отлично! Оригинальная «Правда» за [дата] — 45 €. Подходит?
-Тогда оформляю счёт. Напишите: имя, телефон. Доставка — X €.
-Оплата: перевод / карта / PayPal / Wise — как удобнее?`,
-    live: "Анастасия: вилка в 1-м сообщении → «Правда — 45 €» → клиент: «Оплатила»."
+Когда клиент назвал дату:
+Отлично! Оригинальная газета «Правда» за [дата] стоит 45 евро. Вам подходит?
+Тогда оформляю счёт. Напишите имя и телефон. Доставка — [сумма] евро.
+Оплатить можно переводом, картой, PayPal или Wise. Как вам удобнее?`,
+    live: "Так делала Анастасия: в первом сообщении назвала диапазон цен, потом сказала точную цену «Правда — 45 евро», и клиент оплатил."
   },
   {
     id: "what_available",
-    label: "«Что есть на дату?»",
-    client: "День рождения мужа 03.06.1976. Что есть? За рулём или Правда?",
-    why: "Список + цена SKU в одном блоке + микро-закрытие.",
-    script: `За [месяц год] в архиве: [3–5 позиций].
-«За рулём» — 142 р, любая репродукция газеты — 145 р. Доставка — X.
-Оригинала газеты на точный день нет; репродукция — точная копия.
-Какой вариант берём? Могу сразу оформить.`,
-    live: "Елена: цены в одном сообщении → «Желаете оформить заказ?» → оплата 407 р."
+    label: "Клиент спрашивает, что есть на дату",
+    client: "День рождения мужа — 3 июня 1976 года. Что у вас есть? «За рулём» или «Правда»?",
+    why: "В одном сообщении: что есть, сколько стоит, и вопрос «какой вариант берём».",
+    script: `За [месяц и год] в архиве есть: [три–пять вариантов].
+Журнал «За рулём» — 142 рубля. Любая репродукция газеты — 145 рублей. Доставка — [сумма].
+Оригинала газеты именно на этот день нет. Репродукция — точная копия.
+Какой вариант берём? Могу сразу оформить заказ.`,
+    live: "Так делала Елена: цены написала в одном сообщении, спросила «желаете оформить заказ?» — и получила оплату 407 рублей."
   },
   {
     id: "price_and_deadline",
-    label: "Цена + срок / срочность",
-    client: "Сколько такая газета? Нам бы завтра уже!",
-    why: "Вилка → дата → 2–3 опции с ценой и сроком → выбор → оформление.",
-    script: `Стоимость — от 15 до 64 € (в BYN сориентирую после города).
-Напишите дату и город — срок скажу точно.
+    label: "Клиент спрашивает цену и торопится",
+    client: "Сколько стоит такая газета? Нам нужно уже завтра!",
+    why: "Сначала цена и срок. Потом два–три варианта. Потом вопрос: оформляем?",
+    script: `Стоимость — от 15 до 64 евро. Если вы в Беларуси, скажу сумму в рублях после города.
+Напишите дату и город — и я точно скажу срок.
 
-На [дата]: репродукция — Y; поздравительная с текстом и фото — Z.
-На базе «Правды»/«Спорта» — до 2 дней; региональная — до 5.
-Что ближе — репро или поздравительная? Оформляем?`,
-    live: "Анастасия: срочный кейс → фиксирует издание → данные на счёт."
+На [дата] есть:
+репродукция — [цена];
+поздравительная газета с вашим текстом и фото — [цена].
+Если берём «Правду» или «Советский спорт» — обычно до 2 дней. Региональная газета — до 5 дней.
+Что вам ближе: обычная репродукция или поздравительная? Оформляем?`,
+    live: "Так делала Анастасия в срочном заказе: быстро зафиксировала издание и сразу попросила данные для счёта."
   },
   {
     id: "almost_yes",
-    label: "Выбрали, но ещё не «да»",
+    label: "Клиент уже выбрал, но ещё не оплатил",
     client: "Супер, меня устраивает. Как забронировать?",
-    why: "Не новые вопросы «в никуда» — сразу сумма, данные, оплата.",
-    script: `Фиксируем: [издание] за [дата], сумма N (+ доставка X / самовывоз).
-Желаете оформить заказ?
-Если да — пришлите имя, телефон, почту [и адрес].
+    why: "Не задавать новые лишние вопросы. Сразу сумма, данные и счёт.",
+    script: `Отлично, фиксируем: [издание] за [дата], сумма [N] (доставка [сумма] или самовывоз).
+Оформляем заказ?
+Если да — пришлите имя, телефон и почту. Если нужна доставка — ещё и адрес.
 Счёт отправлю сразу.`,
-    live: "Елена/Анастасия: «Оформляем…» → блок данных → сумма к оплате / ЕРИП."
+    live: "Так делали Елена и Анастасия: писали «оформляем», просили данные и сразу давали сумму к оплате."
   },
   {
     id: "think",
-    label: "«Надо подумать»",
-    client: "Мне надо подумать. Оплата как происходит?",
-    why: "Не уходить в новый консультационный круг. Закрепить цифру + next step.",
-    script: `Конечно. Чтобы не потерять позицию: [издание] — N, доставка — X, срок — …
-Могу прислать счёт сегодня без жёсткого дедлайна оплаты до [вечер/завтра].
-Как удобнее оплатить — карта / перевод / ЕРИП? Пришлю один вариант под вас.`,
-    live: "Паттерн Забковых: способы оплаты в том же шаге, не «потом расскажу»."
+    label: "Клиент говорит «надо подумать»",
+    client: "Мне надо подумать. А как происходит оплата?",
+    why: "Не начинать новый длинный рассказ. Повторить цену и предложить понятный следующий шаг.",
+    script: `Конечно. Напомню: [издание] стоит [цена], доставка — [сумма], срок — [срок].
+Могу сегодня прислать счёт. Оплатить можно до вечера или до завтра — как вам удобно.
+Как вам проще оплатить: картой, переводом или через ЕРИП? Пришлю один удобный вариант.`,
+    live: "Забковы в этот момент сразу объясняли оплату. Не откладывали на потом."
   },
   {
     id: "region",
-    label: "Регион vs всесоюзная",
-    client: "Хотим Могилёв / местную. Или Правду?",
-    why: "Дать выбор с последствиями (язык, срок) и сразу «берём → оформляем».",
-    script: `На русском быстрее: «Правда»/«Известия»/«Спорт» — до 2 дней.
-Региональная — до 5 дней, часто на местном языке.
-Берём [выбор]? Тогда оформляем на [издание] за [дата].
-Доставка или офис? Доставка — X. Дальше сразу счёт.`,
-    live: "Анастасия: «Магілёўская праўда» → «оформляем» → 222 р."
+    label: "Клиент выбирает между местной газетой и «Правдой»",
+    client: "Хотим местную газету из Могилёва. Или лучше «Правду»?",
+    why: "Объяснить разницу простыми словами и сразу предложить оформить выбранный вариант.",
+    script: `Если нужна газета на русском и быстрее — лучше «Правда», «Известия» или «Советский спорт». Обычно до 2 дней.
+Местная газета готовится дольше, до 5 дней, и часто на местном языке.
+Какой вариант берём?
+Тогда оформляем [издание] за [дата]. Нужна доставка или заберёте в офисе? Доставка — [сумма]. Дальше сразу сделаю счёт.`,
+    live: "Так делала Анастасия с «Магілёўскай праўдай»: согласовали вариант, написали «оформляем», получили оплату 222 рубля."
   }
 ];
 
 const PROOF_BARS = [
-  { label: "Цена + закрытие", value: 100, tone: "good" as const },
-  { label: "Только цена", value: 19, tone: "bad" as const },
-  { label: "Без цены в чате*", value: 50, tone: "neutral" as const }
+  { label: "Назвали цену и сразу предложили оформить заказ", value: 100, tone: "good" as const },
+  { label: "Назвали цену, но не предложили оформить", value: 19, tone: "bad" as const },
+  { label: "В чате цену не нашли*", value: 50, tone: "neutral" as const }
 ];
 
 function ProofBar({ label, value, tone }: { label: string; value: number; tone: "good" | "bad" | "neutral" }) {
@@ -138,8 +140,8 @@ export function ZabkovaClosePlaybookScreen() {
 
   return (
     <TrainingLayout
-      title="Плейбук Забковых: цена → закрытие"
-      description="Интерактивная инфографика для новичков и для разбора с РОП. На живых диалогах Анастасии и Елены Забковых."
+      title="Как продавали Забковы"
+      description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах Анастасии и Елены Забковых."
       backHref="/training/knowledge-base"
       backLabel="К базе знаний"
     >
@@ -152,7 +154,7 @@ export function ZabkovaClosePlaybookScreen() {
           }`}
         >
           <GraduationCap size={16} />
-          Новый менеджер
+          Я новый менеджер
         </button>
         <button
           type="button"
@@ -162,46 +164,46 @@ export function ZabkovaClosePlaybookScreen() {
           }`}
         >
           <Users size={16} />
-          РОП / разбор
+          Я руководитель, провожу разбор
         </button>
       </div>
 
       <section className="card mb-6 border-amber-200 bg-amber-50/70 p-6">
-        <p className="text-sm font-extrabold uppercase tracking-wide text-amber-800">Главный вывод</p>
+        <p className="text-sm font-extrabold uppercase tracking-wide text-amber-800">Главное одной фразой</p>
         <p className="mt-2 text-lg font-black leading-8 text-slate-950">
-          Не «ответьте быстрее по минутам». Работает цепочка в 3 хода: вилка или SKU-цена → выбор одной позиции → «оформляем + данные + оплата».
+          Не надо просто «отвечать быстрее». Нужно сделать три простых шага: назвать цену, помочь выбрать один вариант и сразу предложить оформить заказ.
         </p>
       </section>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <article className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Цена + закрытие</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Цена и оформление вместе</p>
           <p className="mt-2 text-3xl font-black text-emerald-700">100%</p>
-          <p className="mt-1 text-sm text-slate-600">оплат в выборке (11/11)</p>
+          <p className="mt-1 text-sm text-slate-600">таких диалогов закончились оплатой</p>
         </article>
         <article className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Цена без закрытия</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Только цена, без оформления</p>
           <p className="mt-2 text-3xl font-black text-rose-700">19%</p>
-          <p className="mt-1 text-sm text-slate-600">оплат (3/16)</p>
+          <p className="mt-1 text-sm text-slate-600">таких диалогов закончились оплатой</p>
         </article>
         <article className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">До цены у оплативших</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">155 мин</p>
-          <p className="mt-1 text-sm text-slate-600">медиана</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">У тех, кто оплатил</p>
+          <p className="mt-2 text-3xl font-black text-slate-950">около 2,5 часов</p>
+          <p className="mt-1 text-sm text-slate-600">обычно до первой цены в чате</p>
         </article>
         <article className="card p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">До цены у неоплаченных</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">288 мин</p>
-          <p className="mt-1 text-sm text-slate-600">медиана</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">У тех, кто не оплатил</p>
+          <p className="mt-2 text-3xl font-black text-slate-950">около 5 часов</p>
+          <p className="mt-1 text-sm text-slate-600">обычно до первой цены в чате</p>
         </article>
       </section>
 
       <section className="card mb-6 p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black text-slate-950">Доказательство на данных</h2>
+            <h2 className="text-xl font-black text-slate-950">Что показали цифры</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Май–август 2026 · ~172 диалога Open Lines по лидам Забковых (оплаченные vs неоплаченные).
+              Смотрели диалоги Анастасии и Елены с мая по август 2026 года. Сравнивали оплаченные и неоплаченные заявки.
             </p>
           </div>
           <Target className="shrink-0 text-rose-600" size={22} />
@@ -212,18 +214,30 @@ export function ZabkovaClosePlaybookScreen() {
           ))}
         </div>
         <p className="mt-4 text-xs leading-5 text-slate-500">
-          * «Без цены в чате» ~50% — артефакт выборки и каналов (счёт/телефон/другие сессии). Ключевой контраст: цена+закрытие vs цена без дожима.
+          * Иногда цену в чате не видно, потому что счёт ушёл другим способом. Главное сравнение другое: если цену назвали и сразу предложили оформить — почти всегда была оплата. Если цену назвали и остановились — оплат почти не было.
         </p>
       </section>
 
       <section className="mb-6 grid gap-4 lg:grid-cols-3">
         {[
-          { step: "1", title: "Цена", text: "Вилка или конкретный SKU. В первом ответе на «сколько» или сразу после даты." },
-          { step: "2", title: "Выбор", text: "Одна позиция. «Какой вариант подходит?» — не десять открытых вопросов." },
-          { step: "3", title: "Закрытие", text: "«Оформляем» → имя/телефон/почта → сумма → способ оплаты." }
+          {
+            step: "1",
+            title: "Назвать цену",
+            text: "Напишите диапазон или точную сумму. Особенно если клиент спросил «сколько стоит»."
+          },
+          {
+            step: "2",
+            title: "Помочь выбрать",
+            text: "Предложите один–два понятных варианта и спросите: какой берём?"
+          },
+          {
+            step: "3",
+            title: "Предложить оформить",
+            text: "Напишите «оформляем», попросите имя и телефон, скажите сумму и как оплатить."
+          }
         ].map((item) => (
           <article key={item.step} className="card p-5">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-rose-600">Ход {item.step}</p>
+            <p className="text-xs font-extrabold uppercase tracking-wide text-rose-600">Шаг {item.step}</p>
             <h3 className="mt-2 text-lg font-black text-slate-950">{item.title}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
           </article>
@@ -231,8 +245,8 @@ export function ZabkovaClosePlaybookScreen() {
       </section>
 
       <section className="card mb-6 p-6">
-        <h2 className="text-xl font-black text-slate-950">Живые ситуации — выбери и отработай</h2>
-        <p className="mt-1 text-sm text-slate-600">Скрипты собраны с оплаченных диалогов Анастасии и Елены.</p>
+        <h2 className="text-xl font-black text-slate-950">Живые ситуации. Выберите и потренируйтесь</h2>
+        <p className="mt-1 text-sm text-slate-600">Тексты собраны из реальных оплаченных диалогов Анастасии и Елены.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {SITUATIONS.map((item, index) => (
             <button
@@ -251,28 +265,28 @@ export function ZabkovaClosePlaybookScreen() {
         </div>
 
         <div className="mt-5 rounded-2xl border border-[var(--line)] bg-slate-50 p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Клиент</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Что пишет клиент</p>
           <p className="mt-2 text-base font-semibold text-slate-900">{situation.client}</p>
           <p className="mt-3 text-sm leading-6 text-slate-600">{situation.why}</p>
         </div>
 
         <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Скрипт</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Что можно ответить</p>
             <button
               type="button"
               onClick={copyScript}
               className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"
             >
               <ClipboardCopy size={14} />
-              {copied ? "Скопировано" : "Копировать"}
+              {copied ? "Скопировано" : "Скопировать текст"}
             </button>
           </div>
           <pre className="mt-3 whitespace-pre-wrap font-sans text-sm leading-7 text-slate-900">{situation.script}</pre>
         </div>
 
         <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Из живого диалога</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Как было в живом диалоге</p>
           <p className="mt-2 text-sm leading-6 text-slate-800">{situation.live}</p>
         </div>
       </section>
@@ -282,19 +296,19 @@ export function ZabkovaClosePlaybookScreen() {
           <h2 className="text-xl font-black text-slate-950">Как провести разбор за 15 минут</h2>
           <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
             <li>
-              <span className="font-black text-slate-950">1.</span> Покажи бар 100% vs 19% — менеджер повторяет: цена без закрытия не считается.
+              <span className="font-black text-slate-950">1.</span> Покажите цифры: 100 процентов против 19 процентов. Пусть менеджер своими словами скажет: одной цены мало, нужно ещё предложить оформить заказ.
             </li>
             <li>
-              <span className="font-black text-slate-950">2.</span> Выберите одну ситуацию выше. Менеджер пишет ответ своими словами.
+              <span className="font-black text-slate-950">2.</span> Выберите одну ситуацию выше. Пусть менеджер напишет свой ответ.
             </li>
             <li>
-              <span className="font-black text-slate-950">3.</span> Сверь с формулой 3 хода: есть цифра? есть выбор? есть оформление?
+              <span className="font-black text-slate-950">3.</span> Проверьте три вещи: есть ли цена, есть ли выбор, есть ли предложение оформить.
             </li>
             <li>
-              <span className="font-black text-slate-950">4.</span> Разберите один вчерашний чат менеджера: где оборвалась цепочка.
+              <span className="font-black text-slate-950">4.</span> Возьмите один вчерашний чат менеджера и найдите, на каком шаге он остановился.
             </li>
             <li>
-              <span className="font-black text-slate-950">5.</span> Домашка: 3 диалога сегодня с явной SKU-ценой и закрытием.
+              <span className="font-black text-slate-950">5.</span> Дайте задание на сегодня: в трёх диалогах назвать точную цену и сразу предложить оформить заказ.
             </li>
           </ol>
 
@@ -302,17 +316,17 @@ export function ZabkovaClosePlaybookScreen() {
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--line)] text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-4 font-bold">Сигнал</th>
+                  <th className="py-2 pr-4 font-bold">На что смотреть</th>
                   <th className="py-2 pr-4 font-bold">Хорошо</th>
                   <th className="py-2 font-bold">Плохо</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
                 {[
-                  ["Цена", "Вилка или SKU за 1–2 реплики", "Консультация без суммы"],
-                  ["Выбор", "Один оффер + вопрос выбора", "Бесконечный подбор"],
-                  ["Закрытие", "Счёт / данные / ЕРИП", "«Напишите, если решите»"],
-                  ["После «подумаю»", "Цифра + способ оплаты + срок", "Новая лекция про архив"]
+                  ["Цена", "Есть сумма уже в первых ответах", "Долгий разговор без суммы"],
+                  ["Выбор", "Один–два варианта и вопрос «какой берём»", "Бесконечный подбор без решения"],
+                  ["Оформление", "Просят данные и дают способ оплаты", "Пишут «напишите, если решите»"],
+                  ["Если клиент думает", "Повторяют цену и предлагают прислать счёт", "Снова долго рассказывают про архив"]
                 ].map((row) => (
                   <tr key={row[0]} className="border-b border-slate-100 align-top">
                     <td className="py-3 pr-4 font-bold text-slate-950">{row[0]}</td>
@@ -326,14 +340,14 @@ export function ZabkovaClosePlaybookScreen() {
         </section>
       ) : (
         <section className="card mb-6 p-6">
-          <h2 className="text-xl font-black text-slate-950">Чеклист перед отправкой</h2>
-          <p className="mt-1 text-sm text-slate-600">Отметь перед каждым «продающим» сообщением.</p>
+          <h2 className="text-xl font-black text-slate-950">Проверьте себя перед отправкой</h2>
+          <p className="mt-1 text-sm text-slate-600">Отметьте галочки перед сообщением, которым хотите продвинуть продажу.</p>
           <ul className="mt-4 space-y-3">
             {[
-              { id: "c1", text: "В сообщении есть число (вилка или SKU)?" },
-              { id: "c2", text: "Клиенту предложено выбрать один вариант?" },
-              { id: "c3", text: "Есть фраза оформления или запрос данных?" },
-              { id: "c4", text: "Способ оплаты назван или спросили «как удобнее»?" }
+              { id: "c1", text: "В сообщении есть цена: диапазон или точная сумма?" },
+              { id: "c2", text: "Клиенту предложено выбрать один понятный вариант?" },
+              { id: "c3", text: "Есть фраза про оформление или просьба прислать данные?" },
+              { id: "c4", text: "Назван способ оплаты или спросили, как удобнее оплатить?" }
             ].map((item) => (
               <li key={item.id}>
                 <button

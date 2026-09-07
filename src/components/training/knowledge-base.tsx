@@ -79,9 +79,9 @@ function PlaybooksSection() {
             <Target size={22} />
           </span>
           <div>
-            <h2 className="text-xl font-black text-slate-950">Плейбук Забковых</h2>
+            <h2 className="text-xl font-black text-slate-950">Как продавали Забковы</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Интерактивная инфографика: цена + закрытие = оплата. Для новичков и разбора с РОП.
+              Простая памятка: назвать цену, помочь выбрать и сразу предложить оформить заказ. Для новых менеджеров и для разбора с руководителем.
             </p>
           </div>
         </div>
@@ -89,7 +89,7 @@ function PlaybooksSection() {
           href="/training/playbooks/zabkova-close"
           className="inline-flex shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
         >
-          Открыть инфографику
+          Открыть памятку
         </Link>
       </div>
     </section>
