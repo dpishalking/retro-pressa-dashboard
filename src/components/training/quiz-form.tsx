@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import { isFinalExamProduct, isFinalExamUnlocked, remainingStagesForFinalExam } from "@/lib/training/final-exam";
+import { isFinalExamProduct, isFinalExamUnlocked, isOpenEndedQuiz, OPEN_TEXT_MIN_LENGTH, remainingStagesForFinalExam } from "@/lib/training/final-exam";
 import type { ProductTrainingModule, QuizSubmission, TrainingOverview } from "@/types/training";
 
 type AnswerState = {
@@ -15,7 +15,7 @@ type AnswerState = {
 
 function QuizFormContent({ productId }: { productId: string }) {
   const router = useRouter();
-  const { user } = useTrainingUser();
+  const { user, isSupervisor, loading: userLoading } = useTrainingUser();
   const [product, setProduct] = useState<ProductTrainingModule | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
   const [loading, setLoading] = useState(true);
@@ -38,8 +38,17 @@ function QuizFormContent({ productId }: { productId: string }) {
   }, [productId]);
 
   useEffect(() => {
-    if (!user || !isFinalExamProduct(productId)) {
+    if (!isFinalExamProduct(productId)) {
       setLockedStages(null);
+      return;
+    }
+    if (userLoading) return;
+    if (isSupervisor) {
+      setLockedStages([]);
+      return;
+    }
+    if (!user) {
+      setLockedStages([]);
       return;
     }
     fetch(`/api/training/progress?userId=${encodeURIComponent(user.id)}`)
@@ -48,8 +57,10 @@ function QuizFormContent({ productId }: { productId: string }) {
         if (!data.overview) return;
         setLockedStages(isFinalExamUnlocked(data.overview) ? [] : remainingStagesForFinalExam(data.overview.stages));
       })
-      .catch(() => setLockedStages(null));
-  }, [productId, user]);
+      .catch(() => {
+        /* Keep lockedStages null so the form stays on the access check. */
+      });
+  }, [productId, user, isSupervisor, userLoading]);
 
   const toggleAnswer = (questionId: string, answerId: string, type: ProductTrainingModule["questions"][number]["type"]) => {
     setAnswers((current) => {
@@ -111,7 +122,7 @@ function QuizFormContent({ productId }: { productId: string }) {
     );
   }
 
-  if (isFinalExamProduct(product) && lockedStages === null) {
+  if (isFinalExamProduct(product) && (userLoading || lockedStages === null)) {
     return <div className="card p-8 text-sm text-slate-600">Проверяем доступ к финальному тесту...</div>;
   }
 
@@ -128,12 +139,20 @@ function QuizFormContent({ productId }: { productId: string }) {
     );
   }
 
+  const openEnded = isOpenEndedQuiz(product);
+  const allOpenAnswersFilled = product.questions.every((question) => {
+    if (question.type !== "text") return true;
+    return (answers[question.id]?.textAnswer ?? "").trim().length >= OPEN_TEXT_MIN_LENGTH;
+  });
+
   return (
     <div className="space-y-4">
       <section className="card p-6">
         <h2 className="text-2xl font-black text-slate-950">{product.title}</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Ответьте на все вопросы. Для прохождения нужно набрать минимум {product.passingScore}%.
+          {openEnded
+            ? "Ответьте своими словами — как в чате с клиентом. Вариантов нет: напишите, что бы вы сказали и почему."
+            : `Ответьте на все вопросы. Для прохождения нужно набрать минимум ${product.passingScore}%.`}
         </p>
       </section>
 
@@ -153,7 +172,7 @@ function QuizFormContent({ productId }: { productId: string }) {
             {question.type === "text" ? (
               <textarea
                 className="mt-4 min-h-28 w-full rounded-xl border border-[var(--line)] px-4 py-3 text-sm text-slate-800"
-                placeholder="Введите развёрнутый ответ"
+                placeholder={openEnded ? "Напишите ответ своими словами" : "Введите развёрнутый ответ"}
                 value={answers[question.id]?.textAnswer ?? ""}
                 onChange={(event) =>
                   setAnswers((current) => ({
@@ -189,12 +208,15 @@ function QuizFormContent({ productId }: { productId: string }) {
         ))}
 
       {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
+      {openEnded && !allOpenAnswersFilled ? (
+        <p className="text-sm text-slate-600">Заполните каждый вопрос своими словами — хотя бы пару предложений.</p>
+      ) : null}
 
       <section className="card p-6">
         <button
           type="button"
           onClick={() => void submit()}
-          disabled={submitting}
+          disabled={submitting || (openEnded && !allOpenAnswersFilled)}
           className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
         >
           {submitting ? "Отправка..." : "Завершить тест"}

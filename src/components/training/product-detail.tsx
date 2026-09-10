@@ -15,7 +15,7 @@ import {
 } from "@/lib/training/product-sections";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { productBodyFont, productDisplayFont } from "@/lib/fonts/product-page-fonts";
-import { isFinalExamProduct } from "@/lib/training/final-exam";
+import { isFinalExamProduct, isOpenEndedQuiz } from "@/lib/training/final-exam";
 import type { ProductMaterial, ProductTrainingModule } from "@/types/training";
 
 const sectionHeadingClass = "product-heading text-xl font-extrabold text-slate-950 sm:text-2xl";
@@ -380,7 +380,9 @@ function ProductDetailContent({ productId }: { productId: string }) {
         ) : (
           <p className={bodyTextClass}>Тест для этого продукта ещё не добавлен администратором.</p>
         )}
-        <p className="mt-3 text-sm text-slate-500">Проходной балл: {product.passingScore}%</p>
+        <p className="mt-3 text-sm text-slate-500">
+          {isOpenEndedQuiz(product) ? "Ответьте своими словами, без вариантов." : `Проходной балл: ${product.passingScore}%`}
+        </p>
       </section>
     </div>
   );

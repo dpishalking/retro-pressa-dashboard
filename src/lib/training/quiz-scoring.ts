@@ -1,6 +1,7 @@
 import type { QuizAttemptAnswer, QuizQuestion, QuizSubmission, UserQuizAttempt } from "@/types/training";
 import type { QuizScorable } from "@/lib/training/progress";
 import { generateId } from "@/lib/training/id";
+import { OPEN_TEXT_MIN_LENGTH } from "@/lib/training/final-exam";
 
 function normalizeText(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -18,7 +19,7 @@ function gradeQuestion(
     const userText = submission.textAnswer ?? "";
     const isCorrect = expected
       ? normalizeText(userText).includes(normalizeText(expected)) || normalizeText(expected).includes(normalizeText(userText))
-      : userText.trim().length >= 10;
+      : userText.trim().length >= OPEN_TEXT_MIN_LENGTH;
 
     return {
       questionId: question.id,

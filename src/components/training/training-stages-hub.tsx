@@ -59,7 +59,7 @@ function StageCard({ stage, index }: { stage: TrainingStageOverview; index: numb
 }
 
 function MyTrainingContent() {
-  const { user, isAdmin, loading: userLoading } = useTrainingUser();
+  const { user, isAdmin, isSupervisor, loading: userLoading } = useTrainingUser();
   const [overview, setOverview] = useState<TrainingOverview | null>(null);
   const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
   const [products, setProducts] = useState<ProductTrainingModule[]>([]);
@@ -97,13 +97,13 @@ function MyTrainingContent() {
   }));
 
   const { finalExam } = splitFinalExam(products);
-  const remainingStageTitles = remainingStagesForFinalExam(stages);
+  const remainingStageTitles = isSupervisor ? [] : remainingStagesForFinalExam(stages);
   const exam = finalExam ?? {
     id: FINAL_EXAM_PRODUCT_ID,
     title: "Финальный тест",
     shortDescription: "",
     coverImage: "",
-    passingScore: 75,
+    passingScore: 100,
     description: "",
     targetAudience: "",
     clientProblems: "",
@@ -115,7 +115,7 @@ function MyTrainingContent() {
     questions: Array.from({ length: 9 }, (_, index) => ({
       id: `final-exam-placeholder-${index}`,
       text: "",
-      type: "single" as const,
+      type: "text" as const,
       answers: [],
       sortOrder: index + 1
     })),

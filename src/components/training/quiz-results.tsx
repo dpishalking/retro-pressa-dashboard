@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import { isFinalExamProduct } from "@/lib/training/final-exam";
+import { isFinalExamProduct, isOpenEndedQuiz } from "@/lib/training/final-exam";
 import type { ProductTrainingModule, QuizAttemptAnswer, QuizQuestion, UserQuizAttempt } from "@/types/training";
 
 type ResultData = {
@@ -106,15 +106,30 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
   }
 
   const correctCount = data.attempt.answers.filter((answer) => answer.isCorrect).length;
+  const openEnded = isOpenEndedQuiz(data.product);
 
   return (
     <div className="space-y-4">
       <section className={`card p-6 ${data.attempt.passed ? "border-emerald-200" : "border-amber-200"}`}>
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Результат теста</p>
-        <h2 className="mt-2 text-3xl font-black text-slate-950">{data.attempt.scorePercent}%</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Правильных ответов: {correctCount} из {data.questions.length}. Проходной балл: {data.product.passingScore}%.
-        </p>
+        {openEnded ? (
+          <>
+            <h2 className="mt-2 text-3xl font-black text-slate-950">
+              {data.attempt.passed ? "Ответы сохранены" : "Нужно дописать ответы"}
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Заполнено своими словами: {correctCount} из {data.questions.length}. Здесь нет «правильного варианта» —
+              важна ваша формулировка, как в чате с клиентом.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-2 text-3xl font-black text-slate-950">{data.attempt.scorePercent}%</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Правильных ответов: {correctCount} из {data.questions.length}. Проходной балл: {data.product.passingScore}%.
+            </p>
+          </>
+        )}
         <span
           className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
             data.attempt.passed ? "status-green" : "status-red"
@@ -132,18 +147,18 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Вопрос {index + 1}</p>
                 <h3 className="mt-1 text-base font-black text-slate-950">{question.text}</h3>
               </div>
-              {userAnswer?.isCorrect ? (
+              {openEnded ? null : userAnswer?.isCorrect ? (
                 <CheckCircle2 className="shrink-0 text-emerald-600" size={20} />
               ) : (
                 <XCircle className="shrink-0 text-red-500" size={20} />
               )}
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className={`mt-4 grid gap-3 ${openEnded ? "" : "md:grid-cols-2"}`}>
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Ваш ответ</p>
-                <p className="mt-1 text-sm text-slate-800">{answerLabel(question, userAnswer)}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{answerLabel(question, userAnswer)}</p>
               </div>
-              {!userAnswer?.isCorrect ? (
+              {!openEnded && !userAnswer?.isCorrect ? (
                 <div className="rounded-xl bg-emerald-50 p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Правильный ответ</p>
                   <p className="mt-1 text-sm text-emerald-900">{correctLabel(question)}</p>

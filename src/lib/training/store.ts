@@ -291,8 +291,9 @@ export async function submitQuiz(submission: QuizSubmission) {
   if (!product) throw new Error("Product not found");
 
   if (isFinalExamProduct(product)) {
+    const authUser = await findUserById(submission.userId);
     const overview = await getTrainingOverview(submission.userId);
-    if (!isFinalExamUnlocked(overview)) {
+    if (!isFinalExamUnlocked(overview, authUser?.accessLevel)) {
       throw new Error("Финальный тест откроется, когда будут пройдены все продукты и CRM.");
     }
   }

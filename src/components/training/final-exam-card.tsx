@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Lock, Trophy } from "lucide-react";
-import { FINAL_EXAM_PRODUCT_ID } from "@/lib/training/final-exam";
+import { FINAL_EXAM_PRODUCT_ID, isOpenEndedQuiz } from "@/lib/training/final-exam";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { ProductTrainingModule, TrainingStatus } from "@/types/training";
 
@@ -20,6 +20,7 @@ export function FinalExamStageCard({
   remainingStageTitles: string[];
 }) {
   const locked = remainingStageTitles.length > 0;
+  const openEnded = isOpenEndedQuiz(exam);
 
   const body = (
     <article
@@ -50,10 +51,18 @@ export function FinalExamStageCard({
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            {bestScorePercent === undefined ? "Проходной балл" : "Лучший результат"}
+            {bestScorePercent === undefined
+              ? openEnded
+                ? "Формат"
+                : "Проходной балл"
+              : "Лучший результат"}
           </p>
           <p className="mt-1 text-lg font-black text-slate-950">
-            {bestScorePercent === undefined ? exam.passingScore : bestScorePercent}%
+            {bestScorePercent === undefined
+              ? openEnded
+                ? "Своими словами"
+                : `${exam.passingScore}%`
+              : `${bestScorePercent}%`}
           </p>
         </div>
       </div>
