@@ -6,7 +6,7 @@ import {
   canAccessUserManagement
 } from "@/lib/auth/admin-users-auth";
 import { loadBitrixRoster } from "@/lib/manager-cabinet/roster";
-import { createUser, deleteUser, findUserById, listPublicUsers, listTraineeUsers, updateUser } from "@/lib/auth/store";
+import { createUser, deleteUser, findUserById, listPublicUsers, listTraineeUsers, updateUser, approveUserRegistration, rejectUserRegistration } from "@/lib/auth/store";
 import { readSessionCookie } from "@/lib/auth/session";
 import type { AccessLevel, MopPayTrack } from "@/types/auth";
 
@@ -121,6 +121,38 @@ export async function PUT(request: Request) {
     return NextResponse.json({ user });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось обновить пользователя";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  const session = readSession(request);
+  if (!session) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const body = (await request.json()) as { id?: string; action?: "approve" | "reject" };
+    if (!body.id || (body.action !== "approve" && body.action !== "reject")) {
+      return NextResponse.json({ error: "Укажите пользователя и действие" }, { status: 400 });
+    }
+
+    const target = await findUserById(body.id);
+    if (!target) {
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+    }
+
+    if (body.action === "approve") {
+      assertRopCanModifyUser(session, target.accessLevel);
+      const user = await approveUserRegistration(body.id);
+      return NextResponse.json({ user });
+    }
+
+    assertRopCanDeleteUser(session, target.accessLevel);
+    await rejectUserRegistration(body.id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Не удалось обработать заявку";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

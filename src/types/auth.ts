@@ -14,6 +14,8 @@ export type AppUser = {
   mopPayTrack: MopPayTrack | null;
   internshipStartedOn: string | null;
   approvedAt: string | null;
+  /** Self-registration waiting for ROP/admin approval. */
+  registrationPending: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;

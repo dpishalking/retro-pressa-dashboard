@@ -37,6 +37,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Аккаунт партнёра временно отключён." }, { status: 403 });
       }
     } else if (!user.active) {
+      if (user.registrationPending) {
+        return NextResponse.json(
+          { error: "Заявка на рассмотрении. РОП откроет доступ после одобрения." },
+          { status: 403 }
+        );
+      }
       return NextResponse.json({ error: "Аккаунт отключён" }, { status: 403 });
     }
 

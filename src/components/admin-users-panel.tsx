@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
+import { ArrowLeft, Check, Copy, Plus, RefreshCw, Trash2, UserCog, X } from "lucide-react";
 import { accessLevelLabel, accessLevelScope } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -56,6 +56,11 @@ function mopPayStageLabel(user: AppUserPublic): string {
   return "Старт 3+5";
 }
 
+function accountStatusLabel(user: AppUserPublic): string {
+  if (user.registrationPending) return "Ожидает одобрения";
+  return user.active ? "Активен" : "Отключён";
+}
+
 function generatePassword(length = 14): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   const bytes = new Uint8Array(length);
@@ -92,8 +97,8 @@ function buildAccessMessage(input: {
     `Статус: ${input.active ? "активен" : "отключён"}`,
     "",
     input.accessLevel === "mop"
-      ? "После входа откроется личный кабинет продаж (/me). Регистрация недоступна — используйте только эти данные."
-      : "После входа откроется рабочий кабинет. Регистрация недоступна — используйте только эти данные."
+      ? "После входа откроется личный кабинет продаж (/me)."
+      : "После входа откроется рабочий кабинет."
   ].join("\n");
 }
 
@@ -111,6 +116,12 @@ export function AdminUsersPanel() {
   const [saving, setSaving] = useState(false);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
+  const [registrationAction, setRegistrationAction] = useState<{
+    id: string;
+    action: "approve" | "reject";
+    state: "loading" | "ok" | "error";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -128,6 +139,11 @@ export function AdminUsersPanel() {
         isEdit: Boolean(editingId)
       }),
     [origin, form, editingId]
+  );
+
+  const pendingUsers = useMemo(
+    () => users.filter((user) => user.registrationPending),
+    [users]
   );
 
   const loadUsers = async () => {
@@ -283,6 +299,40 @@ export function AdminUsersPanel() {
     }
   };
 
+  const handleRegistrationDecision = async (id: string, action: "approve" | "reject") => {
+    if (action === "reject" && !window.confirm("Отклонить заявку и удалить аккаунт?")) return;
+    setRegistrationAction({
+      id,
+      action,
+      state: "loading",
+      message: action === "approve" ? "Одобряю..." : "Отклоняю..."
+    });
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action })
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Не удалось обработать заявку");
+      if (editingId === id) resetForm();
+      setRegistrationAction({
+        id,
+        action,
+        state: "ok",
+        message: action === "approve" ? "Одобрено" : "Заявка отклонена"
+      });
+      await loadUsers();
+    } catch (decisionError) {
+      setRegistrationAction({
+        id,
+        action,
+        state: "error",
+        message: decisionError instanceof Error ? decisionError.message : "Ошибка"
+      });
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm("Удалить пользователя?")) return;
     setError(null);
@@ -331,10 +381,64 @@ export function AdminUsersPanel() {
         </div>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
           {isFullAdmin
-            ? "Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику и команду, менеджер — обучение, мотивацию и личные продажи."
-            : "Создавайте аккаунты менеджеров и привязывайте их к ответственному в Bitrix. РОП может заводить только менеджеров."}
+            ? "Создавайте пользователей и назначайте уровни доступа: администратор видит всё, РОП — аналитику и команду, менеджер — обучение, мотивацию и личные продажи. Заявки с /registration нужно одобрить, прежде чем менеджер сможет войти."
+            : "Создавайте аккаунты менеджеров и одобряйте заявки с самостоятельной регистрации. РОП может заводить только менеджеров."}
         </p>
       </header>
+
+      {pendingUsers.length > 0 ? (
+        <section className="card mb-8 border-amber-200 bg-amber-50/70 p-6">
+          <h2 className="text-lg font-black text-slate-950">Заявки на регистрацию</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Новые менеджеры зарегистрировались сами. Одобрите доступ к обучению и базе знаний или отклоните заявку.
+          </p>
+          <div className="mt-4 space-y-3">
+            {pendingUsers.map((user) => {
+              const busy = registrationAction?.id === user.id && registrationAction.state === "loading";
+              return (
+                <div
+                  key={user.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-4 py-3"
+                >
+                  <div>
+                    <p className="font-bold text-slate-950">{user.name}</p>
+                    <p className="text-sm text-slate-500">логин: {user.login}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRegistrationDecision(user.id, "approve")}
+                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      <Check size={14} />
+                      {busy && registrationAction.action === "approve" ? "Одобряю..." : "Одобрить"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRegistrationDecision(user.id, "reject")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                    >
+                      <X size={14} />
+                      {busy && registrationAction.action === "reject" ? "Отклоняю..." : "Отклонить"}
+                    </button>
+                  </div>
+                  {registrationAction?.id === user.id ? (
+                    <p
+                      className={`w-full text-xs ${
+                        registrationAction.state === "error" ? "text-red-700" : "text-slate-500"
+                      }`}
+                    >
+                      {registrationAction.message}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <section className="mb-8 grid gap-6 lg:grid-cols-[360px,1fr]">
         <form className="card h-fit p-6" onSubmit={handleSubmit}>
@@ -559,7 +663,7 @@ export function AdminUsersPanel() {
                       </td>
                       <td>{accessLevelLabel(user.accessLevel)}</td>
                       <td>{mopPayStageLabel(user)}</td>
-                      <td>{user.active ? "Активен" : "Отключён"}</td>
+                      <td>{accountStatusLabel(user)}</td>
                       <td>
                         <div className="flex gap-2">
                           <button

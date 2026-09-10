@@ -45,7 +45,8 @@ function toPublicUser(user: AppUser): AppUserPublic {
     bitrixUserId: user.bitrixUserId ?? null,
     mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
     internshipStartedOn: user.internshipStartedOn ?? null,
-    approvedAt: user.approvedAt ?? null
+    approvedAt: user.approvedAt ?? null,
+    registrationPending: user.registrationPending ?? false
   };
 }
 
@@ -67,6 +68,7 @@ function defaultAdminUser(): AppUser {
     mopPayTrack: null,
     internshipStartedOn: null,
     approvedAt: null,
+    registrationPending: false,
     active: true,
     createdAt: now,
     updatedAt: now
@@ -95,7 +97,8 @@ function normalizeCatalog(catalog: UsersCatalog): UsersCatalog {
       bitrixUserId: user.bitrixUserId ?? null,
       mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
       internshipStartedOn: user.internshipStartedOn ?? null,
-      approvedAt: user.approvedAt ?? null
+      approvedAt: user.approvedAt ?? null,
+      registrationPending: user.registrationPending ?? false
     }))
   };
 }
@@ -260,6 +263,7 @@ type CreateUserInput = {
   mopPayTrack?: AppUser["mopPayTrack"];
   internshipStartedOn?: string | null;
   approvedAt?: string | null;
+  registrationPending?: boolean;
 };
 
 export async function createUser(input: CreateUserInput): Promise<AppUserPublic> {
@@ -272,6 +276,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
     }
 
     const now = new Date().toISOString();
+    const pending = Boolean(input.registrationPending);
     const mopTrack =
       input.accessLevel === "mop" ? normalizePayTrack(input.mopPayTrack ?? "auto", "mop") : null;
     const user: AppUser = {
@@ -282,12 +287,14 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
       accessLevel: input.accessLevel,
       bitrixUserId: normalizeBitrixUserId(input.bitrixUserId),
       mopPayTrack: mopTrack,
-      internshipStartedOn:
-        mopTrack && mopTrack !== "regular"
+      internshipStartedOn: pending
+        ? null
+        : mopTrack && mopTrack !== "regular"
           ? normalizeIsoDay(input.internshipStartedOn) || rigaDateIso()
           : normalizeIsoDay(input.internshipStartedOn),
-      approvedAt: mopTrack === "regular" ? input.approvedAt || now : null,
-      active: input.active ?? true,
+      approvedAt: pending ? null : mopTrack === "regular" ? input.approvedAt || now : null,
+      registrationPending: pending,
+      active: pending ? false : (input.active ?? true),
       createdAt: now,
       updatedAt: now
     };
@@ -295,7 +302,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
     catalog.users.push(user);
     await writeUsersCatalogAtomic(catalog);
 
-    if (user.accessLevel === "mop" || user.accessLevel === "rop") {
+    if (!pending && (user.accessLevel === "mop" || user.accessLevel === "rop")) {
       void registerTrainerManager({ id: user.id, name: user.name });
     }
 
@@ -323,6 +330,7 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
     if (index === -1) throw new Error("Пользователь не найден");
 
     const current = catalog.users[index]!;
+    let shouldRegisterTrainer = false;
     if (input.login !== undefined) {
       const normalizedLogin = input.login.trim().toLowerCase();
       if (!normalizedLogin) throw new Error("Логин обязателен");
@@ -334,6 +342,15 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
     if (input.name !== undefined) current.name = input.name.trim() || current.login;
     if (input.accessLevel !== undefined) current.accessLevel = input.accessLevel;
     if (input.active !== undefined) current.active = input.active;
+    if (input.active === true && current.registrationPending) {
+      current.registrationPending = false;
+      if (current.accessLevel === "mop" && current.mopPayTrack && current.mopPayTrack !== "regular" && !current.internshipStartedOn) {
+        current.internshipStartedOn = rigaDateIso();
+      }
+      if (current.accessLevel === "mop" || current.accessLevel === "rop") {
+        shouldRegisterTrainer = true;
+      }
+    }
     if (input.bitrixUserId !== undefined) current.bitrixUserId = normalizeBitrixUserId(input.bitrixUserId);
     if (input.mopPayTrack !== undefined || input.internshipStartedOn !== undefined || input.approvedAt !== undefined) {
       const nextLevel = input.accessLevel ?? current.accessLevel;
@@ -342,7 +359,7 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
         if (input.internshipStartedOn !== undefined) current.internshipStartedOn = normalizeIsoDay(input.internshipStartedOn);
         if (input.approvedAt !== undefined) current.approvedAt = input.approvedAt;
         if (current.mopPayTrack === "regular" && !current.approvedAt) current.approvedAt = new Date().toISOString();
-        if (current.mopPayTrack === "auto" && !current.internshipStartedOn) {
+        if (current.mopPayTrack === "auto" && !current.internshipStartedOn && !current.registrationPending) {
           current.internshipStartedOn = rigaDateIso();
         }
       } else {
@@ -356,7 +373,33 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
 
     catalog.users[index] = current;
     await writeUsersCatalogAtomic(catalog);
+    if (shouldRegisterTrainer) {
+      void registerTrainerManager({ id: current.id, name: current.name });
+    }
     return toPublicUser(current);
+  });
+}
+
+export async function approveUserRegistration(id: string): Promise<AppUserPublic> {
+  const target = await findUserById(id);
+  if (!target) throw new Error("Пользователь не найден");
+  if (!target.registrationPending) {
+    throw new Error("У этого пользователя нет заявки на регистрацию");
+  }
+  return updateUser({ id, active: true });
+}
+
+export async function rejectUserRegistration(id: string): Promise<void> {
+  return withCatalogLock(async () => {
+    const catalog = await readUsersCatalogUnsafe();
+    const target = catalog.users.find((user) => user.id === id);
+    if (!target) throw new Error("Пользователь не найден");
+    if (!target.registrationPending) {
+      throw new Error("У этого пользователя нет заявки на регистрацию");
+    }
+
+    catalog.users = catalog.users.filter((user) => user.id !== id);
+    await writeUsersCatalogAtomic(catalog);
   });
 }
 

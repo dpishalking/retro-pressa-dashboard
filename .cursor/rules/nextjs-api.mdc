@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 - Бизнес-логика — в `src/lib/`, route только парсит body и отдаёт JSON.
 - Период: валидировать через whitelist `PeriodKey` (`may-2026`, `june-2026`, `july-2026`).
 - Ошибки: `{ error: string }` + корректный HTTP status (400/401/403/500).
-- Публичный API только `/api/auth/login`. Остальное — сессия через `middleware.ts`.
+- Публичный API: `/api/auth/login`, `/api/auth/register`. Остальное — сессия через `middleware.ts`.
 - Admin routes (`/api/admin/*`) — проверять `accessLevel` (см. middleware).
 - Долгие операции (GA4, Gemini, Bitrix): `maxDuration = 60`.
 

@@ -9,9 +9,10 @@ alwaysApply: false
 ## Middleware (`src/middleware.ts`)
 
 - Статика и `/_next` — без проверки.
-- `/api/auth/login` — публичный.
+- `/api/auth/login` и `/api/auth/register` — публичные.
 - Остальные `/api/*` — нужна сессия (401 без cookie).
 - Страницы без сессии → redirect на `/` с `?next=`.
+- `/registration` — публичная регистрация менеджеров (вход после одобрения РОПа).
 - `/api/admin/*` — admin; `/api/admin/users` — admin или rop.
 
 ## Роли (`src/lib/auth/access.ts`)

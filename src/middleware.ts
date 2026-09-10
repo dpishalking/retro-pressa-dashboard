@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
 import {
   MD_PUBLIC_PREFIX,
+  MANAGER_REGISTER_API,
+  MANAGER_REGISTER_PATH,
   PARTNERS_REGISTER_API,
   PARTNERS_REGISTER_PATH,
   PRODUCT_CARDS_PUBLIC_PREFIX,
@@ -13,13 +15,21 @@ import {
 } from "@/lib/auth/routes";
 import { readSessionCookie } from "@/lib/auth/session-edge";
 
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/health", "/api/products/public", PARTNERS_REGISTER_API, WEBINAR_REGISTER_API];
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/login",
+  MANAGER_REGISTER_API,
+  "/api/health",
+  "/api/products/public",
+  PARTNERS_REGISTER_API,
+  WEBINAR_REGISTER_API
+];
 const PUBLIC_PAGE_PREFIXES = [
   UTM_GENERATOR_PUBLIC_PATH,
   PRODUCT_VIEW_PUBLIC_PREFIX,
   PRODUCT_CARDS_PUBLIC_PREFIX,
   MD_PUBLIC_PREFIX,
   PARTNERS_REGISTER_PATH,
+  MANAGER_REGISTER_PATH,
   WEBINAR_PATH,
   GIFTS_PATH
 ];

@@ -24,6 +24,12 @@ export const PARTNERS_REGISTER_PATH = "/partners/register";
 /** Public partner registration API. */
 export const PARTNERS_REGISTER_API = "/api/partners/register";
 
+/** Public manager self-registration (login/password, ROP approval). */
+export const MANAGER_REGISTER_PATH = "/registration";
+
+/** Public manager registration API. */
+export const MANAGER_REGISTER_API = "/api/auth/register";
+
 /** Public partner webinar landing. */
 export const WEBINAR_PATH = "/webinar";
 

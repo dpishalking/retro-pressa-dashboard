@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { canAccessRoute, homePathForAccessLevel } from "@/lib/auth/access";
-import { PARTNERS_REGISTER_PATH } from "@/lib/auth/routes";
+import { PARTNERS_REGISTER_PATH, MANAGER_REGISTER_PATH } from "@/lib/auth/routes";
 import type { AccessLevel } from "@/types/auth";
 
 export function LoginPage() {
@@ -50,6 +50,7 @@ export function LoginPage() {
         next!.startsWith("/") &&
         next !== "/" &&
         !next!.startsWith("/partners/register") &&
+        !next!.startsWith(MANAGER_REGISTER_PATH) &&
         canAccessRoute(data.user!.accessLevel, next!);
       router.replace(canUseNext ? next! : roleHome);
       router.refresh();
@@ -74,7 +75,8 @@ export function LoginPage() {
         </div>
 
         <p className="mb-6 text-sm leading-6 text-slate-600">
-          Сотрудники входят по логину от администратора. Партнёры — после одобрения заявки.
+          Сотрудники входят по логину и паролю. Новые менеджеры сначала регистрируются, доступ открывается после
+          одобрения РОПа.
         </p>
 
         {denied ? (
@@ -121,6 +123,12 @@ export function LoginPage() {
         </form>
 
         <p className="mt-6 text-sm text-slate-500">
+          Новый менеджер?{" "}
+          <Link href={MANAGER_REGISTER_PATH} className="font-semibold text-violet-700 hover:underline">
+            Зарегистрироваться
+          </Link>
+        </p>
+        <p className="mt-2 text-sm text-slate-500">
           Хотите рекомендовать продукты?{" "}
           <Link href={PARTNERS_REGISTER_PATH} className="font-semibold text-emerald-700 hover:underline">
             Стать партнёром
