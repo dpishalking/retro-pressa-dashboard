@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Settings, Target, Trophy, UserRound, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, ClipboardCheck, Handshake, LogOut, Settings, Target, Trophy, UserRound, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement, pendingRegistrationPhrase, USER_MANAGEMENT_PATH } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -68,14 +68,24 @@ const officeSections: OfficeSection[] = [
     id: "training",
     title: "Обучение",
     subtitle: "Уроки, CRM и база знаний.",
-    cards: [{
-      href: "/training",
-      title: "Обучение",
-      description: "Уроки, CRM, шпаргалки и прогресс команды.",
-      icon: BookOpen,
-      status: "active",
-      accent: "text-rose-600 bg-rose-50"
-    }]
+    cards: [
+      {
+        href: "/training",
+        title: "Обучение",
+        description: "Уроки, CRM и шпаргалки.",
+        icon: BookOpen,
+        status: "active",
+        accent: "text-rose-600 bg-rose-50"
+      },
+      {
+        href: "/training?tab=trainees",
+        title: "Тесты менеджеров",
+        description: "Баллы, попытки и прогресс по тестам команды.",
+        icon: ClipboardCheck,
+        status: "active",
+        accent: "text-violet-600 bg-violet-50"
+      }
+    ]
   }
 ];
 
