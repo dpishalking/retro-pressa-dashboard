@@ -318,7 +318,7 @@ export function AnalysisSlicesPanel({
         <>
           {report.unknownShareLeads != null && report.unknownShareLeads > 0 ? (
             <p className="aos-slice-note">
-              Не указан — {pct(report.unknownShareLeads)} лидов
+              Не указана — {pct(report.unknownShareLeads)} лидов
               {report.unknownShareRevenue != null ? ` · ${pct(report.unknownShareRevenue)} выручки` : ""}.
             </p>
           ) : null}
@@ -434,10 +434,7 @@ export function AnalysisSlicesPanel({
                         className={`${row.key === selected ? "is-selected" : ""} aos-slice-row--${row.status}`}
                         onClick={() => drill(row)}
                       >
-                        <td>
-                          {row.label}
-                          {row.unknown ? <em> не указан</em> : null}
-                        </td>
+                        <td>{row.label}</td>
                         <td>{number(row.leads)}</td>
                         <td>{number(row.sales)}</td>
                         <td>{row.cr == null ? "—" : pct(row.cr)}</td>
