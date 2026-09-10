@@ -137,7 +137,15 @@ const managerServices: OfficeCard[] = [
   }
 ];
 
-function OfficeCardLink({ office, accessLevel }: { office: OfficeCard; accessLevel: AccessLevel }) {
+function OfficeCardLink({
+  office,
+  accessLevel,
+  hideDetails
+}: {
+  office: OfficeCard;
+  accessLevel: AccessLevel;
+  hideDetails?: boolean;
+}) {
   const Icon = office.icon;
   const canSee = canSeeOfficeSection(accessLevel, office.href);
   const isFuture = office.status === "soon";
@@ -160,7 +168,9 @@ function OfficeCardLink({ office, accessLevel }: { office: OfficeCard; accessLev
         </span>
       </div>
       <h3 className="text-xl font-black text-slate-950">{office.title}</h3>
-      <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{office.description}</p>
+      {hideDetails || !office.description ? null : (
+        <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{office.description}</p>
+      )}
       {isClickable ? <p className="mt-4 text-sm font-bold text-rose-700">Перейти →</p> : null}
     </article>
   );
@@ -222,11 +232,6 @@ export function OfficeHub() {
         <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">
           {user.accessLevel === "mop" ? `Привет, ${user.name.split(/\s+/)[0] || user.name}` : "Рабочий кабинет"}
         </h1>
-        {user.accessLevel === "mop" ? (
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Это твой кабинет. Здесь обучение и мотивация — без чужих цифр.
-          </p>
-        ) : null}
         {denied ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             У вашего аккаунта нет доступа к этому разделу.
@@ -236,7 +241,12 @@ export function OfficeHub() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCards.map((office) => (
-          <OfficeCardLink key={office.href} office={office} accessLevel={user.accessLevel} />
+          <OfficeCardLink
+            key={office.href}
+            office={office}
+            accessLevel={user.accessLevel}
+            hideDetails={user.accessLevel === "mop"}
+          />
         ))}
       </div>
     </main>
