@@ -40,90 +40,186 @@
       "questions": [
         {
           "id": "bitrix-daily-q1",
-          "text": "CRM для менеджера — это прежде всего:",
+          "text": "Вы час переписывались в WhatsApp, в CRM ничего не обновили. Завтра смена / отпуск. Что будет правдой?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "bitrix-daily-q1-a1", "text": "Архив переписок без действий", "isCorrect": false },
-            { "id": "bitrix-daily-q1-a2", "text": "Инструмент управления клиентом и его статусом", "isCorrect": true },
-            { "id": "bitrix-daily-q1-a3", "text": "Отчёт только для руководства", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q1-a1",
+              "text": "Ничего: переписка в мессенджере и есть CRM",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q1-a2",
+              "text": "Для отдела этого клиента «нет»: коллега не увидит этап, обещания и следующий шаг",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q1-a3",
+              "text": "Битрикс сам подтянет чат в прогноз, поля заполнять не нужно",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q2",
-          "text": "Почему важно быстро отвечать клиенту?",
+          "text": "Заявка висит без ответа уже больше часа. Какой практический смысл скорости?",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "bitrix-daily-q2-a1", "text": "Каждый час ожидания снижает вероятность покупки примерно на 20%", "isCorrect": true },
-            { "id": "bitrix-daily-q2-a2", "text": "Битрикс сам закрывает сделку через час", "isCorrect": false },
-            { "id": "bitrix-daily-q2-a3", "text": "Это нужно только для статистики", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q2-a1",
+              "text": "Это нужно только для отчёта РОПа",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q2-a2",
+              "text": "Каждый час ожидания сильно бьёт по вероятности покупки — клиент остывает или уходит к другому",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q2-a3",
+              "text": "Битрикс через час сам закрывает сделку, поэтому можно не спешить",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q3",
-          "text": "«Если данных нет в CRM — их не существует» означает:",
+          "text": "Клиент оплатил. Где дальше живёт заказ с точки зрения воронок?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "bitrix-daily-q3-a1", "text": "Можно держать всё в голове", "isCorrect": false },
-            { "id": "bitrix-daily-q3-a2", "text": "Без фиксации в системе нет прозрачности и реального прогноза", "isCorrect": true },
-            { "id": "bitrix-daily-q3-a3", "text": "CRM нужна только бухгалтерии", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q3-a1",
+              "text": "Остаётся в «Лидах», чтобы не плодить карточки",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q3-a2",
+              "text": "В «Производстве»: реализация после оплаты. Сделки — про продажу, лиды — про входящий трафик",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q3-a3",
+              "text": "В архиве чата, производство смотрит только почту",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q4",
-          "text": "Сколько воронок есть в отделе продаж?",
+          "text": "Новая заявка с сайта. Куда она должна попасть первой?",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "bitrix-daily-q4-a1", "text": "Одна — только сделки", "isCorrect": false },
-            { "id": "bitrix-daily-q4-a2", "text": "Три: лиды, сделки и производство", "isCorrect": true },
-            { "id": "bitrix-daily-q4-a3", "text": "Пять — по числу менеджеров", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q4-a1",
+              "text": "Сразу в производство, чтобы не терять время",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q4-a2",
+              "text": "В воронку «Лиды»: сначала квалификация, не печать",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q4-a3",
+              "text": "В личный блокнот, CRM — потом",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q5",
-          "text": "Куда попадает входящая заявка с сайта?",
+          "text": "Коллега на больничном. Почему «держится в голове» опасно даже если вы «всё помните»?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "bitrix-daily-q5-a1", "text": "Сразу в производство", "isCorrect": false },
-            { "id": "bitrix-daily-q5-a2", "text": "В воронку «Лиды»", "isCorrect": true },
-            { "id": "bitrix-daily-q5-a3", "text": "В архив без обработки", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q5-a1",
+              "text": "Не опасно, если память хорошая",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q5-a2",
+              "text": "Подхватить сделку может другой человек только по системе. Нет записи — нет клиента для отдела",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q5-a3",
+              "text": "CRM нужна только бухгалтерии для счетов",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q6",
-          "text": "Зачем фиксировать клиентов в CRM при отпуске коллеги?",
+          "text": "Сделка ещё в диалоге, предоплаты нет. Можно ли уже вести её как производство?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "bitrix-daily-q6-a1", "text": "Чтобы клиенты не пропали и их можно было подхватить по истории", "isCorrect": true },
-            { "id": "bitrix-daily-q6-a2", "text": "Чтобы удалить старые сделки", "isCorrect": false },
-            { "id": "bitrix-daily-q6-a3", "text": "Это не обязательно", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q6-a1",
+              "text": "Да, чтобы дизайнеры заранее сверстали",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q6-a2",
+              "text": "Нет: производство начинается после «Выиграна» или предоплаты. Раньше это путает приоритеты",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q6-a3",
+              "text": "Да, если клиент «точно купит» на словах",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q7",
-          "text": "Воронка «Производство» начинается когда:",
+          "text": "РОП спрашивает прогноз. Вы знаете живые чаты, в CRM этапы старые. Какая цифра «существует» для отдела?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "bitrix-daily-q7-a1", "text": "Клиент только оставил заявку", "isCorrect": false },
-            { "id": "bitrix-daily-q7-a2", "text": "Сделка выиграна или получена предоплата", "isCorrect": true },
-            { "id": "bitrix-daily-q7-a3", "text": "Менеджер ушёл на обед", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q7-a1",
+              "text": "Та, что в мессенджере",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q7-a2",
+              "text": "Та, что в CRM. Нет актуального этапа — нет прозрачности и реального прогноза",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q7-a3",
+              "text": "Та, что вы озвучите устно на планёрке",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-daily-q8",
-          "text": "Главная цель плейбука по CRM:",
+          "text": "Зачем три воронки, а не одна общая «работа с клиентом»?",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "bitrix-daily-q8-a1", "text": "Заполнять поля ради отчёта", "isCorrect": false },
-            { "id": "bitrix-daily-q8-a2", "text": "Прозрачные продажи без потерянных лидов", "isCorrect": true },
-            { "id": "bitrix-daily-q8-a3", "text": "Заменить общение с клиентом", "isCorrect": false }
+            {
+              "id": "bitrix-daily-q8-a1",
+              "text": "Чтобы было больше статусов для красоты канбана",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-daily-q8-a2",
+              "text": "Разные задачи: квалифицировать вход, продать, выполнить заказ. Смешивать их — терять, на каком шаге человек",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-daily-q8-a3",
+              "text": "По числу менеджеров в смене",
+              "isCorrect": false
+            }
           ]
         }
       ]
@@ -173,90 +269,186 @@
       "questions": [
         {
           "id": "bitrix-conversations-q1",
-          "text": "Квалифицированный лид — это:",
+          "text": "Клиент ответил на первое сообщение, лид всё ещё «В работу», переписка идёт. Что не так?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "bitrix-conversations-q1-a1", "text": "Любая заявка с сайта", "isCorrect": false },
-            { "id": "bitrix-conversations-q1-a2", "text": "Лид, который ответил на первое сообщение", "isCorrect": true },
-            { "id": "bitrix-conversations-q1-a3", "text": "Лид старше 3 дней", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q1-a1",
+              "text": "Ничего: пока не выставлен счёт, лид должен жить во «В работе»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q1-a2",
+              "text": "Ответивший клиент — квалифицированный. Его нужно перевести дальше в сделку, не держать во «В работе»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q1-a3",
+              "text": "Нужно сразу закрыть лид как отказ, чтобы открыть сделку с нуля",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q2",
-          "text": "Что проверить при открытии нового лида?",
+          "text": "Открыли новый лид. Что проверить до первого касания, кроме «я ответственный»?",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "bitrix-conversations-q2-a1", "text": "Только имя клиента", "isCorrect": false },
-            { "id": "bitrix-conversations-q2-a2", "text": "Ответственного, дату, язык и мессенджер", "isCorrect": true },
-            { "id": "bitrix-conversations-q2-a3", "text": "Настройки телефонии", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q2-a1",
+              "text": "Только имя, остальное выяснится в чате",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q2-a2",
+              "text": "Дату/повод, язык, мессенджер — чтобы не написать не туда и не на том языке",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q2-a3",
+              "text": "Настройки телефонии компании",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q3",
-          "text": "Клиент ответил на сообщение. Что делать?",
+          "text": "Клиент ответил. За сколько примерно нужно убрать его из «В работу» (по плейбуку)?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "bitrix-conversations-q3-a1", "text": "Оставить в «Лид взят в работу»", "isCorrect": false },
-            { "id": "bitrix-conversations-q3-a2", "text": "Перевести в «Лид квалифицирован» и далее в сделку", "isCorrect": true },
-            { "id": "bitrix-conversations-q3-a3", "text": "Сразу закрыть как отказ", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q3-a1",
+              "text": "За 15 минут: ответил — квалифицирован, не висит в очереди «ещё не взяли»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q3-a2",
+              "text": "В течение 3 дней, если диалог живой",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q3-a3",
+              "text": "Не нужно переводить, пока сам не попросит счёт",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q4",
-          "text": "За сколько минут нужно перевести ответившего клиента из «В работу»?",
+          "text": "Тишина 3–4 часа после первого сообщения. Первое действие?",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "bitrix-conversations-q4-a1", "text": "15 минут", "isCorrect": true },
-            { "id": "bitrix-conversations-q4-a2", "text": "3 дня", "isCorrect": false },
-            { "id": "bitrix-conversations-q4-a3", "text": "Не нужно переводить", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q4-a1",
+              "text": "Закрыть лид: раз молчит, не наш",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q4-a2",
+              "text": "Шаблон «Нет ответа», не ждать неделю и не бросать карточку в том же статусе без касания",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q4-a3",
+              "text": "Ждать до конца месяца: «сам напишет»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q5",
-          "text": "Клиент не отвечает 3–4 часа. Первое действие:",
+          "text": "Три дня касаний, ответа нет. Какой итог?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "bitrix-conversations-q5-a1", "text": "Закрыть лид", "isCorrect": false },
-            { "id": "bitrix-conversations-q5-a2", "text": "Отправить шаблон «Нет ответа»", "isCorrect": true },
-            { "id": "bitrix-conversations-q5-a3", "text": "Ждать неделю", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q5-a1",
+              "text": "Оставить «В работе», чтобы не портить статистику",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q5-a2",
+              "text": "«Полный игнор» — честный финал, не вечный «в работе»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q5-a3",
+              "text": "«Выиграна», чтобы карточка не мешала",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q6",
-          "text": "3 дня касаний без ответа — итог:",
+          "text": "Вторая заявка с сайта, по человеку уже есть активная сделка. Это?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "bitrix-conversations-q6-a1", "text": "«Полный игнор»", "isCorrect": true },
-            { "id": "bitrix-conversations-q6-a2", "text": "«Выиграна»", "isCorrect": false },
-            { "id": "bitrix-conversations-q6-a3", "text": "Оставить «В работе»", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q6-a1",
+              "text": "Новый лид в работу как с чистого листа",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q6-a2",
+              "text": "Дубль: не плодить вторую продажу параллельно живой сделке",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q6-a3",
+              "text": "СПАМ, потому что повторная заявка",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q7",
-          "text": "Клиент оставил вторую заявку, но уже есть активная сделка. Это:",
+          "text": "К концу смены лиды «В работе» что должны стать?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "bitrix-conversations-q7-a1", "text": "Дубль", "isCorrect": true },
-            { "id": "bitrix-conversations-q7-a2", "text": "Новый лид в работу", "isCorrect": false },
-            { "id": "bitrix-conversations-q7-a3", "text": "СПАМ", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q7-a1",
+              "text": "Остаться «В работе» — так видно, что вы заняты",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q7-a2",
+              "text": "«Не отвечает» или движение в сторону счёта / следующий честный статус. Не уходить, оставив серые карточки",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q7-a3",
+              "text": "Все «Выиграна», если вам казалось, что купят",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-conversations-q8",
-          "text": "Куда попадает квалифицированный лид?",
+          "text": "Квалифицированный лид куда копируется?",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "bitrix-conversations-q8-a1", "text": "В воронку «Сделки»", "isCorrect": true },
-            { "id": "bitrix-conversations-q8-a2", "text": "Сразу в производство", "isCorrect": false },
-            { "id": "bitrix-conversations-q8-a3", "text": "В архив", "isCorrect": false }
+            {
+              "id": "bitrix-conversations-q8-a1",
+              "text": "Сразу в производство",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-conversations-q8-a2",
+              "text": "В воронку «Сделки»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-conversations-q8-a3",
+              "text": "В архив, сделка создаётся руками через неделю",
+              "isCorrect": false
+            }
           ]
         }
       ]
@@ -266,7 +458,7 @@
       "stageId": "crm",
       "title": "Берем лиды в работу правильно",
       "shortDescription": "Как открыть лид, написать клиенту, нажать «Ответить» и закрепить диалог за собой в контакт-центре.",
-      "passingScore": 0,
+      "passingScore": 80,
       "sortOrder": 3,
       "sections": [
         {
@@ -299,7 +491,192 @@
           "sortOrder": 3
         }
       ],
-      "questions": []
+      "questions": [
+        {
+          "id": "bitrix-leads-workflow-q1",
+          "text": "Открыли лид. Что первое по рабочему порядку из видео?",
+          "type": "single",
+          "sortOrder": 1,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q1-a1",
+              "text": "Сразу закрепить пустой чат, писать клиенту потом",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q1-a2",
+              "text": "Написать первое сообщение через Wazzup, затем открыть появившийся чат",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q1-a3",
+              "text": "Ждать, пока клиент сам напишет в контакт-центр",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q2",
+          "text": "Чат открыт, кнопку «Ответить» не нажали. Что будет?",
+          "type": "single",
+          "sortOrder": 2,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q2-a1",
+              "text": "Уведомления всё равно придут — чат уже виден",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q2-a2",
+              "text": "Сообщения могут приходить, но уведомлений вы не получите. Без «Ответить» легко пропустить клиента",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q2-a3",
+              "text": "Битрикс заблокирует переписку",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q3",
+          "text": "Зачем после «Ответить» закреплять диалог за собой?",
+          "type": "single",
+          "sortOrder": 3,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q3-a1",
+              "text": "Чтобы удалить лид из общей очереди навсегда",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q3-a2",
+              "text": "Чтобы человек отображался в вашей работе и вы видели, с кем вести диалог сегодня",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q3-a3",
+              "text": "Это необязательный клик для красоты",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q4",
+          "text": "Зачем лид должен появиться в контакт-центре?",
+          "type": "single",
+          "sortOrder": 4,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q4-a1",
+              "text": "Чтобы РОП видел скриншоты",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q4-a2",
+              "text": "Чтобы все ваши диалоги (включая новые каналы вроде Instagram) были в одном месте, а не только «карточка лида»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q4-a3",
+              "text": "Контакт-центр только для звонков, чаты там не нужны",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q5",
+          "text": "Написали клиенту, чат есть, но не закрепили и не нажали «Ответить». Типичный срыв?",
+          "type": "single",
+          "sortOrder": 5,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q5-a1",
+              "text": "Клиент ответит — вы это увидите push-ом в любом случае",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q5-a2",
+              "text": "Ответ уйдёт «в никуда» для вас: нет уведомления, диалог не в вашей пачке «в работе»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q5-a3",
+              "text": "Wazzup продублирует на почту, CRM не нужна",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q6",
+          "text": "В пачке «сегодня в работе» что должно быть?",
+          "type": "single",
+          "sortOrder": 6,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q6-a1",
+              "text": "Все лиды компании, чтобы ничего не пропустить",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q6-a2",
+              "text": "Те, кого вы реально ведёте: закрепили, нажали «Ответить», ждёте или переписываетесь",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q6-a3",
+              "text": "Только оплаченные сделки",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q7",
+          "text": "Пришёл лид из Instagram. Логика та же?",
+          "type": "single",
+          "sortOrder": 7,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q7-a1",
+              "text": "Нет, Instagram обрабатываем только в приложении соцсети, в CRM не трогаем",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q7-a2",
+              "text": "Да: найти диалог, «Ответить», чтобы он появился в контакт-центре рядом с остальными",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q7-a3",
+              "text": "Instagram сразу в производство",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "id": "bitrix-leads-workflow-q8",
+          "text": "Какой минимальный набор действий, чтобы лид «взяли», а не «посмотрели»?",
+          "type": "single",
+          "sortOrder": 8,
+          "answers": [
+            {
+              "id": "bitrix-leads-workflow-q8-a1",
+              "text": "Открыть карточку и закрыть",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-leads-workflow-q8-a2",
+              "text": "Первое сообщение → чат → «Ответить» → закрепить за собой → статус/воронка по плейбуку",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-leads-workflow-q8-a3",
+              "text": "Только поставить сердечко в чате",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "bitrix-funnel",
@@ -346,90 +723,186 @@
       "questions": [
         {
           "id": "bitrix-funnel-q1",
-          "text": "Куда переводят сделку после первого ответа клиента?",
+          "text": "Клиент из лида ответил, сделка в «Новых». Куда перевести, когда пошла переписка?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "bitrix-funnel-q1-a1", "text": "В «Диалог»", "isCorrect": true },
-            { "id": "bitrix-funnel-q1-a2", "text": "Сразу в «Выиграна»", "isCorrect": false },
-            { "id": "bitrix-funnel-q1-a3", "text": "В «Полный игнор»", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q1-a1",
+              "text": "Сразу в «Выиграна», раз пишет",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q1-a2",
+              "text": "В «Диалог» и вести продажу там. «Новые» — не место для живого разговора",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q1-a3",
+              "text": "В «Полный игнор», чтобы очистить канбан, раз уже не лид",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q2",
-          "text": "Что происходит после этапа «Выиграна»?",
+          "text": "К концу смены у сделки в диалоге что должно быть?",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "bitrix-funnel-q2-a1", "text": "Сделка удаляется", "isCorrect": false },
-            { "id": "bitrix-funnel-q2-a2", "text": "Создаётся копия в воронке «Производство»", "isCorrect": true },
-            { "id": "bitrix-funnel-q2-a3", "text": "Клиент возвращается в лиды", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q2-a1",
+              "text": "Можно оставить как есть: «завтра продолжим» без статуса",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q2-a2",
+              "text": "Промежуточный или конечный результат: счёт, думает, ожидание наличия, отказ — не серая карточка",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q2-a3",
+              "text": "Обязательно «Выиграна», даже без оплаты",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q3",
-          "text": "Сколько часов можно писать клиенту в WhatsApp в свободном формате?",
+          "text": "Свободный формат WhatsApp. Какое ограничение?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "bitrix-funnel-q3-a1", "text": "24 часа с последнего ответа клиента", "isCorrect": true },
-            { "id": "bitrix-funnel-q3-a2", "text": "7 дней", "isCorrect": false },
-            { "id": "bitrix-funnel-q3-a3", "text": "Без ограничений", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q3-a1",
+              "text": "7 дней с последнего вашего сообщения",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q3-a2",
+              "text": "24 часа с последнего ответа клиента. Дальше — шаблоны, не «как в личке»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q3-a3",
+              "text": "Без ограничений, если сделка в «Диалоге»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q4",
-          "text": "Клиент «думает» — что делает менеджер?",
+          "text": "Клиент: «подумаю / посоветуюсь / нет денег сейчас».",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "bitrix-funnel-q4-a1", "text": "Забывает о клиенте", "isCorrect": false },
-            { "id": "bitrix-funnel-q4-a2", "text": "Отрабатывает возражение и держит на контроле", "isCorrect": true },
-            { "id": "bitrix-funnel-q4-a3", "text": "Сразу закрывает как отказ", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q4-a1",
+              "text": "Закрыть как отказ в тот же день",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q4-a2",
+              "text": "Этап «Думает»: отработать возражение и держать на контроле, не забывать",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q4-a3",
+              "text": "Вернуть в «Новый лид»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q5",
-          "text": "Этап «Ожидание наличия» — когда используется?",
+          "text": "Запрос ушёл в архив, ждёте наличие. Какой этап?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "bitrix-funnel-q5-a1", "text": "Когда отправили запрос в архив и ждём ответ", "isCorrect": true },
-            { "id": "bitrix-funnel-q5-a2", "text": "Когда клиент оплатил", "isCorrect": false },
-            { "id": "bitrix-funnel-q5-a3", "text": "Когда лид только создан", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q5-a1",
+              "text": "«Выиграна», чтобы производство уже искало",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q5-a2",
+              "text": "«Ожидание наличия» — честно видно, что мяч не у клиента и не у печати",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q5-a3",
+              "text": "Оставить «Диалог» без смены: этап не важен",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q6",
-          "text": "Клиент сказал «дорого». Куда его переводят?",
+          "text": "Клиент сказал «дорого» и отвалился. Зачем этап «Дорого», а не просто удалить?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "bitrix-funnel-q6-a1", "text": "На этап «Дорого» — базу можно реанимировать офертой", "isCorrect": true },
-            { "id": "bitrix-funnel-q6-a2", "text": "Сразу в «Выиграна»", "isCorrect": false },
-            { "id": "bitrix-funnel-q6-a3", "text": "В «Новый лид»", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q6-a1",
+              "text": "Чтобы скрыть отказ от РОПа",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q6-a2",
+              "text": "Эту базу можно реанимировать массовой офертой в конце месяца. Удалённая карточка = потерянный повторный контакт",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q6-a3",
+              "text": "«Дорого» автоматически выигрывает сделку",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q7",
-          "text": "Клиент не отвечает, вернуть не удалось. Финальный этап:",
+          "text": "Счёт выставлен, клиент молчит, вернуть не удалось. Финал?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "bitrix-funnel-q7-a1", "text": "«Клиент пропал»", "isCorrect": true },
-            { "id": "bitrix-funnel-q7-a2", "text": "«Диалог»", "isCorrect": false },
-            { "id": "bitrix-funnel-q7-a3", "text": "«Лид квалифицирован»", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q7-a1",
+              "text": "Вечно держать «Выставлен счёт»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q7-a2",
+              "text": "«Клиент пропал» — честный финал после попыток, не вечный диалог",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q7-a3",
+              "text": "Вернуть в «Лид квалифицирован»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-funnel-q8",
-          "text": "Частичная оплата означает:",
+          "text": "Частичная оплата. Что это значит для работы?",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "bitrix-funnel-q8-a1", "text": "Реализация началась, но счёт ещё не закрыт полностью", "isCorrect": true },
-            { "id": "bitrix-funnel-q8-a2", "text": "Сделку можно удалить", "isCorrect": false },
-            { "id": "bitrix-funnel-q8-a3", "text": "Клиент отказался", "isCorrect": false }
+            {
+              "id": "bitrix-funnel-q8-a1",
+              "text": "Сделку можно удалить, денег мало",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-funnel-q8-a2",
+              "text": "Реализация уже началась, счёт ещё не закрыт полностью: производство + контроль доплаты",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-funnel-q8-a3",
+              "text": "Клиент отказался, предоплата не считается",
+              "isCorrect": false
+            }
           ]
         }
       ]
@@ -479,90 +952,186 @@
       "questions": [
         {
           "id": "bitrix-tasks-q1",
-          "text": "Когда создаётся «Заказ на производство»?",
+          "text": "Когда появляется заказ на производство?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "bitrix-tasks-q1-a1", "text": "При новой заявке с сайта", "isCorrect": false },
-            { "id": "bitrix-tasks-q1-a2", "text": "После «Выиграна» или частичной оплаты", "isCorrect": true },
-            { "id": "bitrix-tasks-q1-a3", "text": "Через месяц после диалога", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q1-a1",
+              "text": "В момент заявки с сайта",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q1-a2",
+              "text": "После «Выиграна» или частичной оплаты — автоматически, не «когда вспомните»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q1-a3",
+              "text": "Через месяц после диалога, если клиент напомнил",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q2",
-          "text": "На этапе «Согласование макета» кто пишет клиенту?",
+          "text": "Этап «Согласование макета». Кто пишет клиенту?",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "bitrix-tasks-q2-a1", "text": "Менеджер, который вёл сделку", "isCorrect": true },
-            { "id": "bitrix-tasks-q2-a2", "text": "Только макетировщик без участия менеджера", "isCorrect": false },
-            { "id": "bitrix-tasks-q2-a3", "text": "Никто — клиент сам догадывается", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q2-a1",
+              "text": "Только макетировщик: менеджер уже «продал»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q2-a2",
+              "text": "Менеджер, который вёл сделку: контакт с клиентом на вас, даже если макет готовит другой",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q2-a3",
+              "text": "Никто: клиент сам зайдёт в Битрикс",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q3",
-          "text": "Макет согласован. Следующий шаг менеджера:",
+          "text": "Клиент написал «макет ок». Ваш следующий клик?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "bitrix-tasks-q3-a1", "text": "Перевести на «Согласован макет»", "isCorrect": true },
-            { "id": "bitrix-tasks-q3-a2", "text": "Удалить сделку", "isCorrect": false },
-            { "id": "bitrix-tasks-q3-a3", "text": "Вернуть в лиды", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q3-a1",
+              "text": "Удалить сделку, заказ «в голове»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q3-a2",
+              "text": "Перевести на «Согласован макет», чтобы печать пошла. Иначе заказ зависнет в согласовании",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q3-a3",
+              "text": "Вернуть в лиды для чистоты воронки",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q4",
-          "text": "Срочный заказ переводится на этап «Срочно»:",
+          "text": "Нужно сделать заказ срочно. Как попадает на «Срочно»?",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "bitrix-tasks-q4-a1", "text": "Через руководителя", "isCorrect": true },
-            { "id": "bitrix-tasks-q4-a2", "text": "Автоматически для всех заказов", "isCorrect": false },
-            { "id": "bitrix-tasks-q4-a3", "text": "Клиент сам переводит", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q4-a1",
+              "text": "Сами переводите, как удобно канбану",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q4-a2",
+              "text": "Через руководителя: производство должно видеть приоритет, не «тихий» статус от менеджера",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q4-a3",
+              "text": "Клиент сам ставит статус в письме",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q5",
-          "text": "Финальная цель воронки «Производство»:",
+          "text": "Макет готов, вы не написали клиенту два дня. Чей это провал?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "bitrix-tasks-q5-a1", "text": "«Успешно реализовано» — клиент получил продукт", "isCorrect": true },
-            { "id": "bitrix-tasks-q5-a2", "text": "«Новый лид»", "isCorrect": false },
-            { "id": "bitrix-tasks-q5-a3", "text": "«Диалог»", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q5-a1",
+              "text": "Производства: они должны пушить клиента",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q5-a2",
+              "text": "Ваш: менеджер отвечает за путь до выдачи, не только за оплату",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q5-a3",
+              "text": "Ничей: персонализация не требует согласования",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q6",
-          "text": "Зачем менеджеру следить за производством?",
+          "text": "Зачем менеджеру смотреть производство, если «уже оплатили»?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "bitrix-tasks-q6-a1", "text": "Это не его зона — можно забыть", "isCorrect": false },
-            { "id": "bitrix-tasks-q6-a2", "text": "Клиент ждёт результат, это часть сервиса и вашей зоны контроля", "isCorrect": true },
-            { "id": "bitrix-tasks-q6-a3", "text": "Только для отчёта IT", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q6-a1",
+              "text": "Не зачем — после денег зона чужая",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q6-a2",
+              "text": "Клиент ждёт результат. Макет, срок, выдача — часть сервиса и вашей выручки (возвраты, срыв даты)",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q6-a3",
+              "text": "Только чтобы заполнить отчёт IT",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q7",
-          "text": "Какие два этапа производства особенно важны для менеджера?",
+          "text": "Какие два этапа производства особенно критичны для менеджера?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "bitrix-tasks-q7-a1", "text": "Согласование макета и «Срочно»", "isCorrect": true },
-            { "id": "bitrix-tasks-q7-a2", "text": "«Новый лид» и «СПАМ»", "isCorrect": false },
-            { "id": "bitrix-tasks-q7-a3", "text": "«Диалог» и «Думает»", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q7-a1",
+              "text": "«Новый лид» и «СПАМ»",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q7-a2",
+              "text": "Согласование макета и «Срочно»",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q7-a3",
+              "text": "«Диалог» и «Думает» — они в другой воронке, но «важнее»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "bitrix-tasks-q8",
-          "text": "Главная мысль серии уроков по CRM:",
+          "text": "Финальная цель воронки «Производство»?",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "bitrix-tasks-q8-a1", "text": "CRM — для отчётов, клиент вторичен", "isCorrect": false },
-            { "id": "bitrix-tasks-q8-a2", "text": "Управлять каждым клиентом от лида до выдачи заказа — это ваша выручка", "isCorrect": true },
-            { "id": "bitrix-tasks-q8-a3", "text": "CRM заменяет обучение продуктам", "isCorrect": false }
+            {
+              "id": "bitrix-tasks-q8-a1",
+              "text": "«Новый лид» для статистики повторных продаж",
+              "isCorrect": false
+            },
+            {
+              "id": "bitrix-tasks-q8-a2",
+              "text": "«Успешно реализовано»: клиент получил продукт",
+              "isCorrect": true
+            },
+            {
+              "id": "bitrix-tasks-q8-a3",
+              "text": "«Диалог» — чтобы быть на связи",
+              "isCorrect": false
+            }
           ]
         }
       ]
@@ -618,112 +1187,232 @@
       "questions": [
         {
           "id": "order-invoice-q1",
-          "text": "Сколько способов оформить заказ, когда клиент готов купить?",
+          "text": "Клиент готов платить за «Известия» из каталога сайта. Куда оформлять?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "order-invoice-q1-a1", "text": "Один — только через Битрикс", "isCorrect": false },
-            { "id": "order-invoice-q1-a2", "text": "Два — через интернет-магазин и через Битрикс", "isCorrect": true },
-            { "id": "order-invoice-q1-a3", "text": "Три — по числу воронок", "isCorrect": false }
+            {
+              "id": "order-invoice-q1-a1",
+              "text": "Всегда вручную только в Битрикс — магазин для витрины",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q1-a2",
+              "text": "Через интернет-магазин: каталожные позиции (репродукции, поздравительные из магазина) идут там",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q1-a3",
+              "text": "В Excel, счёт приложите картинкой",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q2",
-          "text": "Товары, которые есть в каталоге интернет-магазина, оформляем:",
+          "text": "Региональная репродукция, которой нет в магазине. Как?",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "order-invoice-q2-a1", "text": "Через интернет-магазин", "isCorrect": true },
-            { "id": "order-invoice-q2-a2", "text": "Только вручную в Excel", "isCorrect": false },
-            { "id": "order-invoice-q2-a3", "text": "Всегда через Битрикс", "isCorrect": false }
+            {
+              "id": "order-invoice-q2-a1",
+              "text": "Всё равно через витрину сайта, выбрав ближайшую «Правду»",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q2-a2",
+              "text": "Через Битрикс: в названии — газета и дата, чтобы было понятно, что за издание",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q2-a3",
+              "text": "Такие заказы не берём",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q3",
-          "text": "Региональные репродукции, которых нет в магазине, оформляем:",
+          "text": "Оформление в интернет-магазине. Какой способ оплаты выбирает менеджер?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "order-invoice-q3-a1", "text": "Через Битрикс", "isCorrect": true },
-            { "id": "order-invoice-q3-a2", "text": "Через интернет-магазин", "isCorrect": false },
-            { "id": "order-invoice-q3-a3", "text": "Никак — такие заказы не берём", "isCorrect": false }
+            {
+              "id": "order-invoice-q3-a1",
+              "text": "Наличными курьеру",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q3-a2",
+              "text": "Перечисление",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q3-a3",
+              "text": "Оплата при получении",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q4",
-          "text": "Какой способ оплаты выбирает менеджер при оформлении в интернет-магазине?",
+          "text": "После заказа в магазине счёт клиенту:",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "order-invoice-q4-a1", "text": "Перечисление", "isCorrect": true },
-            { "id": "order-invoice-q4-a2", "text": "Наличными курьеру", "isCorrect": false },
-            { "id": "order-invoice-q4-a3", "text": "Оплата при получении", "isCorrect": false }
+            {
+              "id": "order-invoice-q4-a1",
+              "text": "Менеджер рисует в Word и шлёт сам, иначе «не официально»",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q4-a2",
+              "text": "Уходит автоматически",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q4-a3",
+              "text": "Клиент должен сам найти его в личном кабинете без письма",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q5",
-          "text": "После оформления заказа в интернет-магазине счёт клиенту:",
+          "text": "Счёт из Битрикс отправлен. На какой этап сделку?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "order-invoice-q5-a1", "text": "Отправляется автоматически", "isCorrect": true },
-            { "id": "order-invoice-q5-a2", "text": "Не отправляется вообще", "isCorrect": false },
-            { "id": "order-invoice-q5-a3", "text": "Клиент забирает его сам на сайте", "isCorrect": false }
+            {
+              "id": "order-invoice-q5-a1",
+              "text": "«Новый лид»",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q5-a2",
+              "text": "«Выставлен счёт»",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q5-a3",
+              "text": "«Успешно реализовано» — счёт уже равен выдаче",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q6",
-          "text": "Что менеджер пишет в названии при выставлении региональной репродукции в Битрикс?",
+          "text": "Оплата пришла. Что нажать?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "order-invoice-q6-a1", "text": "Название газеты и дату, чтобы понимать, какое это издание", "isCorrect": true },
-            { "id": "order-invoice-q6-a2", "text": "Только сумму счёта", "isCorrect": false },
-            { "id": "order-invoice-q6-a3", "text": "Ничего — название не нужно", "isCorrect": false }
+            {
+              "id": "order-invoice-q6-a1",
+              "text": "Удалить карточку счёта, чтобы не путала",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q6-a2",
+              "text": "«Завершить оплату» и выбрать способ оплаты",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q6-a3",
+              "text": "Вернуть сделку в лиды",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q7",
-          "text": "На какой этап переводится сделка после отправки счёта?",
+          "text": "Репродукция оплачена. Куда сделку и кого добавить?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "order-invoice-q7-a1", "text": "«Выставлен счёт»", "isCorrect": true },
-            { "id": "order-invoice-q7-a2", "text": "«Новый лид»", "isCorrect": false },
-            { "id": "order-invoice-q7-a3", "text": "«Успешно реализовано»", "isCorrect": false }
+            {
+              "id": "order-invoice-q7-a1",
+              "text": "Оставить на «Выставлен счёт»",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q7-a2",
+              "text": "Этап «Репродукция» + дизайнер",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q7-a3",
+              "text": "Закрыть без производства: репродукция «сама поедет»",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q8",
-          "text": "Когда оплата получена, менеджер:",
+          "text": "Клиент платит в белорусских рублях. Invoice в белрублях:",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "order-invoice-q8-a1", "text": "Нажимает «Завершить оплату» и выбирает способ оплаты", "isCorrect": true },
-            { "id": "order-invoice-q8-a2", "text": "Удаляет карточку счёта", "isCorrect": false },
-            { "id": "order-invoice-q8-a3", "text": "Возвращает сделку в лиды", "isCorrect": false }
+            {
+              "id": "order-invoice-q8-a1",
+              "text": "Всегда, даже если платит в евро",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q8-a2",
+              "text": "Когда оплата именно в белорусских рублях",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q8-a3",
+              "text": "Никогда: только евро",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q9",
-          "text": "После оплаты репродукции сделку:",
+          "text": "Поздравительная газета оплачена. Логика как у репродукции?",
           "type": "single",
           "sortOrder": 9,
           "answers": [
-            { "id": "order-invoice-q9-a1", "text": "Переводят на этап «Репродукция» и добавляют дизайнера", "isCorrect": true },
-            { "id": "order-invoice-q9-a2", "text": "Закрывают без производства", "isCorrect": false },
-            { "id": "order-invoice-q9-a3", "text": "Оставляют на «Выставлен счёт»", "isCorrect": false }
+            {
+              "id": "order-invoice-q9-a1",
+              "text": "Нет, поздравительные не идут в производство",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q9-a2",
+              "text": "Да: нужный этап по типу продукта и дизайнер/макет, не бросать на «оплачено»",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q9-a3",
+              "text": "Только если клиент напомнит",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "order-invoice-q10",
-          "text": "invoice в белрублях в Битрикс выставляем, когда:",
+          "text": "Главная развилка перед оформлением?",
           "type": "single",
           "sortOrder": 10,
           "answers": [
-            { "id": "order-invoice-q10-a1", "text": "Клиент оплачивает в белорусских рублях", "isCorrect": true },
-            { "id": "order-invoice-q10-a2", "text": "Клиент оплачивает в евро", "isCorrect": false },
-            { "id": "order-invoice-q10-a3", "text": "Всегда, независимо от валюты", "isCorrect": false }
+            {
+              "id": "order-invoice-q10-a1",
+              "text": "Три воронки = три способа оплаты",
+              "isCorrect": false
+            },
+            {
+              "id": "order-invoice-q10-a2",
+              "text": "Есть ли позиция в интернет-магазине или это ручной/региональный заказ в Битрикс",
+              "isCorrect": true
+            },
+            {
+              "id": "order-invoice-q10-a3",
+              "text": "Нравится ли клиенту PDF или бумага",
+              "isCorrect": false
+            }
           ]
         }
       ]
@@ -779,90 +1468,186 @@
       "questions": [
         {
           "id": "retro-archive-q1",
-          "text": "Первый шаг при запросе клиента с конкретной датой:",
+          "text": "В заявке дата 5 июня 1987. Первый шаг?",
           "type": "single",
           "sortOrder": 1,
           "answers": [
-            { "id": "retro-archive-q1-a1", "text": "Сразу выставить счёт без проверки", "isCorrect": false },
-            { "id": "retro-archive-q1-a2", "text": "Зайти на retropressa.com, ввести дату, язык и нажать поиск", "isCorrect": true },
-            { "id": "retro-archive-q1-a3", "text": "Написать клиенту, что точной даты не бывает", "isCorrect": false }
+            {
+              "id": "retro-archive-q1-a1",
+              "text": "Сразу счёт, наличие «потом»",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q1-a2",
+              "text": "retropressa.com: дата, язык, поиск — смотрим, что реально есть",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q1-a3",
+              "text": "Написать, что точной даты не бывает",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q2",
-          "text": "Розовая строка «Оригинал» в магазине означает:",
+          "text": "Розовая строка «Оригинал» на карточке значит:",
           "type": "single",
           "sortOrder": 2,
           "answers": [
-            { "id": "retro-archive-q2-a1", "text": "Издание физически есть на складе", "isCorrect": true },
-            { "id": "retro-archive-q2-a2", "text": "Это только PDF для скачивания", "isCorrect": false },
-            { "id": "retro-archive-q2-a3", "text": "Оригинал уже продан", "isCorrect": false }
+            {
+              "id": "retro-archive-q2-a1",
+              "text": "Это PDF для скачивания",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q2-a2",
+              "text": "Физический экземпляр на складе",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q2-a3",
+              "text": "Оригинал уже продан, розовый — «желаемый» формат",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q3",
-          "text": "Если в карточке только электронная версия или репродукция:",
+          "text": "В карточке только электронная версия / репродукция / поздравительная. Что правда?",
           "type": "single",
           "sortOrder": 3,
           "answers": [
-            { "id": "retro-archive-q3-a1", "text": "Оригинал уже продан, в наличии другие форматы", "isCorrect": true },
-            { "id": "retro-archive-q3-a2", "text": "Оригинал спрятан на складе", "isCorrect": false },
-            { "id": "retro-archive-q3-a3", "text": "Это ошибка сайта — всегда есть оригинал", "isCorrect": false }
+            {
+              "id": "retro-archive-q3-a1",
+              "text": "Оригинал спрятан, Женя его найдёт, если надавить",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q3-a2",
+              "text": "Оригинал уже продан, в наличии другие форматы. Не обещать «бумагу со склада»",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q3-a3",
+              "text": "Это ошибка сайта, оригинал есть всегда",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q4",
-          "text": "Репродукция — это:",
+          "text": "Клиент просит «как в музее, натуральный размер», оригинал продан. Что такое репродукция?",
           "type": "single",
           "sortOrder": 4,
           "answers": [
-            { "id": "retro-archive-q4-a1", "text": "Скан в низком разрешении", "isCorrect": false },
-            { "id": "retro-archive-q4-a2", "text": "Копия оригинала, напечатанная в натуральную величину", "isCorrect": true },
-            { "id": "retro-archive-q4-a3", "text": "Тот же оригинал из архива", "isCorrect": false }
+            {
+              "id": "retro-archive-q4-a1",
+              "text": "Скан низкого разрешения на A4 «для стола»",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q4-a2",
+              "text": "Копия оригинала, напечатанная в натуральную величину",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q4-a3",
+              "text": "Тот же складской оригинал под другим названием",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q5",
-          "text": "Если журналов за месяц очень много, перед подборкой нужно:",
+          "text": "За месяц вышло много журналов. Что сделать до простыни ссылок?",
           "type": "single",
           "sortOrder": 5,
           "answers": [
-            { "id": "retro-archive-q5-a1", "text": "Отправить клиенту полный список всех журналов", "isCorrect": false },
-            { "id": "retro-archive-q5-a2", "text": "Уточнить, кому подарок и чем человек увлекается", "isCorrect": true },
-            { "id": "retro-archive-q5-a3", "text": "Предложить любой первый попавшийся выпуск", "isCorrect": false }
+            {
+              "id": "retro-archive-q5-a1",
+              "text": "Отправить полный список, клиент сам разберётся",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q5-a2",
+              "text": "Уточнить, кому подарок и чем человек увлекается — сузить подборку",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q5-a3",
+              "text": "Взять первый выпуск в выдаче",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q6",
-          "text": "Региональную репродукцию (не из каталога сайта) ищем:",
+          "text": "Нужна газета из города рождения, на сайте позиции нет. Куда?",
           "type": "single",
           "sortOrder": 6,
           "answers": [
-            { "id": "retro-archive-q6-a1", "text": "В Telegram-группе «Репродукции» — Александр подбирает по дате и региону", "isCorrect": true },
-            { "id": "retro-archive-q6-a2", "text": "Только через Google", "isCorrect": false },
-            { "id": "retro-archive-q6-a3", "text": "Клиент сам ищет в архиве", "isCorrect": false }
+            {
+              "id": "retro-archive-q6-a1",
+              "text": "Google и надежда",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q6-a2",
+              "text": "Telegram «Репродукции»: дата и регион, Александр подбирает",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q6-a3",
+              "text": "Клиент сам ищет в библиотеке",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q7",
-          "text": "После оплаты региональной репродукции менеджер:",
+          "text": "Региональная репродукция оплачена. Что дальше?",
           "type": "single",
           "sortOrder": 7,
           "answers": [
-            { "id": "retro-archive-q7-a1", "text": "Ждёт, пока клиент сам пришлёт макет", "isCorrect": false },
-            { "id": "retro-archive-q7-a2", "text": "Пишет Саше, что издание оплачено — получает скан для сделки и макетировщиков", "isCorrect": true },
-            { "id": "retro-archive-q7-a3", "text": "Закрывает сделку без скана", "isCorrect": false }
+            {
+              "id": "retro-archive-q7-a1",
+              "text": "Ждать, пока клиент пришлёт макет",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q7-a2",
+              "text": "Написать Саше, что оплачено — получить скан для сделки и макетировщиков",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q7-a3",
+              "text": "Закрыть сделку без скана",
+              "isCorrect": false
+            }
           ]
         },
         {
           "id": "retro-archive-q8",
-          "text": "Фото оригинального издания с полок запрашиваем:",
+          "text": "Клиенту нужно фото оригинала с полки. Куда писать?",
           "type": "single",
           "sortOrder": 8,
           "answers": [
-            { "id": "retro-archive-q8-a1", "text": "В WhatsApp-группе «Архив» — Женя делает фото и отправляет менеджеру", "isCorrect": true },
-            { "id": "retro-archive-q8-a2", "text": "Только у клиента дома", "isCorrect": false },
-            { "id": "retro-archive-q8-a3", "text": "В группе «Репродукции»", "isCorrect": false }
+            {
+              "id": "retro-archive-q8-a1",
+              "text": "В группу «Репродукции» — это про сканы регионов",
+              "isCorrect": false
+            },
+            {
+              "id": "retro-archive-q8-a2",
+              "text": "WhatsApp «Архив»: Женя фотографирует на складе, вы пересылаете клиенту",
+              "isCorrect": true
+            },
+            {
+              "id": "retro-archive-q8-a3",
+              "text": "Просить фото у клиента дома",
+              "isCorrect": false
+            }
           ]
         }
       ]
