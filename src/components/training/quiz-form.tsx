@@ -111,6 +111,11 @@ function QuizFormContent({ productId }: { productId: string }) {
           <section key={question.id} className="card p-6">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Вопрос {index + 1}</p>
             <h3 className="mt-2 text-lg font-black text-slate-950">{question.text}</h3>
+            {question.type === "multiple" ? (
+              <p className="mt-2 text-sm font-semibold text-amber-700">
+                Несколько верных ответов — засчитывается только полный набор.
+              </p>
+            ) : null}
 
             {question.type === "text" ? (
               <textarea
