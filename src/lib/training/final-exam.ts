@@ -13,3 +13,8 @@ export function splitFinalExam(products: ProductTrainingModule[]) {
     finalExam: products.find((product) => isFinalExamProduct(product)) ?? null
   };
 }
+
+/** Балл, который нужно набрать по остальным этапам, чтобы открыть финальный тест. */
+export function requiredStageScore(gifts: ProductTrainingModule[], fallback = 80) {
+  return gifts.length ? Math.min(...gifts.map((product) => product.passingScore)) : fallback;
+}

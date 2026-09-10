@@ -9,6 +9,7 @@ import type {
   TrackStageId,
   UserTrainingProgress
 } from "@/types/training";
+import { isFinalExamProduct } from "@/lib/training/final-exam";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 
 function stageStatus(completed: number, inProgress: number, total: number): TrainingStatus {
@@ -50,13 +51,18 @@ export function buildTrainingOverview(
   progress: UserTrainingProgress,
   practiceModules: TrainingTrackModule[] = []
 ): TrainingOverview {
-  const completedProducts = progress.products.filter((item) => item.status === "completed").length;
-  const inProgressProducts = progress.products.filter((item) => item.status === "in_progress").length;
-  const totalProducts = products.length;
+  // Финальный тест живёт в каталоге продуктов, но считается отдельным этапом.
+  const giftProducts = products.filter((product) => !isFinalExamProduct(product));
+  const giftIds = new Set(giftProducts.map((product) => product.id));
+  const giftProgress = progress.products.filter((item) => giftIds.has(item.productId));
+
+  const completedProducts = giftProgress.filter((item) => item.status === "completed").length;
+  const inProgressProducts = giftProgress.filter((item) => item.status === "in_progress").length;
+  const totalProducts = giftProducts.length;
   const notStartedProducts = totalProducts - completedProducts - inProgressProducts;
   const productsPercent = totalProducts ? Math.round((completedProducts / totalProducts) * 100) : 0;
   const passedTests = progress.attempts.filter((attempt) => attempt.passed).length;
-  const remainingProductIds = products
+  const remainingProductIds = giftProducts
     .filter((product) => {
       const item = progress.products.find((entry) => entry.productId === product.id);
       return !item || item.status !== "completed";

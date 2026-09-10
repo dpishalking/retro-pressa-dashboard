@@ -7,12 +7,12 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { ClientMaterials } from "@/components/training/client-materials";
-import { FinalExamCard } from "@/components/training/final-exam-card";
+import { FinalExamStageCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
-import { splitFinalExam } from "@/lib/training/final-exam";
+import { requiredStageScore, splitFinalExam } from "@/lib/training/final-exam";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type {
   ProductTrainingModule,
@@ -97,9 +97,7 @@ function MyTrainingContent() {
   }));
 
   const { gifts, finalExam } = splitFinalExam(products);
-  const remainingGiftTitles = gifts
-    .filter((product) => (overview?.remainingProductIds ?? gifts.map((item) => item.id)).includes(product.id))
-    .map((product) => product.title);
+  const remainingStageTitles = stages.filter((stage) => stage.percent < 100).map((stage) => stage.title);
   const finalExamProgress = finalExam
     ? progress?.products.find((item) => item.productId === finalExam.id)
     : undefined;
@@ -139,17 +137,17 @@ function MyTrainingContent() {
         {stages.map((stage, index) => (
           <StageCard key={stage.id} stage={stage} index={index + 1} />
         ))}
+        {finalExam ? (
+          <FinalExamStageCard
+            exam={finalExam}
+            index={stages.length + 2}
+            status={finalExamProgress?.status ?? "not_started"}
+            bestScorePercent={finalExamProgress?.bestScorePercent}
+            requiredScore={requiredStageScore(gifts)}
+            remainingStageTitles={remainingStageTitles}
+          />
+        ) : null}
       </section>
-
-      {finalExam ? (
-        <FinalExamCard
-          exam={finalExam}
-          status={finalExamProgress?.status ?? "not_started"}
-          bestScorePercent={finalExamProgress?.bestScorePercent}
-          attemptCount={finalExamProgress?.attemptCount ?? 0}
-          remainingTitles={remainingGiftTitles}
-        />
-      ) : null}
 
       {overview && overview.totalStagesPercent === 100 ? (
         <section className="card mb-6 p-6">

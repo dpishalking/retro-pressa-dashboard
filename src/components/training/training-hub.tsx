@@ -12,7 +12,7 @@ import { ClientReviewVideos } from "@/components/training/client-review-videos";
 import { FinalExamCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import { splitFinalExam } from "@/lib/training/final-exam";
+import { requiredStageScore, splitFinalExam } from "@/lib/training/final-exam";
 import { buildTrainingOverview } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { ProductTrainingModule, TrainingOverview, TrainingStatus, UserTrainingProgress } from "@/types/training";
@@ -222,6 +222,7 @@ function TrainingHubContent() {
   const finalExamProgress = finalExam
     ? data.progress.products.find((item) => item.productId === finalExam.id)
     : undefined;
+  const remainingStageTitles = data.overview.stages.filter((stage) => stage.percent < 100).map((stage) => stage.title);
   const recentAttempts = data.progress.attempts
     .filter((attempt) => attempt.productId)
     .slice(0, 5)
@@ -306,7 +307,8 @@ function TrainingHubContent() {
           status={finalExamProgress?.status ?? "not_started"}
           bestScorePercent={finalExamProgress?.bestScorePercent}
           attemptCount={finalExamProgress?.attemptCount ?? 0}
-          remainingTitles={remainingProducts.map((product) => product.title)}
+          requiredScore={requiredStageScore(gifts)}
+          remainingTitles={remainingStageTitles}
           onStart={() => void markStarted(finalExam.id)}
         />
       ) : null}
