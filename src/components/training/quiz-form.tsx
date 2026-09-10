@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
-import type { ProductTrainingModule, QuizSubmission } from "@/types/training";
+import { isFinalExamProduct, isFinalExamUnlocked, remainingStagesForFinalExam } from "@/lib/training/final-exam";
+import type { ProductTrainingModule, QuizSubmission, TrainingOverview } from "@/types/training";
 
 type AnswerState = {
   selectedAnswerIds: string[];
@@ -20,6 +21,7 @@ function QuizFormContent({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [lockedStages, setLockedStages] = useState<string[] | null>(null);
 
   useEffect(() => {
     fetch(`/api/training/products/${productId}`)
@@ -34,6 +36,20 @@ function QuizFormContent({ productId }: { productId: string }) {
       })
       .finally(() => setLoading(false));
   }, [productId]);
+
+  useEffect(() => {
+    if (!user || !isFinalExamProduct(productId)) {
+      setLockedStages(null);
+      return;
+    }
+    fetch(`/api/training/progress?userId=${encodeURIComponent(user.id)}`)
+      .then((response) => response.json())
+      .then((data: { overview?: TrainingOverview }) => {
+        if (!data.overview) return;
+        setLockedStages(isFinalExamUnlocked(data.overview) ? [] : remainingStagesForFinalExam(data.overview.stages));
+      })
+      .catch(() => setLockedStages(null));
+  }, [productId, user]);
 
   const toggleAnswer = (questionId: string, answerId: string, type: ProductTrainingModule["questions"][number]["type"]) => {
     setAnswers((current) => {
@@ -95,6 +111,23 @@ function QuizFormContent({ productId }: { productId: string }) {
     );
   }
 
+  if (isFinalExamProduct(product) && lockedStages === null) {
+    return <div className="card p-8 text-sm text-slate-600">Проверяем доступ к финальному тесту...</div>;
+  }
+
+  if (isFinalExamProduct(product) && lockedStages && lockedStages.length > 0) {
+    return (
+      <div className="card p-8">
+        <p className="text-sm text-slate-600">
+          Финальный тест откроется, когда будут пройдены остальные этапы. Осталось: {lockedStages.join(", ")}.
+        </p>
+        <Link href="/training" className="mt-4 inline-block text-sm font-bold text-blue-600">
+          К обучению
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <section className="card p-6">
@@ -111,6 +144,11 @@ function QuizFormContent({ productId }: { productId: string }) {
           <section key={question.id} className="card p-6">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Вопрос {index + 1}</p>
             <h3 className="mt-2 text-lg font-black text-slate-950">{question.text}</h3>
+            {question.type === "multiple" ? (
+              <p className="mt-2 text-sm font-semibold text-amber-700">
+                Несколько верных ответов — засчитывается только полный набор.
+              </p>
+            ) : null}
 
             {question.type === "text" ? (
               <textarea
@@ -167,11 +205,12 @@ function QuizFormContent({ productId }: { productId: string }) {
 }
 
 export function QuizForm({ productId }: { productId: string }) {
+  const isFinal = isFinalExamProduct(productId);
   return (
     <TrainingLayout
-      title="Тест по продукту"
-      backHref={`/training/products/${productId}`}
-      backLabel="К материалам продукта"
+      title={isFinal ? "Финальный тест" : "Тест по продукту"}
+      backHref={isFinal ? "/training" : `/training/products/${productId}`}
+      backLabel={isFinal ? "К обучению" : "К материалам продукта"}
     >
       <QuizFormContent productId={productId} />
     </TrainingLayout>

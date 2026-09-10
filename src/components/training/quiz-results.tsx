@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
+import { isFinalExamProduct } from "@/lib/training/final-exam";
 import type { ProductTrainingModule, QuizAttemptAnswer, QuizQuestion, UserQuizAttempt } from "@/types/training";
 
 type ResultData = {
@@ -161,10 +162,10 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
           Пройти ещё раз
         </Link>
         <Link
-          href="/training/products"
+          href={isFinalExamProduct(productId) ? "/training" : "/training/products"}
           className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
         >
-          К списку продуктов
+          {isFinalExamProduct(productId) ? "К обучению" : "К списку продуктов"}
         </Link>
       </section>
     </div>
@@ -172,11 +173,12 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
 }
 
 export function QuizResults({ productId, attemptId }: { productId: string; attemptId: string }) {
+  const isFinal = isFinalExamProduct(productId);
   return (
     <TrainingLayout
       title="Результаты теста"
-      backHref={`/training/products/${productId}`}
-      backLabel="К материалам продукта"
+      backHref={isFinal ? "/training" : `/training/products/${productId}`}
+      backLabel={isFinal ? "К обучению" : "К материалам продукта"}
     >
       <QuizResultsContent productId={productId} attemptId={attemptId} />
     </TrainingLayout>

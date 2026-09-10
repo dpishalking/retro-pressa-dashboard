@@ -1,17 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 
-/** @param {string} id @param {number} n @param {string} text @param {[string,string,string]} options @param {0|1|2} correctIdx */
+/** @param {string} id @param {number} n @param {string} text @param {string[]} options @param {number|number[]} correctIdx */
 function q(id, n, text, options, correctIdx) {
+  const correct = new Set(Array.isArray(correctIdx) ? correctIdx : [correctIdx]);
   return {
     id: `${id}-q${n}`,
     text,
-    type: "single",
+    type: Array.isArray(correctIdx) ? "multiple" : "single",
     sortOrder: n,
     answers: options.map((text, i) => ({
       id: `${id}-q${n}-a${i + 1}`,
       text,
-      isCorrect: i === correctIdx
+      isCorrect: correct.has(i)
     }))
   };
 }
@@ -595,6 +596,69 @@ productQuizzes["ozivi"] = [
   ], 0)
 ];
 
+productQuizzes["final-exam"] = [
+  q("final-exam", 1, "Клиент хочет настоящий исторический экземпляр, вышедший в дату рождения. Что предложить?", [
+    "Оригинал из архива за эту дату или ближайший день того же месяца",
+    "Поздравительную газету: за основу берётся скан настоящего выпуска",
+    "Party Page в ретро-стиле",
+    "Глянцевый журнал с рубрикой про год рождения"
+  ], 0),
+  q("final-exam", 2, "Клиенту принципиален настоящий экземпляр газеты из дня рождения. Что нельзя предлагать как замену оригиналу?", [
+    "Книгу жизни — она собрана из настоящих газет по годам",
+    "Поздравительную газету — это копия скана с фото и текстом",
+    "Оригинал издания за дату рождения из архива",
+    "Party Page — выпуск с нуля, без архивной основы",
+    "Глянцевый журнал — создаётся с нуля, без архивных данных"
+  ], [1, 3, 4]),
+  q("final-exam", 3, "«Мне не важно, чтобы газета была настоящей. Главное — поздравление папе и информация о его жизни». Что ближе?", [
+    "Издание с нуля про папу: Party Page, если срочно, или глянец",
+    "Поздравительную: там будут и поздравление, и статьи о папе",
+    "Оригинал за дату рождения: историю жизни он расскажет сам",
+    "Книгу жизни: в ней жизнь папы описана газетами по годам"
+  ], 0),
+  q("final-exam", 4, "Дата есть, оригинальной газеты за этот день нет. Что можно предложить вместо «нет»?", [
+    "Любое издание тех лет — клиент разницы не заметит",
+    "Издание за ближайший день того же месяца и года",
+    "Журнал за месяц и год рождения",
+    "Поздравительную на скане издания того же периода",
+    "Газету за этот же день, но другого года"
+  ], [1, 2, 3]),
+  q("final-exam", 5, "«Хочу необычный подарок маме на юбилей». Какие вопросы задать до подбора?", [
+    "Какой юбилей и какая дата рождения",
+    "Принципиально ли настоящее издание или можно персонализацию",
+    "К какому числу нужен готовый подарок",
+    "Есть ли фотографии и семейные истории",
+    "Какой у мамы любимый жанр для песни",
+    "Готов ли сразу добавить наклейки"
+  ], [0, 1, 2, 3]),
+  q("final-exam", 6, "Мужчине 50, нужна историческая атмосфера и связь с датой рождения. Что наиболее релевантно?", [
+    "Party Page «мужская правда»: там тоже ретро-стиль",
+    "Глянцевый журнал: премиум впечатлит сильнее",
+    "Оригинал издания за дату рождения; как усиление — книга жизни",
+    "Семейное издание: соберём воспоминания у родных"
+  ], 2),
+  q("final-exam", 7, "Клиент уже выбрал оригинальную газету. Что можно предложить дополнительно?", [
+    "Упаковку: конверт, папку или тубус",
+    "Наклейки от 3,5 € в конце оформления",
+    "Оживление фото — 4 € за снимок",
+    "Поздравительную песню — 20 €",
+    "Скидку на следующий заказ, чтобы не передумал",
+    "Ничего: любая допродажа портит подарок"
+  ], [0, 1, 2, 3]),
+  q("final-exam", 8, "Клиент пишет за 3 дня до мероприятия. Как действовать?", [
+    "Назвать реальные сроки и предложить то, что успевает: Party Page, песню, «Оживи» или архив при наличии",
+    "Взять любой заказ и предупредить позже, если не успеем",
+    "Предложить глянец: успеем, если материал придёт сразу",
+    "Сказать, что за 3 дня ничего не успеть, и закрыть диалог"
+  ], 0),
+  q("final-exam", 9, "Клиент: «Просто скажите цену». Что делать?", [
+    "Назвать самую низкую цену линейки — наклейку за 3,5 €",
+    "Дать ориентир по цене и одним вопросом вернуть в подбор",
+    "Не называть цену, пока не ответит на все вопросы",
+    "Назвать вилку от 3,5 до 240 € и ждать"
+  ], 1)
+];
+
 const crmQuizzes = {
   "bitrix-daily": [
     q("bitrix-daily", 1, "Вы час переписывались в WhatsApp, в CRM ничего не обновили. Завтра смена / отпуск. Что будет правдой?", [
@@ -1055,7 +1119,43 @@ function applyBanks(filePath, itemsKey, banks, extra) {
 }
 
 const root = process.cwd();
-applyBanks(path.join(root, "data/training/products.json"), "products", productQuizzes);
+const productsPath = path.join(root, "data/training/products.json");
+applyBanks(productsPath, "products", productQuizzes);
+
+const productsCatalog = JSON.parse(fs.readFileSync(productsPath, "utf8"));
+const finalExamQuestions = productQuizzes["final-exam"];
+const finalExamIdx = productsCatalog.products.findIndex((item) => item.id === "final-exam");
+const finalExamProduct = {
+  id: "final-exam",
+  title: "Финальный тест",
+  shortDescription: "Откроется, когда пройдены продукты и CRM. Ситуации: что предложить, чего нельзя обещать и что уточнить до расчёта.",
+  coverImage: "/training/knowledge-base/original-reproduction-flow.png",
+  passingScore: 75,
+  sortOrder: 100,
+  description: "Финальный тест сдаётся после всех продуктов и CRM. Здесь нет вопросов про один продукт: в каждой ситуации нужно выбрать, что предложить, чего нельзя предлагать и что уточнить до расчёта.\n\nЕсли можно выбрать несколько вариантов — засчитывается только полный набор.",
+  targetAudience: "",
+  clientProblems: "",
+  emotions: "",
+  purchaseReasons: "",
+  objections: "",
+  presentationGuide: "",
+  materials: [],
+  questions: finalExamQuestions,
+  createdAt: "2026-09-10T00:00:00.000Z",
+  updatedAt: new Date().toISOString()
+};
+if (finalExamIdx >= 0) {
+  productsCatalog.products[finalExamIdx] = {
+    ...productsCatalog.products[finalExamIdx],
+    ...finalExamProduct,
+    questions: finalExamQuestions
+  };
+} else {
+  productsCatalog.products.push(finalExamProduct);
+}
+fs.writeFileSync(productsPath, `${JSON.stringify(productsCatalog, null, 2)}\n`, "utf8");
+console.log(`final-exam: ${finalExamQuestions.length} questions (upserted)`);
+
 applyBanks(path.join(root, "data/training/crm-modules.json"), "modules", crmQuizzes, (item) => {
   if (item.id === "bitrix-leads-workflow") {
     item.passingScore = 80;

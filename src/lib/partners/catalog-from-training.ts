@@ -1,3 +1,4 @@
+import { isFinalExamProduct } from "@/lib/training/final-exam";
 import { listProducts } from "@/lib/training/store";
 import { readPassportDashboardSnapshot } from "@/lib/product-hub/passport-dashboard-store";
 import type { PartnerCatalogProduct } from "@/types/partners";
@@ -141,6 +142,7 @@ export async function listPartnerCatalogFromTraining(): Promise<PartnerCatalogPr
   const byHubId = new Map((snapshot?.products ?? []).map((product) => [product.productId, product]));
 
   return products
+    .filter((product) => !isFinalExamProduct(product))
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((product) => {

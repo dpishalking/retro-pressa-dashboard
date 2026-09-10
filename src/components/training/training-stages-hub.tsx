@@ -7,12 +7,19 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { ClientMaterials } from "@/components/training/client-materials";
+import { FinalExamStageCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
+import { remainingStagesForFinalExam, splitFinalExam, FINAL_EXAM_PRODUCT_ID } from "@/lib/training/final-exam";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
-import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
+import type {
+  ProductTrainingModule,
+  TrainingOverview,
+  TrainingStageOverview,
+  UserTrainingProgress
+} from "@/types/training";
 
 type HubTab = "my" | "knowledge" | "materials" | "faq" | "trainees";
 
@@ -54,6 +61,8 @@ function StageCard({ stage, index }: { stage: TrainingStageOverview; index: numb
 function MyTrainingContent() {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
   const [overview, setOverview] = useState<TrainingOverview | null>(null);
+  const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
+  const [products, setProducts] = useState<ProductTrainingModule[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,8 +70,14 @@ function MyTrainingContent() {
       .then((response) => response.json())
       .then((data) => {
         if (data?.overview) setOverview(data.overview);
+        if (data?.progress) setProgress(data.progress);
       })
       .catch(() => setOverview(null));
+
+    fetch("/api/training/products", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { products?: ProductTrainingModule[] }) => setProducts(data.products ?? []))
+      .catch(() => setProducts([]));
   }, [user]);
 
   if (userLoading || !user) {
@@ -80,6 +95,36 @@ function MyTrainingContent() {
     percent: 0,
     status: "not_started" as const
   }));
+
+  const { finalExam } = splitFinalExam(products);
+  const remainingStageTitles = remainingStagesForFinalExam(stages);
+  const exam = finalExam ?? {
+    id: FINAL_EXAM_PRODUCT_ID,
+    title: "Финальный тест",
+    shortDescription: "",
+    coverImage: "",
+    passingScore: 75,
+    description: "",
+    targetAudience: "",
+    clientProblems: "",
+    emotions: "",
+    purchaseReasons: "",
+    objections: "",
+    presentationGuide: "",
+    materials: [],
+    questions: Array.from({ length: 9 }, (_, index) => ({
+      id: `final-exam-placeholder-${index}`,
+      text: "",
+      type: "single" as const,
+      answers: [],
+      sortOrder: index + 1
+    })),
+    sortOrder: 100,
+    createdAt: "",
+    updatedAt: ""
+  };
+  const finalExamProgress = progress?.products.find((item) => item.productId === FINAL_EXAM_PRODUCT_ID);
+  const finalExamPassed = finalExamProgress?.status === "completed";
 
   return (
     <>
@@ -116,9 +161,16 @@ function MyTrainingContent() {
         {stages.map((stage, index) => (
           <StageCard key={stage.id} stage={stage} index={index + 1} />
         ))}
+        <FinalExamStageCard
+          exam={exam}
+          index={stages.length + 2}
+          status={finalExamProgress?.status ?? "not_started"}
+          bestScorePercent={finalExamProgress?.bestScorePercent}
+          remainingStageTitles={remainingStageTitles}
+        />
       </section>
 
-      {overview && overview.totalStagesPercent === 100 ? (
+      {overview && overview.totalStagesPercent === 100 && finalExamPassed ? (
         <section className="card mb-6 p-6">
           <div className="flex items-center gap-2 text-emerald-700">
             <CheckCircle2 size={18} />

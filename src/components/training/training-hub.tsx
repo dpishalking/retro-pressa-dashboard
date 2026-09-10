@@ -11,6 +11,7 @@ import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { ClientReviewVideos } from "@/components/training/client-review-videos";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
+import { splitFinalExam } from "@/lib/training/final-exam";
 import { buildTrainingOverview } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { ProductTrainingModule, TrainingOverview, TrainingStatus, UserTrainingProgress } from "@/types/training";
@@ -212,7 +213,8 @@ function TrainingHubContent() {
     return <div className="card p-8 text-sm text-slate-600">Загрузка модулей обучения...</div>;
   }
 
-  const remainingProducts = data.products.filter((product) => data.overview.remainingProductIds.includes(product.id));
+  const { gifts } = splitFinalExam(data.products);
+  const remainingProducts = gifts.filter((product) => data.overview.remainingProductIds.includes(product.id));
   const recentAttempts = data.progress.attempts
     .filter((attempt) => attempt.productId)
     .slice(0, 5)
@@ -234,7 +236,7 @@ function TrainingHubContent() {
         <div>
           <h2 className="text-2xl font-black text-slate-950">Ваш прогресс</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            {user.name}, вы прошли {data.overview.completedProducts} из {data.overview.totalProducts} продуктов и сдали{" "}
+            {user.name}, вы прошли {data.overview.completedProducts} из {gifts.length} продуктов и сдали{" "}
             {data.overview.passedTests} тестов.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -297,7 +299,7 @@ function TrainingHubContent() {
       <section className="mb-6">
         <h3 className="text-lg font-black text-slate-950">Наши подарки</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.products.map((product) => {
+          {gifts.map((product) => {
             const productProgress = data.progress.products.find((item) => item.productId === product.id);
             const status = productProgress?.status ?? "not_started";
             return (

@@ -14,6 +14,7 @@ import type {
 } from "@/types/training";
 import { generateId } from "@/lib/training/id";
 import { normalizeProductMaterials } from "@/lib/training/video-embed";
+import { isFinalExamProduct, isFinalExamUnlocked } from "@/lib/training/final-exam";
 import { scoreQuizSubmission } from "@/lib/training/quiz-scoring";
 import { buildTrainingOverview, getTrackModuleProgress } from "@/lib/training/progress";
 import { findTrackModule, listTrackModules } from "@/lib/training/track-modules";
@@ -288,6 +289,13 @@ export async function submitQuiz(submission: QuizSubmission) {
 
   const product = await getProduct(submission.productId);
   if (!product) throw new Error("Product not found");
+
+  if (isFinalExamProduct(product)) {
+    const overview = await getTrainingOverview(submission.userId);
+    if (!isFinalExamUnlocked(overview)) {
+      throw new Error("Финальный тест откроется, когда будут пройдены все продукты и CRM.");
+    }
+  }
 
   const progress = await getOrCreateUserProgress(submission.userId);
   const { attempt, gradedAnswers } = scoreQuizSubmission(product, { ...submission, productId: product.id });
