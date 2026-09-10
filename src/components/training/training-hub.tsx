@@ -9,8 +9,10 @@ import { BookOpen, CheckCircle2, Circle } from "lucide-react";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { ClientReviewVideos } from "@/components/training/client-review-videos";
+import { FinalExamCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
+import { requiredStageScore, splitFinalExam } from "@/lib/training/final-exam";
 import { buildTrainingOverview } from "@/lib/training/progress";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type { ProductTrainingModule, TrainingOverview, TrainingStatus, UserTrainingProgress } from "@/types/training";
@@ -212,7 +214,15 @@ function TrainingHubContent() {
     return <div className="card p-8 text-sm text-slate-600">Загрузка модулей обучения...</div>;
   }
 
-  const remainingProducts = data.products.filter((product) => data.overview.remainingProductIds.includes(product.id));
+  const { gifts, finalExam } = splitFinalExam(data.products);
+  const giftStatus = (productId: string) =>
+    data.progress.products.find((item) => item.productId === productId)?.status ?? "not_started";
+  const completedGifts = gifts.filter((product) => giftStatus(product.id) === "completed").length;
+  const remainingProducts = gifts.filter((product) => data.overview.remainingProductIds.includes(product.id));
+  const finalExamProgress = finalExam
+    ? data.progress.products.find((item) => item.productId === finalExam.id)
+    : undefined;
+  const remainingStageTitles = data.overview.stages.filter((stage) => stage.percent < 100).map((stage) => stage.title);
   const recentAttempts = data.progress.attempts
     .filter((attempt) => attempt.productId)
     .slice(0, 5)
@@ -234,13 +244,12 @@ function TrainingHubContent() {
         <div>
           <h2 className="text-2xl font-black text-slate-950">Ваш прогресс</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            {user.name}, вы прошли {data.overview.completedProducts} из {data.overview.totalProducts} продуктов и сдали{" "}
-            {data.overview.passedTests} тестов.
+            {user.name}, вы прошли {completedGifts} из {gifts.length} продуктов и сдали {data.overview.passedTests} тестов.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Изучено</p>
-              <p className="mt-1 text-2xl font-black text-slate-950">{data.overview.completedProducts}</p>
+              <p className="mt-1 text-2xl font-black text-slate-950">{completedGifts}</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">В процессе</p>
@@ -292,12 +301,24 @@ function TrainingHubContent() {
         </section>
       )}
 
+      {finalExam ? (
+        <FinalExamCard
+          exam={finalExam}
+          status={finalExamProgress?.status ?? "not_started"}
+          bestScorePercent={finalExamProgress?.bestScorePercent}
+          attemptCount={finalExamProgress?.attemptCount ?? 0}
+          requiredScore={requiredStageScore(gifts)}
+          remainingTitles={remainingStageTitles}
+          onStart={() => void markStarted(finalExam.id)}
+        />
+      ) : null}
+
       <ClientReviewVideos />
 
       <section className="mb-6">
         <h3 className="text-lg font-black text-slate-950">Наши подарки</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.products.map((product) => {
+          {gifts.map((product) => {
             const productProgress = data.progress.products.find((item) => item.productId === product.id);
             const status = productProgress?.status ?? "not_started";
             return (

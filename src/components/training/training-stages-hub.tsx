@@ -7,12 +7,19 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { TRAINING_STAGES } from "@/lib/training/stages";
 import { ClientMaterials } from "@/components/training/client-materials";
+import { FinalExamStageCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
 import { useTrainingUser } from "@/components/training/training-context";
+import { requiredStageScore, splitFinalExam } from "@/lib/training/final-exam";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
-import type { TrainingOverview, TrainingStageOverview } from "@/types/training";
+import type {
+  ProductTrainingModule,
+  TrainingOverview,
+  TrainingStageOverview,
+  UserTrainingProgress
+} from "@/types/training";
 
 type HubTab = "my" | "knowledge" | "materials" | "faq" | "trainees";
 
@@ -54,6 +61,8 @@ function StageCard({ stage, index }: { stage: TrainingStageOverview; index: numb
 function MyTrainingContent() {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
   const [overview, setOverview] = useState<TrainingOverview | null>(null);
+  const [progress, setProgress] = useState<UserTrainingProgress | null>(null);
+  const [products, setProducts] = useState<ProductTrainingModule[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,8 +70,14 @@ function MyTrainingContent() {
       .then((response) => response.json())
       .then((data) => {
         if (data?.overview) setOverview(data.overview);
+        if (data?.progress) setProgress(data.progress);
       })
       .catch(() => setOverview(null));
+
+    fetch("/api/training/products", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { products?: ProductTrainingModule[] }) => setProducts(data.products ?? []))
+      .catch(() => setProducts([]));
   }, [user]);
 
   if (userLoading || !user) {
@@ -80,6 +95,12 @@ function MyTrainingContent() {
     percent: 0,
     status: "not_started" as const
   }));
+
+  const { gifts, finalExam } = splitFinalExam(products);
+  const remainingStageTitles = stages.filter((stage) => stage.percent < 100).map((stage) => stage.title);
+  const finalExamProgress = finalExam
+    ? progress?.products.find((item) => item.productId === finalExam.id)
+    : undefined;
 
   return (
     <>
@@ -116,6 +137,16 @@ function MyTrainingContent() {
         {stages.map((stage, index) => (
           <StageCard key={stage.id} stage={stage} index={index + 1} />
         ))}
+        {finalExam ? (
+          <FinalExamStageCard
+            exam={finalExam}
+            index={stages.length + 2}
+            status={finalExamProgress?.status ?? "not_started"}
+            bestScorePercent={finalExamProgress?.bestScorePercent}
+            requiredScore={requiredStageScore(gifts)}
+            remainingStageTitles={remainingStageTitles}
+          />
+        ) : null}
       </section>
 
       {overview && overview.totalStagesPercent === 100 ? (
