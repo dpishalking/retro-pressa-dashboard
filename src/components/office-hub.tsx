@@ -120,14 +120,6 @@ const officeSections: OfficeSection[] = [
 
 const managerServices: OfficeCard[] = [
   {
-    href: "/me",
-    title: "Мои продажи",
-    description: "Твои заявки, оплаты, зарплата и разбор вчерашних чатов.",
-    icon: UserRound,
-    status: "active",
-    accent: "text-amber-600 bg-amber-50"
-  },
-  {
     href: "/training/knowledge-base",
     title: "База знаний",
     description: "Шпаргалки по продуктам, возражениям и частым вопросам.",
@@ -240,7 +232,7 @@ export function OfficeHub() {
         </h1>
         {user.accessLevel === "mop" ? (
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Это твой кабинет. Здесь продажи и зарплата, шпаргалки и обучение — без чужих цифр.
+            Это твой кабинет. Здесь шпаргалки и обучение — без чужих цифр.
           </p>
         ) : null}
         {denied ? (

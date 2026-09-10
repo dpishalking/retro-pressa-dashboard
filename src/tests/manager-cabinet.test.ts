@@ -27,7 +27,7 @@ assert.equal(canAccessManagerCabinet("mop"), true);
 assert.equal(canPickCabinetManager("mop"), false);
 assert.equal(canPickCabinetManager("rop"), true);
 assert.equal(canAccessRoute("partner", "/me"), false);
-assert.equal(homePathForAccessLevel("mop"), "/me");
+assert.equal(homePathForAccessLevel("mop"), "/hub");
 assert.equal(homePathForAccessLevel("admin"), "/hub");
 assert.equal(canAccessRoute("mop", "/training/knowledge-base"), true);
 
