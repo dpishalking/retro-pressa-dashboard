@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Handshake, Library, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -120,17 +120,9 @@ const officeSections: OfficeSection[] = [
 
 const managerServices: OfficeCard[] = [
   {
-    href: "/training/knowledge-base",
-    title: "База знаний",
-    description: "Шпаргалки по продуктам, возражениям и частым вопросам.",
-    icon: Library,
-    status: "active",
-    accent: "text-sky-600 bg-sky-50"
-  },
-  {
     href: "/training",
     title: "Обучение",
-    description: "Уроки, CRM и твой прогресс.",
+    description: "Уроки, CRM, шпаргалки и твой прогресс.",
     icon: BookOpen,
     status: "active",
     accent: "text-rose-600 bg-rose-50"
@@ -232,7 +224,7 @@ export function OfficeHub() {
         </h1>
         {user.accessLevel === "mop" ? (
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Это твой кабинет. Здесь шпаргалки и обучение — без чужих цифр.
+            Это твой кабинет. Здесь обучение и мотивация — без чужих цифр.
           </p>
         ) : null}
         {denied ? (
