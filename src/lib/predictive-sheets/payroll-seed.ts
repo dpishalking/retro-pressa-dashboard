@@ -88,7 +88,7 @@ export function managerPayrollSeedValues(
     bonuses: {
       plan: null,
       fact: bonusesFact,
-      planNote: "пороги: чек 80 € / лид→оплата 20%",
+      planNote: "пороги: чек 80 € / лид→оплата 15%",
       factNote: "формула Мотивация МОП"
     },
     payroll: {

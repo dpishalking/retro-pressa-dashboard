@@ -713,7 +713,7 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     owner: "РОП",
     parent_metric_id: "sg_payroll",
     plan_source: "NO_PLAN",
-    fact_source: "Чек ≥80 → +55 €; лид→оплата ≥20% → +111 €",
+    fact_source: "Чек ≥80 → +55 €; лид→оплата ≥15% → +111 €",
     forecast_method: "calendar_run_rate",
     is_primary: false,
     sheet: PM_SHEETS.motivation,

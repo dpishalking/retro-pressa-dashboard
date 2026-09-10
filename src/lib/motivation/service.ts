@@ -305,8 +305,11 @@ function bonusCondition(rule: MotivationRule): string {
     return `Средний чек оплаченных заказов ≥ ${target} €`;
   }
   if (rule.calculationConfig.metricKey === "lead_to_paid_conversion") {
-    const target = rule.targetValue ?? 20;
+    const target = rule.targetValue ?? 15;
     return `Средняя конверсия из лида в оплату ≥ ${target}%`;
+  }
+  if (rule.calculationConfig.metricKey === "ozivi_sales") {
+    return "Кто продаст больше всего «Оживи» за месяц";
   }
   if (rule.calculationConfig.metricKey === "review_lead_ratio") {
     const minLeads = rule.calculationConfig.minLeads ?? 50;

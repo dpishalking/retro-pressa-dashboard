@@ -133,14 +133,14 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
       {
         id: ruleConversionId,
         periodId,
-        title: "Конверсия из лида в оплату от 20%",
+        title: "Конверсия из лида в оплату от 15%",
         description:
-          "Если средняя конверсия из лида в оплату за месяц составляет 20% или больше, менеджер получает дополнительно +111 €.",
+          "Если средняя конверсия из лида в оплату за месяц составляет 15% или больше, менеджер получает дополнительно +111 €.",
         ruleType: "numeric_target",
         rewardType: "fixed",
         rewardAmount: 111,
         currency: "EUR",
-        targetValue: 20,
+        targetValue: 15,
         minimumValue: null,
         calculationConfig: {
           metricKey: "lead_to_paid_conversion",
@@ -150,6 +150,29 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         dataSource: "manual",
         isActive: true,
         displayOrder: 4,
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        id: "rule-ozivi-2026-08",
+        periodId,
+        title: "Больше всего «Оживи»",
+        description:
+          "Тем, кто больше всего продаст «Оживи» за месяц, +100 €. Считаем оплаченные позиции «Оживи», не демо и не отмены.",
+        ruleType: "team_best",
+        rewardType: "fixed",
+        rewardAmount: 100,
+        currency: "EUR",
+        targetValue: null,
+        minimumValue: null,
+        calculationConfig: {
+          metricKey: "ozivi_sales",
+          dataSource: "bitrix",
+          notes: "Победитель месяца по числу оплаченных «Оживи»."
+        },
+        dataSource: "bitrix",
+        isActive: true,
+        displayOrder: 5,
         createdAt: now,
         updatedAt: now
       }

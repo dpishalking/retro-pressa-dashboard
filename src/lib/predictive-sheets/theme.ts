@@ -133,5 +133,5 @@ export const PM_FOCUS: Record<string, string> = {
   [PM_SHEETS.salesAnastasia]: "Смотрим: выручка, ФОТ · Анастасия",
   [PM_SHEETS.salesElena]: "Смотрим: выручка, ФОТ · Елена",
   [PM_SHEETS.finance]: "Смотрим: касса, ФОТ, вклад после рекламы",
-  [PM_SHEETS.motivation]: "Смотрим: чек 80 €, лид→оплата 20%"
+  [PM_SHEETS.motivation]: "Смотрим: чек 80 €, лид→оплата 15%"
 };

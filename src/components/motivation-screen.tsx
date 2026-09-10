@@ -64,6 +64,14 @@ function bonusVisual(metricKey: string | null | undefined, title: string): Bonus
         glow: "group-hover:shadow-sky-200/80",
         label: "Конверсия"
       };
+    case "ozivi_sales":
+      return {
+        icon: Sparkles,
+        accent: "text-fuchsia-700",
+        panel: "from-fuchsia-100 via-fuchsia-50 to-white",
+        glow: "group-hover:shadow-fuchsia-200/80",
+        label: "Оживи"
+      };
     default:
       if (/чек/i.test(title)) {
         return bonusVisual("average_check", title);
@@ -73,6 +81,9 @@ function bonusVisual(metricKey: string | null | undefined, title: string): Bonus
       }
       if (/конверс/i.test(title)) {
         return bonusVisual("lead_to_paid_conversion", title);
+      }
+      if (/оживи/i.test(title)) {
+        return bonusVisual("ozivi_sales", title);
       }
       return {
         icon: Trophy,

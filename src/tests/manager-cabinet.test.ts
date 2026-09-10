@@ -229,7 +229,7 @@ assert.equal(messageDayIso("23.08.2026 18:11"), "2026-08-23");
       totalEur: 398,
       totalShareOfRevenue: 0.18,
       usedPlanRate: false,
-      conversionBonusApplied: false,
+      conversionBonusApplied: true,
       checkBonusApplied: false,
       commissionPct: 0.07
     },
@@ -239,7 +239,7 @@ assert.equal(messageDayIso("23.08.2026 18:11"), "2026-08-23");
   });
   const blob = tips.map((tip) => tip.text).join(" ");
   assert.match(blob, /закрыто 7/);
-  assert.match(blob, /ещё примерно 11/);
+  assert.match(blob, /Есть: 111/);
   assert.equal(blob.includes("конверсия"), false);
   assert.equal(blob.includes("CR"), false);
 }

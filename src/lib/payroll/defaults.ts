@@ -8,7 +8,7 @@ export const DEFAULT_PAYROLL_PARAMS: PayrollParams = {
   conversionBonusEur: 111,
   checkBonusEur: 55,
   salesPlanEur: null,
-  conversionPlanPct: 0.2,
+  conversionPlanPct: 0.15,
   checkPlanEur: 80,
   ropPct: 0.01,
   ropSalaryEur: 549
