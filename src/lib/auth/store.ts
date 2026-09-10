@@ -46,7 +46,8 @@ function toPublicUser(user: AppUser): AppUserPublic {
     mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
     internshipStartedOn: user.internshipStartedOn ?? null,
     approvedAt: user.approvedAt ?? null,
-    registrationPending: user.registrationPending ?? false
+    registrationPending: user.registrationPending ?? false,
+    registrationRejected: user.registrationRejected ?? false
   };
 }
 
@@ -69,6 +70,7 @@ function defaultAdminUser(): AppUser {
     internshipStartedOn: null,
     approvedAt: null,
     registrationPending: false,
+    registrationRejected: false,
     active: true,
     createdAt: now,
     updatedAt: now
@@ -98,7 +100,8 @@ function normalizeCatalog(catalog: UsersCatalog): UsersCatalog {
       mopPayTrack: user.mopPayTrack ?? (user.accessLevel === "mop" ? "regular" : null),
       internshipStartedOn: user.internshipStartedOn ?? null,
       approvedAt: user.approvedAt ?? null,
-      registrationPending: user.registrationPending ?? false
+      registrationPending: user.registrationPending ?? false,
+      registrationRejected: user.registrationRejected ?? false
     }))
   };
 }
@@ -220,6 +223,11 @@ export async function listTraineeUsers(): Promise<AppUserPublic[]> {
   return catalog.users.filter((user) => user.accessLevel === "mop").map(toPublicUser);
 }
 
+export async function countPendingRegistrations(): Promise<number> {
+  const catalog = await readUsersCatalog();
+  return catalog.users.filter((user) => user.registrationPending).length;
+}
+
 export async function findUserByLogin(login: string): Promise<AppUser | null> {
   const catalog = await readUsersCatalog();
   const normalized = login.trim().toLowerCase();
@@ -271,7 +279,26 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
     const catalog = await readUsersCatalogUnsafe();
     const normalizedLogin = input.login.trim().toLowerCase();
     if (!normalizedLogin) throw new Error("Логин обязателен");
-    if (catalog.users.some((user) => user.login.toLowerCase() === normalizedLogin)) {
+    const existing = catalog.users.find((user) => user.login.toLowerCase() === normalizedLogin);
+    if (existing) {
+      if (input.registrationPending && existing.registrationRejected && existing.accessLevel === "mop") {
+        const index = catalog.users.findIndex((user) => user.id === existing.id);
+        if (index === -1) throw new Error("Пользователь не найден");
+        const now = new Date().toISOString();
+        const mopTrack = normalizePayTrack(input.mopPayTrack ?? "auto", "mop");
+        existing.passwordHash = hashPassword(input.password);
+        existing.name = input.name.trim() || normalizedLogin;
+        existing.mopPayTrack = mopTrack;
+        existing.internshipStartedOn = null;
+        existing.approvedAt = null;
+        existing.registrationPending = true;
+        existing.registrationRejected = false;
+        existing.active = false;
+        existing.updatedAt = now;
+        catalog.users[index] = existing;
+        await writeUsersCatalogAtomic(catalog);
+        return toPublicUser(existing);
+      }
       throw new Error("Пользователь с таким логином уже существует");
     }
 
@@ -294,6 +321,7 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
           : normalizeIsoDay(input.internshipStartedOn),
       approvedAt: pending ? null : mopTrack === "regular" ? input.approvedAt || now : null,
       registrationPending: pending,
+      registrationRejected: false,
       active: pending ? false : (input.active ?? true),
       createdAt: now,
       updatedAt: now
@@ -344,6 +372,7 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
     if (input.active !== undefined) current.active = input.active;
     if (input.active === true && current.registrationPending) {
       current.registrationPending = false;
+      current.registrationRejected = false;
       if (current.accessLevel === "mop" && current.mopPayTrack && current.mopPayTrack !== "regular" && !current.internshipStartedOn) {
         current.internshipStartedOn = rigaDateIso();
       }
@@ -356,7 +385,9 @@ export async function updateUser(input: UpdateUserInput): Promise<AppUserPublic>
       const nextLevel = input.accessLevel ?? current.accessLevel;
       if (nextLevel === "mop") {
         if (input.mopPayTrack !== undefined) current.mopPayTrack = normalizePayTrack(input.mopPayTrack, "mop");
-        if (input.internshipStartedOn !== undefined) current.internshipStartedOn = normalizeIsoDay(input.internshipStartedOn);
+        if (input.internshipStartedOn !== undefined && !current.registrationPending) {
+          current.internshipStartedOn = normalizeIsoDay(input.internshipStartedOn);
+        }
         if (input.approvedAt !== undefined) current.approvedAt = input.approvedAt;
         if (current.mopPayTrack === "regular" && !current.approvedAt) current.approvedAt = new Date().toISOString();
         if (current.mopPayTrack === "auto" && !current.internshipStartedOn && !current.registrationPending) {
@@ -389,17 +420,23 @@ export async function approveUserRegistration(id: string): Promise<AppUserPublic
   return updateUser({ id, active: true });
 }
 
-export async function rejectUserRegistration(id: string): Promise<void> {
+export async function rejectUserRegistration(id: string): Promise<AppUserPublic> {
   return withCatalogLock(async () => {
     const catalog = await readUsersCatalogUnsafe();
-    const target = catalog.users.find((user) => user.id === id);
-    if (!target) throw new Error("Пользователь не найден");
+    const index = catalog.users.findIndex((user) => user.id === id);
+    if (index === -1) throw new Error("Пользователь не найден");
+    const target = catalog.users[index]!;
     if (!target.registrationPending) {
       throw new Error("У этого пользователя нет заявки на регистрацию");
     }
 
-    catalog.users = catalog.users.filter((user) => user.id !== id);
+    target.registrationPending = false;
+    target.registrationRejected = true;
+    target.active = false;
+    target.updatedAt = new Date().toISOString();
+    catalog.users[index] = target;
     await writeUsersCatalogAtomic(catalog);
+    return toPublicUser(target);
   });
 }
 

@@ -16,6 +16,8 @@ export type AppUser = {
   approvedAt: string | null;
   /** Self-registration waiting for ROP/admin approval. */
   registrationPending: boolean;
+  /** Self-registration declined; login is blocked until they register again or ROP deletes the row. */
+  registrationRejected: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;

@@ -43,6 +43,12 @@ export async function POST(request: Request) {
           { status: 403 }
         );
       }
+      if (user.registrationRejected) {
+        return NextResponse.json(
+          { error: "Заявка отклонена. Зарегистрируйтесь снова или напишите РОПу." },
+          { status: 403 }
+        );
+      }
       return NextResponse.json({ error: "Аккаунт отключён" }, { status: 403 });
     }
 

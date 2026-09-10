@@ -149,8 +149,8 @@ export async function PATCH(request: Request) {
     }
 
     assertRopCanDeleteUser(session, target.accessLevel);
-    await rejectUserRegistration(body.id);
-    return NextResponse.json({ ok: true });
+    const user = await rejectUserRegistration(body.id);
+    return NextResponse.json({ user });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось обработать заявку";
     return NextResponse.json({ error: message }, { status: 400 });

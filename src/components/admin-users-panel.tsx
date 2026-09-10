@@ -58,6 +58,7 @@ function mopPayStageLabel(user: AppUserPublic): string {
 
 function accountStatusLabel(user: AppUserPublic): string {
   if (user.registrationPending) return "Ожидает одобрения";
+  if (user.registrationRejected) return "Отклонена";
   return user.active ? "Активен" : "Отключён";
 }
 
@@ -300,7 +301,7 @@ export function AdminUsersPanel() {
   };
 
   const handleRegistrationDecision = async (id: string, action: "approve" | "reject") => {
-    if (action === "reject" && !window.confirm("Отклонить заявку и удалить аккаунт?")) return;
+    if (action === "reject" && !window.confirm("Отклонить заявку? Человек увидит, что заявка отклонена, и сможет зарегистрироваться снова.")) return;
     setRegistrationAction({
       id,
       action,

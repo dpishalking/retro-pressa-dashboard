@@ -162,6 +162,58 @@ a[href]:active,
   color: #9f1239;
 }
 
+.office-hub-pending-btn {
+  position: fixed;
+  z-index: 81;
+  left: 1rem;
+  bottom: 4.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  background: #fffbeb;
+  padding: 0.65rem 0.9rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(180, 83, 9, 0.16);
+}
+
+.office-hub-pending-btn--solo {
+  bottom: 1rem;
+}
+
+.office-hub-pending-btn__count {
+  min-width: 1.25rem;
+  border-radius: 999px;
+  background: #d97706;
+  padding: 0.1rem 0.4rem;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.office-hub-pending-btn:hover {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+@media (max-width: 640px) {
+  .office-hub-pending-btn {
+    left: 0.75rem;
+    bottom: 3.85rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .office-hub-pending-btn--solo {
+    bottom: 0.75rem;
+  }
+}
+
 @media (max-width: 640px) {
   .office-hub-home-btn {
     left: 0.75rem;

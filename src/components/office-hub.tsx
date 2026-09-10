@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
-import { canAccessUserManagement } from "@/lib/auth/admin-users-auth";
+import { canAccessUserManagement, pendingRegistrationPhrase, USER_MANAGEMENT_PATH } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
 import { useAuth } from "@/components/auth-provider";
 import type { AccessLevel } from "@/types/auth";
@@ -184,7 +184,7 @@ function OfficeCardLink({
 }
 
 export function OfficeHub() {
-  const { user, logout } = useAuth();
+  const { user, pendingRegistrationCount, logout } = useAuth();
   const searchParams = useSearchParams();
   const denied = searchParams.get("denied") === "1";
   if (!user) return null;
@@ -193,6 +193,7 @@ export function OfficeHub() {
     ? managerServices
     : officeSections.flatMap((section) => section.cards)
   ).filter((office) => canSeeOfficeSection(user.accessLevel, office.href));
+  const showPendingBanner = canAccessUserManagement(user.accessLevel) && pendingRegistrationCount > 0;
 
   return (
     <main className="mx-auto w-[min(1200px,calc(100%-32px))] py-8">
@@ -203,11 +204,16 @@ export function OfficeHub() {
             <span className="text-sm font-semibold text-slate-600">{user.name}</span>
             {canAccessUserManagement(user.accessLevel) ? (
               <Link
-                href="/admin/users"
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px"
+                href={USER_MANAGEMENT_PATH}
+                className="relative inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 active:translate-y-px"
               >
                 <Settings size={16} />
                 {user.accessLevel === "rop" ? "Менеджеры" : "Доступы"}
+                {pendingRegistrationCount > 0 ? (
+                  <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-amber-500 px-1.5 py-0.5 text-center text-[11px] font-black leading-none text-white">
+                    {pendingRegistrationCount}
+                  </span>
+                ) : null}
               </Link>
             ) : null}
             {user.accessLevel === "admin" ? (
@@ -236,6 +242,21 @@ export function OfficeHub() {
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             У вашего аккаунта нет доступа к этому разделу.
           </p>
+        ) : null}
+        {showPendingBanner ? (
+          <Link
+            href={USER_MANAGEMENT_PATH}
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 px-5 py-4 no-underline shadow-sm transition hover:bg-amber-100"
+          >
+            <div>
+              <p className="text-sm font-extrabold uppercase tracking-wide text-amber-800">Нужно одобрение</p>
+              <p className="mt-1 text-lg font-black text-slate-950">
+                {pendingRegistrationPhrase(pendingRegistrationCount)}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">Новые менеджеры ждут доступ к обучению и базе знаний.</p>
+            </div>
+            <span className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white">Открыть заявки →</span>
+          </Link>
         ) : null}
       </header>
 

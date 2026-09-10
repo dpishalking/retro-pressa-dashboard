@@ -74,6 +74,9 @@ export function ManagerRegisterScreen() {
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               {status.message}
             </p>
+            <p className="text-sm leading-6 text-slate-500">
+              Запомните логин и пароль: почты нет, восстановить их можно только через РОПа.
+            </p>
             <Link href="/" className="inline-flex font-bold text-violet-700 hover:underline">
               Перейти ко входу →
             </Link>
@@ -88,6 +91,7 @@ export function ManagerRegisterScreen() {
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 autoComplete="name"
                 required
+                maxLength={80}
               />
             </label>
 
@@ -114,6 +118,7 @@ export function ManagerRegisterScreen() {
                 autoComplete="new-password"
                 required
                 minLength={8}
+                maxLength={128}
               />
             </label>
 
@@ -127,6 +132,7 @@ export function ManagerRegisterScreen() {
                 autoComplete="new-password"
                 required
                 minLength={8}
+                maxLength={128}
               />
             </label>
 
