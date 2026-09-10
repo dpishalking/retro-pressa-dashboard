@@ -324,15 +324,9 @@ function bonusCondition(rule: MotivationRule): string {
 
 /** Simple board for managers: month bonuses + products to push now. */
 export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
-  const catalog = await readMotivationCatalog();
+  await readMotivationCatalog();
   const seed = createMotivationCatalogSeed();
-  const catalogPeriod = pickDefaultPeriod(catalog);
-  const seedPeriod =
-    (catalogPeriod
-      ? seed.periods.find((p) => p.month === catalogPeriod.month && p.year === catalogPeriod.year)
-      : null) ??
-    seed.periods.find((p) => p.status === "active") ??
-    pickDefaultPeriod(seed);
+  const seedPeriod = seed.periods.find((p) => p.status === "active") ?? pickDefaultPeriod(seed);
 
   if (!seedPeriod) {
     return {
@@ -365,9 +359,9 @@ export async function getMotivationBoard(): Promise<MotivationBoardPayload> {
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return {
-    periodTitle: catalogPeriod?.title ?? seedPeriod.title,
-    periodStatus: catalogPeriod?.status ?? seedPeriod.status,
-    intro: "Дополнительные бонусы месяца — просто зафиксируйте условия и опирайтесь на них в работе.",
+    periodTitle: seedPeriod.title,
+    periodStatus: seedPeriod.status,
+    intro: "Дополнительные бонусы сентября 2026 — просто зафиксируйте условия и опирайтесь на них в работе.",
     bonuses,
     focusProducts
   };

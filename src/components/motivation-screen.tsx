@@ -221,9 +221,11 @@ export function MotivationScreen() {
           <div className="rounded-2xl bg-orange-50 p-3.5 text-orange-600">
             <Trophy size={28} />
           </div>
-          <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Мотивация месяца</h2>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            Мотивация · {payload.periodTitle}
+          </h2>
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            Условия бонусов на текущий месяц. Личный прогресс и рейтинг подключим позже — сейчас важно просто знать правила.
+            Условия бонусов на {payload.periodTitle.toLowerCase()}. Личный прогресс и рейтинг подключим позже — сейчас важно просто знать правила.
           </p>
         </div>
 

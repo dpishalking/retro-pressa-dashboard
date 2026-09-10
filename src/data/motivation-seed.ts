@@ -1,14 +1,14 @@
 import type { MotivationCatalog } from "@/types/motivation";
 
-const now = "2026-08-02T10:00:00.000Z";
+const now = "2026-09-10T12:00:00.000Z";
 
-/** Demo catalog for August 2026. Explicitly marked as demo and safe to wipe. */
+/** Demo catalog. Public /motivation board uses the active seed period. */
 export function createMotivationCatalogSeed(): MotivationCatalog {
-  const periodId = "period-2026-08";
-  const ruleAvgId = "rule-avg-items-2026-08";
-  const ruleReviewsId = "rule-reviews-2026-08";
-  const ruleAvgCheckId = "rule-avg-check-2026-08";
-  const ruleConversionId = "rule-conversion-2026-08";
+  const periodId = "period-2026-09";
+  const ruleAvgId = "rule-avg-items-2026-09";
+  const ruleReviewsId = "rule-reviews-2026-09";
+  const ruleAvgCheckId = "rule-avg-check-2026-09";
+  const ruleConversionId = "rule-conversion-2026-09";
 
   return {
     version: 1,
@@ -43,17 +43,31 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         updatedAt: "2026-08-01T10:00:00.000Z"
       },
       {
-        id: periodId,
+        id: "period-2026-08",
         title: "Август 2026",
         month: 8,
         year: 2026,
         startDate: "2026-08-01",
         endDate: "2026-08-31",
-        status: "active",
+        status: "closed",
         publishedAt: "2026-08-01T08:00:00.000Z",
-        closedAt: null,
+        closedAt: "2026-09-01T10:00:00.000Z",
         createdBy: "admin-default",
         createdAt: "2026-08-01T08:00:00.000Z",
+        updatedAt: "2026-09-01T10:00:00.000Z"
+      },
+      {
+        id: periodId,
+        title: "Сентябрь 2026",
+        month: 9,
+        year: 2026,
+        startDate: "2026-09-01",
+        endDate: "2026-09-30",
+        status: "active",
+        publishedAt: "2026-09-01T08:00:00.000Z",
+        closedAt: null,
+        createdBy: "admin-default",
+        createdAt: "2026-09-01T08:00:00.000Z",
         updatedAt: now
       }
     ],
@@ -154,7 +168,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         updatedAt: now
       },
       {
-        id: "rule-ozivi-2026-08",
+        id: "rule-ozivi-2026-09",
         periodId,
         title: "Больше всего «Оживи»",
         description:
@@ -752,7 +766,7 @@ export function createMotivationCatalogSeed(): MotivationCatalog {
         userId: "*",
         type: "new_rule",
         title: "Новые условия мотивации",
-        message: "В августе 2026 действуют два дополнительных бонуса: среднее число наименований и лучший результат по отзывам.",
+        message: "В сентябре 2026 действуют бонусы месяца: наименования, отзывы, чек, конверсия 15% и конкурс «Оживи».",
         periodId,
         readAt: null,
         createdAt: "2026-08-01T08:30:00.000Z"
