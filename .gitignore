@@ -17,6 +17,8 @@ data/sales-cycle-cache/
 data/google-snapshots/
 data/ga4-snapshots/
 data/auth/
+data/training/progress/
+auth-catalog/
 data/conversation-exports/
 data/conversation-snapshots/
 data/manager-dialogs-sheet-state/
