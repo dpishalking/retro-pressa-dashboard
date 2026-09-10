@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Megaphone, Package, Settings, Target, Trophy, UserRound, WalletCards, type LucideIcon } from "lucide-react";
+import { ArrowLeft, BarChart3, BookOpen, Handshake, LogOut, Settings, Target, Trophy, UserRound, type LucideIcon } from "lucide-react";
 import { canSeeOfficeSection } from "@/lib/auth/access";
 import { canAccessUserManagement, pendingRegistrationPhrase, USER_MANAGEMENT_PATH } from "@/lib/auth/admin-users-auth";
 import { HUB_PATH } from "@/lib/auth/routes";
@@ -65,55 +65,16 @@ const officeSections: OfficeSection[] = [
     ]
   },
   {
-    id: "marketing",
-    title: "Маркетинг и трафик",
-    subtitle: "Лендинги, реклама и атрибуция.",
+    id: "training",
+    title: "Обучение",
+    subtitle: "Уроки, CRM и база знаний.",
     cards: [{
-      href: "/marketing",
-      title: "Маркетинг и трафик",
-      description: "Лендинги, когорты, бюджет и каналы.",
-      icon: Megaphone,
+      href: "/training",
+      title: "Обучение",
+      description: "Уроки, CRM, шпаргалки и прогресс команды.",
+      icon: BookOpen,
       status: "active",
-      accent: "text-emerald-600 bg-emerald-50"
-    }]
-  },
-  {
-    id: "product",
-    title: "Продукт",
-    subtitle: "Ассортимент, спрос и клиенты.",
-    cards: [{
-      href: "/product",
-      title: "Продукт",
-      description: "SKU, спрос, выпуски и клиентская база.",
-      icon: Package,
-      status: "active",
-      accent: "text-sky-600 bg-sky-50"
-    }]
-  },
-  {
-    id: "finance",
-    title: "Финансы",
-    subtitle: "План, факт, прогноз и экономика.",
-    cards: [{
-      href: "/finance",
-      title: "Финансы",
-      description: "План, факт, прогноз и юнит-экономика.",
-      icon: WalletCards,
-      status: "active",
-      accent: "text-violet-600 bg-violet-50"
-    }]
-  },
-  {
-    id: "partners",
-    title: "Партнёрская программа",
-    subtitle: "Кабинет партнёра и материалы.",
-    cards: [{
-      href: "/partners",
-      title: "Партнёрская программа",
-      description: "Кабинет партнёра: промокод, продажи, материалы и выплаты.",
-      icon: Handshake,
-      status: "active",
-      accent: "text-teal-600 bg-teal-50"
+      accent: "text-rose-600 bg-rose-50"
     }]
   }
 ];
