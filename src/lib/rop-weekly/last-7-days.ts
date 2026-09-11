@@ -210,42 +210,51 @@ export async function buildRopLast7DaysReport(input?: {
   const revenuePrev = paymentsPrev.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const revenueMonth = paymentsMonth.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const salesCount7 = payments.length;
-  const avgCheck = salesCount7 ? money(revenue7 / salesCount7) : 0;
+  const salesCountMonth = paymentsMonth.length;
+  const avgCheck7 = salesCount7 ? money(revenue7 / salesCount7) : 0;
+  const avgCheckMonth = salesCountMonth ? money(revenueMonth / salesCountMonth) : 0;
 
-  const growthPct = revenuePrev > 0 ? money(((revenue7 / revenuePrev) - 1) * 100) : null;
+  const growthPct = revenuePrev > 0 ? money((revenue7 / revenuePrev - 1) * 100) : null;
   const monthPlanRevenue = monthPlan?.revenue ?? null;
   const dim = daysInMonth(month);
   const elapsed = dayOfMonth(periodTo);
   const weekPlan = monthPlanRevenue != null ? money((monthPlanRevenue / dim) * 7) : null;
   const weekPlanPct = weekPlan && weekPlan > 0 ? money((revenue7 / weekPlan) * 100) : null;
-  const monthForecast =
-    elapsed > 0 ? money((revenueMonth / elapsed) * dim) : null;
+  const monthForecast = elapsed > 0 ? money((revenueMonth / elapsed) * dim) : null;
   const monthForecastPct =
     monthPlanRevenue && monthPlanRevenue > 0 && monthForecast != null
       ? money((monthForecast / monthPlanRevenue) * 100)
       : null;
 
+  // Period totals only (not lead cohorts): count everything that happened in the window.
   const metrics: RopLast7Report["metrics"] = [
     {
       label: "Выручка общ за месяц",
       value: money(revenueMonth),
-      note: `${monthStart}…${periodTo}, SPA Оплачено`
+      note: `тотал оплат ${monthStart}…${periodTo} (не когорта лидов)`
     },
     {
       label: "Количество продаж",
-      value: salesCount7,
-      note: `оплаты за ${periodFrom}…${periodTo}`
+      value: salesCountMonth,
+      note: `тотал оплат за месяц ${monthStart}…${periodTo}`
     },
-    { label: "Средний чек", value: avgCheck, note: "выручка 7д / оплаты 7д" },
+    {
+      label: "Средний чек",
+      value: avgCheckMonth,
+      note: "выручка месяца / оплаты месяца"
+    },
     {
       label: "Выручка предыдущей недели",
       value: money(revenuePrev),
-      note: `${prevFrom}…${prevTo}`
+      note: `тотал оплат ${prevFrom}…${prevTo}`
     },
     {
       label: "Рост/падение к предыдущей неделе",
       value: growthPct == null ? "н/д" : growthPct,
-      note: growthPct == null ? "нет базы" : "% к предыдущим 7 дням"
+      note:
+        growthPct == null
+          ? "нет базы"
+          : `% к тоталу предыдущих 7д (факт ${money(revenue7)} € vs ${money(revenuePrev)} €)`
     },
     {
       label: "Выполнение плана недели",
@@ -253,7 +262,7 @@ export async function buildRopLast7DaysReport(input?: {
       note:
         weekPlan == null
           ? "нет плана месяца в СВОД"
-          : `план недели ≈ ${weekPlan} € (месяц/дни×7); факт ${money(revenue7)} €`
+          : `план недели ≈ ${weekPlan} € (месяц/дни×7); тотал оплат 7д ${money(revenue7)} €`
     },
     {
       label: "Прогноз выполнения месячного плана",
@@ -261,44 +270,64 @@ export async function buildRopLast7DaysReport(input?: {
       note:
         monthPlanRevenue == null
           ? "нет плана месяца в СВОД"
-          : `прогноз ${monthForecast} € из плана ${monthPlanRevenue} €`
+          : `run-rate от тотала месяца: прогноз ${monthForecast} € / план ${monthPlanRevenue} €`
     },
-    { label: "Лидов пришло", value: leads.length },
+    {
+      label: "Лидов пришло",
+      value: leads.length,
+      note: `тотал созданных ${periodFrom}…${periodTo}`
+    },
     {
       label: "Лидов взято",
       value: leadsTaken,
-      note: "из пришедших за 7д уже не в статусе NEW"
+      note: "из пришедших за период уже не NEW"
     },
-    { label: "Квалов", value: quals, note: "STATUS_ID=CONVERTED среди пришедших" },
-    { label: "Счетов (шт)", value: invoices.length },
+    {
+      label: "Квалов",
+      value: quals,
+      note: "CONVERTED среди пришедших за период"
+    },
+    {
+      label: "Счетов (шт)",
+      value: invoices.length,
+      note: "тотал выставленных/сдвинутых за период"
+    },
     { label: "Счетов (евро)", value: money(invoiceSum) },
     {
       label: "Аннулированных счетов (шт)",
       value: cancelled.length,
-      note: "стадия «Не оплачено» DT31_2:D, moved за 7д"
+      note: "тотал ушедших в «Не оплачено» за период"
     },
     { label: "Аннулированных (евро)", value: money(cancelledSum) },
-    { label: "Оплат (шт)", value: salesCount7 },
-    { label: "Оплат (евро)", value: money(revenue7) },
+    {
+      label: "Оплат (шт)",
+      value: salesCount7,
+      note: `тотал оплат ${periodFrom}…${periodTo}`
+    },
+    {
+      label: "Оплат (евро)",
+      value: money(revenue7),
+      note: `тотал оплат ${periodFrom}…${periodTo}`
+    },
     {
       label: "Общая конверсия лид → продажа",
       value: pct(salesCount7, leads.length),
-      note: "% оплат / лидов за 7д"
+      note: "тотал оплат 7д / тотал лидов 7д (не когорта)"
     },
     {
       label: "Конверсия диалог → продажа",
       value: pct(salesCount7, dialogs),
-      note: `% оплат / сессий ОЛ (${dialogs}) за 7д`
+      note: `тотал оплат 7д / тотал сессий ОЛ 7д (${dialogs})`
     },
     {
       label: "Конверсия счет → оплата",
       value: pct(salesCount7, invoices.length),
-      note: "% оплат / счетов за 7д"
+      note: "тотал оплат 7д / тотал счетов 7д"
     },
     {
       label: "Хвост лидов",
       value: leadTail,
-      note: "текущий сток STATUS_ID=NEW"
+      note: "текущий сток NEW"
     }
   ];
 
@@ -322,7 +351,9 @@ export async function syncRopLast7DaysReport(input?: {
   const report = await buildRopLast7DaysReport({ endDay: input?.endDay });
   const rows: SheetRow[] = [
     [`РОП · ПОСЛЕДНИЕ 7 ДНЕЙ · ${report.periodFrom} … ${report.periodTo}`],
-    [`Обновлено: ${report.syncedAt} (Europe/Riga)  ·  Bitrix + план СВОД`],
+    [
+      `Обновлено: ${report.syncedAt} (Europe/Riga)  ·  тоталы периода (не когорта)  ·  Bitrix + план СВОД`
+    ],
     [],
     ["Метрика", "Значение", "Комментарий"]
   ];
