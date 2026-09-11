@@ -427,6 +427,8 @@ export async function writeSheetTab(input: {
   tabTitle: string;
   rows: string[][];
   clearRange?: string;
+  /** RAW keeps everything as text (leading apostrophes). USER_ENTERED parses numbers. */
+  valueInputOption?: "RAW" | "USER_ENTERED";
 }) {
   await ensureSheetTab(input.spreadsheetId, input.tabTitle);
   const tabPrefix = quoteSheetTab(input.tabTitle);
@@ -435,6 +437,7 @@ export async function writeSheetTab(input: {
     range: `${tabPrefix}!A1`,
     clearRange: input.clearRange ?? `${tabPrefix}!A:K`,
     rows: input.rows,
+    valueInputOption: input.valueInputOption,
   });
 }
 
