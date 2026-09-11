@@ -44,6 +44,7 @@ const CRON_API_PREFIXES = [
   "/api/sync/rop-alerts",
   "/api/sync/shift-board",
   "/api/sync/rop-weekly",
+  "/api/sync/rop-last7",
   "/api/sync/sales-os",
   "/api/sync/sales-cycle",
   "/api/sync/marketing-planning",
