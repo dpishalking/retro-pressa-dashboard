@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
-import type { ManagerTrainingReport, TrainingStatus } from "@/types/training";
+import type { FinalExamAnswerReview, ManagerTrainingReport, TrainingStatus } from "@/types/training";
 
 function formatWhen(value?: string) {
   if (!value) return "—";
@@ -94,6 +94,61 @@ function ModuleTable({
   );
 }
 
+function FinalExamAnswers({
+  exam
+}: {
+  exam: NonNullable<ManagerTrainingReport["finalExam"]>;
+}) {
+  const filledCount = exam.answers.filter((item) => item.filled).length;
+
+  return (
+    <section className="card overflow-hidden border-amber-200">
+      <div className="flex flex-col gap-3 border-b border-amber-200 bg-amber-50/70 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-base font-black text-slate-950">{exam.title}</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Письменные ответы менеджера из последней попытки.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide">
+          <span className={`rounded-full px-2.5 py-1 ${getStatusClass(exam.status)}`}>{getStatusLabel(exam.status)}</span>
+          {exam.attemptCount > 0 ? (
+            <span className="rounded-full bg-white px-2.5 py-1 text-slate-600">
+              {filledCount} / {exam.answers.length} ответов · {formatWhen(exam.lastAttemptAt)}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {exam.attemptCount === 0 ? (
+        <p className="px-5 py-6 text-sm text-slate-600">Менеджер ещё не проходил финальный тест.</p>
+      ) : (
+        <ol className="divide-y divide-[var(--line)]">
+          {exam.answers.map((item, index) => (
+            <FinalExamAnswerItem key={item.questionId} item={item} index={index + 1} />
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function FinalExamAnswerItem({ item, index }: { item: FinalExamAnswerReview; index: number }) {
+  return (
+    <li className="px-5 py-4">
+      <p className="text-sm font-semibold text-slate-950">
+        <span className="mr-2 text-xs font-black text-amber-700">{index}.</span>
+        {item.question}
+      </p>
+      {item.filled ? (
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{item.textAnswer}</p>
+      ) : (
+        <p className="mt-2 text-sm italic text-slate-400">Ответ не заполнен</p>
+      )}
+    </li>
+  );
+}
+
 function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
   const productsStage = report.overview.stages.find((stage) => stage.id === "products");
   const crmStage = report.overview.stages.find((stage) => stage.id === "crm");
@@ -130,6 +185,8 @@ function ManagerDetail({ report }: { report: ManagerTrainingReport }) {
           percent={crmStage?.percent ?? 0}
         />
       </section>
+
+      {report.finalExam ? <FinalExamAnswers exam={report.finalExam} /> : null}
 
       <ModuleTable
         title="Продукты"
@@ -226,6 +283,9 @@ export function TrainingSupervisorsPanel() {
                   <span className="font-bold text-slate-950">{report.user.name}</span>
                   <span className="text-xs text-slate-500">{report.user.login}</span>
                   <span className="mt-2 text-xs font-semibold text-violet-700">{report.overview.totalStagesPercent}% готово</span>
+                  {report.finalExam && report.finalExam.attemptCount > 0 ? (
+                    <span className="mt-1 text-xs font-semibold text-amber-700">Есть ответы финального теста</span>
+                  ) : null}
                 </button>
               </li>
             );

@@ -252,6 +252,13 @@ export type TrainingOverview = {
   totalStagesPercent: number;
 };
 
+export type FinalExamAnswerReview = {
+  questionId: string;
+  question: string;
+  textAnswer: string;
+  filled: boolean;
+};
+
 export type ManagerTrainingReport = {
   user: {
     id: string;
@@ -260,6 +267,15 @@ export type ManagerTrainingReport = {
     active: boolean;
   };
   overview: TrainingOverview;
+  finalExam: {
+    title: string;
+    status: TrainingStatus;
+    attemptCount: number;
+    lastAttemptAt?: string;
+    scorePercent?: number;
+    passed: boolean;
+    answers: FinalExamAnswerReview[];
+  } | null;
   products: {
     id: string;
     title: string;

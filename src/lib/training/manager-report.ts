@@ -1,3 +1,4 @@
+import { FINAL_EXAM_PRODUCT_ID, isFinalExamProduct } from "@/lib/training/final-exam";
 import { buildTrainingOverview, getTrackModuleProgress } from "@/lib/training/progress";
 import {
   getOrCreateUserProgress,
@@ -6,7 +7,13 @@ import {
 } from "@/lib/training/store";
 import { listTrackModules } from "@/lib/training/track-modules";
 import type { AppUserPublic } from "@/types/auth";
-import type { ManagerTrainingReport } from "@/types/training";
+import type { ManagerTrainingReport, UserQuizAttempt } from "@/types/training";
+
+function latestFinalExamAttempt(attempts: UserQuizAttempt[]) {
+  return attempts
+    .filter((item) => item.productId === FINAL_EXAM_PRODUCT_ID)
+    .sort((left, right) => right.attemptedAt.localeCompare(left.attemptedAt))[0];
+}
 
 function pickLatestTimestamp(values: Array<string | undefined>): string | undefined {
   const filtered = values.filter(Boolean) as string[];
@@ -23,8 +30,12 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
   ]);
 
   const overview = buildTrainingOverview(products, crmModules, progress, practiceModules);
+  const giftProducts = products.filter((product) => !isFinalExamProduct(product));
+  const finalExamProduct = products.find((product) => isFinalExamProduct(product)) ?? null;
+  const latestExamAttempt = latestFinalExamAttempt(progress.attempts);
+  const examProgress = progress.products.find((entry) => entry.productId === FINAL_EXAM_PRODUCT_ID);
 
-  const productRows = products.map((product) => {
+  const productRows = giftProducts.map((product) => {
     const item = progress.products.find((entry) => entry.productId === product.id);
     return {
       id: product.id,
@@ -62,6 +73,26 @@ export async function buildManagerTrainingReport(user: AppUserPublic): Promise<M
       active: user.active
     },
     overview,
+    finalExam: finalExamProduct
+      ? {
+          title: finalExamProduct.title,
+          status: resolveProductStatus(progress, finalExamProduct.id),
+          attemptCount: Math.max(examProgress?.attemptCount ?? 0, latestExamAttempt ? 1 : 0),
+          lastAttemptAt: examProgress?.lastAttemptAt ?? latestExamAttempt?.attemptedAt,
+          scorePercent: latestExamAttempt?.scorePercent,
+          passed: latestExamAttempt?.passed ?? false,
+          answers: finalExamProduct.questions.map((question) => {
+            const userAnswer = latestExamAttempt?.answers.find((answer) => answer.questionId === question.id);
+            const textAnswer = userAnswer?.textAnswer?.trim() ?? "";
+            return {
+              questionId: question.id,
+              question: question.text,
+              textAnswer,
+              filled: textAnswer.length > 0
+            };
+          })
+        }
+      : null,
     products: productRows,
     crmModules: crmRows,
     practiceModules: [],
