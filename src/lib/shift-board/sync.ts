@@ -125,7 +125,7 @@ function avgCheck(sum: number, count: number): number | null {
   return Math.round((sum / count) * 100) / 100;
 }
 
-function avgCheckLabel(sum: number, count: number): string {
+function avgCheckLabel(sum: number, count: number): number | string {
   const value = avgCheck(sum, count);
   return value == null ? "—" : money(value);
 }
@@ -135,7 +135,7 @@ function calcProductsPerPayment(products: number, payments: number): number | nu
   return Math.round((products / payments) * 100) / 100;
 }
 
-function productsPerPaymentLabel(products: number, payments: number): string {
+function productsPerPaymentLabel(products: number, payments: number): number | string {
   const value = calcProductsPerPayment(products, payments);
   return value == null ? "—" : money(value);
 }
@@ -187,8 +187,11 @@ async function loadOnShiftNames(day: string): Promise<string[]> {
   }
 }
 
+type SheetCell = string | number | boolean | null;
+type SheetRow = SheetCell[];
+
 type ManagerTabBuild = {
-  rows: string[][];
+  rows: SheetRow[];
   leadHeaderRow: number;
   leadCount: number;
   invoiceHeaderRow: number;
@@ -224,7 +227,7 @@ function buildManagerRows(input: {
   );
   const scheduleLabel = input.onShift ? "да (справочно)" : "нет / не в графике";
 
-  const rows: string[][] = [
+  const rows: SheetRow[] = [
     [`МЕНЕДЖЕР · ${input.fullName}`],
     [
       `Дата: ${input.day}  ·  Обновлено: ${input.syncedAt}  ·  NEW ${statusCounts.NEW || 0}  ·  В работе ${statusCounts.IN_PROCESS || 0}  ·  Сделки ${statusCounts.CONVERTED || 0}  ·  График: ${scheduleLabel}`
@@ -232,11 +235,11 @@ function buildManagerRows(input: {
     [],
     ["Лиды", "", "Счета", "", "Оплаты", "", "Выручка, €", ""],
     [
-      String(input.leads.length),
+      input.leads.length,
       "",
-      String(input.invoices.length),
+      input.invoices.length,
       "",
-      String(input.payments.length),
+      input.payments.length,
       "",
       money(paymentSumEur),
       ""
@@ -247,7 +250,7 @@ function buildManagerRows(input: {
       "",
       productsPerPaymentLabel(productsInPayments, input.payments.length),
       "",
-      String(productsInInvoices),
+      productsInInvoices,
       "",
       money(invoiceSum),
       ""
@@ -282,9 +285,9 @@ function buildManagerRows(input: {
       id,
       invoice.title || "",
       String(invoice.stageId || ""),
-      String(invoice.opportunity ?? ""),
+      asNumber(invoice.opportunity),
       String(invoice.currencyId || "EUR"),
-      String(input.productCounts.get(id) || 0),
+      input.productCounts.get(id) || 0,
       formatDateTime(invoice.createdTime || invoice.movedTime),
       id ? invoiceUrl(id) : ""
     ]);
@@ -300,8 +303,8 @@ function buildManagerRows(input: {
       spaId,
       payment.title || "",
       payment.paymentDate || payment.closeDate || "",
-      String(payment.opportunity ?? ""),
-      String(input.productCounts.get(spaId) || 0),
+      asNumber(payment.opportunity),
+      input.productCounts.get(spaId) || 0,
       payment.parentDealId || "",
       spaId ? invoiceUrl(spaId) : "",
       ""
@@ -320,7 +323,7 @@ function buildManagerRows(input: {
 }
 
 function money(value: number) {
-  return String(Math.round(value * 100) / 100);
+  return Math.round(value * 100) / 100;
 }
 
 const CONTROL_COLS = 12;
@@ -1347,17 +1350,17 @@ export async function syncShiftBoard(options: {
     const totalRevenueEur = managers.reduce((sum, row) => sum + row.paymentSumEur, 0);
     const totalProductsInPayments = managers.reduce((sum, row) => sum + row.productsInPayments, 0);
 
-    const controlRows: string[][] = [
+    const controlRows: SheetRow[] = [
       [`СМЕНА СЕГОДНЯ · ${day}`],
       [`Обновлено: ${syncedAt} (Europe/Riga)`],
       [],
       ["Лиды", "", "Счета", "", "Оплаты", "", "Выручка, €", ""],
       [
-        String(totalLeads),
+        totalLeads,
         "",
-        String(totalInvoices),
+        totalInvoices,
         "",
-        String(totalPayments),
+        totalPayments,
         "",
         money(totalRevenueEur),
         ""
@@ -1393,15 +1396,15 @@ export async function syncShiftBoard(options: {
     for (const row of managers) {
       controlRows.push([
         row.fullName,
-        String(row.leads),
-        String(row.statusCounts.NEW || 0),
-        String(row.statusCounts.IN_PROCESS || 0),
-        String(row.statusCounts.CONVERTED || 0),
-        String(row.invoices),
+        row.leads,
+        row.statusCounts.NEW || 0,
+        row.statusCounts.IN_PROCESS || 0,
+        row.statusCounts.CONVERTED || 0,
+        row.invoices,
         money(row.invoiceSum),
-        String(row.productsInInvoices),
+        row.productsInInvoices,
         row.productsPerPayment == null ? "—" : money(row.productsPerPayment),
-        String(row.payments),
+        row.payments,
         money(row.paymentSumEur),
         row.avgCheckEur == null ? "—" : money(row.avgCheckEur)
       ]);

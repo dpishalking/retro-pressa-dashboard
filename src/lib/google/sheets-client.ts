@@ -425,7 +425,7 @@ function quoteSheetTab(title: string) {
 export async function writeSheetTab(input: {
   spreadsheetId: string;
   tabTitle: string;
-  rows: string[][];
+  rows: Array<Array<string | number | boolean | null>>;
   clearRange?: string;
   /** RAW keeps everything as text (leading apostrophes). USER_ENTERED parses numbers. */
   valueInputOption?: "RAW" | "USER_ENTERED";
