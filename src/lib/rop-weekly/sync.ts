@@ -17,7 +17,7 @@ import {
 } from "@/lib/bitrix/metric-definitions";
 import { bitrixList, bitrixListAll, arrayResult } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
-import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
+import { listPaidSmartInvoicesForPeriod, loadBitrixCurrencyRatesToBase, toBaseCurrencyAmount } from "@/lib/bitrix/smart-invoices";
 import {
   ensureSheetTab,
   getGoogleAccessToken,
@@ -66,6 +66,7 @@ type BitrixDeal = {
 type BitrixInvoice = {
   id?: string | number;
   opportunity?: string | number;
+  currencyId?: string;
   assignedById?: string | number;
   createdTime?: string;
   movedTime?: string;
@@ -480,7 +481,7 @@ export async function syncRopWeeklyReport(
   const now = Date.now();
   const { from, to } = dayRange(weekStart, weekEnd);
 
-  const [leadsRaw, dealsCreated, invoicesCreated, invoicesMoved, payments, historyKeys] =
+  const [leadsRaw, dealsCreated, invoicesCreated, invoicesMoved, payments, historyKeys, fx] =
     await Promise.all([
       bitrixListAll<BitrixLead>("crm.lead.list", {
         filter: { ">=DATE_CREATE": from, "<=DATE_CREATE": to },
@@ -499,18 +500,22 @@ export async function syncRopWeeklyReport(
       bitrixListAll<BitrixInvoice>("crm.item.list", {
         entityTypeId: 31,
         filter: { ">=createdTime": from, "<=createdTime": to },
-        select: ["id", "opportunity", "assignedById", "createdTime", "movedTime", "stageId"],
+        select: ["id", "opportunity", "currencyId", "assignedById", "createdTime", "movedTime", "stageId"],
         order: { id: "ASC" }
       }).catch(() => [] as BitrixInvoice[]),
       bitrixListAll<BitrixInvoice>("crm.item.list", {
         entityTypeId: 31,
         filter: { ">=movedTime": from, "<=movedTime": to },
-        select: ["id", "opportunity", "assignedById", "createdTime", "movedTime", "stageId"],
+        select: ["id", "opportunity", "currencyId", "assignedById", "createdTime", "movedTime", "stageId"],
         order: { id: "ASC" }
       }).catch(() => [] as BitrixInvoice[]),
       listPaidSmartInvoicesForPeriod(weekStart, weekEnd),
-      loadHistoryKeys(weekStart)
+      loadHistoryKeys(weekStart),
+      loadBitrixCurrencyRatesToBase()
     ]);
+
+  const toEur = (amount: unknown, currencyId?: string | null) =>
+    money(toBaseCurrencyAmount(asNumber(amount), currencyId, fx.rates, fx.baseCurrency));
 
   const leads = leadsRaw.filter((lead) => !EXCLUDED_LEADS.has(String(lead.STATUS_ID || "")));
   const duplicates = countDuplicates(leads, historyKeys);
@@ -527,7 +532,7 @@ export async function syncRopWeeklyReport(
     invoicesById.set(String(row.id), row);
   }
   const invoices = [...invoicesById.values()];
-  const invoiceSum = invoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const invoiceSum = invoices.reduce((sum, row) => sum + toEur(row.opportunity, row.currencyId), 0);
   const paymentSum = payments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const avgCheck = payments.length ? money(paymentSum / payments.length) : 0;
 
@@ -554,7 +559,7 @@ export async function syncRopWeeklyReport(
     bitrixListAll<BitrixInvoice>("crm.item.list", {
       entityTypeId: 31,
       filter: { stageId: INVOICE_STAGE_SENT },
-      select: ["id", "opportunity"]
+      select: ["id", "opportunity", "currencyId"]
     }),
     countBitrix("crm.deal.list", {
       filter: { CATEGORY_ID: BITRIX_SALES_CATEGORY_ID, STAGE_SEMANTIC_ID: "P" }
@@ -571,7 +576,7 @@ export async function syncRopWeeklyReport(
     if (daysSince(base, now) > 15) thinkingStale += 1;
     else thinkingFresh += 1;
   }
-  const unpaidSum = stockUnpaid.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const unpaidSum = stockUnpaid.reduce((sum, row) => sum + toEur(row.opportunity, row.currencyId), 0);
 
   const assigneeIds = [
     ...new Set(
@@ -633,7 +638,7 @@ export async function syncRopWeeklyReport(
     const row = manager(String(invoice.assignedById || ""));
     if (!row) continue;
     row.invoices += 1;
-    row.invoiceSum += asNumber(invoice.opportunity);
+    row.invoiceSum += toEur(invoice.opportunity, invoice.currencyId);
   }
   for (const payment of payments) {
     const row = manager(String(payment.assignedById || ""));

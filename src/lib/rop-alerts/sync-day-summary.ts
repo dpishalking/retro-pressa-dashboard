@@ -16,6 +16,7 @@ import {
   chunkIds,
   requireBitrixWebhook
 } from "@/lib/bitrix/rest-client";
+import { loadBitrixCurrencyRatesToBase, toBaseCurrencyAmount } from "@/lib/bitrix/smart-invoices";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import { writeSheetTab } from "@/lib/google/sheets-client";
 import { PREDICTIVE_SPREADSHEET_ID_DEFAULT } from "@/lib/sales-os/predictive-model";
@@ -641,7 +642,13 @@ export async function syncRopAlertsDaySummary(
     else thinkingFresh.push(deal);
   }
 
-  const unpaidSum = sentInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const fx = await loadBitrixCurrencyRatesToBase();
+  const unpaidSum = sentInvoices.reduce(
+    (sum, row) =>
+      sum +
+      toBaseCurrencyAmount(asNumber(row.opportunity), row.currencyId, fx.rates, fx.baseCurrency),
+    0
+  );
 
   const userNames = await loadUserNames([
     ...filteredNew.map((l) => String(l.ASSIGNED_BY_ID || "")),

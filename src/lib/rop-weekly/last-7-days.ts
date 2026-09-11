@@ -11,7 +11,7 @@ import {
   EXCLUDED_LEAD_STATUS_IDS
 } from "@/lib/bitrix/metric-definitions";
 import { arrayResult, bitrixList, bitrixListAll } from "@/lib/bitrix/rest-client";
-import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
+import { listPaidSmartInvoicesForPeriod, loadBitrixCurrencyRatesToBase, toBaseCurrencyAmount } from "@/lib/bitrix/smart-invoices";
 import { writeSheetTab } from "@/lib/google/sheets-client";
 import { rigaTodayIso } from "@/lib/sales/manager-schedule";
 import { pullSvodMonthPlans } from "@/lib/sales-os/svod-plans";
@@ -33,6 +33,7 @@ type BitrixLead = {
 type BitrixInvoice = {
   id?: string | number;
   opportunity?: string | number;
+  currencyId?: string;
   assignedById?: string | number;
   createdTime?: string;
   movedTime?: string;
@@ -152,7 +153,8 @@ export async function buildRopLast7DaysReport(input?: {
     paymentsMonth,
     dialogs,
     leadTail,
-    monthPlan
+    monthPlan,
+    fx
   ] = await Promise.all([
     bitrixListAll<BitrixLead>("crm.lead.list", {
       filter: { ">=DATE_CREATE": from, "<=DATE_CREATE": to },
@@ -162,13 +164,13 @@ export async function buildRopLast7DaysReport(input?: {
     bitrixListAll<BitrixInvoice>("crm.item.list", {
       entityTypeId: 31,
       filter: { ">=createdTime": from, "<=createdTime": to },
-      select: ["id", "opportunity", "assignedById", "createdTime", "movedTime", "stageId"],
+      select: ["id", "opportunity", "currencyId", "assignedById", "createdTime", "movedTime", "stageId"],
       order: { id: "ASC" }
     }).catch(() => [] as BitrixInvoice[]),
     bitrixListAll<BitrixInvoice>("crm.item.list", {
       entityTypeId: 31,
       filter: { ">=movedTime": from, "<=movedTime": to },
-      select: ["id", "opportunity", "assignedById", "createdTime", "movedTime", "stageId"],
+      select: ["id", "opportunity", "currencyId", "assignedById", "createdTime", "movedTime", "stageId"],
       order: { id: "ASC" }
     }).catch(() => [] as BitrixInvoice[]),
     bitrixListAll<BitrixInvoice>("crm.item.list", {
@@ -178,7 +180,7 @@ export async function buildRopLast7DaysReport(input?: {
         ">=movedTime": from,
         "<=movedTime": to
       },
-      select: ["id", "opportunity", "movedTime"],
+      select: ["id", "opportunity", "currencyId", "movedTime"],
       order: { id: "ASC" }
     }).catch(() => [] as BitrixInvoice[]),
     listPaidSmartInvoicesForPeriod(periodFrom, periodTo),
@@ -186,8 +188,14 @@ export async function buildRopLast7DaysReport(input?: {
     listPaidSmartInvoicesForPeriod(monthStart, periodTo),
     countActivities(from, to),
     countNewLeadsStock(),
-    pullSvodMonthPlans({ month }).catch(() => null)
+    pullSvodMonthPlans({ month }).catch(() => null),
+    loadBitrixCurrencyRatesToBase()
   ]);
+
+  const toEur = (amount: unknown, currencyId?: string | null) =>
+    money(
+      toBaseCurrencyAmount(asNumber(amount), currencyId, fx.rates, fx.baseCurrency)
+    );
 
   const leads = leadsRaw.filter((lead) => !EXCLUDED.has(String(lead.STATUS_ID || "")));
   const leadsTaken = leads.filter((lead) => String(lead.STATUS_ID || "") !== "NEW").length;
@@ -203,8 +211,14 @@ export async function buildRopLast7DaysReport(input?: {
   }
   // Exclude invoices that are currently cancelled from "issued" count if they only appear as D
   const invoices = [...invoicesById.values()].filter((row) => String(row.stageId || "") !== INVOICE_CANCELLED);
-  const invoiceSum = invoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
-  const cancelledSum = cancelled.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const invoiceSum = invoices.reduce(
+    (sum, row) => sum + toEur(row.opportunity, row.currencyId),
+    0
+  );
+  const cancelledSum = cancelled.reduce(
+    (sum, row) => sum + toEur(row.opportunity, row.currencyId),
+    0
+  );
 
   const revenue7 = payments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const revenuePrev = paymentsPrev.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
@@ -292,13 +306,13 @@ export async function buildRopLast7DaysReport(input?: {
       value: invoices.length,
       note: "тотал выставленных/сдвинутых за период"
     },
-    { label: "Счетов (евро)", value: money(invoiceSum) },
+    { label: "Счетов (евро)", value: money(invoiceSum), note: "суммы в EUR по курсу Bitrix" },
     {
       label: "Аннулированных счетов (шт)",
       value: cancelled.length,
       note: "тотал ушедших в «Не оплачено» за период"
     },
-    { label: "Аннулированных (евро)", value: money(cancelledSum) },
+    { label: "Аннулированных (евро)", value: money(cancelledSum), note: "EUR по курсу Bitrix" },
     {
       label: "Оплат (шт)",
       value: salesCount7,

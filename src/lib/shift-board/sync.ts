@@ -6,7 +6,7 @@ import {
 import { bitrixBatch, bitrixListAll, chunkIds } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import type { BitrixSnapshotDeal } from "@/lib/bitrix/snapshot-store";
-import { listPaidSmartInvoicesForPeriod } from "@/lib/bitrix/smart-invoices";
+import { listPaidSmartInvoicesForPeriod, loadBitrixCurrencyRatesToBase, toBaseCurrencyAmount } from "@/lib/bitrix/smart-invoices";
 import {
   deleteSheetTabs,
   ensureSheetTab,
@@ -209,13 +209,19 @@ function buildManagerRows(input: {
   invoices: BitrixInvoice[];
   payments: BitrixSnapshotDeal[];
   productCounts: Map<string, number>;
+  fx: { baseCurrency: string; rates: Map<string, number> };
 }): ManagerTabBuild {
   const statusCounts: Record<string, number> = {};
   for (const lead of input.leads) {
     const key = String(lead.STATUS_ID || "?");
     statusCounts[key] = (statusCounts[key] || 0) + 1;
   }
-  const invoiceSum = input.invoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+  const toEur = (amount: unknown, currencyId?: string | null) =>
+    toBaseCurrencyAmount(asNumber(amount), currencyId, input.fx.rates, input.fx.baseCurrency);
+  const invoiceSum = input.invoices.reduce(
+    (sum, row) => sum + toEur(row.opportunity, row.currencyId),
+    0
+  );
   const paymentSumEur = input.payments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
   const productsInInvoices = input.invoices.reduce(
     (sum, row) => sum + (input.productCounts.get(String(row.id || "")) || 0),
@@ -285,8 +291,8 @@ function buildManagerRows(input: {
       id,
       invoice.title || "",
       String(invoice.stageId || ""),
-      asNumber(invoice.opportunity),
-      String(invoice.currencyId || "EUR"),
+      money(toEur(invoice.opportunity, invoice.currencyId)),
+      input.fx.baseCurrency || "EUR",
       input.productCounts.get(id) || 0,
       formatDateTime(invoice.createdTime || invoice.movedTime),
       id ? invoiceUrl(id) : ""
@@ -1359,6 +1365,9 @@ export async function syncShiftBoard(options: {
   const invoices = [...invoicesById.values()];
 
   const payments = await listPaidSmartInvoicesForPeriod(day, day);
+  const fx = await loadBitrixCurrencyRatesToBase();
+  const toEur = (amount: unknown, currencyId?: string | null) =>
+    toBaseCurrencyAmount(asNumber(amount), currencyId, fx.rates, fx.baseCurrency);
 
   const productCountIds = [
     ...new Set([
@@ -1412,7 +1421,10 @@ export async function syncShiftBoard(options: {
       const key = String(lead.STATUS_ID || "?");
       statusCounts[key] = (statusCounts[key] || 0) + 1;
     }
-    const invoiceSum = managerInvoices.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
+    const invoiceSum = managerInvoices.reduce(
+      (sum, row) => sum + toEur(row.opportunity, row.currencyId),
+      0
+    );
     const paymentSumEur = managerPayments.reduce((sum, row) => sum + asNumber(row.opportunity), 0);
     const productsInInvoices = managerInvoices.reduce(
       (sum, row) => sum + (productCounts.get(String(row.id || "")) || 0),
@@ -1541,7 +1553,8 @@ export async function syncShiftBoard(options: {
         leads: managerLeads,
         invoices: managerInvoices,
         payments: managerPayments,
-        productCounts
+        productCounts,
+        fx
       });
       await writeSheetTab({
         spreadsheetId,
