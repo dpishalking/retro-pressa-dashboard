@@ -339,14 +339,14 @@ async function formatControlTab(input: {
 }) {
   // Layout (0-based):
   // 0 title, 1 updated, 2 spacer,
-  // 3–4 KPI row 1, 5–6 KPI row 2, 7 spacer, 8 section, 9 table header, 10+ data
-  const kpiLabelRow1 = 3;
-  const kpiValueRow1 = 4;
-  const kpiLabelRow2 = 5;
-  const kpiValueRow2 = 6;
-  const sectionRow = 8;
-  const headerRow = 9;
-  const firstDataRow = 10;
+  // 3 KPI labels, 4 primary values (counts / avg), 5 euro under Счета/Оплаты,
+  // 6 spacer, 7 section, 8 table header, 9+ data
+  const kpiLabelRow = 3;
+  const kpiPrimaryRow = 4;
+  const kpiEuroRow = 5;
+  const sectionRow = 7;
+  const headerRow = 8;
+  const firstDataRow = 9;
   const lastDataRow = headerRow + Math.max(1, input.managerCount);
   const colWidths = [190, 58, 52, 72, 68, 58, 82, 68, 72, 62, 78, 72];
 
@@ -368,7 +368,6 @@ async function formatControlTab(input: {
     }
   }
 
-  // Clear leftover freeze/merges from older layouts so new merges can span full width.
   await batchUpdate([
     {
       updateSheetProperties: {
@@ -405,34 +404,98 @@ async function formatControlTab(input: {
     }
   ]);
 
-  const mergeKpiPairs = [kpiLabelRow1, kpiValueRow1, kpiLabelRow2, kpiValueRow2].flatMap((rowIndex) =>
-    Array.from({ length: 4 }, (_, index) => ({
+  // 4 KPI columns × 2 sheet columns.
+  const mergeKpiLabels = Array.from({ length: 4 }, (_, index) => ({
+    mergeCells: {
+      range: {
+        sheetId: input.sheetId,
+        startRowIndex: kpiLabelRow,
+        endRowIndex: kpiLabelRow + 1,
+        startColumnIndex: index * 2,
+        endColumnIndex: index * 2 + 2
+      },
+      mergeType: "MERGE_ALL"
+    }
+  }));
+
+  // Лиды + Ср. чек values span primary+euro rows; Счета/Оплаты keep count and € stacked.
+  const mergeKpiValues = [
+    {
       mergeCells: {
         range: {
           sheetId: input.sheetId,
-          startRowIndex: rowIndex,
-          endRowIndex: rowIndex + 1,
-          startColumnIndex: index * 2,
-          endColumnIndex: index * 2 + 2
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 0,
+          endColumnIndex: 2
         },
         mergeType: "MERGE_ALL"
       }
-    }))
-  );
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiPrimaryRow + 1,
+          startColumnIndex: 2,
+          endColumnIndex: 4
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiEuroRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 2,
+          endColumnIndex: 4
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiPrimaryRow + 1,
+          startColumnIndex: 4,
+          endColumnIndex: 6
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiEuroRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 4,
+          endColumnIndex: 6
+        },
+        mergeType: "MERGE_ALL"
+      }
+    },
+    {
+      mergeCells: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 6,
+          endColumnIndex: 8
+        },
+        mergeType: "MERGE_ALL"
+      }
+    }
+  ];
 
-  const kpiLabelFormat = {
-    textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(0.28, 0.35, 0.45) },
-    backgroundColor: rgb(0.9, 0.93, 0.97),
-    horizontalAlignment: "CENTER",
-    verticalAlignment: "MIDDLE"
-  };
-  const kpiValueFormat = {
-    textFormat: { bold: true, fontSize: 18, foregroundColor: rgb(0.1, 0.18, 0.3) },
-    backgroundColor: rgb(0.97, 0.98, 1),
-    horizontalAlignment: "CENTER",
-    verticalAlignment: "MIDDLE",
-    numberFormat: { type: "NUMBER", pattern: "0.##" }
-  };
+  const intFormat = { type: "NUMBER", pattern: "0" };
+  const moneyFormat = { type: "NUMBER", pattern: "0.00" };
 
   await batchUpdate([
     {
@@ -471,7 +534,8 @@ async function formatControlTab(input: {
         mergeType: "MERGE_ALL"
       }
     },
-    ...mergeKpiPairs,
+    ...mergeKpiLabels,
+    ...mergeKpiValues,
     {
       repeatCell: {
         range: {
@@ -516,25 +580,65 @@ async function formatControlTab(input: {
       repeatCell: {
         range: {
           sheetId: input.sheetId,
-          startRowIndex: kpiLabelRow1,
-          endRowIndex: kpiLabelRow1 + 1,
+          startRowIndex: kpiLabelRow,
+          endRowIndex: kpiLabelRow + 1,
           startColumnIndex: 0,
           endColumnIndex: 8
         },
-        cell: { userEnteredFormat: kpiLabelFormat },
-        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 9, foregroundColor: rgb(0.28, 0.35, 0.45) },
+            backgroundColor: rgb(0.9, 0.93, 0.97),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            wrapStrategy: "WRAP"
+          }
+        },
+        fields:
+          "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,wrapStrategy)"
       }
     },
     {
       repeatCell: {
         range: {
           sheetId: input.sheetId,
-          startRowIndex: kpiValueRow1,
-          endRowIndex: kpiValueRow1 + 1,
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiEuroRow + 1,
           startColumnIndex: 0,
           endColumnIndex: 8
         },
-        cell: { userEnteredFormat: kpiValueFormat },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 18, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            numberFormat: intFormat
+          }
+        },
+        fields:
+          "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,numberFormat)"
+      }
+    },
+    // Money: avg check + euro rows under Счета/Оплаты
+    {
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: kpiPrimaryRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 6,
+          endColumnIndex: 8
+        },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 18, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            numberFormat: moneyFormat
+          }
+        },
         fields:
           "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,numberFormat)"
       }
@@ -543,25 +647,20 @@ async function formatControlTab(input: {
       repeatCell: {
         range: {
           sheetId: input.sheetId,
-          startRowIndex: kpiLabelRow2,
-          endRowIndex: kpiLabelRow2 + 1,
-          startColumnIndex: 0,
-          endColumnIndex: 8
+          startRowIndex: kpiEuroRow,
+          endRowIndex: kpiEuroRow + 1,
+          startColumnIndex: 2,
+          endColumnIndex: 6
         },
-        cell: { userEnteredFormat: kpiLabelFormat },
-        fields: "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment)"
-      }
-    },
-    {
-      repeatCell: {
-        range: {
-          sheetId: input.sheetId,
-          startRowIndex: kpiValueRow2,
-          endRowIndex: kpiValueRow2 + 1,
-          startColumnIndex: 0,
-          endColumnIndex: 8
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 14, foregroundColor: rgb(0.1, 0.18, 0.3) },
+            backgroundColor: rgb(0.97, 0.98, 1),
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            numberFormat: moneyFormat
+          }
         },
-        cell: { userEnteredFormat: kpiValueFormat },
         fields:
           "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment,verticalAlignment,numberFormat)"
       }
@@ -638,12 +737,32 @@ async function formatControlTab(input: {
           userEnteredFormat: {
             horizontalAlignment: "CENTER",
             verticalAlignment: "MIDDLE",
-            numberFormat: { type: "NUMBER", pattern: "0.##" }
+            numberFormat: intFormat
           }
         },
         fields: "userEnteredFormat(horizontalAlignment,verticalAlignment,numberFormat)"
       }
     },
+    // Money columns in manager table: Σ счетов(6), Тов/опл(8), Выручка(10), Ср.чек(11)
+    ...[6, 8, 10, 11].map((columnIndex) => ({
+      repeatCell: {
+        range: {
+          sheetId: input.sheetId,
+          startRowIndex: firstDataRow,
+          endRowIndex: lastDataRow + 1,
+          startColumnIndex: columnIndex,
+          endColumnIndex: columnIndex + 1
+        },
+        cell: {
+          userEnteredFormat: {
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            numberFormat: moneyFormat
+          }
+        },
+        fields: "userEnteredFormat(horizontalAlignment,verticalAlignment,numberFormat)"
+      }
+    })),
     {
       updateBorders: {
         range: {
@@ -677,29 +796,22 @@ async function formatControlTab(input: {
     },
     {
       updateDimensionProperties: {
-        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiLabelRow1, endIndex: kpiLabelRow1 + 1 },
-        properties: { pixelSize: 24 },
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiLabelRow, endIndex: kpiLabelRow + 1 },
+        properties: { pixelSize: 28 },
         fields: "pixelSize"
       }
     },
     {
       updateDimensionProperties: {
-        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiValueRow1, endIndex: kpiValueRow1 + 1 },
-        properties: { pixelSize: 44 },
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiPrimaryRow, endIndex: kpiPrimaryRow + 1 },
+        properties: { pixelSize: 36 },
         fields: "pixelSize"
       }
     },
     {
       updateDimensionProperties: {
-        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiLabelRow2, endIndex: kpiLabelRow2 + 1 },
-        properties: { pixelSize: 24 },
-        fields: "pixelSize"
-      }
-    },
-    {
-      updateDimensionProperties: {
-        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiValueRow2, endIndex: kpiValueRow2 + 1 },
-        properties: { pixelSize: 44 },
+        range: { sheetId: input.sheetId, dimension: "ROWS", startIndex: kpiEuroRow, endIndex: kpiEuroRow + 1 },
+        properties: { pixelSize: 28 },
         fields: "pixelSize"
       }
     },
@@ -1348,13 +1460,12 @@ export async function syncShiftBoard(options: {
     const totalInvoiceSum = managers.reduce((sum, row) => sum + row.invoiceSum, 0);
     const totalPayments = managers.reduce((sum, row) => sum + row.payments, 0);
     const totalRevenueEur = managers.reduce((sum, row) => sum + row.paymentSumEur, 0);
-    const totalProductsInPayments = managers.reduce((sum, row) => sum + row.productsInPayments, 0);
 
     const controlRows: SheetRow[] = [
       [`СМЕНА СЕГОДНЯ · ${day}`],
       [`Обновлено: ${syncedAt} (Europe/Riga)`],
       [],
-      ["Лиды", "", "Счета", "", "Оплаты", "", "Выручка, €", ""],
+      ["Лиды", "", "Счета · €", "", "Оплаты · €", "", "Ср. чек", ""],
       [
         totalLeads,
         "",
@@ -1362,20 +1473,10 @@ export async function syncShiftBoard(options: {
         "",
         totalPayments,
         "",
-        money(totalRevenueEur),
-        ""
-      ],
-      ["Σ счетов, €", "", "Ср. чек, €", "", "Тов. на оплату", "", "", ""],
-      [
-        money(totalInvoiceSum),
-        "",
         avgCheckLabel(totalRevenueEur, totalPayments),
-        "",
-        productsPerPaymentLabel(totalProductsInPayments, totalPayments),
-        "",
-        "",
         ""
       ],
+      ["", "", money(totalInvoiceSum), "", money(totalRevenueEur), "", "", ""],
       [],
       ["По менеджерам"],
       [
