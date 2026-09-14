@@ -27,7 +27,6 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
   const [page, setPage] = useState<ShiftManagerPage | null>(null);
   const [report, setReport] = useState<ShiftFeedbackReport | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfBusy, setPdfBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,38 +71,15 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
       <div className="mb-6 flex flex-wrap items-center gap-3 print:hidden">
         <button
           type="button"
-          className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
-          disabled={pdfBusy}
-          onClick={async () => {
-            setPdfBusy(true);
-            try {
-              const response = await fetch(
-                `/api/rop/shift-feedback/pdf?day=${encodeURIComponent(day)}&manager=${encodeURIComponent(managerId)}`
-              );
-              const type = response.headers.get("content-type") || "";
-              if (response.ok && type.includes("pdf")) {
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                const header = response.headers.get("content-disposition") || "";
-                const utfName = header.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-                link.href = url;
-                link.download = decodeURIComponent(utfName || `smena-${day}.pdf`);
-                link.click();
-                URL.revokeObjectURL(url);
-                return;
-              }
-              window.print();
-            } finally {
-              setPdfBusy(false);
-            }
-          }}
+          className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white"
+          onClick={() => window.print()}
         >
-          {pdfBusy ? "Собираю PDF…" : "Скачать PDF"}
+          Скачать PDF
         </button>
         <Link href={`/rop/shift/${day}`} className="text-sm font-semibold text-slate-600 hover:text-slate-950">
           К смене {day}
         </Link>
+        <p className="w-full text-xs text-slate-500">В окне печати выберите «Сохранить как PDF».</p>
       </div>
       <p className="text-[11px] text-slate-500">Обратная связь за смену · {report.dayLabel} · {report.shiftHours}</p>
       <h1 className="mt-1 text-3xl font-black tracking-tight">{page.name}</h1>

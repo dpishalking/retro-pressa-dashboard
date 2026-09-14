@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const html = renderManagerPdfHtml(report, page);
     const filename = pdfFileName(report.day, page.name);
-    const pdf = htmlToPdfBuffer(html);
+    const pdf = process.env.CHROME_PATH ? htmlToPdfBuffer(html) : null;
     if (pdf) {
       return new NextResponse(new Uint8Array(pdf), {
         headers: {

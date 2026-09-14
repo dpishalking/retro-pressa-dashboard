@@ -40,50 +40,8 @@ function StatChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-async function downloadManagerPdf(day: string, managerId: string) {
-  const response = await fetch(
-    `/api/rop/shift-feedback/pdf?day=${encodeURIComponent(day)}&manager=${encodeURIComponent(managerId)}`
-  );
-  const type = response.headers.get("content-type") || "";
-  if (response.ok && type.includes("pdf")) {
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const header = response.headers.get("content-disposition") || "";
-    const utfName = header.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    const asciiName = header.match(/filename="([^"]+)"/i)?.[1];
-    link.href = url;
-    link.download = decodeURIComponent(utfName || asciiName || `smena-${day}.pdf`);
-    link.click();
-    URL.revokeObjectURL(url);
-    return "pdf" as const;
-  }
-  if (!response.ok) {
-    const data = await readJsonResponse<{ error?: string }>(response);
-    throw new Error(data.error || "Не удалось скачать PDF");
-  }
-  window.open(`/rop/shift/${day}/pdf/${encodeURIComponent(managerId)}`, "_blank");
-  return "print" as const;
-}
-
 function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
-  const [pdfStatus, setPdfStatus] = useState<Status>({ state: "idle", message: "" });
-
-  async function downloadPdf() {
-    setPdfStatus({ state: "loading", message: "Собираю PDF…" });
-    try {
-      const mode = await downloadManagerPdf(day, row.bitrixUserId);
-      setPdfStatus({
-        state: "ok",
-        message: mode === "pdf" ? "PDF скачан." : "Открыл печатную страницу — сохраните как PDF."
-      });
-    } catch (error) {
-      setPdfStatus({
-        state: "error",
-        message: error instanceof Error ? error.message : "Не удалось скачать PDF"
-      });
-    }
-  }
+  const printHref = `/rop/shift/${day}/pdf/${encodeURIComponent(row.bitrixUserId)}`;
 
   return (
     <article id={`m-${row.bitrixUserId}`} className="card p-5">
@@ -96,19 +54,17 @@ function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
           <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
             {row.leadsCreated} лидов · {row.dialogs} чатов
           </p>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-slate-800 disabled:opacity-60"
-            onClick={() => void downloadPdf()}
-            disabled={pdfStatus.state === "loading"}
+          <Link
+            href={printHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-slate-800"
           >
             <FileDown size={14} />
-            {pdfStatus.state === "loading" ? "PDF…" : "Скачать PDF"}
-          </button>
+            Скачать PDF
+          </Link>
         </div>
       </div>
-      {pdfStatus.state === "error" ? <p className="mt-2 text-xs font-semibold text-rose-700">{pdfStatus.message}</p> : null}
-      {pdfStatus.state === "ok" ? <p className="mt-2 text-xs font-semibold text-emerald-700">{pdfStatus.message}</p> : null}
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <StatChip label="Лиды / уник." value={`${row.leadsCreated} → ${row.leadUnique}`} />
