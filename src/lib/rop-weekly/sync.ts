@@ -35,7 +35,7 @@ const DEAL_STAGE_DIALOG = "UC_8ZC4BD";
 const DEAL_STAGE_THINKING = "PREPARATION";
 const INVOICE_STAGE_SENT = "DT31_2:S";
 const SERVICE_PHONE_TAILS = ["28373939"];
-const PAID_SOURCE_SET = new Set(PAID_LEAD_SOURCE_IDS);
+const PAID_SOURCE_SET = new Set<string>(PAID_LEAD_SOURCE_IDS);
 const EXCLUDED_LEADS = new Set<string>(EXCLUDED_LEAD_STATUS_IDS);
 
 type SheetCell = string | number | boolean | null;
