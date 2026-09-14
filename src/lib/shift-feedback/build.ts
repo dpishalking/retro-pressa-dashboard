@@ -45,6 +45,7 @@ type AnalyzedDialog = {
   responseTimes: number[];
   managerMessages: number;
   waitingOnUs: boolean;
+  clientSilent: boolean;
   hasPrice: boolean;
   hasClose: boolean;
   hasList: boolean;
@@ -206,13 +207,13 @@ function analyzeDialog(input: {
     const user = users[String(row.senderid || "")] || {};
     const isClient = user.extranet === true || user.extranet === "Y";
     const text = cleanText(String(row.text || row.textlegacy || ""));
-    if (!text || isSystemText(text)) continue;
+    if (isSystemText(text)) continue;
     if (String(row.senderid ?? "0") === "0") continue;
     lines.push({
       date: row.date || "",
       role: isClient ? "client" : "manager",
       name: user.name || (isClient ? "Клиент" : "Менеджер"),
-      text
+      text: text || "[вложение]"
     });
   }
   if (!lines.length) return null;
@@ -228,10 +229,11 @@ function analyzeDialog(input: {
     if (minutes !== null) responseTimes.push(minutes);
   }
 
-  const managerToday = todayLines.filter((line) => line.role === "manager");
+  const managerToday = todayLines.filter((line) => line.role === "manager" && line.text !== "[вложение]");
   const managerText = managerToday.map((line) => line.text).join("\n");
   const clientText = todayLines.filter((line) => line.role === "client").map((line) => line.text).join("\n");
-  const last = todayLines.at(-1) || lines.at(-1) || null;
+  const last = lines.at(-1) || null;
+  const lastRole = last?.role ?? null;
 
   return {
     sessionId: input.sessionId,
@@ -241,10 +243,11 @@ function analyzeDialog(input: {
     todayLines,
     managerText,
     clientText,
-    lastRole: last?.role ?? null,
+    lastRole,
     responseTimes,
     managerMessages: managerToday.length,
-    waitingOnUs: last?.role === "client",
+    waitingOnUs: lastRole === "client",
+    clientSilent: lastRole === "manager",
     hasPrice: /\d{2,6}\s*(€|eur|евро|руб|₽|byn)|(?:€|eur|евро|руб|₽|byn)\s*\d{2,6}/i.test(managerText),
     hasClose: /оплат|оформ|сч[её]т|ссылк|пришлите|бронь|какой вариант .*оформ/i.test(managerText),
     hasList: /(правд|извести|журнал|газет|крокод|огон)[\s\S]{0,100}(правд|извести|журнал|газет|крокод|огон)/i.test(managerText),
@@ -273,7 +276,8 @@ function describeLead(dialog: AnalyzedDialog | null, isDupe: boolean, createdTod
   }
   const bits: string[] = [];
   if (isDupe) bits.push("повторный контакт");
-  if (dialog.waitingOnUs) bits.push("последнее слово за клиентом");
+  if (dialog.waitingOnUs) bits.push("клиент ждёт нашего ответа");
+  else if (dialog.clientSilent) bits.push("клиент не ответил");
   if (dialog.hasList && !dialog.hasPrice) bits.push("дал список без цены");
   else if (dialog.hasPrice && !dialog.hasClose) bits.push("назвал цену, не спросил про оформление");
   else if (dialog.hasClose) bits.push("уже звал оформить");
@@ -308,10 +312,11 @@ function buildLeadList(leads: BitrixLead[], dialogs: AnalyzedDialog[], dupeIds: 
         url: `${PORTAL}/crm/lead/details/${id}/`,
         comment: describeLead(dialog, isDupe, createdToday),
         waiting: Boolean(dialog?.waitingOnUs),
+        silent: Boolean(dialog?.clientSilent),
         dupe: isDupe
       };
     })
-    .sort((a, b) => Number(b.waiting) - Number(a.waiting) || Number(b.dupe) - Number(a.dupe) || a.title.localeCompare(b.title, "ru"))
+    .sort((a, b) => Number(b.silent) - Number(a.silent) || Number(b.waiting) - Number(a.waiting) || Number(b.dupe) - Number(a.dupe) || a.title.localeCompare(b.title, "ru"))
     .map((row) => ({ id: row.id, title: row.title, url: row.url, comment: row.comment }));
 }
 
@@ -323,8 +328,12 @@ function focusLeads(dialogs: AnalyzedDialog[]): ShiftFocusLead[] {
       let nextStep = "1 вариант + цена с доставкой → «оформляем этот?»";
       if (dialog.waitingOnUs) {
         score += 3;
-        note = "Клиент написал последним";
+        note = "Клиент ждёт нашего ответа";
         nextStep = "Ответить сегодняшним хвостом: цена с доставкой → «оформляем?»";
+      } else if (dialog.clientSilent) {
+        score += 2;
+        note = "Клиент не ответил";
+        nextStep = "Короткий пинг: 1 вариант + цена → «оформляем?»";
       }
       if (dialog.hasList && !dialog.hasPrice) {
         score += 2;
@@ -378,6 +387,7 @@ function buildPage(input: {
   const withRecommendation = dialogs.filter((dialog) => dialog.hasRecommendation).length;
   const withRecipient = dialogs.filter((dialog) => dialog.hasRecipient).length;
   const waitingOnUs = dialogs.filter((dialog) => dialog.waitingOnUs).length;
+  const clientSilent = dialogs.filter((dialog) => dialog.clientSilent).length;
   const shareUnder5 = pct(responseTimes.filter((value) => value <= 5).length, responseTimes.length);
   const shareOver60 = pct(responseTimes.filter((value) => value >= 60).length, responseTimes.length);
   const firstName = firstNameFrom(input.name);
@@ -411,8 +421,11 @@ function buildPage(input: {
   if (dialogs.length && withClose / dialogs.length < 0.2) {
     better.push(`Мало закрытий на оформление (${withClose} из ${dialogs.length}). После цены: «оформляем этот?»`);
   }
+  if (clientSilent > 0) {
+    better.push(`${clientSilent} чатов, где клиент не ответил после нас. Завтра короткий пинг: цена + «оформляем?»`);
+  }
   if (waitingOnUs > 0) {
-    better.push(`${waitingOnUs} чатов, где последнее слово за клиентом. Завтра с утра закрыть эти хвосты.`);
+    better.push(`${waitingOnUs} чатов ждут нашего ответа — клиент написал, мы ещё не закрыли.`);
   }
   if (shareOver60 !== null && shareOver60 >= 30) {
     better.push(`${Math.round(shareOver60)}% ответов ушли позже часа. Держать живой чат в первые 5 минут.`);
@@ -435,8 +448,10 @@ function buildPage(input: {
     headline = leadsCreated
       ? `${firstName}: лиды есть, ответы сильно запаздывают.`
       : `${firstName}: в чатах отвечает с большой паузой.`;
+  } else if (clientSilent >= 3) {
+    headline = `${firstName}: много чатов, где клиент не ответил — ${clientSilent} ждут пинга.`;
   } else if (waitingOnUs >= 3) {
-    headline = `${firstName}: много открытых хвостов — ${waitingOnUs} чатов ждут следующего шага.`;
+    headline = `${firstName}: ${waitingOnUs} чатов ждут нашего ответа.`;
   }
 
   return {
@@ -457,6 +472,7 @@ function buildPage(input: {
     shareUnder5,
     shareOver60,
     waitingOnUs,
+    clientSilent,
     withPrice,
     withClose,
     withList,
@@ -687,7 +703,8 @@ export async function buildShiftFeedbackReport(day = moscowDateIso()): Promise<S
       withUtm: managers.reduce((sum, row) => sum + row.withUtm, 0),
       withoutUtm: managers.reduce((sum, row) => sum + row.withoutUtm, 0),
       dialogs: managers.reduce((sum, row) => sum + row.dialogs, 0),
-      waitingOnUs: managers.reduce((sum, row) => sum + row.waitingOnUs, 0)
+      waitingOnUs: managers.reduce((sum, row) => sum + row.waitingOnUs, 0),
+      clientSilent: managers.reduce((sum, row) => sum + row.clientSilent, 0)
     },
     managers,
     offShift

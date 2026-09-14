@@ -108,12 +108,12 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
           <p className="text-[11px] text-slate-500">Сообщений на чат</p>
         </div>
         <div>
-          <p className="text-xl font-black">{page.waitingOnUs}</p>
-          <p className="text-[11px] text-slate-500">Клиент написал последним</p>
+          <p className="text-xl font-black">{page.clientSilent ?? 0}</p>
+          <p className="text-[11px] text-slate-500">Клиент не ответил</p>
         </div>
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        Дубли {page.leadDupes} · с UTM {page.withUtm} / без {page.withoutUtm} · позже часа {fmtPct(page.shareOver60)}
+        Дубли {page.leadDupes} · с UTM {page.withUtm} / без {page.withoutUtm} · ждём нашего ответа {page.waitingOnUs} · позже часа {fmtPct(page.shareOver60)}
       </p>
 
       <h2 className="mt-6 text-xs font-bold uppercase tracking-wider text-slate-500">Получилось</h2>

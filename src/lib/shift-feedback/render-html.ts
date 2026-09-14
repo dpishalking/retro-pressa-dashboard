@@ -79,9 +79,9 @@ function managerSheet(page: ShiftManagerPage, report: ShiftFeedbackReport) {
       <div><b>${fmtPct(page.shareUnder5)}</b><span>Ответы до 5 минут</span></div>
       <div><b>${page.dialogs}</b><span>Чатов в работе</span></div>
       <div><b>${avgLabel(page.avgManagerMessages)}</b><span>Сообщений на чат</span></div>
-      <div><b>${page.waitingOnUs}</b><span>Клиент написал последним</span></div>
+      <div><b>${page.clientSilent ?? 0}</b><span>Клиент не ответил</span></div>
     </div>
-    <p class="meta">Дубли ${page.leadDupes} · с UTM ${page.withUtm} / без ${page.withoutUtm} · позже часа ${fmtPct(page.shareOver60)}</p>
+    <p class="meta">Дубли ${page.leadDupes} · с UTM ${page.withUtm} / без ${page.withoutUtm} · ждём нашего ответа ${page.waitingOnUs} · позже часа ${fmtPct(page.shareOver60)}</p>
     <h2>Получилось</h2>
     ${list(page.good, "За этот срез сильных ходов в переписке не видно.")}
     <h2>Усилить</h2>
@@ -157,7 +157,7 @@ export function renderShiftFeedbackHtml(report: ShiftFeedbackReport) {
     <div class="stats">
       <div><b>${report.team.created} → ${report.team.unique}</b><span>Лиды смены / уникальные</span></div>
       <div><b>${report.team.dialogs}</b><span>Чатов с активностью</span></div>
-      <div><b>${report.team.waitingOnUs}</b><span>Последнее слово за клиентом</span></div>
+      <div><b>${report.team.clientSilent ?? 0}</b><span>Клиент не ответил после нас</span></div>
     </div>
     <p class="meta">Дубли ${report.team.dupes} · с UTM ${report.team.withUtm} / без ${report.team.withoutUtm}. Источник: Bitrix + Open Lines, ${esc(report.timezone)}.</p>
     <h2>Кто был на смене</h2>

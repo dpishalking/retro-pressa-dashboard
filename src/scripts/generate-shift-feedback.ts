@@ -38,7 +38,8 @@ async function main() {
         withUtm: placed.managers.reduce((sum, row) => sum + row.withUtm, 0),
         withoutUtm: placed.managers.reduce((sum, row) => sum + row.withoutUtm, 0),
         dialogs: placed.managers.reduce((sum, row) => sum + row.dialogs, 0),
-        waitingOnUs: placed.managers.reduce((sum, row) => sum + row.waitingOnUs, 0)
+        waitingOnUs: placed.managers.reduce((sum, row) => sum + row.waitingOnUs, 0),
+        clientSilent: placed.managers.reduce((sum, row) => sum + (row.clientSilent ?? 0), 0)
       }
     };
   } else {

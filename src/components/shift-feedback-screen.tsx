@@ -71,7 +71,7 @@ function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
         <StatChip label="Медиана ответа" value={fmtMin(row.medianReplyMin)} />
         <StatChip label="До 5 минут" value={fmtPct(row.shareUnder5)} />
         <StatChip label="Сообщ. на чат" value={row.avgManagerMessages == null ? "—" : String(row.avgManagerMessages).replace(".", ",")} />
-        <StatChip label="Клиент последний" value={String(row.waitingOnUs)} />
+        <StatChip label="Клиент не ответил" value={String(row.clientSilent ?? 0)} />
         <StatChip label="Позже часа" value={fmtPct(row.shareOver60)} />
       </div>
 
@@ -320,11 +320,12 @@ export function ShiftFeedbackScreen({ day }: { day: string }) {
                 <StatChip label="Лиды / уник." value={`${number(team.created)} → ${number(team.unique)}`} />
                 <StatChip label="Дубли" value={number(team.dupes)} />
                 <StatChip label="Чаты" value={number(team.dialogs)} />
-                <StatChip label="Клиент последний" value={number(team.waitingOnUs)} />
+                <StatChip label="Клиент не ответил" value={number(team.clientSilent ?? 0)} />
               </div>
             ) : null}
             <p className="mt-3 text-xs text-slate-500">
-              Дубли по телефону/email с мая. UTM {team ? `${team.withUtm} / без ${team.withoutUtm}` : "—"}. Источник: график + Bitrix Open Lines, Москва.
+              Дубли по телефону/email с мая. UTM {team ? `${team.withUtm} / без ${team.withoutUtm}` : "—"}.
+              Ждём нашего ответа: {team ? number(team.waitingOnUs) : "—"}. Источник: график + Bitrix Open Lines, Москва.
             </p>
           </section>
 

@@ -31,6 +31,7 @@ export type ShiftManagerPage = {
   shareUnder5: number | null;
   shareOver60: number | null;
   waitingOnUs: number;
+  clientSilent: number;
   withPrice: number;
   withClose: number;
   withList: number;
@@ -62,6 +63,7 @@ export type ShiftFeedbackReport = {
     withoutUtm: number;
     dialogs: number;
     waitingOnUs: number;
+    clientSilent: number;
   };
   managers: ShiftManagerPage[];
   offShift: ShiftManagerPage[];
