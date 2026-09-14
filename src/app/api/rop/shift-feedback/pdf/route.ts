@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const filename = pdfFileName(report.day, page.name);
     const pdf = htmlToPdfBuffer(html);
     if (pdf) {
-      return new NextResponse(pdf, {
+      return new NextResponse(new Uint8Array(pdf), {
         headers: {
           "content-type": "application/pdf",
           "content-disposition": `attachment; filename="smena-${day}.pdf"; filename*=UTF-8''${encodeURIComponent(filename)}`

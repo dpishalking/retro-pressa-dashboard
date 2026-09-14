@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShiftFeedbackScreen } from "@/components/shift-feedback-screen";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 type Props = { params: Promise<{ day: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
