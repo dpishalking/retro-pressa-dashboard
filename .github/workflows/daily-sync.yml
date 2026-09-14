@@ -47,6 +47,7 @@ jobs:
           fi
           EOF
 
+      # Soft-fail: Bitrix often returns "Too many requests" right after the alerts pull.
       - name: Run ROP daily-sync (conversations / metrics)
         continue-on-error: true
         run: |
@@ -61,6 +62,8 @@ jobs:
           if [ -n "${SECRET:-}" ]; then
             AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
           fi
+          echo "cooldown 90s after alerts Bitrix pull"
+          sleep 90
           echo "rop daily-sync"
           OUT="$(mktemp)"
           CODE="$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" -X POST http://127.0.0.1:4175/api/rop/daily-sync \
