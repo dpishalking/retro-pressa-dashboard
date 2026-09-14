@@ -20,6 +20,7 @@ data/auth/
 data/conversation-exports/
 data/conversation-snapshots/
 data/manager-dialogs-sheet-state/
+data/shift-feedback/
 data/products/
 data/motivation/
 data/partners/partners-runtime.json

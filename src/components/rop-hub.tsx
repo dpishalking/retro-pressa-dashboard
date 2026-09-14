@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, MessageSquare, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, ClipboardCheck, MessageSquare, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type RopTile = {
@@ -11,6 +11,13 @@ type RopTile = {
 };
 
 const tiles: RopTile[] = [
+  {
+    href: "/rop/shift",
+    title: "Смена за день",
+    description: "Кто вышел по графику: лиды, скорость ответа, что получилось и что усилить. Срез в 20:05 по Москве.",
+    icon: ClipboardCheck,
+    status: "active"
+  },
   {
     href: "/rop/conversations?tab=feedback",
     title: "ОС по чатам и анализ",
@@ -63,7 +70,7 @@ export function RopHub() {
         </Link>
         <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">Инструменты РОП</p>
         <h1 className="text-4xl font-black tracking-normal text-slate-950 lg:text-5xl">Кабинет руководителя отдела продаж</h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">Переписки и мотивация команды.</p>
+        <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">Смена за день, переписки и мотивация команды.</p>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
