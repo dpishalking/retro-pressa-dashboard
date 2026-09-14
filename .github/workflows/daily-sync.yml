@@ -2,6 +2,7 @@ name: Daily ROP Sync
 
 on:
   schedule:
+    # ~09:15 Europe/Riga (06:15 UTC) — after morning Bitrix activity settles
     - cron: "15 6 * * *"
   workflow_dispatch:
 
@@ -18,7 +19,36 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Run daily sync on server
+      # Sheet «Сводка дня» must update even when the heavy ROP daily-sync fails.
+      - name: Sync ROP alerts sheet (Сводка дня)
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          echo "rop alerts (Сводка дня)"
+          OUT="$(mktemp)"
+          CODE="$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" -X POST http://127.0.0.1:4175/api/sync/rop-alerts \
+            "${AUTH_HEADERS[@]}" \
+            -d '{"includeDialogs":true}' || true)"
+          echo "HTTP ${CODE}"
+          head -c 4000 "$OUT" || true
+          echo
+          if [ "$CODE" != "200" ]; then
+            echo "rop-alerts failed with HTTP ${CODE}" >&2
+            exit 1
+          fi
+          EOF
+
+      - name: Run ROP daily-sync (conversations / metrics)
+        continue-on-error: true
         run: |
           ssh -i ~/.ssh/deploy_key \
             -o ServerAliveInterval=30 \
@@ -32,13 +62,15 @@ jobs:
             AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
           fi
           echo "rop daily-sync"
-          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/rop/daily-sync \
+          OUT="$(mktemp)"
+          CODE="$(curl -sS --max-time 300 -o "$OUT" -w "%{http_code}" -X POST http://127.0.0.1:4175/api/rop/daily-sync \
             "${AUTH_HEADERS[@]}" \
-            -d '{"refresh":true,"daysBack":3,"dialogLimit":250,"incremental":true,"exportToSheet":true,"manager":"*","sheetMode":"incremental"}'
+            -d '{"refresh":true,"daysBack":3,"dialogLimit":250,"incremental":true,"exportToSheet":true,"manager":"*","sheetMode":"incremental"}' || true)"
+          echo "HTTP ${CODE}"
+          head -c 4000 "$OUT" || true
           echo
-          echo "rop alerts (Сводка дня)"
-          curl -f -sS --max-time 300 -X POST http://127.0.0.1:4175/api/sync/rop-alerts \
-            "${AUTH_HEADERS[@]}" \
-            -d '{"includeDialogs":true}'
-          echo
+          if [ "$CODE" != "200" ]; then
+            echo "rop daily-sync failed with HTTP ${CODE}" >&2
+            exit 1
+          fi
           EOF
