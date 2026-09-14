@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ShiftManagerPdfScreen } from "@/components/shift-manager-pdf-screen";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 type Props = { params: Promise<{ day: string; managerId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
