@@ -39,7 +39,20 @@ type EnrichedLead = SliceLead & {
   customerKind: CustomerKind;
 };
 
-const UNKNOWN_KEYS = new Set(["", "—", "-", "unknown", "не указан"]);
+const UNKNOWN_KEYS = new Set([
+  "",
+  "—",
+  "-",
+  "unknown",
+  "не указан",
+  "не указана",
+  "не указано",
+  "не определен",
+  "не определена",
+  "не определено"
+]);
+
+const UNKNOWN_COUNTRY_LABEL = "Не указана";
 
 export function emptySliceFilters(period: string): SliceFilters {
   return {
@@ -59,6 +72,12 @@ export function emptySliceFilters(period: string): SliceFilters {
 
 export function isUnknownSliceKey(key: string): boolean {
   return UNKNOWN_KEYS.has(key.trim().toLowerCase());
+}
+
+function countrySliceKey(value: string | null | undefined): { key: string; label: string } {
+  const text = String(value || "").trim();
+  if (!text || isUnknownSliceKey(text)) return { key: "—", label: UNKNOWN_COUNTRY_LABEL };
+  return { key: text, label: text };
 }
 
 function enrichLeads(leads: SliceLead[], facts: SalesCycleFact[]): EnrichedLead[] {
@@ -147,7 +166,7 @@ function firstPaymentByLead(facts: SalesCycleFact[]): Map<string, SalesCycleFact
 
 function leadKey(lead: EnrichedLead, dim: SliceDimensionId, grain: CohortGrain): { key: string; label: string } {
   if (dim === "manager") return { key: lead.assignedById || "unknown", label: lead.assignedById || "Не указан" };
-  if (dim === "country") return { key: lead.country || "—", label: lead.country || "Не указан" };
+  if (dim === "country") return countrySliceKey(lead.country);
   if (dim === "source") {
     const key = lead.sourceId || "—";
     return { key, label: key === "—" ? "Не указан" : bitrixSourceName(key) || key };
@@ -166,7 +185,7 @@ function factKey(fact: SalesCycleFact, dim: SliceDimensionId, grain: CohortGrain
     return { key, label: fact.productName || "Не указан" };
   }
   if (dim === "gift") return { key: fact.giftType || "—", label: fact.giftType || "Не указан" };
-  if (dim === "country") return { key: fact.country || "—", label: fact.country || "Не указан" };
+  if (dim === "country") return countrySliceKey(fact.country);
   if (dim === "source") {
     const key = fact.sourceId || "—";
     return { key, label: key === "—" ? "Не указан" : bitrixSourceName(key) || key };
