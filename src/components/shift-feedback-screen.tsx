@@ -1,20 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, RefreshCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Copy, FileDown, RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { number } from "@/lib/format";
 import { readJsonResponse } from "@/lib/api-response";
 import type { ShiftFeedbackReport, ShiftManagerPage } from "@/lib/shift-feedback/types";
-
-function moscowToday(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Moscow",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
-}
 
 type Payload = {
   ok?: boolean;
@@ -48,18 +40,75 @@ function StatChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ManagerCard({ row }: { row: ShiftManagerPage }) {
+async function downloadManagerPdf(day: string, managerId: string) {
+  const response = await fetch(
+    `/api/rop/shift-feedback/pdf?day=${encodeURIComponent(day)}&manager=${encodeURIComponent(managerId)}`
+  );
+  const type = response.headers.get("content-type") || "";
+  if (response.ok && type.includes("pdf")) {
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const header = response.headers.get("content-disposition") || "";
+    const utfName = header.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const asciiName = header.match(/filename="([^"]+)"/i)?.[1];
+    link.href = url;
+    link.download = decodeURIComponent(utfName || asciiName || `smena-${day}.pdf`);
+    link.click();
+    URL.revokeObjectURL(url);
+    return "pdf" as const;
+  }
+  if (!response.ok) {
+    const data = await readJsonResponse<{ error?: string }>(response);
+    throw new Error(data.error || "Не удалось скачать PDF");
+  }
+  window.open(`/rop/shift/${day}/pdf/${encodeURIComponent(managerId)}`, "_blank");
+  return "print" as const;
+}
+
+function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
+  const [pdfStatus, setPdfStatus] = useState<Status>({ state: "idle", message: "" });
+
+  async function downloadPdf() {
+    setPdfStatus({ state: "loading", message: "Собираю PDF…" });
+    try {
+      const mode = await downloadManagerPdf(day, row.bitrixUserId);
+      setPdfStatus({
+        state: "ok",
+        message: mode === "pdf" ? "PDF скачан." : "Открыл печатную страницу — сохраните как PDF."
+      });
+    } catch (error) {
+      setPdfStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Не удалось скачать PDF"
+      });
+    }
+  }
+
   return (
-    <article className="card p-5">
+    <article id={`m-${row.bitrixUserId}`} className="card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-xl font-black text-slate-950">{row.name}</h3>
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">{row.headline}</p>
         </div>
-        <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-          {row.leadsCreated} лидов · {row.dialogs} чатов
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+            {row.leadsCreated} лидов · {row.dialogs} чатов
+          </p>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-slate-800 disabled:opacity-60"
+            onClick={() => void downloadPdf()}
+            disabled={pdfStatus.state === "loading"}
+          >
+            <FileDown size={14} />
+            {pdfStatus.state === "loading" ? "PDF…" : "Скачать PDF"}
+          </button>
+        </div>
       </div>
+      {pdfStatus.state === "error" ? <p className="mt-2 text-xs font-semibold text-rose-700">{pdfStatus.message}</p> : null}
+      {pdfStatus.state === "ok" ? <p className="mt-2 text-xs font-semibold text-emerald-700">{pdfStatus.message}</p> : null}
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <StatChip label="Лиды / уник." value={`${row.leadsCreated} → ${row.leadUnique}`} />
@@ -125,13 +174,14 @@ function ManagerCard({ row }: { row: ShiftManagerPage }) {
   );
 }
 
-export function ShiftFeedbackScreen() {
-  const [day, setDay] = useState(moscowToday);
+export function ShiftFeedbackScreen({ day }: { day: string }) {
+  const router = useRouter();
   const [days, setDays] = useState<string[]>([]);
   const [report, setReport] = useState<ShiftFeedbackReport | null>(null);
   const [emptyHint, setEmptyHint] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState<Status>({ state: "loading", message: "Загружаю срез…" });
   const [refreshStatus, setRefreshStatus] = useState<Status>({ state: "idle", message: "" });
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async (targetDay: string) => {
     setLoadStatus({ state: "loading", message: "Загружаю срез…" });
@@ -177,7 +227,25 @@ export function ShiftFeedbackScreen() {
     }
   }
 
+  async function copyLink() {
+    const url = `${window.location.origin}/rop/shift/${day}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
   const team = report?.team;
+  const shiftUrl = `/rop/shift/${day}`;
+  const dayPills = Array.from(new Set([day, ...days])).sort((a, b) => b.localeCompare(a));
 
   return (
     <main className="mx-auto w-[min(1100px,calc(100%-32px))] py-8">
@@ -191,8 +259,8 @@ export function ShiftFeedbackScreen() {
           <p className="mb-2 text-sm font-extrabold uppercase tracking-normal text-blue-600">Смена</p>
           <h1 className="text-4xl font-black tracking-normal text-slate-950">Обратная связь за день</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Только те, кто стоял в графике. Официальный срез — каждый вечер в 20:05 по Москве. Днём можно выкачать
-            живой срез кнопкой.
+            Постоянная ссылка на этот день: <span className="font-semibold text-slate-800">{shiftUrl}</span>.
+            Официальный срез — каждый вечер в 20:05 по Москве.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -202,9 +270,17 @@ export function ShiftFeedbackScreen() {
               type="date"
               className="ml-2 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold text-slate-950"
               value={day}
-              onChange={(event) => setDay(event.target.value)}
+              onChange={(event) => router.push(`/rop/shift/${event.target.value}`)}
             />
           </label>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-[var(--line)] px-4 py-2 text-sm font-bold text-slate-800"
+            onClick={() => void copyLink()}
+          >
+            <Copy size={16} />
+            {copied ? "Ссылка скопирована" : "Скопировать ссылку"}
+          </button>
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
@@ -217,17 +293,16 @@ export function ShiftFeedbackScreen() {
         </div>
       </header>
 
-      {days.length ? (
+      {dayPills.length ? (
         <div className="mb-4 flex flex-wrap gap-2">
-          {days.map((item) => (
-            <button
+          {dayPills.map((item) => (
+            <Link
               key={item}
-              type="button"
+              href={`/rop/shift/${item}`}
               className={`rounded-full px-3 py-1 text-xs font-bold ${item === day ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"}`}
-              onClick={() => setDay(item)}
             >
               {item}
-            </button>
+            </Link>
           ))}
         </div>
       ) : null}
@@ -282,7 +357,9 @@ export function ShiftFeedbackScreen() {
               <tbody>
                 {report.managers.map((row) => (
                   <tr key={row.bitrixUserId} className="border-t border-[var(--line)]">
-                    <td className="px-4 py-3 font-semibold">{row.scheduleName || row.name}</td>
+                    <td className="px-4 py-3 font-semibold">
+                      <a href={`#m-${row.bitrixUserId}`} className="hover:underline">{row.scheduleName || row.name}</a>
+                    </td>
                     <td className="px-2 py-3 text-right">{row.leadsCreated}</td>
                     <td className="px-2 py-3 text-right">{row.leadUnique}</td>
                     <td className="px-2 py-3 text-right">{row.dialogs}</td>
@@ -295,17 +372,20 @@ export function ShiftFeedbackScreen() {
             </table>
           </div>
 
-          {report.offShift.length ? (
-            <p className="mb-6 text-sm text-slate-600">
-              Вне графика, но была работа: {report.offShift.map((row) => `${row.name} (${row.leadsCreated} лидов / ${row.dialogs} чатов)`).join("; ")}.
-            </p>
-          ) : null}
-
           <section className="grid gap-4">
             {report.managers.map((row) => (
-              <ManagerCard key={row.bitrixUserId} row={row} />
+              <ManagerCard key={row.bitrixUserId} row={row} day={day} />
             ))}
           </section>
+
+          {report.offShift.length ? (
+            <section className="mt-8 grid gap-4">
+              <h2 className="text-lg font-black text-slate-950">Вне графика, но была работа</h2>
+              {report.offShift.map((row) => (
+                <ManagerCard key={row.bitrixUserId} row={row} day={day} />
+              ))}
+            </section>
+          ) : null}
         </>
       ) : null}
     </main>

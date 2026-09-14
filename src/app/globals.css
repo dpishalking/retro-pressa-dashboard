@@ -223,6 +223,13 @@ a[href]:active,
   }
 }
 
+@media print {
+  .office-hub-home-btn,
+  .office-hub-pending-btn {
+    display: none !important;
+  }
+}
+
 .status-orange {
   color: var(--orange);
   background: #fff5db;

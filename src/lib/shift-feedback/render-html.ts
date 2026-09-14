@@ -155,3 +155,54 @@ export function renderShiftFeedbackHtml(report: ShiftFeedbackReport) {
 </body>
 </html>`;
 }
+
+const PRINT_CSS = `@page { size: A4; margin: 12mm 14mm 14mm; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #111; }
+    body { font: 12px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif; }
+    h1 { font-size: 22px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.02em; }
+    h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 6px; }
+    p, li { font-size: 12.5px; }
+    .kicker, .cut, .meta, .muted { color: #555; }
+    .kicker { margin: 0 0 4px; font-size: 11px; }
+    .headline { font-size: 15px; margin: 0 0 6px; }
+    .cut { margin: 0 0 14px; font-size: 11px; }
+    .sheet { padding-bottom: 8px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 12px; margin: 0 0 10px; }
+    .stats div { border-top: 1px solid #ddd; padding-top: 6px; }
+    .stats b { display: block; font-size: 18px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .stats span { color: #555; font-size: 10.5px; }
+    .meta { margin: 0 0 4px; font-size: 11px; }
+    ol { margin: 0; padding-left: 18px; }
+    li { margin: 0 0 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; vertical-align: top; padding: 5px 6px 5px 0; border-bottom: 1px solid #e6e6e6; }
+    th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; font-weight: 600; }
+    a { color: #111; }
+    .toolbar { margin: 0 0 16px; }
+    .toolbar button { font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 8px 14px; border: 0; background: #111; color: #fff; border-radius: 8px; cursor: pointer; }
+    @media print { .toolbar { display: none; } }`;
+
+export function pdfFileName(day: string, managerName: string) {
+  const slug = managerName
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    || "manager";
+  return `smena-${day}-${slug}.pdf`;
+}
+
+export function renderManagerPdfHtml(report: ShiftFeedbackReport, page: ShiftManagerPage) {
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>${esc(page.name)} · смена ${esc(report.day)}</title>
+  <style>${PRINT_CSS}</style>
+</head>
+<body>
+  <div class="toolbar"><button type="button" onclick="window.print()">Скачать PDF</button></div>
+  ${managerSheet(page, report)}
+</body>
+</html>`;
+}
