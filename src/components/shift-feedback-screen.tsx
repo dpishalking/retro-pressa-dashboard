@@ -170,6 +170,37 @@ function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
           </div>
         </div>
       ) : null}
+
+      {row.leads?.length ? (
+        <div className="mt-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Все лиды · {row.leads.length}</p>
+          <div className="table-scroll mt-2 max-h-[420px] overflow-y-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-slate-500">
+                  <th className="py-1 pr-3">Лид</th>
+                  <th className="py-1">Комментарий</th>
+                </tr>
+              </thead>
+              <tbody>
+                {row.leads.map((lead) => (
+                  <tr key={lead.id} className="border-t border-[var(--line)]">
+                    <td className="py-2 pr-3">
+                      <a className="font-semibold text-blue-700 hover:underline" href={lead.url} target="_blank" rel="noreferrer">
+                        {lead.title}
+                      </a>
+                      <span className="mt-0.5 block text-[11px] text-slate-400">#{lead.id}</span>
+                    </td>
+                    <td className="py-2 text-slate-700">{lead.comment}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : !row.leads && row.leadsCreated > 0 ? (
+        <p className="mt-4 text-sm text-slate-600">Чтобы увидеть все лиды со ссылками в Bitrix, нажмите «Обновить из Bitrix».</p>
+      ) : null}
     </article>
   );
 }

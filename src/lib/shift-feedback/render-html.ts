@@ -51,6 +51,22 @@ function focusTable(page: ShiftManagerPage) {
   </table>`;
 }
 
+function allLeadsTable(page: ShiftManagerPage) {
+  const leads = page.leads ?? [];
+  if (!leads.length) {
+    return `<p class="muted">Лидов с номером карточки за срез не видно.</p>`;
+  }
+  return `<table>
+    <thead><tr><th>Лид</th><th>Комментарий</th></tr></thead>
+    <tbody>
+      ${leads.map((lead) => `<tr>
+        <td><a href="${esc(lead.url)}">${esc(lead.title)}</a><div class="muted">#${esc(lead.id)}</div></td>
+        <td>${esc(lead.comment)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
 function managerSheet(page: ShiftManagerPage, report: ShiftFeedbackReport) {
   return `<section class="sheet">
     <p class="kicker">Обратная связь за смену · ${esc(report.dayLabel)} · ${esc(report.shiftHours)}</p>
@@ -72,6 +88,8 @@ function managerSheet(page: ShiftManagerPage, report: ShiftFeedbackReport) {
     ${list(page.better, "Держать темп: цена, один совет, вопрос на оформление.")}
     <h2>Три лида на утро</h2>
     ${focusTable(page)}
+    <h2>Все лиды</h2>
+    ${allLeadsTable(page)}
   </section>`;
 }
 

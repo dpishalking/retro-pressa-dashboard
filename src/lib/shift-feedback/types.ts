@@ -6,6 +6,13 @@ export type ShiftFocusLead = {
   nextStep: string;
 };
 
+export type ShiftLeadItem = {
+  id: string;
+  title: string;
+  url: string;
+  comment: string;
+};
+
 export type ShiftManagerPage = {
   bitrixUserId: string;
   scheduleName: string;
@@ -34,6 +41,7 @@ export type ShiftManagerPage = {
   good: string[];
   better: string[];
   focusLeads: ShiftFocusLead[];
+  leads: ShiftLeadItem[];
 };
 
 export type ShiftFeedbackReport = {

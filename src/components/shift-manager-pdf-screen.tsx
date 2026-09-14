@@ -181,6 +181,33 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
       ) : (
         <p className="mt-2 text-sm text-slate-500">Живых хвостов с номером лида за срез не видно.</p>
       )}
+
+      <h2 className="mt-6 text-xs font-bold uppercase tracking-wider text-slate-500">Все лиды</h2>
+      {page.leads?.length ? (
+        <table className="mt-2 w-full text-left text-sm">
+          <thead>
+            <tr className="text-[11px] uppercase tracking-wide text-slate-500">
+              <th className="py-1 pr-3">Лид</th>
+              <th className="py-1">Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            {page.leads.map((lead) => (
+              <tr key={lead.id} className="border-t border-slate-200">
+                <td className="py-2 pr-3">
+                  <a className="font-semibold underline" href={lead.url} target="_blank" rel="noreferrer">
+                    {lead.title}
+                  </a>
+                  <span className="mt-0.5 block text-[11px] text-slate-500">#{lead.id}</span>
+                </td>
+                <td className="py-2">{lead.comment}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">Лидов с номером карточки за срез не видно.</p>
+      )}
     </main>
   );
 }

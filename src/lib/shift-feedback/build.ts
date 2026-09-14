@@ -4,7 +4,7 @@ import { firstNameFrom, messageDayIso } from "@/lib/manager-cabinet/dates";
 import { matchUniqueByName, normalizePersonName } from "@/lib/manager-cabinet/match";
 import { loadManagerSchedule } from "@/lib/sales/load-manager-schedule";
 import { isShiftLiveCut, moscowDateIso, moscowHm } from "@/lib/shift-feedback/time";
-import type { ShiftFeedbackReport, ShiftFocusLead, ShiftManagerPage } from "@/lib/shift-feedback/types";
+import type { ShiftFeedbackReport, ShiftFocusLead, ShiftLeadItem, ShiftManagerPage } from "@/lib/shift-feedback/types";
 
 type BitrixUser = { ID?: string; NAME?: string; LAST_NAME?: string; ACTIVE?: boolean | string };
 type BitrixLead = {
@@ -254,6 +254,67 @@ function analyzeDialog(input: {
   };
 }
 
+function cleanLeadTitle(raw: string, fallback: string) {
+  const title = raw
+    .replace(/^Open Channel chat:\s*/i, "")
+    .replace(/["«»]/g, "")
+    .replace(/\s*\(.*\)\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return title || fallback;
+}
+
+function describeLead(dialog: AnalyzedDialog | null, isDupe: boolean, createdToday: boolean): string {
+  if (!dialog) {
+    if (isDupe) return "Повтор: телефон или email уже были в CRM. Переписки за срез не видно — не начинать как с нового.";
+    return createdToday
+      ? "Новый лид, переписки за срез не видно. Написать первым: 1 вариант + цена."
+      : "Карточка есть, чата за срез нет.";
+  }
+  const bits: string[] = [];
+  if (isDupe) bits.push("повторный контакт");
+  if (dialog.waitingOnUs) bits.push("последнее слово за клиентом");
+  if (dialog.hasList && !dialog.hasPrice) bits.push("дал список без цены");
+  else if (dialog.hasPrice && !dialog.hasClose) bits.push("назвал цену, не спросил про оформление");
+  else if (dialog.hasClose) bits.push("уже звал оформить");
+  else if (dialog.hasPrice) bits.push("назвал цену");
+  if (/дорого/i.test(dialog.clientText)) bits.push("клиент сказал «дорого»");
+  else if (/подума/i.test(dialog.clientText)) bits.push("клиент ушёл думать");
+  if (!bits.length) bits.push("был чат, нужен следующий шаг");
+  const text = bits.join("; ");
+  return text.charAt(0).toUpperCase() + text.slice(1) + ".";
+}
+
+function buildLeadList(leads: BitrixLead[], dialogs: AnalyzedDialog[], dupeIds: Set<string>): ShiftLeadItem[] {
+  const dialogByLead = new Map<string, AnalyzedDialog>();
+  for (const dialog of dialogs) {
+    if (!dialog.leadId) continue;
+    const prev = dialogByLead.get(dialog.leadId);
+    if (!prev || Number(dialog.waitingOnUs) > Number(prev.waitingOnUs) || dialog.managerMessages > prev.managerMessages) {
+      dialogByLead.set(dialog.leadId, dialog);
+    }
+  }
+  const leadById = new Map(leads.map((lead) => [String(lead.ID || ""), lead] as const).filter(([id]) => id));
+  const ids = [...new Set([...leadById.keys(), ...dialogByLead.keys()])];
+  return ids
+    .map((id) => {
+      const lead = leadById.get(id);
+      const dialog = dialogByLead.get(id) ?? null;
+      const createdToday = Boolean(lead);
+      const isDupe = dupeIds.has(id);
+      return {
+        id,
+        title: cleanLeadTitle(lead?.TITLE || dialog?.subject || "", `Лид ${id}`),
+        url: `${PORTAL}/crm/lead/details/${id}/`,
+        comment: describeLead(dialog, isDupe, createdToday),
+        waiting: Boolean(dialog?.waitingOnUs),
+        dupe: isDupe
+      };
+    })
+    .sort((a, b) => Number(b.waiting) - Number(a.waiting) || Number(b.dupe) - Number(a.dupe) || a.title.localeCompare(b.title, "ru"))
+    .map((row) => ({ id: row.id, title: row.title, url: row.url, comment: row.comment }));
+}
+
 function focusLeads(dialogs: AnalyzedDialog[]): ShiftFocusLead[] {
   return [...dialogs]
     .map((dialog) => {
@@ -283,9 +344,7 @@ function focusLeads(dialogs: AnalyzedDialog[]): ShiftFocusLead[] {
         note = "Ушёл думать";
         nextStep = "Расчёт и бронь до вечера";
       }
-      const title =
-        dialog.subject.replace(/^Open Channel chat:\s*/i, "").replace(/\s*\(.*\)\s*$/, "").trim() ||
-        `Сессия ${dialog.sessionId}`;
+      const title = cleanLeadTitle(dialog.subject, `Сессия ${dialog.sessionId}`);
       return { dialog, score, note, nextStep, title };
     })
     .filter((row) => row.score > 0 && row.dialog.leadId)
@@ -306,7 +365,7 @@ function buildPage(input: {
   name: string;
   onShift: boolean;
   leads: BitrixLead[];
-  dupes: number;
+  dupeIds: Set<string>;
   dialogs: AnalyzedDialog[];
 }): ShiftManagerPage {
   const dialogs = input.dialogs;
@@ -323,7 +382,8 @@ function buildPage(input: {
   const shareOver60 = pct(responseTimes.filter((value) => value >= 60).length, responseTimes.length);
   const firstName = firstNameFrom(input.name);
   const leadsCreated = input.leads.length;
-  const leadUnique = leadsCreated - input.dupes;
+  const leadDupes = input.leads.filter((lead) => input.dupeIds.has(String(lead.ID || ""))).length;
+  const leadUnique = leadsCreated - leadDupes;
   const withUtm = input.leads.filter(hasUtm).length;
 
   const good: string[] = [];
@@ -386,7 +446,7 @@ function buildPage(input: {
     firstName,
     onShift: input.onShift,
     leadsCreated,
-    leadDupes: input.dupes,
+    leadDupes,
     leadUnique,
     withUtm,
     withoutUtm: leadsCreated - withUtm,
@@ -406,7 +466,8 @@ function buildPage(input: {
     headline,
     good: good.slice(0, 3),
     better: better.slice(0, 3),
-    focusLeads: focusLeads(dialogs)
+    focusLeads: focusLeads(dialogs),
+    leads: buildLeadList(input.leads, dialogs, input.dupeIds)
   };
 }
 
@@ -553,7 +614,7 @@ export async function buildShiftFeedbackReport(day = moscowDateIso()): Promise<S
       name: match.name,
       onShift: true,
       leads: assigned,
-      dupes: assigned.filter((lead) => dupeIds.has(String(lead.ID || ""))).length,
+      dupeIds,
       dialogs: dialogs.filter((dialog) => dialog.responsibleId === match.bitrixId)
     }));
   }
@@ -574,7 +635,7 @@ export async function buildShiftFeedbackReport(day = moscowDateIso()): Promise<S
         name: person.name,
         onShift: true,
         leads: assigned,
-        dupes: assigned.filter((lead) => dupeIds.has(String(lead.ID || ""))).length,
+        dupeIds,
         dialogs: dialogs.filter((dialog) => dialog.responsibleId === id)
       }));
     }
@@ -598,7 +659,7 @@ export async function buildShiftFeedbackReport(day = moscowDateIso()): Promise<S
       name,
       onShift: false,
       leads: assigned,
-      dupes: assigned.filter((lead) => dupeIds.has(String(lead.ID || ""))).length,
+      dupeIds,
       dialogs: ownDialogs
     }));
   }
