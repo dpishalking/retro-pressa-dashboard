@@ -6,7 +6,7 @@ import { ArrowLeft, Copy, FileDown, RefreshCcw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { number } from "@/lib/format";
 import { readJsonResponse } from "@/lib/api-response";
-import type { ShiftFeedbackReport, ShiftManagerPage } from "@/lib/shift-feedback/types";
+import { asShiftBetterItems, type ShiftFeedbackReport, type ShiftManagerPage } from "@/lib/shift-feedback/types";
 
 type Payload = {
   ok?: boolean;
@@ -42,6 +42,7 @@ function StatChip({ label, value }: { label: string; value: string }) {
 
 function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
   const printHref = `/rop/shift/${day}/pdf/${encodeURIComponent(row.bitrixUserId)}`;
+  const better = asShiftBetterItems(row.better);
 
   return (
     <article id={`m-${row.bitrixUserId}`} className="card p-5">
@@ -86,12 +87,23 @@ function ManagerCard({ row, day }: { row: ShiftManagerPage; day: string }) {
         </div>
       ) : null}
 
-      {row.better.length ? (
+      {better.length ? (
         <div className="mt-4">
           <p className="text-xs font-bold uppercase tracking-wide text-amber-800">Усилить</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
-            {row.better.map((item) => (
-              <li key={item}>{item}</li>
+          <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
+            {better.map((item) => (
+              <li key={item.text}>
+                {item.text}
+                {item.links?.length ? (
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {item.links.map((link) => (
+                      <a key={link.id} className="font-semibold text-blue-700 hover:underline" href={link.url} target="_blank" rel="noreferrer">
+                        {link.title}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </li>
             ))}
           </ul>
         </div>

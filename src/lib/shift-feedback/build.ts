@@ -5,7 +5,7 @@ import { firstNameFrom, messageDayIso } from "@/lib/manager-cabinet/dates";
 import { matchUniqueByName, normalizePersonName } from "@/lib/manager-cabinet/match";
 import { loadManagerSchedule } from "@/lib/sales/load-manager-schedule";
 import { isShiftLiveCut, moscowDateIso, moscowHm } from "@/lib/shift-feedback/time";
-import type { ShiftFeedbackReport, ShiftFocusLead, ShiftLeadItem, ShiftManagerPage } from "@/lib/shift-feedback/types";
+import type { ShiftBetterItem, ShiftBetterLink, ShiftFeedbackReport, ShiftFocusLead, ShiftLeadItem, ShiftManagerPage } from "@/lib/shift-feedback/types";
 
 type BitrixUser = { ID?: string; NAME?: string; LAST_NAME?: string; ACTIVE?: boolean | string };
 type BitrixLead = {
@@ -272,6 +272,23 @@ function cleanLeadTitle(raw: string, fallback: string) {
   return title || fallback;
 }
 
+function chatLinks(dialogs: AnalyzedDialog[], leads: BitrixLead[]): ShiftBetterLink[] {
+  const leadById = new Map(leads.map((lead) => [String(lead.ID || ""), lead]));
+  const seen = new Set<string>();
+  const links: ShiftBetterLink[] = [];
+  for (const dialog of dialogs) {
+    if (!dialog.leadId || seen.has(dialog.leadId)) continue;
+    seen.add(dialog.leadId);
+    const lead = leadById.get(dialog.leadId);
+    links.push({
+      id: dialog.leadId,
+      title: cleanLeadTitle(lead?.TITLE || dialog.subject, `Лид ${dialog.leadId}`),
+      url: `${PORTAL}/crm/lead/details/${dialog.leadId}/`
+    });
+  }
+  return links;
+}
+
 function describeLead(dialog: AnalyzedDialog | null, isDupe: boolean, createdToday: boolean): string {
   if (!dialog) {
     if (isDupe) return "Повтор: телефон или email уже были в CRM. Переписки за срез не видно — не начинать как с нового.";
@@ -416,30 +433,36 @@ function buildPage(input: {
     good.push("Берёт лиды и отвечает людям.");
   }
 
-  const better: string[] = [];
-  if (withList >= Math.max(2, Math.ceil(dialogs.length * 0.35)) && withRecommendation < Math.max(1, Math.ceil(dialogs.length * 0.15))) {
-    better.push(`${withList} чатов со списком газет и ${withRecommendation} рекомендаций. Замена: 1 главный вариант + 1 запасной.`);
-  }
-  if (dialogs.length && withPrice / dialogs.length < 0.45) {
-    better.push(`Цену пишет редко (${withPrice} из ${dialogs.length}). Без цифры люди зависают.`);
-  }
-  if (dialogs.length && withClose / dialogs.length < 0.2) {
-    better.push(`Мало закрытий на оформление (${withClose} из ${dialogs.length}). После цены: «оформляем этот?»`);
+  const better: ShiftBetterItem[] = [];
+  if (waitingOnUs > 0) {
+    better.push({
+      text: `${waitingOnUs} чатов ждут нашего ответа — клиент написал, мы ещё не закрыли.`,
+      links: chatLinks(dialogs.filter((dialog) => dialog.waitingOnUs), input.leads)
+    });
   }
   if (clientSilent > 0) {
-    better.push(`${clientSilent} чатов, где клиент не ответил после нас. Завтра короткий пинг: цена + «оформляем?»`);
+    better.push({
+      text: `${clientSilent} чатов, где клиент не ответил после нас. Завтра короткий пинг: цена + «оформляем?»`,
+      links: chatLinks(dialogs.filter((dialog) => dialog.clientSilent), input.leads)
+    });
   }
-  if (waitingOnUs > 0) {
-    better.push(`${waitingOnUs} чатов ждут нашего ответа — клиент написал, мы ещё не закрыли.`);
+  if (withList >= Math.max(2, Math.ceil(dialogs.length * 0.35)) && withRecommendation < Math.max(1, Math.ceil(dialogs.length * 0.15))) {
+    better.push({ text: `${withList} чатов со списком газет и ${withRecommendation} рекомендаций. Замена: 1 главный вариант + 1 запасной.` });
+  }
+  if (dialogs.length && withPrice / dialogs.length < 0.45) {
+    better.push({ text: `Цену пишет редко (${withPrice} из ${dialogs.length}). Без цифры люди зависают.` });
+  }
+  if (dialogs.length && withClose / dialogs.length < 0.2) {
+    better.push({ text: `Мало закрытий на оформление (${withClose} из ${dialogs.length}). После цены: «оформляем этот?»` });
   }
   if (shareOver60 !== null && shareOver60 >= 30) {
-    better.push(`${Math.round(shareOver60)}% ответов ушли позже часа. Держать живой чат в первые 5 минут.`);
+    better.push({ text: `${Math.round(shareOver60)}% ответов ушли позже часа. Держать живой чат в первые 5 минут.` });
   }
   if (!better.length && dialogs.length) {
-    better.push("Держать темп: 1 вариант + цена + доставка + «какой оформляем?» в каждом живом чате.");
+    better.push({ text: "Держать темп: 1 вариант + цена + доставка + «какой оформляем?» в каждом живом чате." });
   }
   if (!leadsCreated && !dialogs.length) {
-    better.push("По графику на смене, но за этот срез нет новых лидов и переписки. Проверить, доходят ли назначения.");
+    better.push({ text: "По графику на смене, но за этот срез нет новых лидов и переписки. Проверить, доходят ли назначения." });
   }
 
   let headline = `${firstName}: ${leadsCreated} новых лидов, ${dialogs.length} чатов.`;
@@ -486,7 +509,7 @@ function buildPage(input: {
     withRecipient,
     headline,
     good: good.slice(0, 3),
-    better: better.slice(0, 3),
+    better: better.slice(0, 5),
     focusLeads: focusLeads(dialogs),
     leads: buildLeadList(input.leads, dialogs, input.dupeIds)
   };

@@ -13,6 +13,31 @@ export type ShiftLeadItem = {
   comment: string;
 };
 
+export type ShiftBetterLink = {
+  id: string;
+  title: string;
+  url: string;
+};
+
+export type ShiftBetterItem = {
+  text: string;
+  links?: ShiftBetterLink[];
+};
+
+export function asShiftBetterItems(items: unknown): ShiftBetterItem[] {
+  if (!Array.isArray(items)) return [];
+  return items.flatMap((item) => {
+    if (typeof item === "string" && item.trim()) return [{ text: item }];
+    if (!item || typeof item !== "object" || !("text" in item)) return [];
+    const row = item as ShiftBetterItem;
+    if (!String(row.text || "").trim()) return [];
+    return [{
+      text: row.text,
+      links: Array.isArray(row.links) ? row.links.filter((link) => link?.id && link?.url) : undefined
+    }];
+  });
+}
+
 export type ShiftManagerPage = {
   bitrixUserId: string;
   scheduleName: string;
@@ -40,7 +65,7 @@ export type ShiftManagerPage = {
   withRecipient: number;
   headline: string;
   good: string[];
-  better: string[];
+  better: ShiftBetterItem[];
   focusLeads: ShiftFocusLead[];
   leads: ShiftLeadItem[];
 };

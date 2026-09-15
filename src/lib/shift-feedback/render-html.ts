@@ -1,4 +1,4 @@
-import type { ShiftFeedbackReport, ShiftManagerPage } from "@/lib/shift-feedback/types";
+import { asShiftBetterItems, type ShiftFeedbackReport, type ShiftManagerPage } from "@/lib/shift-feedback/types";
 
 function esc(value: unknown) {
   return String(value ?? "")
@@ -33,6 +33,17 @@ function oneLine(page: ShiftManagerPage) {
 function list(items: string[], empty: string) {
   if (!items.length) return `<p class="muted">${esc(empty)}</p>`;
   return `<ol>${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ol>`;
+}
+
+function betterList(items: unknown, empty: string) {
+  const rows = asShiftBetterItems(items);
+  if (!rows.length) return `<p class="muted">${esc(empty)}</p>`;
+  return `<ol>${rows.map((item) => {
+    const links = item.links?.length
+      ? `<div class="links">${item.links.map((link) => `<a href="${esc(link.url)}">${esc(link.title)}</a>`).join(" · ")}</div>`
+      : "";
+    return `<li>${esc(item.text)}${links}</li>`;
+  }).join("")}</ol>`;
 }
 
 function focusTable(page: ShiftManagerPage) {
@@ -85,7 +96,7 @@ function managerSheet(page: ShiftManagerPage, report: ShiftFeedbackReport) {
     <h2>Получилось</h2>
     ${list(page.good, "За этот срез сильных ходов в переписке не видно.")}
     <h2>Усилить</h2>
-    ${list(page.better, "Держать темп: цена, один совет, вопрос на оформление.")}
+    ${betterList(page.better, "Держать темп: цена, один совет, вопрос на оформление.")}
     <h2>Три лида на утро</h2>
     ${focusTable(page)}
     <h2>Все лиды</h2>
@@ -143,7 +154,8 @@ export function renderShiftFeedbackHtml(report: ShiftFeedbackReport) {
     th, td { text-align: left; vertical-align: top; padding: 5px 6px 5px 0; border-bottom: 1px solid #e6e6e6; }
     th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; font-weight: 600; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    a { color: #111; }
+    a { color: #1d4ed8; }
+    .links { margin-top: 2px; font-size: 11px; }
     .warn { color: #7a3e00; }
     .note { margin-top: 14px; }
   </style>
@@ -195,7 +207,8 @@ const PRINT_CSS = `@page { size: A4; margin: 12mm 14mm 14mm; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; vertical-align: top; padding: 5px 6px 5px 0; border-bottom: 1px solid #e6e6e6; }
     th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #555; font-weight: 600; }
-    a { color: #111; }
+    a { color: #1d4ed8; }
+    .links { margin-top: 2px; font-size: 11px; }
     .toolbar { margin: 0 0 16px; }
     .toolbar button { font: 600 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 8px 14px; border: 0; background: #111; color: #fff; border-radius: 8px; cursor: pointer; }
     @media print { .toolbar { display: none; } }`;

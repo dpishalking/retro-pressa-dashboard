@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readJsonResponse } from "@/lib/api-response";
-import type { ShiftFeedbackReport, ShiftManagerPage } from "@/lib/shift-feedback/types";
+import { asShiftBetterItems, type ShiftFeedbackReport, type ShiftManagerPage } from "@/lib/shift-feedback/types";
 
 type Payload = {
   ok?: boolean;
@@ -66,6 +66,8 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
     return <main className="p-8 text-sm text-slate-600">Готовлю отчёт…</main>;
   }
 
+  const better = asShiftBetterItems(page.better);
+
   return (
     <main className="mx-auto max-w-[780px] bg-white px-8 py-8 text-slate-950">
       <div className="mb-6 flex flex-wrap items-center gap-3 print:hidden">
@@ -126,9 +128,22 @@ export function ShiftManagerPdfScreen({ day, managerId }: { day: string; manager
       )}
 
       <h2 className="mt-6 text-xs font-bold uppercase tracking-wider text-slate-500">Усилить</h2>
-      {page.better.length ? (
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6">
-          {page.better.map((item) => <li key={item}>{item}</li>)}
+      {better.length ? (
+        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6">
+          {better.map((item) => (
+            <li key={item.text}>
+              {item.text}
+              {item.links?.length ? (
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  {item.links.map((link) => (
+                    <a key={link.id} className="font-semibold text-blue-700 hover:underline" href={link.url} target="_blank" rel="noreferrer">
+                      {link.title}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </li>
+          ))}
         </ol>
       ) : (
         <p className="mt-2 text-sm text-slate-500">Держать темп: цена, один совет, вопрос на оформление.</p>
