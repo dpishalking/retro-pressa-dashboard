@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Target, Trash2, Truck, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Sparkles, Target, Trash2, Truck, X } from "lucide-react";
 import Link from "next/link";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -67,6 +67,12 @@ const LIVE_LINKS = [
     description: "familia-studio.com",
     href: "https://familia-studio.com/presentation/scenario",
     Icon: Pencil
+  },
+  {
+    label: "Оживи",
+    description: "memory-boost.com",
+    href: "https://memory-boost.com/#how",
+    Icon: Sparkles
   }
 ] as const;
 
