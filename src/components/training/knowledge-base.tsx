@@ -611,6 +611,13 @@ function DeliverySection() {
           </div>
 
           <div className={cardClass}>
+            <h3 className={headingClass}>Самовывоз в Риге</h3>
+            <p className="mt-4 text-base font-bold text-slate-900">Самовывоз</p>
+            <p className="mt-1 text-base font-bold text-slate-900">Braslas 24, Rīga, Latvija</p>
+            <p className={`mt-1 ${textClass}`}>По будням с 9:00 до 18:00.</p>
+          </div>
+
+          <div className={cardClass}>
             <h3 className={headingClass}>Минский офис — доставка по Минску</h3>
             <ul className={listClass}>
               <li>стоимость — 15 BYN;</li>
