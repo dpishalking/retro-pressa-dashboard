@@ -7,6 +7,7 @@
  */
 
 import { EXCLUDED_LEAD_STATUS_IDS } from "@/lib/bitrix/metric-definitions";
+import { resolveOpenLineSpeaker } from "@/lib/bitrix/openline-waba";
 import {
   arrayResult,
   bitrixBatch,
@@ -250,14 +251,18 @@ function lastHumanMessage(history: SessionHistory | null | undefined) {
   const last = rows[rows.length - 1];
   if (!last) return null;
   const user = users[String(last.senderid ?? "")];
-  const isClient = user?.extranet === true || user?.extranet === "Y";
-  return {
-    date: last.date ?? "",
+  const speaker = resolveOpenLineSpeaker({
+    extranet: user?.extranet,
+    userName: user?.name,
     text: String(last.text ?? last.textlegacy ?? "")
       .replace(/\[USER=\d+ REPLACE\]([^\[]+)\[\/USER\]/gi, "$1")
       .replace(/\[b\]|\[\/b\]/gi, "")
-      .trim(),
-    role: (isClient ? "client" : "manager") as "client" | "manager"
+      .trim()
+  });
+  return {
+    date: last.date ?? "",
+    text: speaker.text,
+    role: speaker.role
   };
 }
 

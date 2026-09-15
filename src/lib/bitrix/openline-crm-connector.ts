@@ -2,6 +2,7 @@ import { appendToLivePeriodStore, conversationMessageKey } from "@/lib/conversat
 import { writeConversationSnapshot } from "@/lib/conversation-snapshot-store";
 import { currentPeriodKey } from "@/lib/conversation-periods";
 import { buildConversationDashboard, classifyMessage, summarizeDialogs } from "@/lib/conversation-intelligence";
+import { resolveOpenLineSpeaker } from "@/lib/bitrix/openline-waba";
 import type {
   ConversationDashboardMetrics,
   ConversationImportFileDiagnostic,
@@ -181,15 +182,18 @@ function normalizeSessionMessages(
   return rows.map((row) => {
     const senderId = String(row.senderid ?? "");
     const user = users[senderId];
-    const isClient = user?.extranet === true || user?.extranet === "Y";
-    const senderRole: ConversationMessage["senderRole"] = isClient ? "client" : "manager";
-    const text = cleanMessageText(String(row.text ?? row.textlegacy ?? ""));
+    const speaker = resolveOpenLineSpeaker({
+      extranet: user?.extranet,
+      userName: user?.name,
+      text: String(row.text ?? row.textlegacy ?? "")
+    });
+    const text = cleanMessageText(speaker.text);
     return {
       date: row.date ?? null,
       channel: "bitrix",
       dialogId: sessionId,
-      sender: user?.name || (isClient ? "Клиент" : "Менеджер"),
-      senderRole,
+      sender: speaker.name,
+      senderRole: speaker.role,
       text,
       manager: null,
       stage: inferStage(text),

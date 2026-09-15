@@ -1,3 +1,4 @@
+import { resolveOpenLineSpeaker } from "@/lib/bitrix/openline-waba";
 import { bitrixBatch, bitrixListAll, chunkIds } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import { firstNameFrom, messageDayIso, rigaDateIso } from "@/lib/manager-cabinet/dates";
@@ -167,8 +168,12 @@ function analyzeDialog(input: {
   const lines: DialogLine[] = messages
     .map((row) => {
       const user = users[String(row.senderid || "")] || {};
-      const isClient = user.extranet === true || user.extranet === "Y";
-      const text = cleanText(String(row.text || row.textlegacy || ""));
+      const speaker = resolveOpenLineSpeaker({
+        extranet: user.extranet,
+        userName: user.name,
+        text: String(row.text || row.textlegacy || "")
+      });
+      const text = cleanText(speaker.text);
       if (!text) return null;
       if (
         /^Conversation #|^Contact information saved|^Data received:|^Диалог закреплен|^.*начал работу с диалогом/i.test(
@@ -179,8 +184,8 @@ function analyzeDialog(input: {
       }
       return {
         date: row.date || "",
-        role: (isClient ? "client" : "manager") as "client" | "manager",
-        name: user.name || (isClient ? "Клиент" : "Менеджер"),
+        role: speaker.role,
+        name: speaker.name,
         text
       };
     })

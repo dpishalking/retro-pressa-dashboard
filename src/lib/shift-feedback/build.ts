@@ -1,3 +1,4 @@
+import { resolveOpenLineSpeaker } from "@/lib/bitrix/openline-waba";
 import { bitrixBatch, bitrixListAll, chunkIds } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import { firstNameFrom, messageDayIso } from "@/lib/manager-cabinet/dates";
@@ -205,14 +206,18 @@ function analyzeDialog(input: {
   const lines: DialogLine[] = [];
   for (const row of messages) {
     const user = users[String(row.senderid || "")] || {};
-    const isClient = user.extranet === true || user.extranet === "Y";
-    const text = cleanText(String(row.text || row.textlegacy || ""));
+    const speaker = resolveOpenLineSpeaker({
+      extranet: user.extranet,
+      userName: user.name,
+      text: String(row.text || row.textlegacy || "")
+    });
+    const text = cleanText(speaker.text);
     if (isSystemText(text)) continue;
     if (String(row.senderid ?? "0") === "0") continue;
     lines.push({
       date: row.date || "",
-      role: isClient ? "client" : "manager",
-      name: user.name || (isClient ? "Клиент" : "Менеджер"),
+      role: speaker.role,
+      name: speaker.name,
       text: text || "[вложение]"
     });
   }
