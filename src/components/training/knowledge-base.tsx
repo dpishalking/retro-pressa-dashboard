@@ -608,6 +608,14 @@ function DeliverySection() {
           </div>
 
           <div className={cardClass}>
+            <h3 className={headingClass}>Казахстан: СДЭК из Минска</h3>
+            <ul className={listClass}>
+              <li>Минск → Казахстан — до 7 дней, СДЭК;</li>
+              <li>срочная доставка из Минска в Казахстан — 3–4 дня.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
             <h3 className={headingClass}>Экспресс-доставка DHL</h3>
             <ul className={listClass}>
               <li>Стоимость — от 50 EUR.</li>
