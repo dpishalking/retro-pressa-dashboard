@@ -107,3 +107,11 @@ data/manager-dialogs-sheet-state/
 - **Новый блок на экране** → screen-компонент, паттерн из `ad-analytics-screen.tsx`.
 - **Новый sync** → connector в `src/lib/`, route в `src/app/api/sync/`, snapshot store при необходимости.
 - **Gemini** → ключ `GEMINI_API_KEY`, модель `GEMINI_MODEL`, ошибки на русском в UI.
+
+## Cursor Cloud specific instructions
+
+- Node 22 + npm. Зависимости ставит update script (`npm install`); отдельно ничего доустанавливать не нужно.
+- Приложение — **один** Next.js-сервис. Запуск: `npm run dev` → `http://127.0.0.1:4174` (команды: см. `## Запуск`). Базы данных нет — состояние в файлах `data/` и `.cache/`.
+- Для входа нужен `.env.local` минимум с `AUTH_SECRET` (любая случайная строка) + `DEFAULT_ADMIN_LOGIN`/`DEFAULT_ADMIN_PASSWORD` (по умолчанию `admin`/`admin`). Без `AUTH_SECRET` логин работать не будет. `.env.local` не коммитить.
+- Все внешние интеграции (Bitrix, GA4, Google Sheets, Gemini, Clarity) и Telegram-бот `manager-questions-bot/` — опциональны и не нужны, чтобы поднять и протестировать дашборд; без ключей соответствующие sync/AI-фичи просто отключены и в UI видно «НЕТ ДАННЫХ».
+- Тесты: `npm test` (tsx-тесты в `src/tests/`) — зелёные. `npm run typecheck` в репозитории имеет предсуществующие ошибки в нескольких тест-файлах (`src/tests/*`) и не входит в `npm test`; на запуск приложения это не влияет.
