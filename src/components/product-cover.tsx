@@ -10,7 +10,7 @@ type ProductCoverProps = {
 
 export function ProductCover({ src, alt, className = "", sizes, priority }: ProductCoverProps) {
   return (
-    <div className={`relative overflow-hidden bg-[#f4efe6] ${className}`}>
+    <div className={`relative overflow-hidden bg-[var(--card)] ${className}`}>
       <div className="absolute inset-0 p-3 sm:p-5">
         <div className="relative h-full w-full">
           <Image

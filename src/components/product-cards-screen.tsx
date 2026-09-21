@@ -22,7 +22,7 @@ export function ProductCardsGalleryScreen({ cards }: { cards: ProductCard[] }) {
               href={productCardHref(card.slug)}
               className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="relative aspect-[819/1024] bg-[#f4efe6]">
+              <div className="relative aspect-[819/1024] bg-white">
                 <Image
                   src={card.image}
                   alt={card.title}
