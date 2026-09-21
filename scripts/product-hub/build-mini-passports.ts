@@ -177,14 +177,26 @@ const SEEDS: ProductSeed[] = [
   {
     productId: "PRODUCT_LIFE_BOOK",
     tabName: "07_Книга_жизни",
-    titleName: "Книга жизни",
+    titleName: "Книга жизни в заголовках газет",
     category: "Масштаб жизни",
-    shortWhat: "Книга в твёрдом переплёте: один год — один газетный блок.",
+    shortWhat: "Книга в твёрдом переплёте из газет: один год жизни — один газетный блок. Не интервью.",
     priceFrom: 240,
     cogs: 73,
     leadTime: "от 14 дней",
     included: "подбор газет по годам/регионам, сборка, печать",
     driveUrls: [DRIVE.life],
+  },
+  {
+    productId: "PRODUCT_LIFE_STORY",
+    tabName: "13_Книга_жизни",
+    titleName: "Книга жизни",
+    category: "Книга о человеке",
+    shortWhat:
+      "Книга о человеке по интервью: интервьюер записывает историю, из этого собирается книга. Не газета по годам.",
+    priceDisplay: "по запросу",
+    leadTime: "индивидуально",
+    included: "интервью, текст, сборка книги",
+    driveUrls: [],
   },
   {
     productId: "PRODUCT_FAMILY_EDITION",

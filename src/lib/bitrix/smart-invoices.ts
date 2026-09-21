@@ -90,6 +90,7 @@ function giftTypeFromProductName(name: string): string {
   if (t.includes("песн")) return "Песня";
   if (t.includes("наклей")) return "Наклейка";
   if (t.includes("оживи")) return "Оживи";
+  if (t.includes("заголовк") && t.includes("книг")) return "Книга жизни в заголовках газет";
   if (t.includes("книг") && t.includes("жиз")) return "Книга жизни";
   if (t.includes("упаков")) return "Упаковка";
   if (t.includes("персонализ") && t.includes("журнал")) return "Персонализированный журнал";

@@ -196,6 +196,10 @@ function inferProductIdFromName(name: string): string | null {
   if (n.includes("песн") || n.includes("song")) return "PRODUCT_CONGRATS_SONG";
   if (n.includes("наклей") || n.includes("sticker")) return "PRODUCT_STICKER";
   if (n.includes("оживи") || n.includes("animat")) return "PRODUCT_ANIMATE";
+  if (n.includes("заголовк") && (n.includes("книг") || n.includes("life"))) return "PRODUCT_LIFE_BOOK";
+  if ((n.includes("книг") && n.includes("жиз") && (n.includes("интервью") || n.includes("о человеке"))) || n.includes("life story")) {
+    return "PRODUCT_LIFE_STORY";
+  }
   if (n.includes("книг") || n.includes("life book")) return "PRODUCT_LIFE_BOOK";
   if (n.includes("семейн") || n.includes("family")) return "PRODUCT_FAMILY_EDITION";
   if (n.includes("дигитал") || n.includes("digital")) return "PRODUCT_DIGITAL";

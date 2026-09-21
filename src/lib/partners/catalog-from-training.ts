@@ -8,6 +8,7 @@ import type { PassportDashboardEconomy, PassportDashboardProduct } from "@/types
 const TRAINING_TO_HUB: Record<string, string | string[]> = {
   "personal-newspaper": "PRODUCT_ORIGINAL",
   "personal-magazine": "PRODUCT_LIFE_BOOK",
+  "life-story": "PRODUCT_LIFE_STORY",
   "retro-newspaper": ["PRODUCT_CONGRATS_NEWSPAPER", "PRODUCT_CONGRATS_MAGAZINE"],
   "gift-edition": "PRODUCT_PERSONAL_NEWSPAPER",
   "glossy-magazine": "PRODUCT_PERSONAL_MAGAZINE",
@@ -20,6 +21,7 @@ const TRAINING_TO_HUB: Record<string, string | string[]> = {
 const PRODUCTION_DAYS: Record<string, string> = {
   "personal-newspaper": "зависит от наличия",
   "personal-magazine": "индивидуально",
+  "life-story": "индивидуально",
   "retro-newspaper": "несколько дней",
   "gift-edition": "1–2 дня",
   "glossy-magazine": "от 7–10 раб. дней",

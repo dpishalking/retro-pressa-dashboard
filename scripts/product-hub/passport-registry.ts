@@ -23,6 +23,8 @@ export type PassportRegistryEntry = {
   spreadsheetId: string;
   visualTabName: string;
   economyTabName: string;
+  /** Defaults to «Смыслы». Use when the passport lives as extra tabs in a shared workbook. */
+  meaningsTabName?: string;
   visualSource: PassportVisualSource;
   economySource: PassportEconomySource;
 };
@@ -149,19 +151,32 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
   },
   {
     productId: "PRODUCT_LIFE_BOOK",
-    bitrixName: "Книга жизни",
+    bitrixName: "Книга жизни в заголовках газет",
     spreadsheetId: "1q2WKgcCCVeomg7KhFWEr68re4ReE3xuak4LusmXyPSU",
     visualTabName: "Визуал",
     economyTabName: "Экономика",
     visualSource: {
       trainingProductId: "personal-magazine",
-      clientMaterialCategories: ["Книга жизни"],
+      clientMaterialCategories: ["Книга жизни в заголовках газет", "Книга жизни"],
       clientMaterialIdIncludes: ["life-book"],
       clientMaterialIds: ["review-life-book-vyx"],
     },
     economySource: {
       bitrixProductName: "Книга жизни в заголовках газет",
     },
+  },
+  {
+    productId: "PRODUCT_LIFE_STORY",
+    bitrixName: "Книга жизни",
+    spreadsheetId: process.env.LIFE_STORY_PASSPORT_SHEET_ID?.trim() || "1NsVbsv2YZbehiYTtSP1Waf0gYf1nCnocszonQyppKAE",
+    visualTabName: "13_Визуал",
+    economyTabName: "13_Экономика",
+    meaningsTabName: "13_Смыслы",
+    visualSource: {
+      trainingProductId: "life-story",
+      clientMaterialCategories: ["Книга жизни"],
+    },
+    economySource: {},
   },
   {
     productId: "PRODUCT_STICKER",

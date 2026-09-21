@@ -90,12 +90,29 @@ const PLANS: ProductMeaningPlan[] = [
   },
   {
     productId: "PRODUCT_LIFE_BOOK",
-    sheetNameIncludes: ["книга жизни"],
+    sheetNameIncludes: ["книга жизни в заголовках", "заголовках газет"],
     trainingId: "personal-magazine",
     framing: [
       [
         "compare_with",
-        "Книга жизни = хронология газет по годам жизни. Не путать с именным глянцевым журналом (тексты/фото с нуля) и с книгой воспоминаний (интервью/наследство). Не путать с семейным изданием (модель уточняется).",
+        "Книга жизни в заголовках газет = хронология газет по годам жизни. Не путать с «Книгой жизни» (интервьюер записывает историю человека, из этого делается книга). Не путать с глянцевым журналом о человеке и с семейным изданием.",
+        "Product Hub / CRM",
+      ],
+    ],
+  },
+  {
+    productId: "PRODUCT_LIFE_STORY",
+    sheetNameIncludes: ["книга жизни (интервью)", "книга жизни — интервью", "книга о человеке по интервью"],
+    trainingId: "life-story",
+    framing: [
+      [
+        "compare_with",
+        "Книга жизни = книга о человеке по интервью. Интервьюер берёт интервью, затем из этого делается книга. Это не «Книга жизни в заголовках газет» (газеты год за годом) и не семейное издание (история семьи), и не глянцевый журнал о человеке.",
+        "Product Hub / CRM",
+      ],
+      [
+        "do_not_promise",
+        "Не обещать газеты по годам жизни и не продавать этот продукт как архивную книгу в заголовках.",
         "Product Hub / CRM",
       ],
     ],
@@ -614,14 +631,14 @@ function buildRowsForPlan(plan: ProductMeaningPlan, sheetProducts: SheetProduct[
   return rows;
 }
 
-async function ensureSmyslyTab(token: string, spreadsheetId: string): Promise<string> {
+async function ensureSmyslyTab(token: string, spreadsheetId: string, title = "Смыслы"): Promise<string> {
   const meta = await sheetsApi<{
     sheets?: Array<{ properties?: { title?: string; sheetId?: number } }>;
   }>(
     token,
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(sheetId,title)`,
   );
-  const existing = (meta.sheets || []).find((s) => (s.properties?.title || "").trim() === "Смыслы");
+  const existing = (meta.sheets || []).find((s) => (s.properties?.title || "").trim() === title);
   if (existing?.properties?.title) return existing.properties.title;
 
   await sheetsApi(token, `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
@@ -630,13 +647,13 @@ async function ensureSmyslyTab(token: string, spreadsheetId: string): Promise<st
       requests: [
         {
           addSheet: {
-            properties: { title: "Смыслы", gridProperties: { rowCount: 200, columnCount: 6 } },
+            properties: { title, gridProperties: { rowCount: 200, columnCount: 6 } },
           },
         },
       ],
     }),
   });
-  return "Смыслы";
+  return title;
 }
 
 async function syncOne(entry: PassportRegistryEntry, fieldRows: Array<[string, string, string]>) {
@@ -651,13 +668,14 @@ async function syncOne(entry: PassportRegistryEntry, fieldRows: Array<[string, s
     return false;
   }
 
-  await ensureSmyslyTab(token, entry.spreadsheetId);
+  const tab = entry.meaningsTabName || "Смыслы";
+  await ensureSmyslyTab(token, entry.spreadsheetId, tab);
   const rows = passportKvRows(fieldRows);
 
   await writeSheetValues({
     spreadsheetId: entry.spreadsheetId,
-    range: quote("Смыслы", "A1"),
-    clearRange: quote("Смыслы", "A1:Z400"),
+    range: quote(tab, "A1"),
+    clearRange: quote(tab, "A1:Z400"),
     rows,
   });
 

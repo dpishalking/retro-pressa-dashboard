@@ -77,6 +77,10 @@ function resolveProductId(marker: string, name: string) {
   if (text.includes("оригинал газеты") || text.includes("газета из дня рождения") || text.includes("издание из важной даты")) {
     return "personal-newspaper";
   }
+  if (text.includes("заголовк")) return "personal-magazine";
+  if (text.includes("книга жизни") && (text.includes("интервью") || text.includes("о человеке"))) {
+    return "life-story";
+  }
   if (text.includes("книга жизни")) return "personal-magazine";
   if (text.includes("partypage") || text.includes("персонализированная газета") || text.includes("газета о человеке")) {
     return "retro-newspaper";

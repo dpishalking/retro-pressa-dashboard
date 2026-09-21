@@ -175,6 +175,7 @@ export function inferProductFromDealTitle(title: string | null | undefined): str
   if (t.includes("песн") || t.includes("song")) return "Песня";
   if (t.includes("наклей") || t.includes("sticker")) return "Наклейка";
   if (t.includes("оживи") || t.includes("оживлен")) return "Оживи";
+  if (t.includes("заголовк") && t.includes("книг")) return "Книга жизни в заголовках газет";
   if (t.includes("книг") && t.includes("жиз")) return "Книга жизни";
   if (t.includes("семейн")) return "Семейное издание";
   if (t.includes("персонализ") && t.includes("журнал")) return "Персонализированный журнал";

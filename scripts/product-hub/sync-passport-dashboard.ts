@@ -84,7 +84,7 @@ async function main() {
   for (const entry of PASSPORT_REGISTRY) {
     console.log(`→ ${entry.bitrixName}`);
     try {
-      const meanings = parseFieldMap(await readTab(token, entry.spreadsheetId, "Смыслы"));
+      const meanings = parseFieldMap(await readTab(token, entry.spreadsheetId, entry.meaningsTabName || "Смыслы"));
       await sleep(400);
       const economy = parseFieldMap(
         await readTab(token, entry.spreadsheetId, entry.economyTabName || "Экономика"),

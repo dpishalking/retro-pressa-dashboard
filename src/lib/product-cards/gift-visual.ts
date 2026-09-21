@@ -30,9 +30,13 @@ export function matchGiftVisual(productName: string): GiftVisual | null {
     const card = findProductCard("congratulatory-newspaper");
     return card ? visualFromCard(card) : null;
   }
-  if (/книг/.test(n) && /жизн/.test(n)) {
+  if (/книг/.test(n) && /жизн/.test(n) && /заголовк/.test(n)) {
     const card = findProductCard("life-book");
     return card ? visualFromCard(card) : null;
+  }
+  if (/книг/.test(n) && /жизн/.test(n)) {
+    const interview = findProductCard("life-story") || findProductCard("life-book");
+    return interview ? visualFromCard(interview) : null;
   }
   if (/семейн/.test(n)) {
     const card = findProductCard("family-edition");
