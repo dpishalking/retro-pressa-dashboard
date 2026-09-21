@@ -56,7 +56,7 @@ export const PRODUCT_CARDS: ProductCard[] = [
   {
     slug: "life-story",
     title: "Книга жизни",
-    subtitle: "Интервью и семейные материалы — книга о человеке",
+    subtitle: "Записанная жизнь одного человека — интервью, материалы, книга",
     image: "/product-cards/life-story.jpg",
     sortOrder: 6.5
   },
