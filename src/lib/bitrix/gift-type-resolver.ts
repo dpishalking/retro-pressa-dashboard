@@ -177,6 +177,14 @@ export function inferProductFromDealTitle(title: string | null | undefined): str
   if (t.includes("оживи") || t.includes("оживлен")) return "Оживи";
   if (t.includes("заголовк") && t.includes("книг")) return "Книга жизни в заголовках газет";
   if (t.includes("книг") && t.includes("жиз")) return "Книга жизни";
+  if (
+    t.includes("колод") ||
+    t.includes("family-card") ||
+    t.includes("family card") ||
+    (t.includes("семейн") && t.includes("карт"))
+  ) {
+    return "Семейная колода карт";
+  }
   if (t.includes("семейн")) return "Семейное издание";
   if (t.includes("персонализ") && t.includes("журнал")) return "Персонализированный журнал";
   if (t.includes("персонализ") && (t.includes("газет") || t.includes("aviz") || t.includes("avīz"))) {

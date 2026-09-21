@@ -179,6 +179,19 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     economySource: {},
   },
   {
+    productId: "PRODUCT_FAMILY_CARD_DECK",
+    bitrixName: "Семейная колода карт",
+    spreadsheetId: process.env.FAMILY_CARD_DECK_PASSPORT_SHEET_ID?.trim() || "1NsVbsv2YZbehiYTtSP1Waf0gYf1nCnocszonQyppKAE",
+    visualTabName: "14_Визуал",
+    economyTabName: "14_Экономика",
+    meaningsTabName: "14_Смыслы",
+    visualSource: {
+      trainingProductId: "family-card-deck",
+      clientMaterialCategories: ["Семейная колода карт"],
+    },
+    economySource: {},
+  },
+  {
     productId: "PRODUCT_STICKER",
     bitrixName: "Наклейка",
     spreadsheetId: "1FE7oNSwAbOU7kf1Am5h7J3jQZrJ2THMFpWF5oO6ZcoY",

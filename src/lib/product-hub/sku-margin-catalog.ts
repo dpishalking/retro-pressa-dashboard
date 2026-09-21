@@ -201,6 +201,14 @@ function inferProductIdFromName(name: string): string | null {
     return "PRODUCT_LIFE_STORY";
   }
   if (n.includes("книг") || n.includes("life book")) return "PRODUCT_LIFE_BOOK";
+  if (
+    n.includes("колод") ||
+    n.includes("family-card") ||
+    n.includes("family card") ||
+    (n.includes("семейн") && n.includes("карт"))
+  ) {
+    return "PRODUCT_FAMILY_CARD_DECK";
+  }
   if (n.includes("семейн") || n.includes("family")) return "PRODUCT_FAMILY_EDITION";
   if (n.includes("дигитал") || n.includes("digital")) return "PRODUCT_DIGITAL";
   if (n.includes("персонализ") && n.includes("журнал")) return "PRODUCT_PERSONAL_MAGAZINE";

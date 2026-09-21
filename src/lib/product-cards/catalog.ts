@@ -47,6 +47,13 @@ export const PRODUCT_CARDS: ProductCard[] = [
     sortOrder: 5
   },
   {
+    slug: "family-card-deck",
+    title: "Семейная колода карт",
+    subtitle: "54 карты семейной истории — интервью, сюжеты, печать",
+    image: "/product-cards/family-card-deck.jpg",
+    sortOrder: 5.5
+  },
+  {
     slug: "life-book",
     title: "Книга жизни в заголовках газет",
     subtitle: "Архив истории — газета за каждый год жизни",

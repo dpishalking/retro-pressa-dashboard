@@ -38,6 +38,10 @@ export function matchGiftVisual(productName: string): GiftVisual | null {
     const interview = findProductCard("life-story") || findProductCard("life-book");
     return interview ? visualFromCard(interview) : null;
   }
+  if (/колод/.test(n) || (/семейн/.test(n) && /карт/.test(n)) || /family-card|family card/.test(n)) {
+    const card = findProductCard("family-card-deck");
+    return card ? visualFromCard(card) : null;
+  }
   if (/семейн/.test(n)) {
     const card = findProductCard("family-edition");
     return card ? visualFromCard(card) : null;

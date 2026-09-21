@@ -82,6 +82,9 @@ function resolveProductId(marker: string, name: string) {
     return "life-story";
   }
   if (text.includes("книга жизни")) return "personal-magazine";
+  if (text.includes("колод") || (text.includes("семейн") && text.includes("карт"))) {
+    return "family-card-deck";
+  }
   if (text.includes("partypage") || text.includes("персонализированная газета") || text.includes("газета о человеке")) {
     return "retro-newspaper";
   }

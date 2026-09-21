@@ -1,4 +1,5 @@
 import type { ProductMaterial, ProductTrainingModule, TrainingUser } from "@/types/training";
+import { familyCardDeckProduct } from "@/data/family-card-deck-training";
 import { applyGiftSiteContentToCatalog, applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
 import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -882,10 +883,13 @@ export const lifeStoryProduct = createProductSeed({
   ]
 });
 
+export { familyCardDeckProduct };
+
 export const trainingProductsSeed: ProductTrainingModule[] = [
   birthDateNewspaperProduct,
   lifeBookProduct,
   lifeStoryProduct,
+  familyCardDeckProduct,
   partyPageProduct,
   glossyMagazineProduct
 ];
