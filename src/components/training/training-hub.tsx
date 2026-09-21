@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { BookOpen, CheckCircle2, Circle } from "lucide-react";
+import { ProductCover } from "@/components/product-cover";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { ClientReviewVideos } from "@/components/training/client-review-videos";
@@ -69,9 +69,12 @@ function ProductCard({
 
   return (
     <article className="card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative h-44 w-full bg-slate-100">
-        <Image src={product.coverImage} alt={product.title} fill className="object-cover" unoptimized />
-      </div>
+      <ProductCover
+        src={product.coverImage}
+        alt={product.title}
+        className="aspect-square w-full"
+        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+      />
       <div className="flex h-full flex-col p-6">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="rounded-xl bg-rose-50 p-3 text-rose-600">

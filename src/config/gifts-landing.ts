@@ -195,7 +195,7 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     moments: ["подарок от детей близкому", "семейный артефакт о человеке"],
     gets: ["интервью 3 часа", "книга 50–70 или 100–120 страниц", "финальный макет"],
     price: "КП: 920 € / 1 720 € с интервью",
-    image: "/training/life-book/diana-kanberg-cover.png",
+    image: "/training/life-story/cover.jpg",
     gallery: []
   },
   {

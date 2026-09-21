@@ -22,12 +22,12 @@ export function ProductCardsGalleryScreen({ cards }: { cards: ProductCard[] }) {
               href={productCardHref(card.slug)}
               className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="relative aspect-[819/1024] bg-slate-100">
+              <div className="relative aspect-[819/1024] bg-[#f4efe6]">
                 <Image
                   src={card.image}
                   alt={card.title}
                   fill
-                  className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                  className="object-contain transition duration-300 group-hover:scale-[1.02]"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized
                 />

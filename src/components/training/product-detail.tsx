@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, FileText, Link2, PlayCircle } from "lucide-react";
+import { ProductCover } from "@/components/product-cover";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
@@ -346,9 +347,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
   return (
     <div className={`product-page space-y-5 ${productBodyFont.className} ${productDisplayFont.variable}`}>
       <section className="card overflow-hidden">
-        <div className="relative h-56 w-full bg-slate-100 md:h-72">
-          <Image src={product.coverImage} alt={product.title} fill className="object-cover" unoptimized />
-        </div>
+        <ProductCover
+          src={product.coverImage}
+          alt={product.title}
+          className="aspect-[4/3] w-full"
+          sizes="100vw"
+          priority
+        />
         <div className="p-6 sm:p-8">
           <h1 className="product-heading text-3xl font-extrabold text-slate-950 sm:text-4xl">{product.title}</h1>
           <p className={`product-lead mt-4 text-slate-600`}>{product.shortDescription}</p>

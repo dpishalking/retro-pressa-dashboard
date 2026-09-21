@@ -496,7 +496,7 @@ export const lifeStoryProduct = createProductSeed({
   title: "Книга жизни",
   shortDescription:
     "Книга о человеке на основе интервью с героем и семейных материалов. Два объёма: 50–70 и 100–120 страниц. Не газета по годам жизни.",
-  coverImage: "/product-cards/life-book.jpg",
+  coverImage: "/training/life-story/cover.jpg",
   passingScore: 80,
   sortOrder: 2.5,
   description:

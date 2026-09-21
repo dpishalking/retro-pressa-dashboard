@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import { ProductCover } from "@/components/product-cover";
 import { PartnersLayout } from "@/components/partners/partners-layout";
 import { readJsonResponse } from "@/lib/api-response";
 import { eur } from "@/lib/format";
@@ -36,9 +36,12 @@ export function PartnersCatalogScreen() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
           <article key={product.id} className="card flex h-full flex-col overflow-hidden">
-            <div className="relative h-40 bg-slate-100">
-              <Image src={product.image} alt={product.title} fill className="object-cover" unoptimized />
-            </div>
+            <ProductCover
+              src={product.image}
+              alt={product.title}
+              className="aspect-square w-full"
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            />
             <div className="flex flex-1 flex-col p-5">
               <h2 className="text-xl font-black text-slate-950">{product.title}</h2>
               <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{product.description}</p>
