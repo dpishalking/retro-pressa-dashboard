@@ -105,5 +105,6 @@ data/manager-dialogs-sheet-state/
 
 - **Кнопка не реагирует** → проверить `disabled`, отдельный ли loading state, middleware 401, Network tab.
 - **Новый блок на экране** → screen-компонент, паттерн из `ad-analytics-screen.tsx`.
+- **Новый продукт / паспорт / карточка товара** → скилл `.cursor/skills/add-product/SKILL.md` (вкладка паспорта + training + `/cards` + резолверы, не по отдельности).
 - **Новый sync** → connector в `src/lib/`, route в `src/app/api/sync/`, snapshot store при необходимости.
 - **Gemini** → ключ `GEMINI_API_KEY`, модель `GEMINI_MODEL`, ошибки на русском в UI.

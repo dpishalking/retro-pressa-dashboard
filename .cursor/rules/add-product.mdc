@@ -1,0 +1,11 @@
+---
+description: Добавление или разделение продуктов Retro Pressa (паспорт, обучение, карточки)
+globs: scripts/product-hub/**,src/config/gifts-landing.ts,src/lib/product-cards/**,src/data/training-seed.ts,data/training/products.json,data/product-passports/dashboard.json
+alwaysApply: false
+---
+
+# Новый продукт
+
+Перед правками прочитай скилл `.cursor/skills/add-product/SKILL.md` и пройди его чеклист.
+
+Не заводить продукт только в одном месте (только training или только вкладка). Не выдумывать цены, COGS и Bitrix enum. Два смысла = два паспорта.
