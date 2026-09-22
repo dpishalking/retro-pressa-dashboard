@@ -57,7 +57,7 @@ export const PRODUCT_CARDS: ProductCard[] = [
     slug: "family-card-deck",
     title: "Семейная колода карт",
     subtitle: "54 карты семейной истории — интервью, сюжеты, печать",
-    image: "/product-cards/family-card-deck.jpg",
+    image: "/product-cards/family-card-deck.png",
     sortOrder: 5.5
   },
   {

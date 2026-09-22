@@ -233,7 +233,7 @@ function visualRows() {
       "Временная обложка — визуальный концепт колоды (не фото реальной напечатанной колоды). Галерея реальной колоды, видео продукта и утверждённый пример 54 готовых карт отсутствуют.",
       SOURCE,
     ],
-    ["cover_url", "/training/family-card-deck/cover.jpg", SOURCE],
+    ["cover_url", "/training/family-card-deck/cover.png", SOURCE],
     ["synced_at", syncedAt, "script"],
   ]);
 }

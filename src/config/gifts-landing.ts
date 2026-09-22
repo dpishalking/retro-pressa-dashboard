@@ -250,7 +250,7 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     moments: ["подарок всей семье", "юбилей", "годовщина", "Новый год", "семейная реликвия"],
     gets: ["1 интервью от часа", "редактор, дизайн, печать", "1 колода из 54 карт"],
     price: "от 100 €",
-    image: "/training/family-card-deck/cover.jpg",
+    image: "/training/family-card-deck/cover.png",
     gallery: []
   },
   {
