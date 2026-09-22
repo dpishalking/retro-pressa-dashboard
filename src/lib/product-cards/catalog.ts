@@ -6,6 +6,8 @@ export type ProductCard = {
   subtitle: string;
   image: string;
   sortOrder: number;
+  presentation?: "card" | "packshot";
+  detailImage?: string;
 };
 
 export { PRODUCT_CARDS_PUBLIC_PREFIX };
@@ -58,7 +60,9 @@ export const PRODUCT_CARDS: ProductCard[] = [
     title: "Семейная колода карт",
     subtitle: "54 карты семейной истории — интервью, сюжеты, печать",
     image: "/product-cards/family-card-deck.png",
-    sortOrder: 5.5
+    detailImage: "/training/family-card-deck/cover.png",
+    sortOrder: 5.5,
+    presentation: "packshot"
   },
   {
     slug: "life-book",

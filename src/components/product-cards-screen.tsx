@@ -85,13 +85,21 @@ export function ProductCardScreen({
           <p className="mt-2 text-sm text-slate-600">{card.subtitle}</p>
         </header>
 
-        <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
+        <div
+          className={
+            card.presentation === "packshot"
+              ? "flex justify-center rounded-2xl border border-black/5 bg-white px-8 py-10 shadow-sm sm:px-12 sm:py-14"
+              : "overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm"
+          }
+        >
           <Image
-            src={card.image}
+            src={card.detailImage ?? card.image}
             alt={card.title}
-            width={819}
-            height={1024}
-            className="h-auto w-full"
+            width={card.presentation === "packshot" ? 322 : 819}
+            height={card.presentation === "packshot" ? 562 : 1024}
+            className={
+              card.presentation === "packshot" ? "h-auto w-[240px] sm:w-[280px]" : "h-auto w-full"
+            }
             priority
             unoptimized
           />
