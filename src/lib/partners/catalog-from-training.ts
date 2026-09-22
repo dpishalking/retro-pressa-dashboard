@@ -15,6 +15,7 @@ const TRAINING_TO_HUB: Record<string, string | string[]> = {
   "family-edition": "PRODUCT_FAMILY_EDITION",
   "family-card-deck": "PRODUCT_FAMILY_CARD_DECK",
   "original-magazine-page-posters": "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS",
+  "pervoe-pismo": "PRODUCT_PERVOE_PISMO",
   "congratulatory-song": "PRODUCT_CONGRATS_SONG",
   stickers: "PRODUCT_STICKER",
   ozivi: "PRODUCT_ANIMATE"
@@ -30,6 +31,7 @@ const PRODUCTION_DAYS: Record<string, string> = {
   "family-edition": "индивидуально",
   "family-card-deck": "от 1 недели",
   "original-magazine-page-posters": "уточняется",
+  "pervoe-pismo": "уточняется",
   "congratulatory-song": "1 день",
   stickers: "быстро",
   ozivi: "быстро"

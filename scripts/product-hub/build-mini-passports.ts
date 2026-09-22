@@ -228,6 +228,19 @@ const SEEDS: ProductSeed[] = [
     driveUrls: [],
   },
   {
+    productId: "PRODUCT_PERVOE_PISMO",
+    tabName: "16_Первое_письмо",
+    titleName: "Первое письмо",
+    category: "Рождение ребёнка",
+    shortWhat:
+      "Персональный анонс о рождении малыша: Digital / DIY, Print Pack или Full Service. Не поздравительная газета и не газета из даты. Цена — по запросу.",
+    priceDisplay: "по запросу",
+    leadTime: "не обещать — срок в брифе не зафиксирован",
+    included:
+      "Зависит от пакета. Digital — макет. Print Pack — печатные открытки и конверты родителям. Full Service — печать, персональный текст, сборка, марки, рассылка. Точный состав и тираж — UNKNOWN.",
+    driveUrls: [],
+  },
+  {
     productId: "PRODUCT_FAMILY_EDITION",
     tabName: "08_Семейное",
     titleName: "Семейное издание",

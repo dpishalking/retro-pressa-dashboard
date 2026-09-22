@@ -74,6 +74,16 @@ function joinParagraphs(...parts: Array<string | undefined>) {
 function resolveProductId(marker: string, name: string) {
   const text = `${marker} ${name}`.toLowerCase();
 
+  if (
+    text.includes("первое письмо") ||
+    text.includes("открытка младенца") ||
+    (text.includes("анонс") && text.includes("рожден")) ||
+    text.includes("baby announcement") ||
+    text.includes("birth announcement") ||
+    (text.includes("письмо") && (text.includes("малыш") || text.includes("младен") || text.includes("новорожд")))
+  ) {
+    return "pervoe-pismo";
+  }
   if (text.includes("оригинал газеты") || text.includes("газета из дня рождения") || text.includes("издание из важной даты")) {
     return "personal-newspaper";
   }

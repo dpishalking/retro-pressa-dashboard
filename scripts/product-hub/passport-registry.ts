@@ -207,6 +207,19 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     economySource: {},
   },
   {
+    productId: "PRODUCT_PERVOE_PISMO",
+    bitrixName: "Первое письмо",
+    spreadsheetId: process.env.PERVOE_PISMO_PASSPORT_SHEET_ID?.trim() || "1NsVbsv2YZbehiYTtSP1Waf0gYf1nCnocszonQyppKAE",
+    visualTabName: "16_Визуал",
+    economyTabName: "16_Экономика",
+    meaningsTabName: "16_Смыслы",
+    visualSource: {
+      trainingProductId: "pervoe-pismo",
+      clientMaterialCategories: ["Первое письмо"],
+    },
+    economySource: {},
+  },
+  {
     productId: "PRODUCT_STICKER",
     bitrixName: "Наклейка",
     spreadsheetId: "1FE7oNSwAbOU7kf1Am5h7J3jQZrJ2THMFpWF5oO6ZcoY",

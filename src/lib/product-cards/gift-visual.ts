@@ -22,6 +22,16 @@ export function matchGiftVisual(productName: string): GiftVisual | null {
   const exact = PRODUCT_CARDS.find((card) => norm(card.title) === n);
   if (exact) return visualFromCard(exact);
 
+  if (
+    /первое письмо|pervoe-pismo|pervoe pismo/.test(n) ||
+    (/открытка/.test(n) && /младен/.test(n)) ||
+    (/анонс/.test(n) && /рожден/.test(n)) ||
+    /baby announcement|birth announcement/.test(n) ||
+    (/письмо/.test(n) && /малыш|младен|новорожд/.test(n))
+  ) {
+    const card = findProductCard("pervoe-pismo");
+    return card ? visualFromCard(card) : null;
+  }
   if (/поздрав/.test(n) && /журнал/.test(n)) {
     const card = findProductCard("congratulatory-magazine");
     return card ? visualFromCard(card) : null;

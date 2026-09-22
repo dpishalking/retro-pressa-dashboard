@@ -193,6 +193,18 @@ export function buildMarginCatalog(input: {
 function inferProductIdFromName(name: string): string | null {
   const n = normalizeKey(name);
   if (!n) return null;
+  if (
+    n.includes("первое письмо") ||
+    n.includes("pervoe-pismo") ||
+    n.includes("pervoe pismo") ||
+    (n.includes("открытка") && n.includes("младен")) ||
+    (n.includes("анонс") && n.includes("рожден")) ||
+    n.includes("baby announcement") ||
+    n.includes("birth announcement") ||
+    (n.includes("письмо") && (n.includes("малыш") || n.includes("младен") || n.includes("новорожд")))
+  ) {
+    return "PRODUCT_PERVOE_PISMO";
+  }
   if (n.includes("песн") || n.includes("song")) return "PRODUCT_CONGRATS_SONG";
   if (n.includes("наклей") || n.includes("sticker")) return "PRODUCT_STICKER";
   if (n.includes("оживи") || n.includes("animat")) return "PRODUCT_ANIMATE";

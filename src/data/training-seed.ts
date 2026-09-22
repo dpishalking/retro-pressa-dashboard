@@ -1,6 +1,7 @@
 import type { ProductMaterial, ProductTrainingModule, TrainingUser } from "@/types/training";
 import { familyCardDeckProduct } from "@/data/family-card-deck-training";
 import { originalMagazinePagePostersProduct } from "@/data/original-magazine-page-posters-training";
+import { pervoePismoProduct } from "@/data/pervoe-pismo-training";
 import { applyGiftSiteContentToCatalog, applyGiftSiteImagesToCatalog } from "@/data/training-gifts-content";
 import { applySheetContentToCatalog } from "@/data/training-sheet-content";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -884,7 +885,7 @@ export const lifeStoryProduct = createProductSeed({
   ]
 });
 
-export { familyCardDeckProduct, originalMagazinePagePostersProduct };
+export { familyCardDeckProduct, originalMagazinePagePostersProduct, pervoePismoProduct };
 
 export const trainingProductsSeed: ProductTrainingModule[] = [
   birthDateNewspaperProduct,
@@ -892,6 +893,7 @@ export const trainingProductsSeed: ProductTrainingModule[] = [
   lifeBookProduct,
   lifeStoryProduct,
   familyCardDeckProduct,
+  pervoePismoProduct,
   partyPageProduct,
   glossyMagazineProduct
 ];

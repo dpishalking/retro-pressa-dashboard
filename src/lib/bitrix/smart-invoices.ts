@@ -81,6 +81,17 @@ function productNamesFromRows(rows: unknown): string[] {
 /** Map catalog product names to SPA gift-type labels when possible. */
 function giftTypeFromProductName(name: string): string {
   const t = name.toLowerCase().replace(/ё/g, "е");
+  if (
+    t.includes("первое письмо") ||
+    t.includes("pervoe-pismo") ||
+    (t.includes("открытка") && t.includes("младен")) ||
+    (t.includes("анонс") && t.includes("рожден")) ||
+    t.includes("baby announcement") ||
+    t.includes("birth announcement") ||
+    (t.includes("письмо") && (t.includes("малыш") || t.includes("младен") || t.includes("новорожд")))
+  ) {
+    return "Первое письмо";
+  }
   if (t.includes("поздрав") && t.includes("журнал")) return "Поздравительный журнал";
   if (t.includes("поздрав") || t.includes("apsveikuma")) return "Поздравительная газета";
   if (t.includes("репродук")) return "Репродукция";

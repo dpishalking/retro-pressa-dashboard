@@ -29,6 +29,10 @@ assert.equal(rows.length, 1);
 assert.equal(rows[0].productName, "Оригинал");
 assert.equal(rows[0].quantity, 1);
 
+assert.equal(inferProductFromDealTitle("Первое письмо — Digital / DIY"), "Первое письмо");
+assert.equal(inferProductFromDealTitle("Открытка младенца для бабушки"), "Первое письмо");
+assert.equal(inferProductFromDealTitle("Birth announcement for grandparents"), "Первое письмо");
+assert.equal(inferProductFromDealTitle("Письмо малыша родителям в Германию"), "Первое письмо");
 assert.equal(inferProductFromDealTitle("8678 поздр Правда - Наталья"), "Поздравительная газета");
 assert.equal(inferProductFromDealTitle("8319 реп Правда 05.08.1973"), "Репродукция");
 assert.equal(inferProductFromDealTitle("Правда, № 265 оригинал"), "Оригинал");

@@ -156,6 +156,18 @@ export function inferProductFromDealTitle(title: string | null | undefined): str
   if (!raw) return null;
   const t = raw.toLowerCase().replace(/ё/g, "е");
 
+  if (
+    t.includes("первое письмо") ||
+    t.includes("pervoe-pismo") ||
+    t.includes("pervoe pismo") ||
+    (t.includes("открытка") && t.includes("младен")) ||
+    (t.includes("анонс") && t.includes("рожден")) ||
+    t.includes("baby announcement") ||
+    t.includes("birth announcement") ||
+    (t.includes("письмо") && (t.includes("малыш") || t.includes("младен") || t.includes("новорожд")))
+  ) {
+    return "Первое письмо";
+  }
   if ((t.includes("поздр") || t.includes("apsveikuma") || t.includes("congrat") || t.includes("gift_paper")) && t.includes("журнал")) {
     return "Поздравительный журнал";
   }

@@ -86,6 +86,13 @@ export const PRODUCT_CARDS: ProductCard[] = [
     sortOrder: 7
   },
   {
+    slug: "pervoe-pismo",
+    title: "Первое письмо",
+    subtitle: "Персональный анонс о рождении малыша — Digital, Print Pack или Full Service",
+    image: "/product-cards/pervoe-pismo.jpg",
+    sortOrder: 7.5
+  },
+  {
     slug: "congratulatory-song",
     title: "Поздравительная песня",
     subtitle: "Музыкальное поздравление",
