@@ -15,7 +15,7 @@ export function ProductCardsGalleryScreen({ cards }: { cards: ProductCard[] }) {
           </p>
         </header>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
           {cards.map((card) => (
             <Link
               key={card.slug}
