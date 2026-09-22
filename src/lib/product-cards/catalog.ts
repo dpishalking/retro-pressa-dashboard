@@ -26,6 +26,13 @@ export const PRODUCT_CARDS: ProductCard[] = [
     sortOrder: 2
   },
   {
+    slug: "original-magazine-page-posters",
+    title: "Постер из оригинальной журнальной страницы",
+    subtitle: "Подлинный журнальный лист в паспарту и рамке",
+    image: "/product-cards/original-magazine-page-posters.jpg",
+    sortOrder: 2.5
+  },
+  {
     slug: "congratulatory-newspaper",
     title: "Поздравительная газета",
     subtitle: "Ретро + личное — архив с фото и текстом",

@@ -215,6 +215,19 @@ const SEEDS: ProductSeed[] = [
     driveUrls: [],
   },
   {
+    productId: "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS",
+    tabName: "15_Постеры",
+    titleName: "Постер из оригинальной журнальной страницы",
+    category: "Оформление стены",
+    shortWhat:
+      "Подлинный журнальный лист в паспарту и рамке. Не журнал целиком и не репринт. Цена от 20 €.",
+    priceFrom: 20,
+    priceDisplay: "от 20 €",
+    leadTime: "не обещать — срок в брифе не зафиксирован",
+    included: "оригинальный журнальный лист, паспарту, рамка. Доставка отдельно — UNKNOWN.",
+    driveUrls: [],
+  },
+  {
     productId: "PRODUCT_FAMILY_EDITION",
     tabName: "08_Семейное",
     titleName: "Семейное издание",

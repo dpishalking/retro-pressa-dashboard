@@ -77,6 +77,13 @@ function resolveProductId(marker: string, name: string) {
   if (text.includes("оригинал газеты") || text.includes("газета из дня рождения") || text.includes("издание из важной даты")) {
     return "personal-newspaper";
   }
+  if (
+    text.includes("постер") ||
+    text.includes("паспарту") ||
+    (text.includes("журнальн") && (text.includes("страниц") || text.includes("обложк")))
+  ) {
+    return "original-magazine-page-posters";
+  }
   if (text.includes("заголовк")) return "personal-magazine";
   if (text.includes("книга жизни") && (text.includes("интервью") || text.includes("о человеке"))) {
     return "life-story";

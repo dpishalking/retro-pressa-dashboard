@@ -170,6 +170,13 @@ export function inferProductFromDealTitle(title: string | null | undefined): str
   if (t.includes("репродук") || t.includes("reproduk") || /(^|[^а-яa-z0-9])реп([^а-яa-z0-9]|$)/i.test(t)) {
     return "Репродукция";
   }
+  if (
+    t.includes("постер") ||
+    t.includes("паспарту") ||
+    (t.includes("журнальн") && (t.includes("страниц") || t.includes("обложк") || t.includes("рамк")))
+  ) {
+    return "Постер из оригинальной журнальной страницы";
+  }
   if (t.includes("оригинал") || t.includes("original")) return "Оригинал";
   if (t.includes("дигитал") || t.includes("digital")) return "Дигитальная версия";
   if (t.includes("песн") || t.includes("song")) return "Песня";

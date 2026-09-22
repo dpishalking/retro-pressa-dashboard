@@ -11,6 +11,7 @@ const catalog = clientMaterialsCatalog as ClientMaterialsCatalog;
 const CLIENT_MATERIAL_CATEGORY_ORDER = [
   "Репродукция",
   "Оригинал",
+  "Постер из оригинальной журнальной страницы",
   "Персонализированный журнал",
   "Персонализированная газета",
   "Дигитальная версия",

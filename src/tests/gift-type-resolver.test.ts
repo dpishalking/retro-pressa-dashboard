@@ -39,6 +39,8 @@ assert.equal(inferProductFromDealTitle("8311 ольга - еще будет ож
 assert.equal(inferProductFromDealTitle("7802/ ОПЛАТИЛА 148 РУБЛЕЙ, ЕЩЕ 46 НА МЕСТЕ"), "Доставка");
 assert.equal(inferProductFromDealTitle("Семейная колода карт — Иванов"), "Семейная колода карт");
 assert.equal(inferProductFromDealTitle("Семейное издание Love Times"), "Семейное издание");
+assert.equal(inferProductFromDealTitle("Постер из оригинальной журнальной страницы Atpūta"), "Постер из оригинальной журнальной страницы");
+assert.equal(inferProductFromDealTitle("Оригинальный журнал Огонёк"), "Оригинал");
 
 const hydrated = hydrateDealProducts({
   id: "91316",

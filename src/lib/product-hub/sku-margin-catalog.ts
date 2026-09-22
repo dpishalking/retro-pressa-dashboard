@@ -225,6 +225,13 @@ function inferProductIdFromName(name: string): string | null {
     return "PRODUCT_CONGRATS_NEWSPAPER";
   }
   if (n.includes("репродук") || n.includes("reproduk") || n.includes("reproduction")) return "PRODUCT_REPRODUCTION";
+  if (
+    n.includes("постер") ||
+    n.includes("паспарту") ||
+    (n.includes("журнальн") && (n.includes("страниц") || n.includes("обложк") || n.includes("рамк")))
+  ) {
+    return "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS";
+  }
   if (n.includes("оригинал") || n.includes("original")) return "PRODUCT_ORIGINAL";
   return null;
 }

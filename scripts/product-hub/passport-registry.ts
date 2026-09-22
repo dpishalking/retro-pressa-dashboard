@@ -192,6 +192,21 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     economySource: {},
   },
   {
+    productId: "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS",
+    bitrixName: "Постер из оригинальной журнальной страницы",
+    spreadsheetId:
+      process.env.ORIGINAL_MAGAZINE_PAGE_POSTERS_PASSPORT_SHEET_ID?.trim() ||
+      "1NsVbsv2YZbehiYTtSP1Waf0gYf1nCnocszonQyppKAE",
+    visualTabName: "15_Визуал",
+    economyTabName: "15_Экономика",
+    meaningsTabName: "15_Смыслы",
+    visualSource: {
+      trainingProductId: "original-magazine-page-posters",
+      clientMaterialCategories: ["Постер из оригинальной журнальной страницы"],
+    },
+    economySource: {},
+  },
+  {
     productId: "PRODUCT_STICKER",
     bitrixName: "Наклейка",
     spreadsheetId: "1FE7oNSwAbOU7kf1Am5h7J3jQZrJ2THMFpWF5oO6ZcoY",

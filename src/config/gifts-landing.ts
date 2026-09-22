@@ -56,6 +56,23 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     ]
   },
   {
+    id: "original-magazine-page-posters",
+    kind: "core",
+    passportId: "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS",
+    number: "01a",
+    kicker: "На стену",
+    title: "Постер из оригинальной журнальной страницы",
+    lead: "Настоящий лист старого журнала в паспарту и рамке — не новая печать и не журнал целиком.",
+    description:
+      "Покупатель получает конкретную оригинальную страницу или обложку, оформленную как готовый постер. Один экземпляр стоит от 20 €: лист, паспарту и рамка входят в цену. Продаём только проверенный доступный лист.",
+    forWhom: "Для дома, студии маркетинга и подарка, если сюжет связан с человеком.",
+    moments: ["украшение стены", "оформление студии", "необычный подарок"],
+    gets: ["оригинальный журнальный лист", "паспарту", "рамка"],
+    price: "от 20 €",
+    image: "/training/original-magazine-page-posters/cover.jpg",
+    gallery: []
+  },
+  {
     id: "reproduction",
     kind: "core",
     passportId: "PRODUCT_REPRODUCTION",

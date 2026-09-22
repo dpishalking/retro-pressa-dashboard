@@ -84,6 +84,13 @@ function giftTypeFromProductName(name: string): string {
   if (t.includes("поздрав") && t.includes("журнал")) return "Поздравительный журнал";
   if (t.includes("поздрав") || t.includes("apsveikuma")) return "Поздравительная газета";
   if (t.includes("репродук")) return "Репродукция";
+  if (
+    t.includes("постер") ||
+    t.includes("паспарту") ||
+    (t.includes("журнальн") && (t.includes("страниц") || t.includes("обложк") || t.includes("рамк")))
+  ) {
+    return "Постер из оригинальной журнальной страницы";
+  }
   if (t.includes("оригинальн") && t.includes("журнал")) return "Оригинал";
   if (t.includes("оригинал")) return "Оригинал";
   if (t.includes("дигитал") || t.includes("digital")) return "Дигитальная версия";

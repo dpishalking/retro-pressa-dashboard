@@ -155,6 +155,33 @@ const PLANS: ProductMeaningPlan[] = [
     ],
   },
   {
+    productId: "PRODUCT_ORIGINAL_MAGAZINE_PAGE_POSTERS",
+    sheetNameIncludes: ["постер из оригинальной", "журнальная страница", "журнальный постер"],
+    trainingId: "original-magazine-page-posters",
+    framing: [
+      [
+        "mapping_note",
+        "Bitrix ID / точное CRM-название — UNKNOWN. id original-magazine-page-posters — slug карточки, не ID в CRM.",
+        "бриф постеров",
+      ],
+      [
+        "compare_with",
+        "Не оригинальный журнал целиком. Не оригинальная газета. Не поздравительная газета. Не персональный журнал. Не современный репринт старой обложки.",
+        "бриф постеров",
+      ],
+      [
+        "do_not_promise",
+        "Не называть лист единственным в мире. Не обещать точную дату, автора, редкость без проверки. Не обещать, что любой лист с фото стоит 20 €. Не применять сроки и доставку газет/журналов автоматически.",
+        "бриф постеров",
+      ],
+      [
+        "cost_from_sheet",
+        "Один постер — от 20 €. Входят оригинальный журнальный лист, паспарту и рамка.",
+        "бриф постеров",
+      ],
+    ],
+  },
+  {
     productId: "PRODUCT_PERSONAL_NEWSPAPER",
     sheetNameIncludes: ["персонализированная газета", "газета о человеке", "party"],
     trainingId: "gift-edition",

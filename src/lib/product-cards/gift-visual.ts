@@ -54,6 +54,10 @@ export function matchGiftVisual(productName: string): GiftVisual | null {
     const card = findProductCard("congratulatory-song");
     return card ? visualFromCard(card) : null;
   }
+  if (/постер|паспарту/.test(n) || (/журнальн/.test(n) && /страниц|обложк|рамк/.test(n))) {
+    const card = findProductCard("original-magazine-page-posters");
+    return card ? visualFromCard(card) : null;
+  }
   if (/оригинальн/.test(n) && /журнал/.test(n)) {
     const card = findProductCard("original-magazines");
     return card ? visualFromCard(card) : null;
