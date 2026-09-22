@@ -268,7 +268,12 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     gets: ["дизайн и адреса заранее", "фото и данные после рождения", "Digital, Print Pack или Full Service"],
     price: "по запросу",
     image: "/training/pervoe-pismo/cover.jpg",
-    gallery: []
+    gallery: [
+      "/training/pervoe-pismo/inside-ru.jpg",
+      "/training/pervoe-pismo/front-ru.jpg",
+      "/training/pervoe-pismo/front-fr.jpg",
+      "/training/pervoe-pismo/inside-fr.jpg"
+    ]
   },
   {
     id: "animate",
