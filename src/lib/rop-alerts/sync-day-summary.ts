@@ -30,6 +30,7 @@ export const ROP_ALERTS_TABS = {
   unpaidInvoices: "Счета без оплаты",
   leadInWork: "Лид в работе висит сутки",
   repliedNotQualified: "Ответил, не квалифицирован",
+  takenToday: "Взяли в работу сегодня",
   dialogNoReply: "В диалоге без ответа сутки",
   lostDialogs: "Потерянные диалоги",
   thinking: "Я подумаю (номера телефонов)",
@@ -639,6 +640,117 @@ async function collectRepliedNotQualified(input: {
   return [header, ...rows.map((row) => row.cells)];
 }
 
+async function collectTakenIntoWorkToday(input: {
+  today: string;
+  statusNames: Map<string, string>;
+  userNames: Map<string, string>;
+}) {
+  const events = await bitrixListAll<{ OWNER_ID?: string | number; CREATED_TIME?: string }>(
+    "crm.stagehistory.list",
+    {
+      entityTypeId: 1,
+      filter: {
+        "=STATUS_ID": "IN_PROCESS",
+        ">=CREATED_TIME": `${input.today}T00:00:00+03:00`,
+        "<=CREATED_TIME": `${input.today}T23:59:59+03:00`
+      },
+      select: ["OWNER_ID", "CREATED_TIME", "STATUS_ID"],
+      order: { CREATED_TIME: "ASC" }
+    }
+  );
+
+  const takenAt = new Map<string, string>();
+  for (const event of events) {
+    const id = String(event.OWNER_ID || "");
+    if (!id || id === "0" || takenAt.has(id)) continue;
+    takenAt.set(id, String(event.CREATED_TIME || ""));
+  }
+
+  const leads = await loadEntitiesById<BitrixLead>(
+    "crm.lead.list",
+    [...takenAt.keys()],
+    ["ID", "TITLE", "STATUS_ID", "SOURCE_ID", "ASSIGNED_BY_ID", "PHONE", "DATE_CREATE"]
+  );
+
+  const moreNames = await loadUserNames([...leads.values()].map((lead) => String(lead.ASSIGNED_BY_ID || "")));
+  for (const [id, name] of moreNames) input.userNames.set(id, name);
+
+  type Row = {
+    id: string;
+    title: string;
+    manager: string;
+    statusId: string;
+    statusName: string;
+    takenAt: string;
+    qualified: boolean;
+    phone: string;
+  };
+
+  const rows: Row[] = [];
+  for (const [id, when] of takenAt) {
+    const lead = leads.get(id);
+    const statusId = String(lead?.STATUS_ID || "");
+    rows.push({
+      id,
+      title: lead?.TITLE || "",
+      manager: input.userNames.get(String(lead?.ASSIGNED_BY_ID || "")) || "Не указан",
+      statusId,
+      statusName: input.statusNames.get(statusId) || statusId || "—",
+      takenAt: when,
+      qualified: statusId === "CONVERTED",
+      phone: firstPhone(lead?.PHONE)
+    });
+  }
+
+  const byManager = new Map<string, { taken: number; qualified: number }>();
+  for (const row of rows) {
+    const current = byManager.get(row.manager) || { taken: 0, qualified: 0 };
+    current.taken += 1;
+    if (row.qualified) current.qualified += 1;
+    byManager.set(row.manager, current);
+  }
+
+  const managerRows = [...byManager.entries()]
+    .map(([manager, stats]) => ({
+      manager,
+      taken: stats.taken,
+      qualified: stats.qualified,
+      open: stats.taken - stats.qualified
+    }))
+    .sort((left, right) => right.open - left.open || left.manager.localeCompare(right.manager, "ru"));
+
+  const notQualified = rows
+    .filter((row) => !row.qualified)
+    .sort((left, right) => left.manager.localeCompare(right.manager, "ru") || left.takenAt.localeCompare(right.takenAt));
+
+  const taken = rows.length;
+  const qualified = rows.filter((row) => row.qualified).length;
+
+  const sheet: string[][] = [
+    ["День", input.today],
+    ["Взяли в работу", String(taken)],
+    ["Перевели в «Лид класифицирован»", String(qualified)],
+    ["Не квалифицировали", String(taken - qualified)],
+    [],
+    ["Менеджер", "Взяли в работу", "Квалифицировали", "Не квалифицировали"],
+    ...managerRows.map((row) => [row.manager, String(row.taken), String(row.qualified), String(row.open)]),
+    [],
+    ["Не квалифицированы"],
+    ["Лид", "Название", "Менеджер", "Взяли в работу", "Сейчас статус", "Телефон", "Ссылка Bitrix"],
+    ...notQualified.map((row) => [
+      row.id,
+      row.title,
+      row.manager,
+      formatDateTime(row.takenAt),
+      row.statusName,
+      row.phone,
+      leadUrl(row.id)
+    ])
+  ];
+
+  return { taken, qualified, notQualified: taken - qualified, sheet };
+}
+
 export async function syncRopAlertsDaySummary(
   options: RopAlertsSyncOptions = {}
 ): Promise<RopAlertsSyncResult> {
@@ -846,6 +958,12 @@ export async function syncRopAlertsDaySummary(
   const cr =
     yesterdayLeadsCount > 0 ? Math.round((yesterdayWonCount / yesterdayLeadsCount) * 1000) / 10 : 0;
 
+  const takenToday = await collectTakenIntoWorkToday({
+    today,
+    statusNames: leadStatusNames,
+    userNames
+  });
+
   const summaryRows: string[][] = [
     ["Метрика", "Значение"],
     ["Обновлено", syncedAtLabel],
@@ -859,6 +977,8 @@ export async function syncRopAlertsDaySummary(
     ["«Я подумаю» закрыть (>15 дн)", String(thinkingStale.length)],
     ["Необработанных лидов", String(filteredNew.length)],
     ["Лид в работе >24ч", String(stuckLeads.length)],
+    ["Взяли в работу сегодня", String(takenToday.taken)],
+    ["Из них не квалифицировали", String(takenToday.notQualified)],
     ["В диалоге без ответа >24ч", String(dialogs.dialogNoReplyCount)],
     ["--- Вчера ---"],
     ["Лидов вчера", String(yesterdayLeadsCount)],
@@ -1010,6 +1130,7 @@ export async function syncRopAlertsDaySummary(
     [ROP_ALERTS_TABS.unpaidInvoices]: unpaidRows.length - 1,
     [ROP_ALERTS_TABS.leadInWork]: leadInWorkRows.length - 1,
     [ROP_ALERTS_TABS.repliedNotQualified]: repliedNotQualifiedRows.length - 1,
+    [ROP_ALERTS_TABS.takenToday]: takenToday.notQualified,
     [ROP_ALERTS_TABS.thinking]: thinkingRows.length - 1,
     [ROP_ALERTS_TABS.lostDialogs]: dialogs.lostDialogCount,
     [ROP_ALERTS_TABS.dialogNoReply]: dialogs.dialogNoReplyCount,
@@ -1030,6 +1151,11 @@ export async function syncRopAlertsDaySummary(
       spreadsheetId,
       tabTitle: ROP_ALERTS_TABS.repliedNotQualified,
       rows: repliedNotQualifiedRows
+    });
+    await writeSheetTab({
+      spreadsheetId,
+      tabTitle: ROP_ALERTS_TABS.takenToday,
+      rows: takenToday.sheet
     });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.thinking, rows: thinkingRows });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.lostDialogs, rows: dialogs.lostDialogRows });
@@ -1065,6 +1191,8 @@ export async function syncRopAlertsDaySummary(
       unprocessedLeads: filteredNew.length,
       leadInWork: stuckLeads.length,
       repliedNotQualified: repliedNotQualifiedRows.length - 1,
+      takenIntoWorkToday: takenToday.taken,
+      takenTodayNotQualified: takenToday.notQualified,
       dialogNoReply: dialogs.dialogNoReplyCount,
       leadsYesterday: yesterdayLeadsCount,
       olSessionsYesterday: yesterdayOlCount,
