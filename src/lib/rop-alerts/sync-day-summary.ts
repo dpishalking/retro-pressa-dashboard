@@ -29,6 +29,7 @@ export const ROP_ALERTS_TABS = {
   unprocessedLeads: "Необработанные лиды",
   unpaidInvoices: "Счета без оплаты",
   leadInWork: "Лид в работе висит сутки",
+  repliedNotQualified: "Ответил, не квалифицирован",
   dialogNoReply: "В диалоге без ответа сутки",
   lostDialogs: "Потерянные диалоги",
   thinking: "Я подумаю (номера телефонов)",
@@ -242,28 +243,77 @@ function isSystemHistoryMessage(message: {
   );
 }
 
-function lastHumanMessage(history: SessionHistory | null | undefined) {
-  if (!history?.message) return null;
+type HumanLine = {
+  date: string;
+  role: "client" | "manager";
+  name: string;
+  text: string;
+};
+
+function humanLines(history: SessionHistory | null | undefined): HumanLine[] {
+  if (!history?.message) return [];
   const users = history.users ?? {};
-  const rows = Object.values(history.message)
+  return Object.values(history.message)
     .filter((message) => !isSystemHistoryMessage(message))
-    .sort((a, b) => String(a.date ?? "").localeCompare(String(b.date ?? "")));
-  const last = rows[rows.length - 1];
+    .sort((left, right) => String(left.date ?? "").localeCompare(String(right.date ?? "")))
+    .map((message) => {
+      const user = users[String(message.senderid ?? "")];
+      const speaker = resolveOpenLineSpeaker({
+        extranet: user?.extranet,
+        userName: user?.name,
+        text: String(message.text ?? message.textlegacy ?? "")
+          .replace(/\[USER=\d+ REPLACE\]([^\[]+)\[\/USER\]/gi, "$1")
+          .replace(/\[b\]|\[\/b\]/gi, "")
+          .trim()
+      });
+      if (!speaker.text) return null;
+      return {
+        date: message.date ?? "",
+        role: speaker.role,
+        name: speaker.name,
+        text: speaker.text
+      };
+    })
+    .filter((line): line is HumanLine => Boolean(line));
+}
+
+/** Client wrote after the manager's first message — lead was engaged but not qualified. */
+function clientReplyAfterFirstManagerMessage(lines: HumanLine[]) {
+  const firstManagerIndex = lines.findIndex((line) => line.role === "manager");
+  if (firstManagerIndex < 0) return null;
+  const reply = lines.slice(firstManagerIndex + 1).find((line) => line.role === "client");
+  if (!reply) return null;
+  return { firstManager: lines[firstManagerIndex]!, reply };
+}
+
+function lastHumanMessage(history: SessionHistory | null | undefined) {
+  const lines = humanLines(history);
+  const last = lines[lines.length - 1];
   if (!last) return null;
-  const user = users[String(last.senderid ?? "")];
-  const speaker = resolveOpenLineSpeaker({
-    extranet: user?.extranet,
-    userName: user?.name,
-    text: String(last.text ?? last.textlegacy ?? "")
-      .replace(/\[USER=\d+ REPLACE\]([^\[]+)\[\/USER\]/gi, "$1")
-      .replace(/\[b\]|\[\/b\]/gi, "")
-      .trim()
-  });
-  return {
-    date: last.date ?? "",
-    text: speaker.text,
-    role: speaker.role
-  };
+  return { date: last.date, text: last.text, role: last.role };
+}
+
+async function latestOpenLineByLead(leadIds: string[]) {
+  const sessions = new Map<string, { sessionId: string; subject: string }>();
+  for (const chunk of chunkIds(leadIds, 25)) {
+    const cmd: Record<string, string> = {};
+    chunk.forEach((id, index) => {
+      cmd[`a${index}`] =
+        `crm.activity.list?filter[OWNER_TYPE_ID]=1&filter[OWNER_ID]=${encodeURIComponent(id)}` +
+        `&filter[PROVIDER_ID]=IMOPENLINES_SESSION&select[]=ASSOCIATED_ENTITY_ID&select[]=SUBJECT` +
+        `&order[ID]=DESC&start=0`;
+    });
+    const result = await bitrixBatch<OpenLineActivity[]>(cmd);
+    chunk.forEach((leadId, index) => {
+      const hit = (result[`a${index}`] || []).find((row) => String(row.ASSOCIATED_ENTITY_ID || "").trim());
+      if (!hit) return;
+      sessions.set(leadId, {
+        sessionId: String(hit.ASSOCIATED_ENTITY_ID),
+        subject: String(hit.SUBJECT || "")
+      });
+    });
+  }
+  return sessions;
 }
 
 async function loadStatusMap(entityId: string) {
@@ -524,6 +574,69 @@ async function collectDialogAlerts(input: {
     dialogNoReplyCount: dialogNoReplyRows.length - 1,
     clientNoReplyCount: clientNoReplyRows.length - 1
   };
+}
+
+function snippet(text: string, max = 140) {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length <= max ? flat : `${flat.slice(0, max)}…`;
+}
+
+async function collectRepliedNotQualified(input: {
+  leads: BitrixLead[];
+  sourceNames: Map<string, string>;
+  userNames: Map<string, string>;
+  now: number;
+}) {
+  const header = [
+    "Лид",
+    "Название",
+    "Менеджер",
+    "Источник",
+    "Создан",
+    "Первое сообщение менеджера",
+    "Ответ клиента",
+    "Часов после ответа",
+    "Текст ответа",
+    "Телефон",
+    "Ссылка Bitrix"
+  ];
+  const sessions = await latestOpenLineByLead(input.leads.map((lead) => String(lead.ID || "")).filter(Boolean));
+  const histories = await fetchSessionHistories([...sessions.values()].map((session) => session.sessionId));
+  const rows: Array<{ manager: string; waitHours: number; cells: string[] }> = [];
+
+  for (const lead of input.leads) {
+    const id = String(lead.ID || "");
+    const session = sessions.get(id);
+    if (!session) continue;
+    const hit = clientReplyAfterFirstManagerMessage(humanLines(histories.get(session.sessionId)));
+    if (!hit) continue;
+    const manager = input.userNames.get(String(lead.ASSIGNED_BY_ID || "")) || "";
+    rows.push({
+      manager,
+      waitHours: hoursSince(hit.reply.date, input.now),
+      cells: [
+        id,
+        lead.TITLE || "",
+        manager,
+        input.sourceNames.get(String(lead.SOURCE_ID || "")) || String(lead.SOURCE_ID || ""),
+        formatDateTime(lead.DATE_CREATE),
+        formatDateTime(hit.firstManager.date),
+        formatDateTime(hit.reply.date),
+        String(hoursSince(hit.reply.date, input.now)),
+        snippet(hit.reply.text),
+        firstPhone(lead.PHONE),
+        id ? leadUrl(id) : ""
+      ]
+    });
+  }
+
+  rows.sort((left, right) => {
+    const byManager = left.manager.localeCompare(right.manager, "ru");
+    if (byManager !== 0) return byManager;
+    return right.waitHours - left.waitHours;
+  });
+
+  return [header, ...rows.map((row) => row.cells)];
 }
 
 export async function syncRopAlertsDaySummary(
@@ -817,6 +930,18 @@ export async function syncRopAlertsDaySummary(
     })
   ];
 
+  const repliedNotQualifiedRows = await collectRepliedNotQualified({
+    leads: inProcessLeads,
+    sourceNames,
+    userNames,
+    now
+  });
+
+  summaryRows.splice(12, 0, [
+    "Клиент ответил, лид не квалифицирован",
+    String(repliedNotQualifiedRows.length - 1)
+  ]);
+
   const leadInWorkRows: string[][] = [
     [
       "Лид",
@@ -884,6 +1009,7 @@ export async function syncRopAlertsDaySummary(
     [ROP_ALERTS_TABS.unprocessedLeads]: unprocessedRows.length - 1,
     [ROP_ALERTS_TABS.unpaidInvoices]: unpaidRows.length - 1,
     [ROP_ALERTS_TABS.leadInWork]: leadInWorkRows.length - 1,
+    [ROP_ALERTS_TABS.repliedNotQualified]: repliedNotQualifiedRows.length - 1,
     [ROP_ALERTS_TABS.thinking]: thinkingRows.length - 1,
     [ROP_ALERTS_TABS.lostDialogs]: dialogs.lostDialogCount,
     [ROP_ALERTS_TABS.dialogNoReply]: dialogs.dialogNoReplyCount,
@@ -900,6 +1026,11 @@ export async function syncRopAlertsDaySummary(
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.unprocessedLeads, rows: unprocessedRows });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.unpaidInvoices, rows: unpaidRows });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.leadInWork, rows: leadInWorkRows });
+    await writeSheetTab({
+      spreadsheetId,
+      tabTitle: ROP_ALERTS_TABS.repliedNotQualified,
+      rows: repliedNotQualifiedRows
+    });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.thinking, rows: thinkingRows });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.lostDialogs, rows: dialogs.lostDialogRows });
     await writeSheetTab({
@@ -933,6 +1064,7 @@ export async function syncRopAlertsDaySummary(
       thinkingSum: formatMoney(thinkingSum),
       unprocessedLeads: filteredNew.length,
       leadInWork: stuckLeads.length,
+      repliedNotQualified: repliedNotQualifiedRows.length - 1,
       dialogNoReply: dialogs.dialogNoReplyCount,
       leadsYesterday: yesterdayLeadsCount,
       olSessionsYesterday: yesterdayOlCount,
