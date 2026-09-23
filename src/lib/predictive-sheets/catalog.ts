@@ -674,14 +674,14 @@ export const PM_METRIC_CATALOG: PmCatalogMetric[] = [
     kind: "additive",
     owner: "РОП",
     parent_metric_id: "sg_payroll",
-    plan_source: "Мотивация МОП: оклад 222 €",
+    plan_source: "Мотивация МОП: оклад 200 €",
     fact_source: "Начисление: оклад × дни/дни месяца",
     forecast_method: "calendar_run_rate",
     is_primary: true,
     sheet: PM_SHEETS.motivation,
     section: "PAYROLL",
     glossary: "Фикс оклада. Факт — сколько уже начислено пропорционально дням.",
-    formulaHint: "222 × elapsed / month_days"
+    formulaHint: "200 × elapsed / month_days"
   },
   {
     metric_id: "sg_commission",

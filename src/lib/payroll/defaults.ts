@@ -2,7 +2,7 @@ import type { PayrollParams } from "@/lib/payroll/types";
 
 /** Defaults from Google sheet «Мотивация МОП» / Первый месяц. Sales plan left empty on purpose. */
 export const DEFAULT_PAYROLL_PARAMS: PayrollParams = {
-  salaryEur: 222,
+  salaryEur: 200,
   salesBonusPct: 0.07,
   planBonusPct: 0.1,
   conversionBonusEur: 111,

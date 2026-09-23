@@ -3,7 +3,7 @@ import { calculateManagerPayroll, calculatePayrollBoard, prorateByShifts } from 
 import type { PayrollParams } from "@/lib/payroll/types";
 
 const month1Params: PayrollParams = {
-  salaryEur: 222,
+  salaryEur: 200,
   salesBonusPct: 0.07,
   planBonusPct: 0.1,
   conversionBonusEur: 111,
@@ -27,12 +27,12 @@ const month1Params: PayrollParams = {
     avgCheckEur: 70,
     payments: 40
   });
-  assert.equal(Math.round(row.mopPayEur), 418);
+  assert.equal(Math.round(row.mopPayEur), 396);
   assert.equal(row.usedPlanRate, false);
   assert.equal(row.conversionBonusApplied, false);
   assert.equal(row.checkBonusApplied, false);
   assert.equal(Math.round(row.ropEur), 28);
-  assert.equal(Math.round(row.totalEur), 446);
+  assert.equal(Math.round(row.totalEur), 424);
   assert.ok(row.leadsPerDay != null && Math.abs(row.leadsPerDay - 250 / 15) < 1e-9);
 }
 
@@ -48,12 +48,12 @@ const month1Params: PayrollParams = {
     avgCheckEur: 80,
     payments: 160
   });
-  assert.equal(Math.round(row.mopPayEur), 1668);
+  assert.equal(Math.round(row.mopPayEur), 1646);
   assert.equal(row.usedPlanRate, true);
   assert.equal(row.conversionBonusApplied, true);
   assert.equal(row.checkBonusApplied, true);
   assert.equal(Math.round(row.ropEur), 128);
-  assert.equal(Math.round(row.totalEur), 1796);
+  assert.equal(Math.round(row.totalEur), 1774);
 }
 
 {
@@ -68,7 +68,7 @@ const month1Params: PayrollParams = {
     avgCheckEur: 80,
     payments: 120
   });
-  assert.equal(Math.round(row.mopPayEur), 1348);
+  assert.equal(Math.round(row.mopPayEur), 1326);
 }
 
 {
@@ -85,8 +85,8 @@ const month1Params: PayrollParams = {
     avgCheckEur: 80,
     payments: 160
   });
-  // 222 + 12800*0.07 + 111 + 55 = 1284
-  assert.equal(Math.round(row.mopPayEur), 1284);
+  // 200 + 12800*0.07 + 111 + 55 = 1262
+  assert.equal(Math.round(row.mopPayEur), 1262);
   assert.equal(row.usedPlanRate, false);
 }
 
@@ -138,8 +138,8 @@ const month1Params: PayrollParams = {
     }
   ]);
   assert.equal(board.totals.incomeEur, 34800);
-  assert.equal(Math.round(board.totals.expenseEur), 5679);
-  assert.ok(board.totals.fotShare != null && Math.abs(board.totals.fotShare - 5679 / 34800) < 1e-9);
+  assert.equal(Math.round(board.totals.expenseEur), 5591);
+  assert.ok(board.totals.fotShare != null && Math.abs(board.totals.fotShare - 5591 / 34800) < 1e-9);
 }
 
 assert.equal(Number(prorateByShifts(4000, 7, 15).toFixed(2)), 1866.67);
