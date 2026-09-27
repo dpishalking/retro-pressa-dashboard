@@ -75,6 +75,19 @@ assert.equal(
 assert.equal(
   matchLanding(
     {
+      sourceId: "UC_3YCW0D",
+      sourceDescription: "https://yourstorymagazine.com/new",
+      title: "Заявка с сайта|Your Story",
+      utmCampaign: "26_03_your_story_magazine"
+    },
+    WATCHED_LANDINGS
+  )?.id,
+  "yourstory"
+);
+
+assert.equal(
+  matchLanding(
+    {
       sourceId: "UC_GIFT4MAN",
       sourceDescription: "https://familia-studio.com/gift_for_man",
       title: "Подарок мужчине",

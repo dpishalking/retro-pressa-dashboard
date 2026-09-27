@@ -35,6 +35,13 @@ export const WATCHED_LANDINGS: WatchedLanding[] = [
     pageUrl: "https://familia-studio.com/gift2man",
     sourceIds: ["UC_GIFT2MAN"],
     needles: ["familia-studio.com/gift2man", "gift2men"]
+  },
+  {
+    id: "yourstory",
+    label: "Your Story",
+    pageUrl: "https://yourstorymagazine.com/",
+    sourceIds: ["UC_3YCW0D"],
+    needles: ["yourstorymagazine.com"]
   }
 ];
 
