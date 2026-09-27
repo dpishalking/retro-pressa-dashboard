@@ -83,9 +83,20 @@ jobs:
           EOF
 
       - name: Send one-off Telegram message
-        if: github.event_name == 'workflow_dispatch' && inputs.text != ''
+        if: github.event_name == 'push'
         env:
-          ALERT_TEXT: ${{ inputs.text }}
+          ALERT_TEXT: |
+            Instagram — Журнал
+
+            Людмила Авад
+            Лид 149634 · 27.09.2026, 13:09 (Рига)
+            https://bb-wood.bitrix24.eu/crm/lead/details/149634/
+
+            «Добрый день )какая цена журнала?»
+            «Персонализированный зурнал нужен»
+            «Для мужа на ДР»
+            «На ноябрь месяц»
+            «Извините но для меня это оч дорого»
         run: |
           B64="$(printf '%s' "$ALERT_TEXT" | base64 -w0)"
           ssh -i ~/.ssh/deploy_key \
