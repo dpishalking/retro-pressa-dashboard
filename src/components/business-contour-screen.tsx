@@ -83,7 +83,8 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
       { title: "Глубина /architecture", description: "Докуда дочитывают и гипотезы по конверсии.", href: "/marketing/architecture" },
       { title: "Глубина /letter", description: "Письмо: блоки страницы и гипотезы.", href: "/marketing/letter" },
       { title: "Глубина /lifehistory", description: "Книга жизни: блоки страницы и гипотезы.", href: "/marketing/lifehistory" },
-      { title: "Глубина /pesnya", description: "Песня: блоки страницы и гипотезы.", href: "/marketing/pesnya" }
+      { title: "Глубина /pesnya", description: "Песня: блоки страницы и гипотезы.", href: "/marketing/pesnya" },
+      { title: "Глубина /gift2man", description: "Журнал о мужчине: блоки страницы и гипотезы.", href: "/marketing/gift2man" }
     ],
     actionLinks: [
       { title: "UTM-генератор", description: "Единая разметка ссылок.", href: "/utm" },

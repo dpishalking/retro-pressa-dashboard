@@ -23,13 +23,14 @@ function landing(
   id: string,
   kicker: string,
   path: string,
-  titles: Array<[string, string]>
+  titles: Array<[string, string]>,
+  host = ARCHITECTURE_HOST
 ): LandingDepthDef {
   return {
     id,
     kicker,
-    pageUrl: `https://giftboost.website${path}/`,
-    host: ARCHITECTURE_HOST,
+    pageUrl: `https://${host}${path}/`,
+    host,
     path,
     minUsers: ARCHITECTURE_HYPOTHESIS_MIN_USERS,
     sections: titles.map(([sectionId, title], index) => ({
@@ -112,7 +113,24 @@ export const LANDING_DEPTH: Record<string, LandingDepthDef> = {
     ["complements", "Дополнить подарок"],
     ["order", "Заявка"],
     ["faq", "Вопросы"]
-  ])
+  ]),
+  gift2man: landing("gift2man", "Журнал о мужчине", "/gift2man", [
+    ["hero", "Первый экран"],
+    ["reaction", "Реакция на подарок"],
+    ["pain", "Боюсь не угадать"],
+    ["tailored", "Журнал под него"],
+    ["relic", "Признание в любви"],
+    ["comparison", "Чем отличается"],
+    ["editorial", "Редакция рядом"],
+    ["personality", "Он узнает себя"],
+    ["motion", "Оживающие фото"],
+    ["process", "Как создаётся"],
+    ["materials", "Сбор материалов"],
+    ["pricing", "Цена за страницу"],
+    ["faq", "Вопросы"],
+    ["cases", "Первая полоса"],
+    ["order", "Дата вручения"]
+  ], "familia-studio.com")
 };
 
 export function getLandingDepth(id: string): LandingDepthDef | null {
