@@ -21,6 +21,20 @@ export const WATCHED_LANDINGS: WatchedLanding[] = [
     pageUrl: "https://giftboost.website/architecture",
     sourceIds: ["UC_ARCHITECTURE"],
     needles: ["giftboost.website/architecture", "architecture-form"]
+  },
+  {
+    id: "letter",
+    label: "Письмо",
+    pageUrl: "https://giftboost.website/letter",
+    sourceIds: ["UC_LTRGB"],
+    needles: ["giftboost.website/letter"]
+  },
+  {
+    id: "gift2man",
+    label: "Журнал для мужчины",
+    pageUrl: "https://familia-studio.com/gift2man",
+    sourceIds: ["UC_GIFT2MAN"],
+    needles: ["familia-studio.com/gift2man", "gift2men"]
   }
 ];
 

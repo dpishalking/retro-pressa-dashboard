@@ -46,6 +46,45 @@ assert.equal(
   "architecture"
 );
 
+assert.equal(
+  matchLanding(
+    {
+      sourceId: "UC_LTRGB",
+      sourceDescription: "https://giftboost.website/letter",
+      title: "Я родился — заявка на открытку",
+      utmCampaign: "18_08 | pismo malish LEAD"
+    },
+    WATCHED_LANDINGS
+  )?.id,
+  "letter"
+);
+
+assert.equal(
+  matchLanding(
+    {
+      sourceId: "UC_GIFT2MAN",
+      sourceDescription: "gift2men / hero",
+      title: "Журнал для мужчины",
+      utmCampaign: "20_07 | present for MEN"
+    },
+    WATCHED_LANDINGS
+  )?.id,
+  "gift2man"
+);
+
+assert.equal(
+  matchLanding(
+    {
+      sourceId: "UC_GIFT4MAN",
+      sourceDescription: "https://familia-studio.com/gift_for_man",
+      title: "Подарок мужчине",
+      utmCampaign: ""
+    },
+    WATCHED_LANDINGS
+  ),
+  null
+);
+
 assert.equal(pageUrlFromLead(life, "https://giftboost.website/lifehistory"), "https://giftboost.website/lifehistory");
 assert.equal(pageUrlFromLead(architecture, "architecture / architecture-form"), architecture.pageUrl);
 
