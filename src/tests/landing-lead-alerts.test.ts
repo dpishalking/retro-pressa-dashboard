@@ -167,16 +167,17 @@ assert.equal(isInstagramDmLead("UC_PXE40M", "Марина - Instagram"), true);
 assert.equal(isInstagramDmLead("WEB", "Заявка с сайта|retro pressa"), false);
 assert.deepEqual(matchIntentTags("Я хочу книгу и журнал").map((tag) => tag.id), ["book", "magazine"]);
 assert.deepEqual(matchIntentTags("Добрый день, какая цена?").map((tag) => tag.id), []);
+assert.deepEqual(matchIntentTags("Можно заказать газету?").map((tag) => tag.id), []);
 
 const since = Date.parse("2026-09-27T12:00:00+03:00");
 const found = intentLines(
   [
     { text: "Я хочу книгу", at: Date.parse("2026-09-27T11:00:00+03:00") },
-    { text: "Можно заказать газету?", at: Date.parse("2026-09-27T13:00:00+03:00") }
+    { text: "Нужен журнал для мужа", at: Date.parse("2026-09-27T13:00:00+03:00") }
   ],
   since
 );
-assert.deepEqual(found.tags.map((tag) => tag.id), ["newspaper"]);
-assert.deepEqual(found.quotes, ["Можно заказать газету?"]);
+assert.deepEqual(found.tags.map((tag) => tag.id), ["magazine"]);
+assert.deepEqual(found.quotes, ["Нужен журнал для мужа"]);
 
 console.log("landing lead alerts ok");

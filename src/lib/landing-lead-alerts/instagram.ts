@@ -2,8 +2,7 @@ export const INSTAGRAM_DM_SOURCE_IDS = ["UC_PXE40M", "UC_61GF35"];
 
 const INTENT_TAGS = [
   { id: "book", label: "Книга", pattern: /книг/i },
-  { id: "magazine", label: "Журнал", pattern: /журнал/i },
-  { id: "newspaper", label: "Газета", pattern: /газет/i }
+  { id: "magazine", label: "Журнал", pattern: /журнал/i }
 ] as const;
 
 export type IntentTag = { id: string; label: string };
