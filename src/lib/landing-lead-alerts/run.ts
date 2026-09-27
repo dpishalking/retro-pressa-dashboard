@@ -1,6 +1,6 @@
 import { bitrixListAll } from "@/lib/bitrix/rest-client";
 import { asString, loadUserNames, multiValue } from "@/lib/bitrix/sales-foundation/customer-key";
-import { formatLandingLeadAlert, helloMessage, type LandingLeadAlert } from "@/lib/landing-lead-alerts/format";
+import { bitrixLeadUrl, formatLandingLeadAlert, helloMessage, type LandingLeadAlert } from "@/lib/landing-lead-alerts/format";
 import { activeLandings, matchLanding, pageUrlFromLead } from "@/lib/landing-lead-alerts/landings";
 import { loadAlertState, rememberIds, saveAlertState, type AlertState } from "@/lib/landing-lead-alerts/state";
 
@@ -163,7 +163,8 @@ function toAlert(
     utmContent: asString(lead.UTM_CONTENT),
     utmTerm: asString(lead.UTM_TERM),
     assignedName,
-    repeat
+    repeat,
+    bitrixUrl: bitrixLeadUrl(asString(lead.ID), process.env.BITRIX_WEBHOOK_URL || "")
   };
 }
 

@@ -16,7 +16,13 @@ export type LandingLeadAlert = {
   utmTerm: string;
   assignedName: string;
   repeat: boolean | null;
+  bitrixUrl: string;
 };
+
+export function bitrixLeadUrl(leadId: string, webhookUrl: string): string {
+  const portal = webhookUrl.match(/^https?:\/\/[^/]+/i)?.[0] || "https://bb-wood.bitrix24.eu";
+  return `${portal}/crm/lead/details/${leadId}/`;
+}
 
 export function answersFromComment(comment: string): string {
   return comment
@@ -51,6 +57,7 @@ export function formatLandingLeadAlert(lead: LandingLeadAlert): string {
       "",
       lead.name || "Без имени",
       `Лид ${lead.id} · ${formatRigaDateTime(lead.createdAt)} (Рига)`,
+      ...(lead.bitrixUrl ? [lead.bitrixUrl] : []),
       `Стадия: ${lead.statusName || "не указана"}`,
       `Повтор: ${repeat}`,
       "",

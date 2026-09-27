@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { answersFromComment, formatLandingLeadAlert } from "../lib/landing-lead-alerts/format";
+import { answersFromComment, bitrixLeadUrl, formatLandingLeadAlert } from "../lib/landing-lead-alerts/format";
 import { matchLanding, pageUrlFromLead, WATCHED_LANDINGS } from "../lib/landing-lead-alerts/landings";
 import { rememberIds } from "../lib/landing-lead-alerts/state";
 import { DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, telegramAlertConfig } from "../lib/landing-lead-alerts/run";
@@ -110,10 +110,17 @@ const text = formatLandingLeadAlert({
   utmContent: "27_08 | lifehistory LAND",
   utmTerm: "Facebook_Mobile_Feed",
   assignedName: "Tehniskais Akkaunt",
-  repeat: false
+  repeat: false,
+  bitrixUrl: bitrixLeadUrl("149570", "https://bb-wood.bitrix24.eu/rest/1/secret/")
 });
 
 assert.match(text, /Life History — новый лид/);
+assert.equal(
+  bitrixLeadUrl("149570", "https://bb-wood.bitrix24.eu/rest/1/secret/"),
+  "https://bb-wood.bitrix24.eu/crm/lead/details/149570/"
+);
+assert.match(text, /https:\/\/bb-wood\.bitrix24\.eu\/crm\/lead\/details\/149570\//);
+assert.doesNotMatch(text, /secret/);
 assert.match(text, /Liudmila Simpson/);
 assert.match(text, /Повтор: нет/);
 assert.match(text, /Для кого хотят сохранить историю: Мама/);
