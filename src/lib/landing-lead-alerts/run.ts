@@ -1,8 +1,15 @@
-import { bitrixListAll } from "@/lib/bitrix/rest-client";
+import { bitrixListAll, bitrixResult } from "@/lib/bitrix/rest-client";
 import { asString, loadUserNames, multiValue } from "@/lib/bitrix/sales-foundation/customer-key";
-import { bitrixLeadUrl, formatLandingLeadAlert, helloMessage, type LandingLeadAlert } from "@/lib/landing-lead-alerts/format";
+import { bitrixLeadUrl, formatLandingLeadAlert, formatRigaDateTime, helloMessage, type LandingLeadAlert } from "@/lib/landing-lead-alerts/format";
+import {
+  formatInstagramIntentAlert,
+  intentLines,
+  isInstagramDmLead,
+  plainChatText,
+  type ClientLine
+} from "@/lib/landing-lead-alerts/instagram";
 import { activeLandings, matchLanding, pageUrlFromLead } from "@/lib/landing-lead-alerts/landings";
-import { loadAlertState, rememberIds, saveAlertState, type AlertState } from "@/lib/landing-lead-alerts/state";
+import { loadAlertState, rememberIds, saveAlertState, type AlertState, type InstagramCheck } from "@/lib/landing-lead-alerts/state";
 
 const LOOKBACK_MS = 36 * 60 * 60 * 1000;
 
@@ -186,7 +193,13 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
   const matchedIds = matched.map((item) => asString(item.lead.ID)).filter(Boolean);
   let next: AlertState = state.bootstrapped
     ? state
-    : { bootstrapped: true, helloSent: false, notifiedIds: rememberIds(state.notifiedIds, matchedIds) };
+    : {
+        bootstrapped: true,
+        helloSent: false,
+        notifiedIds: rememberIds(state.notifiedIds, matchedIds),
+        instagramBootstrapped: state.instagramBootstrapped,
+        instagramChecks: state.instagramChecks
+      };
 
   const telegramReady = Boolean(config.token && config.chatIds.length);
   const warning = telegramReady
@@ -271,15 +284,186 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
     }
   }
 
+  next = { ...next, notifiedIds: rememberIds([], delivered) };
+
+  const instagram = await scanInstagramIntents({
+    now,
+    leads,
+    state: next,
+    send: (text) => sendToChats(config, text)
+  });
+
   return {
-    ok: pending.length === 0,
+    ok: pending.length === 0 && instagram.pending.length === 0,
     bootstrapped: true,
     helloSent: next.helloSent,
     checked: leads.length,
-    matched: matched.length,
-    sent,
-    pending,
-    warning: sendError || undefined
+    matched: matched.length + instagram.matched,
+    sent: [...sent, ...instagram.sent],
+    pending: [...pending, ...instagram.pending],
+    warning: sendError || instagram.warning
   };
+}
+
+type OpenLineActivity = {
+  OWNER_ID?: string;
+  ASSOCIATED_ENTITY_ID?: string;
+  LAST_UPDATED?: string;
+  CREATED?: string;
+};
+
+type SessionHistory = {
+  message?: Record<string, { date?: string; senderid?: string; text?: string; textlegacy?: string }>;
+  users?: Record<string, { extranet?: boolean | string }>;
+};
+
+function parseBitrixDate(raw: string): number {
+  const time = Date.parse(raw);
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function clientLines(history: SessionHistory): ClientLine[] {
+  const users = history.users || {};
+  return Object.values(history.message || {})
+    .filter((message) => {
+      const user = users[String(message.senderid || "")];
+      return user?.extranet === true || user?.extranet === "Y" || user?.extranet === "1";
+    })
+    .map((message) => ({
+      text: plainChatText(String(message.text || message.textlegacy || "")),
+      at: parseBitrixDate(String(message.date || ""))
+    }))
+    .filter((line) => line.text);
+}
+
+async function scanInstagramIntents(input: {
+  now: Date;
+  leads: RawLead[];
+  state: AlertState;
+  send: (text: string) => Promise<void>;
+}): Promise<{
+  matched: number;
+  sent: Array<{ id: string; landing: string }>;
+  pending: string[];
+  warning?: string;
+}> {
+  const igLeads = input.leads.filter((lead) =>
+    isInstagramDmLead(asString(lead.SOURCE_ID), asString(lead.TITLE))
+  );
+  const empty = { matched: 0, sent: [], pending: [] as string[] };
+  if (!igLeads.length && input.state.instagramBootstrapped) return empty;
+
+  let activities: OpenLineActivity[] = [];
+  try {
+    activities = await bitrixListAll<OpenLineActivity>("crm.activity.list", {
+      filter: {
+        ">=CREATED": rigaStamp(new Date(input.now.getTime() - LOOKBACK_MS)),
+        OWNER_TYPE_ID: 1,
+        PROVIDER_ID: "IMOPENLINES_SESSION"
+      },
+      select: ["ID", "OWNER_ID", "ASSOCIATED_ENTITY_ID", "LAST_UPDATED", "CREATED"]
+    });
+  } catch (error) {
+    return {
+      ...empty,
+      warning: error instanceof Error ? error.message : "Не удалось прочитать переписки Instagram"
+    };
+  }
+
+  const byLead = new Map<string, { stamp: string; sessions: string[] }>();
+  for (const activity of activities) {
+    const leadId = asString(activity.OWNER_ID);
+    const sessionId = asString(activity.ASSOCIATED_ENTITY_ID);
+    if (!leadId || !sessionId) continue;
+    const stamp = asString(activity.LAST_UPDATED) || asString(activity.CREATED);
+    const current = byLead.get(leadId) || { stamp: "", sessions: [] };
+    if (!current.sessions.includes(sessionId)) current.sessions.push(sessionId);
+    if (stamp > current.stamp) current.stamp = stamp;
+    byLead.set(leadId, current);
+  }
+
+  const checks: Record<string, InstagramCheck> = {};
+  if (!input.state.instagramBootstrapped) {
+    for (const lead of igLeads) {
+      const id = asString(lead.ID);
+      if (!id) continue;
+      checks[id] = {
+        stamp: byLead.get(id)?.stamp || "",
+        alerted: false,
+        checkedAt: input.now.toISOString()
+      };
+    }
+    await saveAlertState({ ...input.state, instagramBootstrapped: true, instagramChecks: checks });
+    return empty;
+  }
+
+  const sent: Array<{ id: string; landing: string }> = [];
+  const pending: string[] = [];
+  let warning: string | undefined;
+  let matched = 0;
+
+  for (const lead of igLeads) {
+    const id = asString(lead.ID);
+    if (!id) continue;
+    const prev = input.state.instagramChecks[id];
+    const activity = byLead.get(id);
+    const stamp = activity?.stamp || "";
+    if (prev?.alerted) {
+      checks[id] = prev;
+      continue;
+    }
+    if (prev && prev.stamp === stamp) {
+      checks[id] = prev;
+      continue;
+    }
+    if (!activity?.sessions.length) {
+      checks[id] = prev || { stamp, alerted: false, checkedAt: input.now.toISOString() };
+      continue;
+    }
+
+    try {
+      const lines: ClientLine[] = [];
+      for (const sessionId of activity.sessions) {
+        const history = await bitrixResult<SessionHistory>("imopenlines.session.history.get", {
+          SESSION_ID: Number(sessionId)
+        });
+        lines.push(...clientLines(history));
+      }
+      const since = prev?.checkedAt ? Date.parse(prev.checkedAt) : 0;
+      const intent = intentLines(lines, Number.isNaN(since) ? 0 : since);
+      if (!intent.tags.length) {
+        checks[id] = { stamp, alerted: false, checkedAt: input.now.toISOString() };
+        continue;
+      }
+      matched += 1;
+      const name = [asString(lead.NAME), asString(lead.LAST_NAME)].filter(Boolean).join(" ")
+        || asString(lead.TITLE).replace(/\s*-\s*Instagram\s*$/i, "");
+      await input.send(
+        formatInstagramIntentAlert({
+          name,
+          leadId: id,
+          createdAtLabel: formatRigaDateTime(asString(lead.DATE_CREATE)),
+          bitrixUrl: bitrixLeadUrl(id, process.env.BITRIX_WEBHOOK_URL || ""),
+          tags: intent.tags,
+          quotes: intent.quotes
+        })
+      );
+      checks[id] = { stamp, alerted: true, checkedAt: input.now.toISOString() };
+      sent.push({ id, landing: intent.tags.map((tag) => tag.id).join("+") });
+      await saveAlertState({ ...input.state, instagramBootstrapped: true, instagramChecks: { ...input.state.instagramChecks, ...checks } });
+    } catch (error) {
+      pending.push(id);
+      warning = error instanceof Error ? error.message : "Не удалось отправить сообщение Instagram";
+      if (prev) checks[id] = prev;
+    }
+  }
+
+  await saveAlertState({
+    ...input.state,
+    instagramBootstrapped: true,
+    instagramChecks: { ...input.state.instagramChecks, ...checks }
+  });
+
+  return { matched, sent, pending, warning };
 }
 

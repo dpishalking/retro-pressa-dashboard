@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { answersFromComment, bitrixLeadUrl, formatLandingLeadAlert } from "../lib/landing-lead-alerts/format";
 import { matchLanding, pageUrlFromLead, WATCHED_LANDINGS } from "../lib/landing-lead-alerts/landings";
 import { rememberIds } from "../lib/landing-lead-alerts/state";
+import { intentLines, isInstagramDmLead, matchIntentTags } from "../lib/landing-lead-alerts/instagram";
 import { DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, telegramAlertConfig } from "../lib/landing-lead-alerts/run";
 
 const life = WATCHED_LANDINGS[0]!;
@@ -161,5 +162,21 @@ assert.deepEqual(
 );
 
 assert.equal(DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, "223071474");
+
+assert.equal(isInstagramDmLead("UC_PXE40M", "Марина - Instagram"), true);
+assert.equal(isInstagramDmLead("WEB", "Заявка с сайта|retro pressa"), false);
+assert.deepEqual(matchIntentTags("Я хочу книгу и журнал").map((tag) => tag.id), ["book", "magazine"]);
+assert.deepEqual(matchIntentTags("Добрый день, какая цена?").map((tag) => tag.id), []);
+
+const since = Date.parse("2026-09-27T12:00:00+03:00");
+const found = intentLines(
+  [
+    { text: "Я хочу книгу", at: Date.parse("2026-09-27T11:00:00+03:00") },
+    { text: "Можно заказать газету?", at: Date.parse("2026-09-27T13:00:00+03:00") }
+  ],
+  since
+);
+assert.deepEqual(found.tags.map((tag) => tag.id), ["newspaper"]);
+assert.deepEqual(found.quotes, ["Можно заказать газету?"]);
 
 console.log("landing lead alerts ok");
