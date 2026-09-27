@@ -24,9 +24,12 @@ type TelegramConfig = {
   chatIds: string[];
 };
 
+/** Даниил Пищалкин, @d_pishalking. Landing alerts go here unless overridden. */
+export const DEFAULT_LANDING_LEAD_ALERT_CHAT_ID = "223071474";
+
 export function telegramAlertConfig(env: Record<string, string | undefined> = process.env): TelegramConfig {
   const token = (env.LANDING_LEAD_ALERT_BOT_TOKEN || env.TRAINER_BOT_TOKEN || "").trim();
-  const chatIds = (env.LANDING_LEAD_ALERT_CHAT_IDS || env.ADMIN_TELEGRAM_IDS || "")
+  const chatIds = (env.LANDING_LEAD_ALERT_CHAT_IDS || DEFAULT_LANDING_LEAD_ALERT_CHAT_ID)
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);

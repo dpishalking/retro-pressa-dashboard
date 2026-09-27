@@ -209,16 +209,9 @@ jobs:
           env.LANDING_LEAD_ALERT_BOT_TOKEN =
             process.env.LANDING_LEAD_ALERT_BOT_TOKEN || trainerBotToken;
           env.LANDING_LEAD_ALERT_CHAT_IDS =
-            process.env.LANDING_LEAD_ALERT_CHAT_IDS ||
-            process.env.ADMIN_TELEGRAM_IDS ||
-            "";
+            process.env.LANDING_LEAD_ALERT_CHAT_IDS || "223071474";
           env.LANDING_LEAD_ALERT_STATE_FILE =
             "/opt/retro-pressa-shared/data/landing-lead-alerts/state.json";
-          if (!env.LANDING_LEAD_ALERT_CHAT_IDS) {
-            console.warn(
-              "WARNING: LANDING_LEAD_ALERT_CHAT_IDS and ADMIN_TELEGRAM_IDS are empty — landing lead alerts will not be sent"
-            );
-          }
           if (!env.LANDING_LEAD_ALERT_BOT_TOKEN) {
             console.warn(
               "WARNING: landing lead alert bot token is empty — Telegram messages cannot be sent"

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { answersFromComment, formatLandingLeadAlert } from "../lib/landing-lead-alerts/format";
 import { matchLanding, pageUrlFromLead, WATCHED_LANDINGS } from "../lib/landing-lead-alerts/landings";
 import { rememberIds } from "../lib/landing-lead-alerts/state";
-import { telegramAlertConfig } from "../lib/landing-lead-alerts/run";
+import { DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, telegramAlertConfig } from "../lib/landing-lead-alerts/run";
 
 const life = WATCHED_LANDINGS[0]!;
 const architecture = WATCHED_LANDINGS[1]!;
@@ -98,7 +98,9 @@ assert.deepEqual(
     TRAINER_BOT_TOKEN: "trainer",
     ADMIN_TELEGRAM_IDS: "99"
   }),
-  { token: "trainer", chatIds: ["99"] }
+  { token: "trainer", chatIds: [DEFAULT_LANDING_LEAD_ALERT_CHAT_ID] }
 );
+
+assert.equal(DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, "223071474");
 
 console.log("landing lead alerts ok");
