@@ -79,7 +79,8 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
     detailLinks: [
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
       { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
-      { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" }
+      { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" },
+      { title: "Глубина /architecture", description: "Докуда дочитывают и гипотезы по конверсии.", href: "/marketing/architecture" }
     ],
     actionLinks: [
       { title: "UTM-генератор", description: "Единая разметка ссылок.", href: "/utm" },
