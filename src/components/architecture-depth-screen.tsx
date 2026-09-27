@@ -31,7 +31,8 @@ function shareLabel(value: number | null) {
   return pct(value);
 }
 
-export function ArchitectureDepthScreen() {
+export function ArchitectureDepthScreen({ landingId = "architecture" }: { landingId?: string }) {
+  const apiPath = `/api/marketing/landing-depth/${landingId}`;
   const [report, setReport] = useState<ArchitectureDepthReport | null>(null);
   const [hypotheses, setHypotheses] = useState<HypothesesPayload>({ generatedAt: null, hypotheses: [] });
   const [loadError, setLoadError] = useState("");
@@ -44,7 +45,7 @@ export function ArchitectureDepthScreen() {
     setLoading(true);
     setLoadError("");
     try {
-      const response = await fetch("/api/marketing/architecture-depth", { cache: "no-store" });
+      const response = await fetch(apiPath, { cache: "no-store" });
       const payload = await readJsonResponse<LoadResponse | { error: string }>(response);
       if (!response.ok || !("ok" in payload) || payload.ok !== true) {
         throw new Error("error" in payload ? payload.error : "Не удалось загрузить глубину");
@@ -56,7 +57,7 @@ export function ArchitectureDepthScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiPath]);
 
   useEffect(() => {
     void load();
@@ -67,7 +68,7 @@ export function ArchitectureDepthScreen() {
     setGenerating(true);
     setGenerateStatus("");
     try {
-      const response = await fetch("/api/marketing/architecture-depth", {
+      const response = await fetch(apiPath, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "generate" })
@@ -90,7 +91,7 @@ export function ArchitectureDepthScreen() {
     setStatusBusyId(id);
     setGenerateStatus("");
     try {
-      const response = await fetch("/api/marketing/architecture-depth", {
+      const response = await fetch(apiPath, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "status", id, status })
@@ -119,10 +120,10 @@ export function ArchitectureDepthScreen() {
             ← Маркетинг
           </Link>
         </div>
-        <p className="mt-4 text-sm font-extrabold uppercase tracking-normal text-blue-600">Лендинг архитектуры</p>
+        <p className="mt-4 text-sm font-extrabold uppercase tracking-normal text-blue-600">{report?.kicker ?? "Лендинг"}</p>
         <h1 className="mt-1 text-4xl font-black tracking-normal text-slate-950">Докуда дочитывают</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Воронка блоков giftboost.website/architecture за вчера и за 7 дней. Гипотезы собираются по кнопке и сами страницу не меняют.
+          Воронка блоков {report?.pageUrl ?? "страницы"} за вчера и за 7 дней. Гипотезы собираются по кнопке. На страницу они сами не попадают: изменение выкатываем отдельно и отмечаем статус здесь.
         </p>
       </header>
 
@@ -177,10 +178,12 @@ export function ArchitectureDepthScreen() {
                 <dt className="text-slate-500">Заявки</dt>
                 <dd className="font-bold text-slate-950">{number(week.formSubmits)}</dd>
               </div>
-              <div>
-                <dt className="text-slate-500">Листания подарков</dt>
-                <dd className="font-bold text-slate-950">{number(week.productViews)}</dd>
-              </div>
+              {week.productViews > 0 ? (
+                <div>
+                  <dt className="text-slate-500">Листания подарков</dt>
+                  <dd className="font-bold text-slate-950">{number(week.productViews)}</dd>
+                </div>
+              ) : null}
             </dl>
             <div className="mt-5 border-t border-[var(--line)] pt-4 text-sm text-slate-600">
               <p className="font-semibold text-slate-900">Clarity, 3 дня</p>

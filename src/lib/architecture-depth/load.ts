@@ -1,13 +1,9 @@
 import { getGoogleAccessToken } from "@/lib/google/sheets-client";
 import { syncClarityInsights } from "@/lib/clarity/clarity-connector";
 import {
-  ARCHITECTURE_HOST,
-  ARCHITECTURE_HYPOTHESIS_MIN_USERS,
-  ARCHITECTURE_PAGE_URL,
-  ARCHITECTURE_PATH,
-  ARCHITECTURE_SECTIONS,
-  buildSectionFunnel,
-  type ArchitectureSectionId,
+  buildLandingFunnel,
+  getLandingDepth,
+  type LandingDepthDef,
   type SectionFunnelRow
 } from "@/lib/architecture-depth/sections";
 
@@ -43,6 +39,8 @@ export type ArchitectureClaritySlice = {
 };
 
 export type ArchitectureDepthReport = {
+  landingId: string;
+  kicker: string;
   updatedAt: string;
   pageUrl: string;
   breakdownError: string | null;
@@ -86,24 +84,24 @@ async function runGa4Report(body: Record<string, unknown>) {
   return data;
 }
 
-function pageFilter() {
+function pageFilter(landing: LandingDepthDef) {
   return [
     {
       filter: {
         fieldName: "hostName",
-        stringFilter: { matchType: "EXACT", value: ARCHITECTURE_HOST }
+        stringFilter: { matchType: "EXACT", value: landing.host }
       }
     },
     {
       filter: {
         fieldName: "pagePath",
-        stringFilter: { matchType: "CONTAINS", value: ARCHITECTURE_PATH }
+        stringFilter: { matchType: "CONTAINS", value: landing.path }
       }
     }
   ];
 }
 
-async function fetchSectionCounts(startDate: string, endDate: string) {
+async function fetchSectionCounts(landing: LandingDepthDef, startDate: string, endDate: string) {
   const data = await runGa4Report({
     dateRanges: [{ startDate, endDate }],
     dimensions: [{ name: "customEvent:section_name" }],
@@ -111,7 +109,7 @@ async function fetchSectionCounts(startDate: string, endDate: string) {
     dimensionFilter: {
       andGroup: {
         expressions: [
-          ...pageFilter(),
+          ...pageFilter(landing),
           {
             filter: {
               fieldName: "eventName",
@@ -121,20 +119,20 @@ async function fetchSectionCounts(startDate: string, endDate: string) {
         ]
       }
     },
-    limit: 20
+    limit: 40
   });
 
-  const counts: Partial<Record<ArchitectureSectionId, number>> = {};
+  const counts: Partial<Record<string, number>> = {};
   for (const row of data.rows ?? []) {
     const name = row.dimensionValues?.[0]?.value?.trim() ?? "";
-    const section = ARCHITECTURE_SECTIONS.find((item) => item.id === name);
+    const section = landing.sections.find((item) => item.id === name);
     if (!section) continue;
     counts[section.id] = toNumber(row.metricValues?.[0]?.value);
   }
   return counts;
 }
 
-async function fetchActionCounts(startDate: string, endDate: string) {
+async function fetchActionCounts(landing: LandingDepthDef, startDate: string, endDate: string) {
   const data = await runGa4Report({
     dateRanges: [{ startDate, endDate }],
     dimensions: [{ name: "eventName" }],
@@ -142,7 +140,7 @@ async function fetchActionCounts(startDate: string, endDate: string) {
     dimensionFilter: {
       andGroup: {
         expressions: [
-          ...pageFilter(),
+          ...pageFilter(landing),
           {
             filter: {
               fieldName: "eventName",
@@ -169,20 +167,26 @@ async function fetchActionCounts(startDate: string, endDate: string) {
   return counts;
 }
 
-async function loadWindow(id: ArchitectureWindow["id"], label: string, startDate: string, endDate: string): Promise<ArchitectureWindow> {
+async function loadWindow(
+  landing: LandingDepthDef,
+  id: ArchitectureWindow["id"],
+  label: string,
+  startDate: string,
+  endDate: string
+): Promise<ArchitectureWindow> {
   const [counts, actions] = await Promise.all([
-    fetchSectionCounts(startDate, endDate),
-    fetchActionCounts(startDate, endDate)
+    fetchSectionCounts(landing, startDate, endDate),
+    fetchActionCounts(landing, startDate, endDate)
   ]);
   return {
     id,
     label,
-    sections: buildSectionFunnel(counts),
+    sections: buildLandingFunnel(landing.sections, counts),
     ...actions
   };
 }
 
-async function fetchRealtimeSectionViews() {
+async function fetchRealtimeSectionViews(landing: LandingDepthDef) {
   try {
     const accessToken = await getGoogleAccessToken(analyticsScope);
     const response = await fetch(
@@ -197,9 +201,21 @@ async function fetchRealtimeSectionViews() {
           dimensions: [{ name: "eventName" }],
           metrics: [{ name: "eventCount" }],
           dimensionFilter: {
-            filter: {
-              fieldName: "eventName",
-              stringFilter: { matchType: "EXACT", value: "section_view" }
+            andGroup: {
+              expressions: [
+                {
+                  filter: {
+                    fieldName: "eventName",
+                    stringFilter: { matchType: "EXACT", value: "section_view" }
+                  }
+                },
+                {
+                  filter: {
+                    fieldName: "unifiedPagePathScreen",
+                    stringFilter: { matchType: "CONTAINS", value: landing.path }
+                  }
+                }
+              ]
             }
           },
           limit: 1
@@ -215,16 +231,19 @@ async function fetchRealtimeSectionViews() {
   }
 }
 
-async function loadClaritySlice(): Promise<ArchitectureClaritySlice> {
+async function loadClaritySlice(landing: LandingDepthDef): Promise<ArchitectureClaritySlice> {
   try {
     const snapshot = await syncClarityInsights({ numOfDays: 3 });
     const match = snapshot.byUrl
-      .filter((row) => /giftboost\.website/i.test(row.value) && /architecture/i.test(row.value))
+      .filter((row) => {
+        const value = row.value.toLowerCase();
+        return value.includes(landing.host) && value.includes(landing.path);
+      })
       .sort((a, b) => b.sessions - a.sessions)[0];
     if (!match) {
       return {
         available: false,
-        message: "В Clarity за 3 дня ещё нет визитов giftboost.website/architecture. Записи появятся, когда страница наберёт просмотры.",
+        message: `В Clarity за 3 дня ещё нет визитов ${landing.host}${landing.path}. Записи появятся, когда страница наберёт просмотры.`,
         sessions: 0,
         scrollDepth: null,
         deadClicks: 0,
@@ -261,14 +280,17 @@ async function loadClaritySlice(): Promise<ArchitectureClaritySlice> {
   }
 }
 
-export async function loadArchitectureDepth(): Promise<ArchitectureDepthReport> {
+export async function loadLandingDepth(landingId: string): Promise<ArchitectureDepthReport> {
+  const landing = getLandingDepth(landingId);
+  if (!landing) throw new Error("Неизвестный лендинг");
+
   let breakdownError: string | null = null;
   let yesterday: ArchitectureWindow;
   let week: ArchitectureWindow;
   try {
     [yesterday, week] = await Promise.all([
-      loadWindow("yesterday", "Вчера", "yesterday", "yesterday"),
-      loadWindow("week", "7 дней", "7daysAgo", "today")
+      loadWindow(landing, "yesterday", "Вчера", "yesterday", "yesterday"),
+      loadWindow(landing, "week", "7 дней", "7daysAgo", "today")
     ]);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось прочитать GA4";
@@ -276,7 +298,7 @@ export async function loadArchitectureDepth(): Promise<ArchitectureDepthReport> 
     const empty = (id: ArchitectureWindow["id"], label: string): ArchitectureWindow => ({
       id,
       label,
-      sections: buildSectionFunnel({}),
+      sections: buildLandingFunnel(landing.sections, {}),
       ctaClicks: 0,
       formStarts: 0,
       formSubmits: 0,
@@ -287,16 +309,18 @@ export async function loadArchitectureDepth(): Promise<ArchitectureDepthReport> 
   }
 
   const [clarity, realtimeSectionViews] = await Promise.all([
-    loadClaritySlice(),
-    fetchRealtimeSectionViews()
+    loadClaritySlice(landing),
+    fetchRealtimeSectionViews(landing)
   ]);
   const weekHero = week.sections[0]?.users ?? 0;
-  const canHypothesize = !breakdownError && weekHero >= ARCHITECTURE_HYPOTHESIS_MIN_USERS;
+  const canHypothesize = !breakdownError && weekHero >= landing.minUsers;
   const waitingForProcessing = !breakdownError && weekHero === 0 && (realtimeSectionViews ?? 0) > 0;
 
   return {
+    landingId: landing.id,
+    kicker: landing.kicker,
     updatedAt: new Date().toISOString(),
-    pageUrl: ARCHITECTURE_PAGE_URL,
+    pageUrl: landing.pageUrl,
     breakdownError,
     realtimeSectionViews,
     yesterday,
@@ -309,6 +333,10 @@ export async function loadArchitectureDepth(): Promise<ArchitectureDepthReport> 
         ? `За последние 30 минут GA4 уже принял ${realtimeSectionViews} событий просмотра блоков. Разбивка по блокам доезжает в отчёт в течение суток, после этого здесь появится воронка.`
         : canHypothesize
           ? "Можно собрать гипотезы по семи дням."
-          : `Гипотезы появятся, когда первый экран за 7 дней увидят хотя бы ${ARCHITECTURE_HYPOTHESIS_MIN_USERS} человек. Сейчас ${weekHero}.`
+          : `Гипотезы появятся, когда первый экран за 7 дней увидят хотя бы ${landing.minUsers} человек. Сейчас ${weekHero}.`
   };
+}
+
+export async function loadArchitectureDepth() {
+  return loadLandingDepth("architecture");
 }

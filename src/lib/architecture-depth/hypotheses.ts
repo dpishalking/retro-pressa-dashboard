@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { callGeminiGenerateContent } from "@/lib/gemini/client";
 import type { ArchitectureDepthReport } from "@/lib/architecture-depth/load";
+import { getLandingDepth } from "@/lib/architecture-depth/sections";
 
 export type HypothesisStatus = "new" | "testing" | "won" | "miss";
 
@@ -20,13 +21,17 @@ type Store = {
   hypotheses: ArchitectureHypothesis[];
 };
 
-const storePath = path.join(process.cwd(), "data", "architecture-depth", "hypotheses.json");
+function storePath(landingId: string) {
+  const landing = getLandingDepth(landingId);
+  if (!landing) throw new Error("Неизвестный лендинг");
+  return path.join(process.cwd(), "data", "landing-depth", landing.id, "hypotheses.json");
+}
 
 const statuses = new Set<HypothesisStatus>(["new", "testing", "won", "miss"]);
 
-async function readStore(): Promise<Store> {
+async function readStore(landingId: string): Promise<Store> {
   try {
-    const raw = await readFile(storePath, "utf8");
+    const raw = await readFile(storePath(landingId), "utf8");
     const parsed = JSON.parse(raw) as Store;
     return {
       generatedAt: parsed.generatedAt ?? null,
@@ -37,22 +42,23 @@ async function readStore(): Promise<Store> {
   }
 }
 
-async function writeStore(store: Store) {
-  await mkdir(path.dirname(storePath), { recursive: true });
-  await writeFile(storePath, JSON.stringify(store, null, 2), "utf8");
+async function writeStore(landingId: string, store: Store) {
+  const filePath = storePath(landingId);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, JSON.stringify(store, null, 2), "utf8");
 }
 
-export async function readArchitectureHypotheses() {
-  return readStore();
+export async function readArchitectureHypotheses(landingId = "architecture") {
+  return readStore(landingId);
 }
 
-export async function setArchitectureHypothesisStatus(id: string, status: HypothesisStatus) {
+export async function setArchitectureHypothesisStatus(landingId: string, id: string, status: HypothesisStatus) {
   if (!statuses.has(status)) throw new Error("Неизвестный статус гипотезы");
-  const store = await readStore();
+  const store = await readStore(landingId);
   const hypothesis = store.hypotheses.find((item) => item.id === id);
   if (!hypothesis) throw new Error("Гипотеза не найдена");
   hypothesis.status = status;
-  await writeStore(store);
+  await writeStore(landingId, store);
   return store;
 }
 
@@ -99,6 +105,7 @@ function parseHypotheses(text: string, createdAt: string): ArchitectureHypothesi
 }
 
 export async function generateArchitectureHypotheses(report: ArchitectureDepthReport) {
+  const landingId = report.landingId;
   if (!report.canHypothesize) {
     throw new Error(report.hypothesisNote);
   }
@@ -128,6 +135,6 @@ export async function generateArchitectureHypotheses(report: ArchitectureDepthRe
   const hypotheses = parseHypotheses(text, createdAt);
   if (!hypotheses.length) throw new Error("Не удалось разобрать гипотезы");
   const store = { generatedAt: createdAt, hypotheses };
-  await writeStore(store);
+  await writeStore(landingId, store);
   return store;
 }

@@ -80,7 +80,10 @@ const CONTOURS: Record<ContourId, ContourConfig> = {
       { title: "Маркетинг", description: "Бюджет, CPL, CAC и ROAS.", href: "/os/marketing", primary: true },
       { title: "Когорты", description: "Качество лидов и оплаты по когортам.", href: "/os/cohorts" },
       { title: "Аналитика рекламы", description: "Каналы, GA4 и сверка с CRM.", href: "/ad-analytics" },
-      { title: "Глубина /architecture", description: "Докуда дочитывают и гипотезы по конверсии.", href: "/marketing/architecture" }
+      { title: "Глубина /architecture", description: "Докуда дочитывают и гипотезы по конверсии.", href: "/marketing/architecture" },
+      { title: "Глубина /letter", description: "Письмо: блоки страницы и гипотезы.", href: "/marketing/letter" },
+      { title: "Глубина /lifehistory", description: "Книга жизни: блоки страницы и гипотезы.", href: "/marketing/lifehistory" },
+      { title: "Глубина /pesnya", description: "Песня: блоки страницы и гипотезы.", href: "/marketing/pesnya" }
     ],
     actionLinks: [
       { title: "UTM-генератор", description: "Единая разметка ссылок.", href: "/utm" },
