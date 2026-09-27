@@ -12,11 +12,6 @@ on:
   schedule:
     - cron: "20 * * * *"
   workflow_dispatch:
-    inputs:
-      text:
-        description: One-off message for the landing alert chat
-        required: false
-        type: string
 
 jobs:
   alerts:
@@ -80,55 +75,4 @@ jobs:
             "${AUTH_HEADERS[@]}" \
             -d '{}' || echo "alert endpoint is not deployed yet; crontab will retry"
           echo
-          EOF
-
-      - name: Send one-off Telegram message
-        if: github.event_name == 'push'
-        env:
-          ALERT_TEXT: |
-            Instagram — Журнал
-
-            Людмила Авад
-            Лид 149634 · 27.09.2026, 13:09 (Рига)
-            https://bb-wood.bitrix24.eu/crm/lead/details/149634/
-
-            «Добрый день )какая цена журнала?»
-            «Персонализированный зурнал нужен»
-            «Для мужа на ДР»
-            «На ноябрь месяц»
-            «Извините но для меня это оч дорого»
-        run: |
-          B64="$(printf '%s' "$ALERT_TEXT" | base64 -w0)"
-          ssh -i ~/.ssh/deploy_key \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=20 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            bash -s << EOF
-          set -euo pipefail
-          export ALERT_B64='$B64'
-          node << 'NODE'
-          const env = require("/opt/retro-pressa/runtime-env.json");
-          const token = String(env.LANDING_LEAD_ALERT_BOT_TOKEN || "").trim();
-          const chat = String(env.LANDING_LEAD_ALERT_CHAT_IDS || "223071474").split(",")[0].trim();
-          const text = Buffer.from(process.env.ALERT_B64 || "", "base64").toString("utf8");
-          if (!token || !chat || !text) {
-            console.error("missing token, chat, or text");
-            process.exit(1);
-          }
-          fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ chat_id: chat, text, disable_web_page_preview: true })
-          }).then(async (response) => {
-            const data = await response.json();
-            if (!data.ok) {
-              console.error(data.description || "telegram rejected");
-              process.exit(1);
-            }
-            console.log("sent", data.result && data.result.message_id);
-          }).catch((error) => {
-            console.error(error.message);
-            process.exit(1);
-          });
-          NODE
           EOF
