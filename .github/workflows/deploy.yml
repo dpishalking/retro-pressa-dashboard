@@ -119,6 +119,8 @@ jobs:
           TRAINER_BACKEND_PUBLIC_URL: ${{ secrets.TRAINER_BACKEND_PUBLIC_URL }}
           ADMIN_TELEGRAM_IDS: ${{ secrets.ADMIN_TELEGRAM_IDS }}
           ROP_ALERTS_TELEGRAM_CHAT_IDS: ${{ secrets.ROP_ALERTS_TELEGRAM_CHAT_IDS }}
+          LANDING_LEAD_ALERT_CHAT_IDS: ${{ secrets.LANDING_LEAD_ALERT_CHAT_IDS }}
+          LANDING_LEAD_ALERT_BOT_TOKEN: ${{ secrets.LANDING_LEAD_ALERT_BOT_TOKEN }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -204,6 +206,24 @@ jobs:
           env.AUTH_USERS_FILE = "/opt/retro-pressa-shared/data/auth/users.json";
           env.AUTH_CATALOG_DIR = "/opt/retro-pressa-shared/auth-catalog";
           env.NEXT_PUBLIC_APP_URL = "https://rp-bi.site";
+          env.LANDING_LEAD_ALERT_BOT_TOKEN =
+            process.env.LANDING_LEAD_ALERT_BOT_TOKEN || trainerBotToken;
+          env.LANDING_LEAD_ALERT_CHAT_IDS =
+            process.env.LANDING_LEAD_ALERT_CHAT_IDS ||
+            process.env.ADMIN_TELEGRAM_IDS ||
+            "";
+          env.LANDING_LEAD_ALERT_STATE_FILE =
+            "/opt/retro-pressa-shared/data/landing-lead-alerts/state.json";
+          if (!env.LANDING_LEAD_ALERT_CHAT_IDS) {
+            console.warn(
+              "WARNING: LANDING_LEAD_ALERT_CHAT_IDS and ADMIN_TELEGRAM_IDS are empty — landing lead alerts will not be sent"
+            );
+          }
+          if (!env.LANDING_LEAD_ALERT_BOT_TOKEN) {
+            console.warn(
+              "WARNING: landing lead alert bot token is empty — Telegram messages cannot be sent"
+            );
+          }
           fs.writeFileSync("runtime-env.json", JSON.stringify(env, null, 2));
 
           const backendEnv = {

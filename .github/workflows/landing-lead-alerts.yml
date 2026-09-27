@@ -1,0 +1,78 @@
+name: Landing lead Telegram alerts
+
+# Keeps a 5-minute VPS crontab that asks Bitrix about watched landings
+# and sends new leads to Telegram. Also runs once on deploy of this job.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/landing-lead-alerts.yml"
+      - "src/lib/landing-lead-alerts/**"
+      - "src/app/api/sync/landing-lead-alerts/**"
+  schedule:
+    - cron: "20 * * * *"
+  workflow_dispatch:
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Ensure VPS crontab
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          mkdir -p /opt/retro-pressa-shared/bin /opt/retro-pressa-shared/logs /opt/retro-pressa-shared/data/landing-lead-alerts
+          cat > /opt/retro-pressa-shared/bin/landing-lead-alerts.sh << 'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          curl -fsS --max-time 90 -X POST http://127.0.0.1:4175/api/sync/landing-lead-alerts \
+            "${AUTH_HEADERS[@]}" \
+            -d '{}' >> /opt/retro-pressa-shared/logs/landing-lead-alerts.log 2>&1
+          echo >> /opt/retro-pressa-shared/logs/landing-lead-alerts.log
+          SCRIPT
+          chmod +x /opt/retro-pressa-shared/bin/landing-lead-alerts.sh
+          tmp="$(mktemp)"
+          crontab -l 2>/dev/null | grep -v 'landing-lead-alerts.sh' > "$tmp" || true
+          echo '*/5 * * * * /opt/retro-pressa-shared/bin/landing-lead-alerts.sh' >> "$tmp"
+          crontab "$tmp"
+          rm -f "$tmp"
+          echo "landing lead alert crontab installed"
+          crontab -l | grep landing-lead-alerts || true
+          EOF
+
+      - name: Check landing leads now
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            bash -s << 'EOF'
+          set -euo pipefail
+          SECRET="$(node -e 'const e=require("/opt/retro-pressa/runtime-env.json"); process.stdout.write(String(e.CRON_SYNC_SECRET||""))' 2>/dev/null || true)"
+          AUTH_HEADERS=(-H "Content-Type: application/json" -H "x-forwarded-for: 127.0.0.1" -H "x-real-ip: 127.0.0.1")
+          if [ -n "${SECRET:-}" ]; then
+            AUTH_HEADERS+=(-H "x-cron-secret: ${SECRET}")
+          fi
+          curl -f -sS --max-time 90 -X POST http://127.0.0.1:4175/api/sync/landing-lead-alerts \
+            "${AUTH_HEADERS[@]}" \
+            -d '{}' || echo "alert endpoint is not deployed yet; crontab will retry"
+          echo
+          EOF

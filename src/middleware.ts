@@ -49,7 +49,8 @@ const CRON_API_PREFIXES = [
   "/api/sync/sales-os",
   "/api/sync/sales-cycle",
   "/api/sync/marketing-planning",
-  "/api/sync/monthly-plan-facts"
+  "/api/sync/monthly-plan-facts",
+  "/api/sync/landing-lead-alerts"
 ];
 const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
 

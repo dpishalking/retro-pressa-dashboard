@@ -21,6 +21,7 @@ data/conversation-exports/
 data/conversation-snapshots/
 data/manager-dialogs-sheet-state/
 data/shift-feedback/
+data/landing-lead-alerts/
 data/products/
 data/motivation/
 data/partners/partners-runtime.json
