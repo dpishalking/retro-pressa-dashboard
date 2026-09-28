@@ -27,18 +27,27 @@ export function getGeminiApiKey(): string {
     || "";
 }
 
+function projectIdFromServiceAccountEmail(email: string): string | null {
+  const match = email.trim().toLowerCase().match(/@([a-z0-9-]+)\.iam\.gserviceaccount\.com$/);
+  return match?.[1] ?? null;
+}
+
 export function readGeminiVertexProjectId(): string | null {
   const explicit = process.env.GEMINI_VERTEX_PROJECT?.trim();
   if (explicit) return explicit;
 
   const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
-  if (!serviceAccountJson) return null;
-
-  try {
-    return (JSON.parse(serviceAccountJson) as { project_id?: string }).project_id?.trim() || null;
-  } catch {
-    return null;
+  if (serviceAccountJson) {
+    try {
+      const project = (JSON.parse(serviceAccountJson) as { project_id?: string }).project_id?.trim();
+      if (project) return project;
+    } catch {
+      // Fall through to the service-account email.
+    }
   }
+
+  const email = readGoogleServiceAccount()?.email;
+  return email ? projectIdFromServiceAccountEmail(email) : null;
 }
 
 export function getGeminiVertexLocation(): string {

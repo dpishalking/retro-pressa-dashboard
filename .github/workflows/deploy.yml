@@ -89,6 +89,10 @@ jobs:
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GEMINI_PROVIDER: ${{ secrets.GEMINI_PROVIDER }}
+          GEMINI_VERTEX_PROJECT: ${{ secrets.GEMINI_VERTEX_PROJECT }}
+          GEMINI_VERTEX_LOCATION: ${{ secrets.GEMINI_VERTEX_LOCATION }}
+          GEMINI_API_BASE_URL: ${{ secrets.GEMINI_API_BASE_URL }}
           GOOGLE_TRAFFIC_CSV_URL: ${{ secrets.GOOGLE_TRAFFIC_CSV_URL }}
           GOOGLE_TRAFFIC_SHEET_ID: ${{ secrets.GOOGLE_TRAFFIC_SHEET_ID }}
           GOOGLE_TRAFFIC_SHEET_NAME: ${{ secrets.GOOGLE_TRAFFIC_SHEET_NAME }}
