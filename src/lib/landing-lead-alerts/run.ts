@@ -31,16 +31,24 @@ type TelegramConfig = {
   chatIds: string[];
 };
 
-/** Даниил Пищалкин, @d_pishalking. Landing alerts go here unless overridden. */
-export const DEFAULT_LANDING_LEAD_ALERT_CHAT_ID = "223071474";
+/** Даниил Пищалкин (@d_pishalking) and the second alert recipient. */
+export const DEFAULT_LANDING_LEAD_ALERT_CHAT_IDS = ["223071474", "585011433"];
 
 export function telegramAlertConfig(env: Record<string, string | undefined> = process.env): TelegramConfig {
   const token = (env.LANDING_LEAD_ALERT_BOT_TOKEN || env.TRAINER_BOT_TOKEN || "").trim();
-  const chatIds = (env.LANDING_LEAD_ALERT_CHAT_IDS || DEFAULT_LANDING_LEAD_ALERT_CHAT_ID)
+  const chatIds = (env.LANDING_LEAD_ALERT_CHAT_IDS || DEFAULT_LANDING_LEAD_ALERT_CHAT_IDS.join(","))
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
   return { token, chatIds };
+}
+
+/** Throws when nobody accepted the message. A partial miss is a warning, not a retry. */
+export function deliveryWarning(delivered: number, errors: string[]): string | undefined {
+  if (delivered <= 0) {
+    throw new Error(errors.join("; ") || "Telegram не принял сообщение");
+  }
+  return errors.length ? `Часть чатов не получила сообщение. ${errors.join("; ")}` : undefined;
 }
 
 function rigaStamp(date: Date): string {
@@ -75,16 +83,18 @@ async function sendTelegram(token: string, chatId: string, text: string): Promis
   }
 }
 
-async function sendToChats(config: TelegramConfig, text: string): Promise<void> {
+async function sendToChats(config: TelegramConfig, text: string): Promise<string | undefined> {
   const errors: string[] = [];
+  let delivered = 0;
   for (const chatId of config.chatIds) {
     try {
       await sendTelegram(config.token, chatId, text);
+      delivered += 1;
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : "Telegram не принял сообщение");
+      errors.push(`${chatId}: ${error instanceof Error ? error.message : "Telegram не принял сообщение"}`);
     }
   }
-  if (errors.length) throw new Error(errors.join("; "));
+  return deliveryWarning(delivered, errors);
 }
 
 async function fetchRecentLeads(now: Date): Promise<RawLead[]> {
@@ -207,13 +217,14 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
     : "Не задан токен бота или чат Telegram. Новые лиды подождут и уйдут, когда чат появится.";
 
   if (!state.bootstrapped) {
+    let helloWarning: string | undefined;
     if (telegramReady) {
-      await sendToChats(config, helloMessage(landings.map((landing) => landing.label)));
+      helloWarning = await sendToChats(config, helloMessage(landings.map((landing) => landing.label)));
       next = { ...next, helloSent: true };
     }
     await saveAlertState(next);
     return {
-      ok: telegramReady,
+      ok: telegramReady && !helloWarning,
       bootstrapped: true,
       helloSent: next.helloSent,
       checked: leads.length,
@@ -221,7 +232,7 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
       sent: [],
       pending: [],
       warning: telegramReady
-        ? undefined
+        ? helloWarning
         : "Чат Telegram не задан. Лиды, которые уже есть в CRM, повторно не пришлю. Новые подождут чат."
     };
   }
@@ -245,20 +256,21 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
     };
   }
 
+  const sent: Array<{ id: string; landing: string }> = [];
+  const pending: string[] = [];
+  let sendError = "";
+
   if (!state.helloSent) {
-    await sendToChats(config, helloMessage(landings.map((landing) => landing.label)));
+    const helloWarning = await sendToChats(config, helloMessage(landings.map((landing) => landing.label)));
     next = { ...state, helloSent: true };
     await saveAlertState(next);
+    if (helloWarning) sendError = helloWarning;
   }
 
   const statuses = fresh.length ? await statusNames() : new Map<string, string>();
   const users = fresh.length
     ? await loadUserNames(fresh.map((item) => asString(item.lead.ASSIGNED_BY_ID)))
     : new Map<string, string>();
-
-  const sent: Array<{ id: string; landing: string }> = [];
-  const pending: string[] = [];
-  let sendError = "";
   const delivered = [...next.notifiedIds];
 
   for (const item of fresh) {
@@ -274,10 +286,11 @@ export async function runLandingLeadAlerts(now = new Date()): Promise<LandingLea
       await isRepeat(phone, email, id)
     );
     try {
-      await sendToChats(config, formatLandingLeadAlert(alert));
+      const partial = await sendToChats(config, formatLandingLeadAlert(alert));
       sent.push({ id, landing: item.landing.id });
       delivered.push(id);
       await saveAlertState({ ...next, notifiedIds: rememberIds([], delivered) });
+      if (partial) sendError = partial;
     } catch (error) {
       pending.push(id);
       sendError = error instanceof Error ? error.message : "Не удалось отправить сообщение";
@@ -340,7 +353,7 @@ async function scanInstagramIntents(input: {
   now: Date;
   leads: RawLead[];
   state: AlertState;
-  send: (text: string) => Promise<void>;
+  send: (text: string) => Promise<string | undefined>;
 }): Promise<{
   matched: number;
   sent: Array<{ id: string; landing: string }>;
@@ -438,7 +451,7 @@ async function scanInstagramIntents(input: {
       matched += 1;
       const name = [asString(lead.NAME), asString(lead.LAST_NAME)].filter(Boolean).join(" ")
         || asString(lead.TITLE).replace(/\s*-\s*Instagram\s*$/i, "");
-      await input.send(
+      const partial = await input.send(
         formatInstagramIntentAlert({
           name,
           leadId: id,
@@ -448,6 +461,7 @@ async function scanInstagramIntents(input: {
           quotes: intent.quotes
         })
       );
+      if (partial) warning = partial;
       checks[id] = { stamp, alerted: true, checkedAt: input.now.toISOString() };
       sent.push({ id, landing: intent.tags.map((tag) => tag.id).join("+") });
       await saveAlertState({ ...input.state, instagramBootstrapped: true, instagramChecks: { ...input.state.instagramChecks, ...checks } });

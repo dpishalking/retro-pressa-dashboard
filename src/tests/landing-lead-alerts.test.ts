@@ -3,7 +3,7 @@ import { answersFromComment, bitrixLeadUrl, formatLandingLeadAlert } from "../li
 import { matchLanding, pageUrlFromLead, WATCHED_LANDINGS } from "../lib/landing-lead-alerts/landings";
 import { rememberIds } from "../lib/landing-lead-alerts/state";
 import { intentLines, isInstagramDmLead, matchIntentTags } from "../lib/landing-lead-alerts/instagram";
-import { DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, telegramAlertConfig } from "../lib/landing-lead-alerts/run";
+import { DEFAULT_LANDING_LEAD_ALERT_CHAT_IDS, deliveryWarning, telegramAlertConfig } from "../lib/landing-lead-alerts/run";
 
 const life = WATCHED_LANDINGS[0]!;
 const architecture = WATCHED_LANDINGS[1]!;
@@ -158,10 +158,16 @@ assert.deepEqual(
     TRAINER_BOT_TOKEN: "trainer",
     ADMIN_TELEGRAM_IDS: "99"
   }),
-  { token: "trainer", chatIds: [DEFAULT_LANDING_LEAD_ALERT_CHAT_ID] }
+  { token: "trainer", chatIds: ["223071474", "585011433"] }
 );
 
-assert.equal(DEFAULT_LANDING_LEAD_ALERT_CHAT_ID, "223071474");
+assert.deepEqual(DEFAULT_LANDING_LEAD_ALERT_CHAT_IDS, ["223071474", "585011433"]);
+assert.equal(deliveryWarning(2, []), undefined);
+assert.equal(
+  deliveryWarning(1, ["585011433: Forbidden"]),
+  "Часть чатов не получила сообщение. 585011433: Forbidden"
+);
+assert.throws(() => deliveryWarning(0, ["223071474: Forbidden", "585011433: chat not found"]), /chat not found/);
 
 assert.equal(isInstagramDmLead("UC_PXE40M", "Марина - Instagram"), true);
 assert.equal(isInstagramDmLead("WEB", "Заявка с сайта|retro pressa"), false);

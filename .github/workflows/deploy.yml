@@ -209,9 +209,10 @@ jobs:
           env.LANDING_LEAD_ALERT_BOT_TOKEN =
             process.env.LANDING_LEAD_ALERT_BOT_TOKEN || trainerBotToken;
           env.LANDING_LEAD_ALERT_CHAT_IDS =
-            process.env.LANDING_LEAD_ALERT_CHAT_IDS || "223071474";
+            process.env.LANDING_LEAD_ALERT_CHAT_IDS || "223071474,585011433";
           env.LANDING_LEAD_ALERT_STATE_FILE =
             "/opt/retro-pressa-shared/data/landing-lead-alerts/state.json";
+          console.log("Landing lead alert chats:", env.LANDING_LEAD_ALERT_CHAT_IDS || "NONE");
           if (!env.LANDING_LEAD_ALERT_BOT_TOKEN) {
             console.warn(
               "WARNING: landing lead alert bot token is empty — Telegram messages cannot be sent"
