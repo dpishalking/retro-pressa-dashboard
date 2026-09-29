@@ -125,6 +125,12 @@ jobs:
           ROP_ALERTS_TELEGRAM_CHAT_IDS: ${{ secrets.ROP_ALERTS_TELEGRAM_CHAT_IDS }}
           LANDING_LEAD_ALERT_CHAT_IDS: ${{ secrets.LANDING_LEAD_ALERT_CHAT_IDS }}
           LANDING_LEAD_ALERT_BOT_TOKEN: ${{ secrets.LANDING_LEAD_ALERT_BOT_TOKEN }}
+          SMARTDESK_BASE_URL: ${{ secrets.SMARTDESK_BASE_URL }}
+          SMARTDESK_ACCOUNT_ID: ${{ secrets.SMARTDESK_ACCOUNT_ID }}
+          SMARTDESK_API_TOKEN: ${{ secrets.SMARTDESK_API_TOKEN }}
+          SMARTDESK_TELEGRAM_BOT_TOKEN: ${{ secrets.SMARTDESK_TELEGRAM_BOT_TOKEN }}
+          SMARTDESK_TELEGRAM_WEBHOOK_SECRET: ${{ secrets.SMARTDESK_TELEGRAM_WEBHOOK_SECRET }}
+          SMARTDESK_TELEGRAM_CHAT_IDS: ${{ secrets.SMARTDESK_TELEGRAM_CHAT_IDS }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -191,7 +197,13 @@ jobs:
             "SVOD_ORGANIC_LEADS_TAB",
             "MARIA_TRUTH_SPREADSHEET_ID",
             "PREDICTIVE_SALES_SPREADSHEET_ID",
-            "PREDICTIVE_SALES_TAB"
+            "PREDICTIVE_SALES_TAB",
+            "SMARTDESK_BASE_URL",
+            "SMARTDESK_ACCOUNT_ID",
+            "SMARTDESK_API_TOKEN",
+            "SMARTDESK_TELEGRAM_BOT_TOKEN",
+            "SMARTDESK_TELEGRAM_WEBHOOK_SECRET",
+            "SMARTDESK_TELEGRAM_CHAT_IDS"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
           if (!env.MONTHLY_PLAN_SPREADSHEET_ID) {
@@ -481,6 +493,32 @@ jobs:
           curl -f -sS --max-time 10 http://127.0.0.1:4174/api/health
           curl -f -sS --max-time 10 http://127.0.0.1:4175/api/health
           echo "Main app deployed"
+          node << 'NODE'
+          const env = require("./runtime-env.json");
+          const token = String(env.SMARTDESK_TELEGRAM_BOT_TOKEN || "");
+          const secret = String(env.SMARTDESK_TELEGRAM_WEBHOOK_SECRET || "");
+          if (!token || !secret) {
+            console.log("SmartDesk telegram webhook skipped: token or secret is empty");
+            process.exit(0);
+          }
+          const url = "https://rp-bi.site/api/telegram/smartdesk";
+          fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              url,
+              secret_token: secret,
+              allowed_updates: ["message"]
+            })
+          }).then(async (response) => {
+            const body = await response.text();
+            console.log("SmartDesk telegram webhook:", response.status, body.slice(0, 240));
+            if (!response.ok) process.exitCode = 1;
+          }).catch((error) => {
+            console.error("SmartDesk telegram webhook failed:", error instanceof Error ? error.message : error);
+            process.exitCode = 1;
+          });
+          NODE
 
           # Trainer backend — best effort (tsc may OOM on this host).
           set +e

@@ -53,6 +53,7 @@ const CRON_API_PREFIXES = [
   "/api/sync/landing-lead-alerts"
 ];
 const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
+const SMARTDESK_TELEGRAM_PATH = "/api/telegram/smartdesk";
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -64,6 +65,13 @@ function isCronApi(pathname: string): boolean {
 
 function isHeavyApi(pathname: string): boolean {
   return HEAVY_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function hasSmartdeskTelegramSecret(request: NextRequest): boolean {
+  const expected = process.env.SMARTDESK_TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (!expected) return false;
+  const provided = request.headers.get("x-telegram-bot-api-secret-token")?.trim();
+  return Boolean(provided && provided === expected);
 }
 
 function hasValidCronSecret(request: NextRequest): boolean {
@@ -113,6 +121,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     if (isPublicApi(pathname)) {
       return NextResponse.next();
+    }
+
+    if (pathname === SMARTDESK_TELEGRAM_PATH) {
+      if (hasSmartdeskTelegramSecret(request)) return NextResponse.next();
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (isHeavyApi(pathname) && process.env.RPBI_PROCESS_ROLE !== "worker") {
