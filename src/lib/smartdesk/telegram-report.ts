@@ -284,7 +284,8 @@ export async function buildReportText(now = Date.now(), part: ReportPart = "summ
   const agents = (Array.isArray(agentBody) ? agentBody : [])
     .map((item) => asRecord(item))
     .filter((agent) => String(agent.name || "") !== SKIP_AGENT);
-  const inboxes = (Array.isArray(asRecord(inboxBody).payload) ? asRecord(inboxBody).payload : []).map((item) => asRecord(item));
+  const inboxPayload = asRecord(inboxBody).payload;
+  const inboxes = (Array.isArray(inboxPayload) ? inboxPayload : []).map((item) => asRecord(item));
 
   const managerRows = part === "inboxes"
     ? []
