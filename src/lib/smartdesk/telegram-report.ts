@@ -137,26 +137,35 @@ export function formatQueue(chats: WaitingChat[], total: number, now = Date.now(
   return lines.join("\n").trim();
 }
 
+export type ReportPart = "summary" | "managers" | "inboxes";
+
 export function formatReport(input: {
   dayLabel: string;
   managers: ReportRow[];
   inboxes: ReportRow[];
   waiting: number;
+  part?: ReportPart;
 }): string {
+  const part = input.part ?? "summary";
   const lines = [`SmartDesk за ${input.dayLabel}, Рига`, ""];
-  lines.push("Менеджеры");
-  if (!input.managers.length) lines.push("Живых диалогов нет.");
-  for (const row of input.managers) {
-    lines.push(
-      `${row.name} — ${row.conversations} диал., ответ ${formatDuration(row.replySeconds)}, исх ${row.outgoing}`
-    );
+  if (part !== "inboxes") {
+    lines.push("Менеджеры");
+    if (!input.managers.length) lines.push("Живых диалогов нет.");
+    for (const row of input.managers) {
+      lines.push(
+        `${row.name} — ${row.conversations} диал., ответ ${formatDuration(row.replySeconds)}, исх ${row.outgoing}`
+      );
+    }
   }
-  lines.push("", "Источники");
-  if (!input.inboxes.length) lines.push("Пусто.");
-  for (const row of input.inboxes) {
-    lines.push(`${row.name} — ${row.conversations} диал., ответ ${formatDuration(row.replySeconds)}`);
+  if (part !== "managers") {
+    if (part !== "inboxes") lines.push("");
+    lines.push("Источники");
+    if (!input.inboxes.length) lines.push("Пусто.");
+    for (const row of input.inboxes) {
+      lines.push(`${row.name} — ${row.conversations} диал., ответ ${formatDuration(row.replySeconds)}`);
+    }
   }
-  lines.push("", `Очередь «ждёт-ответа»: ${input.waiting}. Список: /queue`);
+  lines.push("", `Очередь «ждёт-ответа»: ${input.waiting}.`);
   return lines.join("\n");
 }
 
@@ -258,7 +267,7 @@ async function summary(type: "agent" | "inbox", id: number, since: number, until
   };
 }
 
-export async function buildReportText(now = Date.now()): Promise<string> {
+export async function buildReportText(now = Date.now(), part: ReportPart = "summary"): Promise<string> {
   const since = startOfTodayUnix(now);
   const until = Math.floor(now / 1000);
   const dayLabel = new Intl.DateTimeFormat("ru-RU", {
@@ -277,34 +286,38 @@ export async function buildReportText(now = Date.now()): Promise<string> {
     .filter((agent) => String(agent.name || "") !== SKIP_AGENT);
   const inboxes = (Array.isArray(asRecord(inboxBody).payload) ? asRecord(inboxBody).payload : []).map((item) => asRecord(item));
 
-  const managerRows = (
-    await Promise.all(
-      agents.map(async (agent) => {
-        const row = await summary("agent", asNumber(agent.id), since, until);
-        if (!row) return null;
-        row.name = String(agent.name || agent.id);
-        return row;
-      })
+  const managerRows = part === "inboxes"
+    ? []
+    : (
+      await Promise.all(
+        agents.map(async (agent) => {
+          const row = await summary("agent", asNumber(agent.id), since, until);
+          if (!row) return null;
+          row.name = String(agent.name || agent.id);
+          return row;
+        })
+      )
     )
-  )
-    .filter((row): row is ReportRow => Boolean(row))
-    .sort((a, b) => b.conversations - a.conversations);
+      .filter((row): row is ReportRow => Boolean(row))
+      .sort((a, b) => b.conversations - a.conversations);
 
-  const inboxRows = (
-    await Promise.all(
-      inboxes.map(async (inbox) => {
-        const row = await summary("inbox", asNumber(inbox.id), since, until);
-        if (!row) return null;
-        row.name = String(inbox.name || inbox.id);
-        return row;
-      })
+  const inboxRows = part === "managers"
+    ? []
+    : (
+      await Promise.all(
+        inboxes.map(async (inbox) => {
+          const row = await summary("inbox", asNumber(inbox.id), since, until);
+          if (!row) return null;
+          row.name = String(inbox.name || inbox.id);
+          return row;
+        })
+      )
     )
-  )
-    .filter((row): row is ReportRow => Boolean(row))
-    .sort((a, b) => b.conversations - a.conversations);
+      .filter((row): row is ReportRow => Boolean(row))
+      .sort((a, b) => b.conversations - a.conversations);
 
   const waiting = asNumber(asRecord(asRecord(waitingBody).meta).all_count);
-  return formatReport({ dayLabel, managers: managerRows, inboxes: inboxRows, waiting });
+  return formatReport({ dayLabel, managers: managerRows, inboxes: inboxRows, waiting, part });
 }
 
 export async function replyForCommand(command: SmartdeskCommand, chatId: number, allowed: boolean): Promise<string> {

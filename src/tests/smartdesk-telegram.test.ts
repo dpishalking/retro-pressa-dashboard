@@ -48,6 +48,15 @@ const report = formatReport({
   waiting: 1
 });
 assert.match(report, /Надежда — 4 диал\./);
+assert.match(report, /Источники/);
+const managersOnly = formatReport({
+  dayLabel: "29 сентября",
+  managers: [{ name: "Надежда", conversations: 4, incoming: 3, outgoing: 5, replySeconds: 360 }],
+  inboxes: [],
+  waiting: 1,
+  part: "managers"
+});
+assert.equal(managersOnly.includes("Источники"), false);
 assert.equal(chunkText("a\nb\nc", 3).length > 1, true);
 
 console.log("smartdesk telegram tests passed");
