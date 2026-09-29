@@ -53,7 +53,7 @@ const CRON_API_PREFIXES = [
   "/api/sync/landing-lead-alerts"
 ];
 const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
-const SMARTDESK_TELEGRAM_PATH = "/api/telegram/smartdesk";
+const SMARTDESK_EXPORT_PATH = "/api/smartdesk/export";
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -70,7 +70,11 @@ function isHeavyApi(pathname: string): boolean {
 function hasSmartdeskTelegramSecret(request: NextRequest): boolean {
   const expected = process.env.SMARTDESK_TELEGRAM_WEBHOOK_SECRET?.trim();
   if (!expected) return false;
-  const provided = request.headers.get("x-telegram-bot-api-secret-token")?.trim();
+  const provided = (
+    request.headers.get("x-smartdesk-secret") ||
+    request.headers.get("x-telegram-bot-api-secret-token") ||
+    ""
+  ).trim();
   return Boolean(provided && provided === expected);
 }
 
@@ -123,7 +127,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    if (pathname === SMARTDESK_TELEGRAM_PATH) {
+    if (pathname === SMARTDESK_EXPORT_PATH) {
       if (hasSmartdeskTelegramSecret(request)) return NextResponse.next();
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
