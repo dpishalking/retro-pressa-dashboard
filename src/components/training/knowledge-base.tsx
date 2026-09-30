@@ -585,7 +585,7 @@ function DeliverySection() {
             <h3 className={headingClass}>Молдова</h3>
             <p className={`mt-2 ${textClass}`}>Предложите клиенту два варианта:</p>
             <ul className={listClass}>
-              <li>Novapost — 20 EUR, срок 6–7 дней;</li>
+              <li>Novapost — 25 EUR, срок 6–7 дней;</li>
               <li>PUMITY: курьером на адрес или в пункт выдачи — 13 EUR, срок около 10 рабочих дней.</li>
             </ul>
             <p className={`mt-2 ${textClass}`}>В обоих случаях посылка отправляется с трек-номером.</p>
@@ -610,8 +610,9 @@ function DeliverySection() {
           <div className={cardClass}>
             <h3 className={headingClass}>Казахстан: СДЭК из Минска</h3>
             <ul className={listClass}>
-              <li>Минск → Казахстан — до 7 дней, СДЭК;</li>
-              <li>срочная доставка из Минска в Казахстан — 3–4 дня.</li>
+              <li>доставка СДЭК из Минска — 50 BYN;</li>
+              <li>Минск → Казахстан — 7 дней, СДЭК;</li>
+              <li>срочная доставка из Минска в Казахстан (Мекус) — 3–4 дня, 30 EUR.</li>
             </ul>
           </div>
 
