@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Sparkles, Target, Trash2, Truck, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, MessagesSquare, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Sparkles, Target, Trash2, Truck, X } from "lucide-react";
 import Link from "next/link";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -234,6 +234,271 @@ function CityRoutingSection() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+const CHAT_ROUTING_ROWS = [
+  ["Региональная репродукция", "Александр / чат «Репродукция»", "Наличие, дата, возможность изготовления, сроки"],
+  ["Поиск информации о человеке", "Александр / «Репродукция»", "Возможность поиска"],
+  ["Скан репродукции", "«Репродукция»", "Возможность предоставить скан"],
+  ["Доставка по РФ", "«Минск»", "Стоимость и сроки"],
+  ["Доставка по Казахстану", "«Минск»", "Стоимость и сроки"],
+  ["Доставка по РБ", "«Минск»", "Стоимость и сроки"],
+  ["Фото оригинала из Минска", "«Минск»", "Фото издания"],
+  ["Заказ / отправка из Минска", "Ксения / «Минск»", "Статус заказа, отправка, трек-номер"],
+  ["Фото оригинала из Риги", "Евгений / WhatsApp", "Фото издания"],
+  ["Отзыв клиента", "Чат «Отзывы»", "Передать полученный отзыв"],
+  ["Передача клиента Мурату", "Битрикс24 + SmartDesk + таблица", "Изменить ответственного и заполнить контакты"]
+] as const;
+
+function ChatWorkAlgorithmSection() {
+  const [open, setOpen] = useState(false);
+  const headingClass = "text-lg font-black text-slate-950";
+  const textClass = "text-base leading-relaxed text-slate-700";
+  const listClass = "mt-2 list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-700";
+  const cardClass = "rounded-xl border border-[var(--line)] bg-slate-50 p-4";
+
+  return (
+    <section className="card overflow-hidden p-0">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+            <MessagesSquare size={20} />
+          </span>
+          <span>
+            <span className="block text-xl font-black text-slate-950">
+              Алгоритм работы в чатах: кто за что отвечает
+            </span>
+            <span className="block text-sm text-slate-600">
+              Куда писать по репродукциям, Минску, фото оригиналов, отзывам и оплате.
+            </span>
+          </span>
+        </span>
+        <ChevronDown
+          size={22}
+          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <div className={cardClass}>
+            <h3 className={headingClass}>1. Репродукция — рабочий чат</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Менеджер обращается в чат «Репродукция», если клиент интересуется:
+            </p>
+            <ul className={listClass}>
+              <li>региональным изданием;</li>
+              <li>репродукцией газеты/журнала;</li>
+              <li>возможностью изготовить издание за конкретную дату;</li>
+              <li>сроками изготовления;</li>
+              <li>дополнительной информацией по содержанию издания.</li>
+            </ul>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 1. Проверить наличие и возможность изготовления</p>
+            <p className={`mt-2 ${textClass}`}>Если клиент интересуется региональным изданием: менеджер → Александр.</p>
+            <p className={`mt-2 ${textClass}`}>Запрашиваем:</p>
+            <ul className={listClass}>
+              <li>есть ли нужное региональное издание;</li>
+              <li>за какую дату доступно;</li>
+              <li>возможно ли изготовление;</li>
+              <li>ориентировочные сроки.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              После получения информации менеджер возвращается к клиенту и продолжает коммуникацию.
+            </p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 2. Если клиенту нужен поиск информации о человеке</p>
+            <p className={`mt-2 ${textClass}`}>Это отдельная платная услуга. Стоимость стартового комплекта — 40 €.</p>
+            <p className={`mt-2 ${textClass}`}>В стартовый комплект входит поиск упоминания:</p>
+            <ul className={listClass}>
+              <li>за какой месяц;</li>
+              <li>за какой год;</li>
+              <li>по какой дате/периоду было найдено упоминание.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>Дополнительный поиск выполняется по отдельному запросу клиента.</p>
+            <p className={`mt-2 ${textClass}`}>Менеджер не обещает клиенту результат поиска до уточнения возможности.</p>
+            <p className={`mt-4 font-bold text-slate-900`}>
+              Шаг 3. Если клиент просит скан/просмотр содержимого репродукции
+            </p>
+            <p className={`mt-2 ${textClass}`}>
+              Если клиент хочет заранее посмотреть, что было опубликовано в издании:
+            </p>
+            <ul className={listClass}>
+              <li>сначала уточнить возможность предоставления скана;</li>
+              <li>не обещаем клиенту скан автоматически;</li>
+              <li>
+                запрос передаём в чат «Репродукция» и после получения ответа сообщаем клиенту доступные варианты.
+              </li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>2. Минск — рабочий чат</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Чат используется для вопросов, связанных с Минским офисом, оригинальными изданиями и отправками.
+            </p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 1. Стоимость и сроки доставки</p>
+            <p className={`mt-2 ${textClass}`}>
+              Если клиент находится в России, Казахстане или Беларуси и необходимо уточнить стоимость или срок
+              доставки: менеджер → чат «Минск».
+            </p>
+            <p className={`mt-2 ${textClass}`}>Запрашиваем:</p>
+            <ul className={listClass}>
+              <li>стоимость доставки;</li>
+              <li>ориентировочный срок;</li>
+              <li>возможность отправки по нужному направлению.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>Полученную информацию передаём клиенту.</p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 2. Фото оригинальных изданий</p>
+            <p className={`mt-2 ${textClass}`}>
+              Если клиент хочет увидеть фото оригинального издания, находящегося в Минском офисе: менеджер → чат
+              «Минск». Запрашиваем актуальные фотографии нужного издания. После получения фото менеджер отправляет их
+              клиенту в диалоге.
+            </p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 3. Коммуникация с Ксенией</p>
+            <p className={`mt-2 ${textClass}`}>Через чат «Минск» осуществляется коммуникация с Ксенией по вопросам:</p>
+            <ul className={listClass}>
+              <li>информации по заказу;</li>
+              <li>отправки заказа из Минска;</li>
+              <li>трек-номера;</li>
+              <li>статуса отправки;</li>
+              <li>других вопросов, связанных с заказами из Минского офиса.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>
+              Менеджер передаёт Ксении необходимую информацию по заказу и после получения ответа возвращается к
+              клиенту.
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>3. Евгений — WhatsApp +37120739750</h3>
+            <p className={`mt-2 font-bold text-slate-900`}>Фото оригинальных изданий из Риги</p>
+            <p className={`mt-2 ${textClass}`}>
+              Если клиенту необходимо предоставить фото оригинального издания, которое находится в Рижском офисе:
+              менеджер → Евгений (WhatsApp). Запрашиваем фотографии нужного издания.
+            </p>
+            <p className={`mt-2 ${textClass}`}>После получения фото:</p>
+            <ul className={listClass}>
+              <li>проверяем, что фотографии соответствуют нужному изданию;</li>
+              <li>отправляем их клиенту;</li>
+              <li>продолжаем продажу в основном клиентском чате.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>4. Действия после оплаты клиента</h3>
+            <p className={`mt-2 ${textClass}`}>
+              После того как клиент оплатил заказ на репродукцию, менеджер должен обязательно передать информацию
+              ответственным.
+            </p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 1. Сообщить Александру</p>
+            <p className={`mt-2 ${textClass}`}>Менеджер → чат «Репродукция». Передать:</p>
+            <ul className={listClass}>
+              <li>№ заказа;</li>
+              <li>статус: оплачено;</li>
+              <li>название издания;</li>
+              <li>дату издания.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>Пример:</p>
+            <p className={`mt-1 ${textClass}`}>
+              Заказ №12345
+              <br />
+              Оплачено
+              <br />
+              Газета «...»
+              <br />
+              Дата: 15.05.1987
+            </p>
+            <p className={`mt-4 font-bold text-slate-900`}>Шаг 2. Передать информацию Гале</p>
+            <p className={`mt-2 ${textClass}`}>
+              Информацию по оплаченному заказу обязательно внести в комментарии к сделке в Битрикс24.
+            </p>
+            <p className={`mt-2 ${textClass}`}>В комментарии указать:</p>
+            <ul className={listClass}>
+              <li>№ заказа;</li>
+              <li>факт оплаты;</li>
+              <li>название издания;</li>
+              <li>дату издания;</li>
+              <li>при необходимости дополнительные договорённости с клиентом.</li>
+            </ul>
+            <p className={`mt-4 font-bold text-slate-900`}>Если заказ срочный</p>
+            <p className={`mt-2 ${textClass}`}>Помимо комментария в сделке:</p>
+            <ul className={listClass}>
+              <li>продублировать информацию Гале в личном сообщении;</li>
+              <li>либо отметить информацию в группе/чате «Репродукция».</li>
+            </ul>
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-base leading-relaxed text-amber-900">
+              Важно: дублирование используется именно для срочных заказов, чтобы информация не потерялась и была
+              замечена вовремя.
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>5. Чат «Отзывы»</h3>
+            <p className={`mt-2 ${textClass}`}>Чат используется для сбора отзывов клиентов.</p>
+            <p className={`mt-2 ${textClass}`}>
+              Если менеджер получил от клиента отзыв, менеджер самостоятельно отправляет отзыв в чат «Отзывы».
+            </p>
+            <p className={`mt-2 ${textClass}`}>Желательно передавать:</p>
+            <ul className={listClass}>
+              <li>текст отзыва;</li>
+              <li>скриншот, если отзыв получен в виде сообщения;</li>
+              <li>фото/видео клиента, если клиент его предоставил;</li>
+              <li>при необходимости информацию о заказе.</li>
+            </ul>
+            <p className={`mt-2 ${textClass}`}>Отзывы не оставляем только в личном диалоге с клиентом.</p>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>6. Краткая схема: к кому обращаемся</h3>
+            <div className="table-scroll mt-3">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Вопрос</th>
+                    <th>Куда обращаемся</th>
+                    <th>Что уточняем/получаем</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CHAT_ROUTING_ROWS.map((row) => (
+                    <tr key={row[0]}>
+                      <td className="whitespace-normal font-semibold text-slate-900">{row[0]}</td>
+                      <td className="whitespace-normal">{row[1]}</td>
+                      <td className="whitespace-normal">{row[2]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>7. Главный принцип</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Менеджер отвечает не только за коммуникацию с клиентом, но и за передачу информации следующему
+              ответственному.
+            </p>
+            <p className={`mt-2 ${textClass}`}>
+              Если для ответа клиенту необходимо получить информацию от другого сотрудника:
+            </p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-base leading-relaxed text-slate-700">
+              <li>Менеджер фиксирует запрос.</li>
+              <li>Передаёт его ответственному сотруднику.</li>
+              <li>Получает информацию.</li>
+              <li>Возвращается к клиенту.</li>
+              <li>Фиксирует важную информацию в Битрикс24.</li>
+            </ol>
+            <p className={`mt-2 ${textClass}`}>
+              Нельзя оставлять вопрос клиента без движения только потому, что ответ зависит от другого сотрудника.
+            </p>
           </div>
         </div>
       ) : null}
@@ -977,6 +1242,8 @@ export function KnowledgeBase() {
       <LiveLinksSection />
 
       <CityRoutingSection />
+
+      <ChatWorkAlgorithmSection />
 
       <WhatsappArchiveSection />
 
