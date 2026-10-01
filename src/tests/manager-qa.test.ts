@@ -83,6 +83,12 @@ assert.match(slovenia, /💶 11 EUR/);
 assert.match(slovenia, /⏱ 3–6 дней/);
 assert.doesNotMatch(slovenia, /\*/);
 
+const gap = renderTelegramMessage(`Отдельной строки нет, но ориентируемся по правилу «Работа с архивом Retro Pressa».
+Пункт выдачи DPD — 11 EUR, срок 3–6 дней.`);
+assert.doesNotMatch(gap, /отдельной строки/i);
+assert.doesNotMatch(gap, /правилу/i);
+assert.match(gap, /11 EUR/);
+
 const unsafe = renderTelegramMessage("Цена <script>alert(1)</script> и 5 < 10");
 assert.match(unsafe, /&lt;script&gt;/);
 assert.doesNotMatch(unsafe, /<script>/);
