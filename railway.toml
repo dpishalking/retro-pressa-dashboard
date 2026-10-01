@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci --include=dev"
+
+[deploy]
+startCommand = "npx tsx src/scripts/manager-qa-bot.ts"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

@@ -497,28 +497,24 @@ jobs:
           curl -f -sS --max-time 10 http://127.0.0.1:4174/api/health
           curl -f -sS --max-time 10 http://127.0.0.1:4175/api/health
           echo "Main app deployed"
-          node <<'NODE' || echo "WARNING: manager QA webhook step failed"
+          node <<'NODE' || echo "WARNING: manager QA webhook detach failed"
           const env = require("./runtime-env.json");
           const token = String(env.TELEGRAM_MANAGER_QA_BOT_TOKEN || "").trim();
-          const secret = String(env.TELEGRAM_MANAGER_QA_WEBHOOK_SECRET || "").trim();
-          if (!token || !secret) {
-            console.warn("Manager QA webhook skipped: token or secret is empty");
+          if (!token) {
+            console.warn("Manager QA bot token is empty; Railway poller keeps the bot online");
             process.exit(0);
           }
-          const body = new URLSearchParams({
-            url: "https://rp-bi.site/api/telegram/manager-qa",
-            secret_token: secret,
-            allowed_updates: JSON.stringify(["message"]),
-            drop_pending_updates: "false"
-          });
-          fetch(`https://api.telegram.org/bot${token}/setWebhook`, { method: "POST", body })
+          fetch(`https://api.telegram.org/bot${token}/deleteWebhook`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ drop_pending_updates: false })
+          })
             .then(async (response) => {
               const data = await response.json().catch(() => ({}));
-              console.log("Manager QA webhook:", data.ok ? "ok" : (data.description || response.status));
-              if (!data.ok) process.exitCode = 0;
+              console.log("Manager QA webhook detached:", data.ok ? "ok" : (data.description || response.status));
             })
             .catch((error) => {
-              console.warn("Manager QA webhook failed:", error instanceof Error ? error.message : error);
+              console.warn("Manager QA webhook detach failed:", error instanceof Error ? error.message : error);
             });
           NODE
 
