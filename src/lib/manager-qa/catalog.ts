@@ -261,7 +261,7 @@ export function buildProductSections(products: CorpusProduct[]): KnowledgeSectio
 }
 
 function plain(text: string): string {
-  return text.replace(/\*\*/g, "").trim();
+  return text.replace(/\*/g, "").replace(/[ \t]{2,}/g, " ").trim();
 }
 
 export function buildModuleSections(modules: CorpusModule[], prefix: string): KnowledgeSection[] {

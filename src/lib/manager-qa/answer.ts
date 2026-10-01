@@ -41,8 +41,17 @@ export async function loadAnswerCorpus(): Promise<ManagerCorpus> {
   return corpus;
 }
 
+export function stripTelegramMarkup(text: string): string {
+  return text
+    .replace(/\*/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function clipTelegramText(text: string, limit = 3900): string {
-  const trimmed = text.trim();
+  const trimmed = stripTelegramMarkup(text);
   if (trimmed.length <= limit) return trimmed;
   const lines = trimmed.split("\n");
   const kept: string[] = [];
@@ -57,9 +66,10 @@ export function clipTelegramText(text: string, limit = 3900): string {
 
 function joinAnswer(main: string, extra: string | null): string {
   if (!extra) return clipTelegramText(main);
-  const room = 3900 - extra.length - 2;
-  if (room < 400) return clipTelegramText(extra);
-  return `${clipTelegramText(main, room)}\n\n${extra}`;
+  const cleanedExtra = stripTelegramMarkup(extra);
+  const room = 3900 - cleanedExtra.length - 2;
+  if (room < 400) return clipTelegramText(cleanedExtra);
+  return `${clipTelegramText(main, room)}\n\n${cleanedExtra}`;
 }
 
 export async function answerManagerQuestion(
@@ -88,6 +98,7 @@ export async function answerManagerQuestion(
             "Если есть несколько вариантов, перечисли их.",
             "Если клиенту нельзя что-то обещать, прямо это скажи.",
             "Если во фрагменте есть URL, копируй его дословно.",
+            "Пиши обычным текстом: без markdown, без звёздочек и без решёток.",
             "Не ссылайся на «фрагменты» и не упоминай, что ты языковая модель."
           ].join(" ")
         }]

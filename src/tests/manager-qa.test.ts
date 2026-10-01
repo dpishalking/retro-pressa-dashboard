@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import materialsFile from "../../data/training/client-materials.json";
 import productsFile from "../../data/training/products.json";
-import { faqSections } from "@/lib/manager-qa/answer";
+import { faqSections, stripTelegramMarkup } from "@/lib/manager-qa/answer";
 import {
   buildProductSections,
   formatAssetReply,
@@ -62,3 +62,8 @@ assert.doesNotMatch(reviews || "", /congratulatory-magazine/);
 const footer = formatCardFooter("Что говорить, если дорого, про книгу жизни?");
 assert.match(footer || "", /https:\/\/rp-bi\.site\/cards\/life-story/);
 assert.equal(formatCardFooter("Скинь отзывы по книге жизни"), null);
+
+assert.equal(
+  stripTelegramMarkup("* **Региональная репродукция:** Александр / чат «Репродукция»."),
+  "Региональная репродукция: Александр / чат «Репродукция»."
+);
