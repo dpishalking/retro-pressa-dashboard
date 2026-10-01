@@ -53,6 +53,11 @@ assert.equal(book[0]?.id, "product-life-story");
 const italyWithProducts = pickSections("Сколько занимает доставка в Италию и какая стоимость?", corpus.sections);
 assert.equal(italyWithProducts[0]?.id, "delivery");
 
+const washington = pickSections("сколько будет стоить доставка в вашингтон?", MANAGER_KNOWLEDGE);
+assert.equal(washington[0]?.id, "delivery");
+assert.match(washington[0]?.text ?? "", /Вашингтон/);
+assert.match(washington[0]?.text ?? "", /13 EUR/);
+
 const reviews = formatAssetReply("Скинь отзывы по поздравительной газете", corpus);
 assert.match(reviews || "", /https:\/\/rp-bi\.site\/cards\/congratulatory-newspaper/);
 assert.match(reviews || "", /Отзывы:/);

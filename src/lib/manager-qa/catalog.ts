@@ -298,10 +298,17 @@ export function zabkovaSection(): KnowledgeSection {
 
 export function pickSections(question: string, sections: KnowledgeSection[], rules: ProductRule[] = matchProductRules(question)): KnowledgeSection[] {
   const ranked = rankKnowledgeSections(question, sections, 3);
+  const deliveryAsked = /достав/.test(question.toLowerCase().replaceAll("ё", "е"));
+  const forcedTopics = deliveryAsked
+    ? ["delivery", "timing"].flatMap((id) => {
+        const section = sections.find((item) => item.id === id);
+        return section ? [section] : [];
+      })
+    : [];
   const forced = rules
     .map((rule) => sections.find((section) => section.id === `product-${rule.id}`))
     .filter((section): section is KnowledgeSection => Boolean(section));
-  const merged = [...forced];
+  const merged = [...forcedTopics, ...forced];
   for (const section of ranked) {
     if (!merged.some((item) => item.id === section.id)) merged.push(section);
   }
