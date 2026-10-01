@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import materialsFile from "../../data/training/client-materials.json";
 import productsFile from "../../data/training/products.json";
-import { faqSections, stripTelegramMarkup } from "@/lib/manager-qa/answer";
+import { faqSections, renderTelegramMessage, stripTelegramMarkup } from "@/lib/manager-qa/answer";
 import {
   buildProductSections,
   formatAssetReply,
@@ -72,3 +72,17 @@ assert.equal(
   stripTelegramMarkup("* **Региональная репродукция:** Александр / чат «Репродукция»."),
   "Региональная репродукция: Александр / чат «Репродукция»."
 );
+
+const slovenia = renderTelegramMessage(`Для Словении есть два варианта доставки DPD:
+- в пункт выдачи / пакомат DPD — 11 EUR, срок 3–6 дней;
+- доставка DPD на дом — 21 EUR, срок 3–6 дней.`);
+assert.match(slovenia, /🇸🇮 <b>Словения<\/b>/);
+assert.match(slovenia, /📦 <b>Пункт выдачи \/ пакомат · DPD<\/b>/);
+assert.match(slovenia, /🏠 <b>На дом · DPD<\/b>/);
+assert.match(slovenia, /💶 11 EUR/);
+assert.match(slovenia, /⏱ 3–6 дней/);
+assert.doesNotMatch(slovenia, /\*/);
+
+const unsafe = renderTelegramMessage("Цена <script>alert(1)</script> и 5 < 10");
+assert.match(unsafe, /&lt;script&gt;/);
+assert.doesNotMatch(unsafe, /<script>/);

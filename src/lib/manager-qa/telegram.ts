@@ -1,4 +1,4 @@
-import { answerManagerQuestion } from "@/lib/manager-qa/answer";
+import { answerManagerQuestion, renderTelegramMessage } from "@/lib/manager-qa/answer";
 
 type TelegramUser = { id?: number; is_bot?: boolean; username?: string };
 type TelegramChat = { id: number; type?: string };
@@ -99,6 +99,8 @@ function questionText(text: string, username: string): string {
 }
 
 const START_TEXT = [
+  "🤖 Помощник менеджера",
+  "",
   "Напишите вопрос своими словами. Отвечу по базе знаний, карточкам продуктов и урокам CRM: доставка, сроки, оплата, цены, возражения и куда писать, если заказ встал.",
   "",
   "Можно сразу попросить материалы: «Скинь отзывы по поздравительной газете» или «Фото по книге жизни».",
@@ -107,12 +109,19 @@ const START_TEXT = [
 ].join("\n");
 
 async function sendText(chatId: number, text: string, replyTo?: number) {
-  await telegramCall("sendMessage", {
+  const html = renderTelegramMessage(text);
+  const payload = {
     chat_id: chatId,
-    text,
     reply_to_message_id: replyTo,
     disable_web_page_preview: true
-  });
+  };
+  try {
+    await telegramCall("sendMessage", { ...payload, text: html, parse_mode: "HTML" });
+  } catch (error) {
+    const description = error instanceof Error ? error.message : "";
+    if (!/parse|entit|tag/i.test(description)) throw error;
+    await telegramCall("sendMessage", { ...payload, text: html.replace(/<[^>]+>/g, "") });
+  }
 }
 
 export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<void> {
