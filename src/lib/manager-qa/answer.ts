@@ -64,7 +64,7 @@ const COUNTRIES: Array<{ test: RegExp; flag: string; name: string }> = [
   { test: /азербайджан/i, flag: "🇦🇿", name: "Азербайджан" },
   { test: /грузи/i, flag: "🇬🇪", name: "Грузия" },
   { test: /турци/i, flag: "🇹🇷", name: "Турция" },
-  { test: /израил/i, flag: "🇮🇱", name: "Израиль" },
+  { test: /израил|тель[-\s]?авив/i, flag: "🇮🇱", name: "Израиль" },
   { test: /англи|великобритан/i, flag: "🇬🇧", name: "Великобритания" },
   { test: /молдов/i, flag: "🇲🇩", name: "Молдова" },
   { test: /(?:^|\s)риг/i, flag: "🇱🇻", name: "Рига" },
@@ -218,8 +218,20 @@ function sanitizeTelegramHtml(text: string): string {
   return `${balanced}${"</b>".repeat(bold)}${"</i>".repeat(italic)}${"</a>".repeat(links)}`;
 }
 
+const DELIVERY_LIABILITY_NOTE =
+  "Мы НЕ отвечаем за сроки доставки, потому что мы не являемся логистической компанией и ногами не доставляем.";
+
+function mentionsDelivery(text: string, question = ""): boolean {
+  return /достав/i.test(question) || /pumity|\bdpd\b|\bdhl\b|сдэк|пакомат|доставк\p{L}*\s+в\b|доставля/iu.test(text);
+}
+
+function appendDeliveryNote(text: string, question = ""): string {
+  if (!mentionsDelivery(text, question) || /не отвечаем за сроки доставки/i.test(text)) return text;
+  return `${text.trim()}\n\n${DELIVERY_LIABILITY_NOTE}`;
+}
+
 function dropGapTalk(text: string): string {
-  const gap = /отдельн\p{L}*\s+строк|фрагмент|в базе (этого )?нет|не наш[её]л|ориентир\p{L}* по правил|точн\p{L}* информац|нет точн|данных нет|такого нет/iu;
+  const gap = /отдельн\p{L}*\s+строк|фрагмент|в базе (этого )?нет|не наш[её]л|ориентир\p{L}* по правил|считаем по правил|по правилу для|точн\p{L}* информац|нет точн|данных нет|такого нет/iu;
   return text
     .split("\n")
     .filter((line) => !gap.test(line))
@@ -228,7 +240,7 @@ function dropGapTalk(text: string): string {
     .trim();
 }
 
-export function renderTelegramMessage(text: string): string {
+export function renderTelegramMessage(text: string, question = ""): string {
   const prepared = dropGapTalk(text
     .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>")
     .replace(/\*/g, "")
@@ -236,8 +248,10 @@ export function renderTelegramMessage(text: string): string {
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim());
-  if (!prepared) return "Напишите страну, город и нужен пункт выдачи или доставка на дом.";
-  return sanitizeTelegramHtml(layoutReply(prepared));
+  const body = prepared
+    ? sanitizeTelegramHtml(layoutReply(prepared))
+    : "Напишите страну, город и нужен пункт выдачи или доставка на дом.";
+  return appendDeliveryNote(body, question || text);
 }
 
 export function clipTelegramText(text: string, limit = 3900): string {
@@ -291,6 +305,7 @@ export async function answerManagerQuestion(
             "Если ответить нечем, задай один короткий уточняющий вопрос.",
             "Если есть несколько вариантов, перечисли их.",
             "URL из базы копируй дословно.",
+            "В ответе про доставку не пиши, что мы отвечаем за срок вручения.",
             "Верстай ответ для Telegram. Первая строка — короткая тема. Каждый вариант доставки — отдельный блок: название, цена, срок.",
             "Ставь немного эмодзи по смыслу: флаг страны, 📦 пункт или пакомат, 🏠 на дом, ✈️ DHL, 🚚 обычная доставка, 💶 цена, ⏱ срок, 💬 чат.",
             "Жирным выделяй только короткие названия через тег <b>название</b>. Другие HTML-теги, звёздочки и решётки не используй.",
