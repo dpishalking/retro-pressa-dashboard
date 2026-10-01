@@ -98,6 +98,20 @@ assert.match(telAviv, /🇮🇱 <b>Израиль<\/b>/);
 assert.match(telAviv, /Мы НЕ отвечаем за сроки доставки, потому что мы не являемся логистической компанией и ногами не доставляем\./);
 assert.equal(telAviv.match(/не отвечаем за сроки доставки/gi)?.length, 1);
 
+const archive = renderTelegramMessage(`Как проверить наличие издания в архиве
+Чтобы проверить наличие издания, следуйте этим шагам:
+1. Поиск по дате на сайте
+Зайдите на сайт retropressa.com.
+2. Определение формата
+Внизу карточки смотрите строку «Оригинал».`);
+assert.match(archive, /<b>Как проверить наличие издания в архиве<\/b>/);
+assert.match(archive, /🔍 <b>1\. Поиск по дате на сайте<\/b>/);
+assert.match(archive, /• Зайдите на сайт retropressa.com\./);
+assert.match(archive, /🎨 <b>2\. Определение формата<\/b>/);
+assert.match(archive, /\n\n🔍/);
+assert.match(archive, /\n\n🎨/);
+assert.doesNotMatch(archive, /следуйте этим шагам/);
+
 const unsafe = renderTelegramMessage("Цена <script>alert(1)</script> и 5 < 10");
 assert.match(unsafe, /&lt;script&gt;/);
 assert.doesNotMatch(unsafe, /<script>/);

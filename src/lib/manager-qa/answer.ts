@@ -143,8 +143,46 @@ function parseOption(line: string): { emoji: string; title: string; price: strin
   };
 }
 
+function stepEmoji(title: string): string {
+  const value = title.toLowerCase();
+  if (/фото|whatsapp/.test(value)) return "📸";
+  if (/поиск|сайт|дат/.test(value)) return "🔍";
+  if (/формат|оригинал|розов/.test(value)) return "🎨";
+  if (/регион|репродукц/.test(value)) return "🌍";
+  if (/архив/.test(value)) return "📸";
+  if (/подбор/.test(value)) return "🎁";
+  if (/оплат|сч[её]т|реквизит/.test(value)) return "💳";
+  if (/чат|писать|куда/.test(value)) return "💬";
+  return "▸";
+}
+
+function formatStepBlocks(text: string): string {
+  const rows = text.split("\n");
+  if (!rows.some((line) => /^\s*\d+[.)]\s+\S/.test(line))) return text;
+  const out: string[] = [];
+  let inStep = false;
+  for (const raw of rows) {
+    const line = raw.trim();
+    if (/следуйте этим шагам/i.test(line)) continue;
+    const step = line.match(/^(\d+)[.)]\s+(.+)$/);
+    if (step) {
+      if (out.length && out[out.length - 1] !== "") out.push("");
+      const title = step[2].replace(/[.:]\s*$/, "").trim();
+      out.push(`${stepEmoji(title)} <b>${step[1]}. ${title}</b>`);
+      inStep = true;
+      continue;
+    }
+    if (!line) {
+      out.push("");
+      continue;
+    }
+    out.push(inStep ? `• ${line.replace(/^[-•]\s+/, "")}` : line);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function layoutReply(text: string): string {
-  const source = text.split("\n");
+  const source = formatStepBlocks(text).split("\n");
   const lines: string[] = [];
   let options = 0;
   for (const raw of source) {
@@ -307,6 +345,7 @@ export async function answerManagerQuestion(
             "URL из базы копируй дословно.",
             "В ответе про доставку не пиши, что мы отвечаем за срок вручения.",
             "Верстай ответ для Telegram. Первая строка — короткая тема. Каждый вариант доставки — отдельный блок: название, цена, срок.",
+            "Если в ответе несколько шагов, каждый шаг — отдельный блок: номер, короткое название, под ним пункты. Между шагами пустая строка.",
             "Ставь немного эмодзи по смыслу: флаг страны, 📦 пункт или пакомат, 🏠 на дом, ✈️ DHL, 🚚 обычная доставка, 💶 цена, ⏱ срок, 💬 чат.",
             "Жирным выделяй только короткие названия через тег <b>название</b>. Другие HTML-теги, звёздочки и решётки не используй.",
             "Не ссылайся на «фрагменты» и не упоминай, что ты языковая модель."
