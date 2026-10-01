@@ -1,6 +1,6 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm ci --include=dev"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.manager-qa"
 
 [deploy]
 startCommand = "npx tsx src/scripts/manager-qa-bot.ts"
