@@ -1,4 +1,4 @@
-import { answerManagerQuestion, loadManagerKnowledge } from "@/lib/manager-qa/answer";
+import { answerManagerQuestion } from "@/lib/manager-qa/answer";
 
 type TelegramUser = { id?: number; is_bot?: boolean; username?: string };
 type TelegramChat = { id: number; type?: string };
@@ -99,8 +99,9 @@ function questionText(text: string, username: string): string {
 }
 
 const START_TEXT = [
-  "Напишите вопрос своими словами. Отвечу по базе знаний Retro Pressa: доставка, сроки, оплата, реквизиты и куда писать, если заказ встал.",
+  "Напишите вопрос своими словами. Отвечу по базе знаний, карточкам продуктов и урокам CRM: доставка, сроки, оплата, цены, возражения и куда писать, если заказ встал.",
   "",
+  "Можно сразу попросить материалы: «Скинь отзывы по поздравительной газете» или «Фото по книге жизни».",
   "Например: «Сколько занимает доставка в Италию и сколько стоит?»",
   "Если факта в базе нет, я так и скажу и ничего не придумаю."
 ].join("\n");
@@ -141,8 +142,7 @@ export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<voi
     }
 
     await telegramCall("sendChatAction", { chat_id: message.chat.id, action: "typing" }).catch(() => undefined);
-    const sections = await loadManagerKnowledge();
-    const answer = await answerManagerQuestion(question, sections);
+    const answer = await answerManagerQuestion(question);
     await sendText(message.chat.id, answer, message.message_id);
   } catch (error) {
     console.error("Manager QA reply failed:", error instanceof Error ? error.message : error);

@@ -1,13 +1,17 @@
 import { callGeminiGenerateContent, extractGeminiText } from "@/lib/gemini/client";
-import { readKnowledgeBaseCatalog } from "@/lib/training/knowledge-base";
 import {
-  MANAGER_KNOWLEDGE,
-  rankKnowledgeSections,
-  type KnowledgeSection
-} from "@/lib/manager-qa/knowledge";
+  asksOperationalFact,
+  formatAssetReply,
+  formatCardFooter,
+  loadManagerCorpus,
+  pickSections,
+  type ManagerCorpus
+} from "@/lib/manager-qa/catalog";
+import { readKnowledgeBaseCatalog } from "@/lib/training/knowledge-base";
+import type { KnowledgeSection } from "@/lib/manager-qa/knowledge";
 
 const EMPTY_REPLY =
-  "Не нашёл это в базе знаний. Спросите про доставку, сроки, оплату, реквизиты или куда писать, если заказ встал. Если факта нет в базе, я его не придумываю.";
+  "Не нашёл это в базе. Спросите про доставку, сроки, оплату, продукт, отзывы или куда писать, если заказ встал. Если факта нет в базе, я его не придумываю.";
 
 export function faqSections(entries: Array<{ question?: string; answer?: string; category?: string }>): KnowledgeSection[] {
   const sections: KnowledgeSection[] = [];
@@ -26,28 +30,48 @@ export function faqSections(entries: Array<{ question?: string; answer?: string;
   return sections;
 }
 
-export async function loadManagerKnowledge(): Promise<KnowledgeSection[]> {
+export async function loadAnswerCorpus(): Promise<ManagerCorpus> {
+  const corpus = await loadManagerCorpus();
   try {
     const catalog = await readKnowledgeBaseCatalog();
-    return [...MANAGER_KNOWLEDGE, ...faqSections(catalog.entries)];
+    corpus.sections.push(...faqSections(catalog.entries));
   } catch (error) {
     console.warn("Manager QA knowledge FAQ skipped:", error instanceof Error ? error.message : error);
-    return MANAGER_KNOWLEDGE;
   }
+  return corpus;
 }
 
 export function clipTelegramText(text: string, limit = 3900): string {
   const trimmed = text.trim();
   if (trimmed.length <= limit) return trimmed;
-  return `${trimmed.slice(0, limit - 1).trimEnd()}…`;
+  const lines = trimmed.split("\n");
+  const kept: string[] = [];
+  let size = 0;
+  for (const line of lines) {
+    if (size + line.length + 1 > limit - 20) break;
+    kept.push(line);
+    size += line.length + 1;
+  }
+  return `${kept.join("\n")}\n…`.trim();
+}
+
+function joinAnswer(main: string, extra: string | null): string {
+  if (!extra) return clipTelegramText(main);
+  const room = 3900 - extra.length - 2;
+  if (room < 400) return clipTelegramText(extra);
+  return `${clipTelegramText(main, room)}\n\n${extra}`;
 }
 
 export async function answerManagerQuestion(
   question: string,
-  sections: KnowledgeSection[] = MANAGER_KNOWLEDGE
+  corpus?: ManagerCorpus
 ): Promise<string> {
-  const picked = rankKnowledgeSections(question, sections, 3);
-  if (picked.length === 0) return EMPTY_REPLY;
+  const data = corpus ?? await loadAnswerCorpus();
+  const assets = formatAssetReply(question, data);
+  if (assets && !asksOperationalFact(question)) return clipTelegramText(assets);
+
+  const picked = pickSections(question, data.sections);
+  if (picked.length === 0) return assets ?? EMPTY_REPLY;
 
   const context = picked
     .map((section) => `## ${section.title}\n${section.text}`)
@@ -63,6 +87,7 @@ export async function answerManagerQuestion(
             "Если во фрагментах нет точного ответа, так и напиши и не выдумывай цены, сроки, имена и реквизиты.",
             "Если есть несколько вариантов, перечисли их.",
             "Если клиенту нельзя что-то обещать, прямо это скажи.",
+            "Если во фрагменте есть URL, копируй его дословно.",
             "Не ссылайся на «фрагменты» и не упоминай, что ты языковая модель."
           ].join(" ")
         }]
@@ -74,7 +99,7 @@ export async function answerManagerQuestion(
       generationConfig: { temperature: 0.2, maxOutputTokens: 900 }
     });
     const text = extractGeminiText(response).trim();
-    if (text) return clipTelegramText(text);
+    if (text) return joinAnswer(text, assets || formatCardFooter(question));
   } catch (error) {
     console.error("Manager QA Gemini failed:", error instanceof Error ? error.message : error);
   }
@@ -82,5 +107,5 @@ export async function answerManagerQuestion(
   const fallback = picked
     .map((section) => `${section.title}\n${section.text}`)
     .join("\n\n");
-  return clipTelegramText(`Ответ из базы знаний:\n\n${fallback}`);
+  return joinAnswer(fallback, assets || formatCardFooter(question));
 }
