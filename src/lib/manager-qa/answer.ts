@@ -10,19 +10,20 @@ const EMPTY_REPLY =
   "Не нашёл это в базе знаний. Спросите про доставку, сроки, оплату, реквизиты или куда писать, если заказ встал. Если факта нет в базе, я его не придумываю.";
 
 export function faqSections(entries: Array<{ question?: string; answer?: string; category?: string }>): KnowledgeSection[] {
-  return entries
-    .map((entry, index) => {
-      const question = entry.question?.trim() || "";
-      const answer = entry.answer?.trim() || "";
-      if (!question || !answer) return null;
-      return {
-        id: `faq-${index + 1}`,
-        title: entry.category?.trim() ? `${entry.category}: ${question}` : question,
-        keywords: [],
-        text: `${question}\n${answer}`
-      };
-    })
-    .filter((section): section is KnowledgeSection => section !== null);
+  const sections: KnowledgeSection[] = [];
+  entries.forEach((entry, index) => {
+    const question = entry.question?.trim() || "";
+    const answer = entry.answer?.trim() || "";
+    if (!question || !answer) return;
+    const category = entry.category?.trim();
+    sections.push({
+      id: `faq-${index + 1}`,
+      title: category ? `${category}: ${question}` : question,
+      keywords: question.split(/\s+/).slice(0, 8),
+      text: `${question}\n${answer}`
+    });
+  });
+  return sections;
 }
 
 export async function loadManagerKnowledge(): Promise<KnowledgeSection[]> {
