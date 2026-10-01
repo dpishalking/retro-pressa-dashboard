@@ -54,6 +54,7 @@ const CRON_API_PREFIXES = [
 ];
 const HEAVY_API_PREFIXES = ["/api/sync", "/api/rop/daily-sync"];
 const SMARTDESK_EXPORT_PATH = "/api/smartdesk/export";
+const MANAGER_QA_WEBHOOK_PATH = "/api/telegram/manager-qa";
 
 function isPublicApi(pathname: string): boolean {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -65,6 +66,13 @@ function isCronApi(pathname: string): boolean {
 
 function isHeavyApi(pathname: string): boolean {
   return HEAVY_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function hasManagerQaWebhookSecret(request: NextRequest): boolean {
+  const expected = process.env.TELEGRAM_MANAGER_QA_WEBHOOK_SECRET?.trim();
+  if (!expected) return false;
+  const provided = request.headers.get("x-telegram-bot-api-secret-token")?.trim() || "";
+  return Boolean(provided && provided === expected);
 }
 
 function hasSmartdeskTelegramSecret(request: NextRequest): boolean {
@@ -129,6 +137,11 @@ export async function middleware(request: NextRequest) {
 
     if (pathname === SMARTDESK_EXPORT_PATH) {
       if (hasSmartdeskTelegramSecret(request)) return NextResponse.next();
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (pathname === MANAGER_QA_WEBHOOK_PATH) {
+      if (hasManagerQaWebhookSecret(request)) return NextResponse.next();
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

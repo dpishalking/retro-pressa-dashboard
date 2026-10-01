@@ -130,6 +130,9 @@ jobs:
           SMARTDESK_API_TOKEN: ${{ secrets.SMARTDESK_API_TOKEN }}
           SMARTDESK_TELEGRAM_WEBHOOK_SECRET: ${{ secrets.SMARTDESK_TELEGRAM_WEBHOOK_SECRET }}
           SMARTDESK_TELEGRAM_CHAT_IDS: ${{ secrets.SMARTDESK_TELEGRAM_CHAT_IDS }}
+          TELEGRAM_MANAGER_QA_BOT_TOKEN: ${{ secrets.TELEGRAM_MANAGER_QA_BOT_TOKEN }}
+          TELEGRAM_MANAGER_QA_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_MANAGER_QA_WEBHOOK_SECRET }}
+          TELEGRAM_MANAGER_QA_USER_IDS: ${{ secrets.TELEGRAM_MANAGER_QA_USER_IDS }}
         run: |
           node - <<'NODE'
           const crypto = require("node:crypto");
@@ -201,7 +204,10 @@ jobs:
             "SMARTDESK_ACCOUNT_ID",
             "SMARTDESK_API_TOKEN",
             "SMARTDESK_TELEGRAM_WEBHOOK_SECRET",
-            "SMARTDESK_TELEGRAM_CHAT_IDS"
+            "SMARTDESK_TELEGRAM_CHAT_IDS",
+            "TELEGRAM_MANAGER_QA_BOT_TOKEN",
+            "TELEGRAM_MANAGER_QA_WEBHOOK_SECRET",
+            "TELEGRAM_MANAGER_QA_USER_IDS"
           ];
           const env = Object.fromEntries(keys.map((key) => [key, process.env[key] || ""]));
           if (!env.MONTHLY_PLAN_SPREADSHEET_ID) {
@@ -491,6 +497,30 @@ jobs:
           curl -f -sS --max-time 10 http://127.0.0.1:4174/api/health
           curl -f -sS --max-time 10 http://127.0.0.1:4175/api/health
           echo "Main app deployed"
+          node <<'NODE' || echo "WARNING: manager QA webhook step failed"
+          const env = require("./runtime-env.json");
+          const token = String(env.TELEGRAM_MANAGER_QA_BOT_TOKEN || "").trim();
+          const secret = String(env.TELEGRAM_MANAGER_QA_WEBHOOK_SECRET || "").trim();
+          if (!token || !secret) {
+            console.warn("Manager QA webhook skipped: token or secret is empty");
+            process.exit(0);
+          }
+          const body = new URLSearchParams({
+            url: "https://rp-bi.site/api/telegram/manager-qa",
+            secret_token: secret,
+            allowed_updates: JSON.stringify(["message"]),
+            drop_pending_updates: "false"
+          });
+          fetch(`https://api.telegram.org/bot${token}/setWebhook`, { method: "POST", body })
+            .then(async (response) => {
+              const data = await response.json().catch(() => ({}));
+              console.log("Manager QA webhook:", data.ok ? "ok" : (data.description || response.status));
+              if (!data.ok) process.exitCode = 0;
+            })
+            .catch((error) => {
+              console.warn("Manager QA webhook failed:", error instanceof Error ? error.message : error);
+            });
+          NODE
 
           # Trainer backend — best effort (tsc may OOM on this host).
           set +e
