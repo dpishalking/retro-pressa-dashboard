@@ -91,12 +91,12 @@ assert.match(gap, /11 EUR/);
 
 const telAviv = renderTelegramMessage(`Доставка в Тель-Авив
 Отдельной строки для Тель-Авива нет, считаем по правилу для Израиля.
-- PUMITY — 19 EUR, срок 7–14 дней`, "как долго доставляется в Тель Авив?");
+- PUMITY — 19 EUR, срок 7–14 дней
+Мы НЕ отвечаем за сроки доставки, потому что мы не являемся логистической компанией и ногами не доставляем.`);
 assert.doesNotMatch(telAviv, /отдельной строки/i);
 assert.doesNotMatch(telAviv, /правилу/i);
+assert.doesNotMatch(telAviv, /не отвечаем за сроки/i);
 assert.match(telAviv, /🇮🇱 <b>Израиль<\/b>/);
-assert.match(telAviv, /Мы НЕ отвечаем за сроки доставки, потому что мы не являемся логистической компанией и ногами не доставляем\./);
-assert.equal(telAviv.match(/не отвечаем за сроки доставки/gi)?.length, 1);
 
 const archive = renderTelegramMessage(`Как проверить наличие издания в архиве
 Чтобы проверить наличие издания, следуйте этим шагам:

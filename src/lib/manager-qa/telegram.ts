@@ -108,8 +108,8 @@ const START_TEXT = [
   "Если факта в базе нет, я так и скажу и ничего не придумаю."
 ].join("\n");
 
-async function sendText(chatId: number, text: string, replyTo?: number, question = "") {
-  const html = renderTelegramMessage(text, question);
+async function sendText(chatId: number, text: string, replyTo?: number) {
+  const html = renderTelegramMessage(text);
   const payload = {
     chat_id: chatId,
     reply_to_message_id: replyTo,
@@ -152,7 +152,7 @@ export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<voi
 
     await telegramCall("sendChatAction", { chat_id: message.chat.id, action: "typing" }).catch(() => undefined);
     const answer = await answerManagerQuestion(question);
-    await sendText(message.chat.id, answer, message.message_id, question);
+    await sendText(message.chat.id, answer, message.message_id);
   } catch (error) {
     console.error("Manager QA reply failed:", error instanceof Error ? error.message : error);
     await sendText(message.chat.id, "Не получилось ответить. Напишите вопрос ещё раз.", message.message_id).catch(() => undefined);
