@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, MapPin, MessageCircle, MessagesSquare, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Sparkles, Target, Trash2, Truck, X } from "lucide-react";
+import { BookOpen, ChevronDown, ClipboardList, Clock, CreditCard, ExternalLink, Landmark, Mail, MapPin, MessageCircle, MessagesSquare, Music, Newspaper, Pencil, Plus, Receipt, Save, Search, Send, ShoppingBag, PenLine, Sparkles, Target, Trash2, Truck, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -76,6 +76,63 @@ const LIVE_LINKS = [
   }
 ] as const;
 
+const SITE_LINKS = [
+  {
+    label: "Газеты и журналы",
+    description: "retro-pressa.com/ru",
+    href: "https://retro-pressa.com/ru/",
+    Icon: Newspaper
+  },
+  {
+    label: "Газеты и журналы",
+    description: "retro-pressa.com/ru/new",
+    href: "https://retro-pressa.com/ru/new",
+    Icon: Newspaper
+  },
+  {
+    label: "Газеты и журналы",
+    description: "retro-pressa.com/life",
+    href: "https://retro-pressa.com/life",
+    Icon: Newspaper
+  },
+  {
+    label: "Глянцевый журнал для мужчины",
+    description: "familia-studio.com/gift2man",
+    href: "https://familia-studio.com/gift2man",
+    Icon: UserRound
+  },
+  {
+    label: "Открытка «Я родился»",
+    description: "giftboost.website/letter",
+    href: "https://giftboost.website/letter",
+    Icon: Mail
+  },
+  {
+    label: "Книги жизни / книга воспоминаний",
+    description: "giftboost.website/lifehistory",
+    href: "https://giftboost.website/lifehistory",
+    Icon: BookOpen
+  },
+  {
+    label: "Песня",
+    description: "giftboost.website/pesnya",
+    href: "https://giftboost.website/pesnya",
+    Icon: Music
+  },
+  {
+    label: "Архитектура подарка",
+    description: "familia-studio.com/familypress/architecture",
+    href: "https://familia-studio.com/familypress/architecture",
+    Icon: Landmark
+  },
+  {
+    label: "Персонализированный глянцевый журнал",
+    description: "yourstorymagazine.com",
+    href: "https://yourstorymagazine.com/",
+    Icon: Sparkles
+  }
+] as const;
+
 function PlaybooksSection() {
   return (
     <section className="card border-blue-200 bg-blue-50/50 p-6">
@@ -137,6 +194,37 @@ function LiveLinksSection() {
               <span className="block truncate text-xs text-slate-500">{link.description}</span>
             </span>
             <ExternalLink size={16} className="shrink-0 text-slate-400 group-hover:text-rose-600" />
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SiteLinksSection() {
+  return (
+    <section className="card border-emerald-200 bg-emerald-50/60 p-6">
+      <div>
+        <h2 className="text-xl font-black text-slate-950">Наши сайты</h2>
+        <p className="mt-1 text-sm text-slate-600">Что видит клиент: витрины и лендинги по продуктам.</p>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {SITE_LINKS.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+              <link.Icon size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-black text-slate-950">{link.label}</span>
+              <span className="block truncate text-xs text-slate-500">{link.description}</span>
+            </span>
+            <ExternalLink size={16} className="shrink-0 text-slate-400 group-hover:text-emerald-700" />
           </a>
         ))}
       </div>
@@ -1240,6 +1328,7 @@ export function KnowledgeBase() {
 
       <PlaybooksSection />
       <LiveLinksSection />
+      <SiteLinksSection />
 
       <CityRoutingSection />
 

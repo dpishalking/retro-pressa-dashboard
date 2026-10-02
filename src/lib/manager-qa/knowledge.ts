@@ -276,6 +276,33 @@ PayPal: ссылку запрашиваем у РОПа или руководи�
 Заказы Беларусь: https://crm5.profita.biz/
 Создание сценария поздравления: https://familia-studio.com/presentation/scenario
 Оживи: https://memory-boost.com/#how`
+  },
+  {
+    id: "sites",
+    title: "Наши сайты",
+    keywords: [
+      "сайт",
+      "сайты",
+      "лендинг",
+      "витрина",
+      "retro-pressa",
+      "yourstory",
+      "giftboost",
+      "familia",
+      "песня",
+      "открытка",
+      "архитектура"
+    ],
+    text: `Что видит клиент:
+Газеты и журналы: https://retro-pressa.com/ru/
+Газеты и журналы: https://retro-pressa.com/ru/new
+Газеты и журналы: https://retro-pressa.com/life
+Глянцевый журнал для мужчины (персонализированный журнал): https://familia-studio.com/gift2man
+Открытка «Я родился»: https://giftboost.website/letter
+Книги жизни / книга воспоминаний: https://giftboost.website/lifehistory
+Песня: https://giftboost.website/pesnya
+Архитектура подарка: https://familia-studio.com/familypress/architecture
+Персонализированный глянцевый журнал: https://yourstorymagazine.com/`
   }
 ];
 
