@@ -5,4 +5,5 @@ RUN npm ci --include=dev
 COPY tsconfig.json ./
 COPY src ./src
 COPY data/training ./data/training
+COPY public/training ./public/training
 CMD ["npx", "tsx", "src/scripts/manager-qa-bot.ts"]

@@ -59,13 +59,12 @@ assert.match(washington[0]?.text ?? "", /Вашингтон/);
 assert.match(washington[0]?.text ?? "", /13 EUR/);
 
 const reviews = formatAssetReply("Скинь отзывы по поздравительной газете", corpus);
-assert.match(reviews || "", /https:\/\/rp-bi\.site\/cards\/congratulatory-newspaper/);
 assert.match(reviews || "", /Отзывы:/);
 assert.match(reviews || "", /https:\/\/(www\.)?youtube\.com|https:\/\/youtu\.be/);
+assert.doesNotMatch(reviews || "", /rp-bi\.site\/cards/);
 assert.doesNotMatch(reviews || "", /congratulatory-magazine/);
 
-const footer = formatCardFooter("Что говорить, если дорого, про книгу жизни?");
-assert.match(footer || "", /https:\/\/rp-bi\.site\/cards\/life-story/);
+assert.equal(formatCardFooter("Что говорить, если дорого, про книгу жизни?"), null);
 assert.equal(formatCardFooter("Скинь отзывы по книге жизни"), null);
 
 assert.equal(

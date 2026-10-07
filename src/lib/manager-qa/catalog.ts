@@ -1,3 +1,4 @@
+import { existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import crmSeed from "../../../data/training/crm-modules.json";
@@ -386,10 +387,7 @@ function renderBuckets(question: string, buckets: LinkBuckets): string {
   const focus = norm(question);
   const reviewsFirst = /отзыв/.test(focus);
   const photosFirst = /фото|картин/.test(focus) && !reviewsFirst;
-  const blocks = [
-    buckets.title,
-    ...renderList("Карточка для клиента:", buckets.cards, 4)
-  ];
+  const blocks = [buckets.title];
   const groups = [
     reviewsFirst ? renderList("Отзывы:", buckets.reviews, 15) : [],
     photosFirst ? renderList("Фото:", buckets.photos, 12) : [],
@@ -402,21 +400,11 @@ function renderBuckets(question: string, buckets: LinkBuckets): string {
   if (buckets.reviews.length === 0 && /отзыв/.test(focus)) {
     blocks.push("", "Отдельных отзывов по этому продукту в материалах нет.");
   }
-  if (buckets.training) blocks.push("", "Обучение:", buckets.training.url);
   return blocks.filter((line, index, all) => line !== "" || all[index - 1] !== "").join("\n").trim();
 }
 
-export function formatCardFooter(question: string): string | null {
-  const rules = matchProductRules(question);
-  if (rules.length === 0 || wantsAssetLinks(question)) return null;
-  const lines: string[] = [];
-  for (const rule of rules) {
-    for (const card of selectedNames(question, rule.cards)) {
-      lines.push(card.label, absoluteUrl(`/cards/${card.name}`));
-    }
-    lines.push("Обучение:", absoluteUrl(`/training/products/${rule.id}`));
-  }
-  return lines.length ? lines.join("\n") : null;
+export function formatCardFooter(_question: string): string | null {
+  return null;
 }
 
 const PRODUCT_BUTTONS: Array<{ id: string; label: string }> = [
@@ -455,7 +443,6 @@ export function formatProductSheet(productId: string, corpus: ManagerCorpus): st
   if (rule) {
     const buckets = bucketsFor(`${product.title} газет журнал`, rule, corpus);
     for (const group of [
-      renderList("Карточка для клиента:", buckets.cards, 4),
       renderList("Видео:", buckets.videos, 8),
       renderList("Фото:", buckets.photos, 12),
       renderList("Отзывы:", buckets.reviews, 15)
@@ -463,8 +450,71 @@ export function formatProductSheet(productId: string, corpus: ManagerCorpus): st
       if (group.length) lines.push("", ...group);
     }
   }
-  lines.push("", "Обучение:", absoluteUrl(`/training/products/${product.id}`));
   return lines.join("\n");
+}
+
+export type OutgoingFile = {
+  kind: "photo" | "video" | "document";
+  caption: string;
+  filePath?: string;
+  url?: string;
+};
+
+function lastCaption(lines: string[]): string {
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]
+      .replace(/<[^>]+>/g, "")
+      .replace(/^[\s•▸\d.)]+/, "")
+      .trim();
+    if (!line || line.endsWith(":") || /^https?:\/\//i.test(line)) continue;
+    return line.slice(0, 200);
+  }
+  return "";
+}
+
+function fileKind(filePath: string): OutgoingFile["kind"] {
+  if (/\.(png|jpe?g|webp|gif)$/i.test(filePath)) return "photo";
+  if (/\.mp4$/i.test(filePath)) return "video";
+  return "document";
+}
+
+function trainingFile(urlPath: string): string | null {
+  if (!urlPath.startsWith("/training/") || urlPath.startsWith("/training/products/")) return null;
+  const relative = decodeURIComponent(urlPath.replace(/^\//, ""));
+  const root = path.join(process.cwd(), "public", "training");
+  const full = path.join(process.cwd(), "public", relative);
+  if (!full.startsWith(`${root}${path.sep}`) || !existsSync(full)) return null;
+  if (statSync(full).size > 45 * 1024 * 1024) return null;
+  return full;
+}
+
+export function prepareOutgoingLinks(text: string): { text: string; files: OutgoingFile[] } {
+  const files: OutgoingFile[] = [];
+  const kept: string[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!/^https?:\/\/\S+$/.test(line)) {
+      kept.push(raw);
+      continue;
+    }
+    if (/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//i.test(line)) {
+      kept.push(raw);
+      continue;
+    }
+    if (/\.(png|jpe?g|webp|gif)(\?|$)/i.test(line) && !line.startsWith("https://rp-bi.site/")) {
+      files.push({ kind: "photo", url: line, caption: lastCaption(kept) });
+      continue;
+    }
+    const sitePath = line.startsWith("https://rp-bi.site/") ? line.slice("https://rp-bi.site".length) : "";
+    const filePath = sitePath ? trainingFile(sitePath.split("?")[0]) : null;
+    if (filePath) files.push({ kind: fileKind(filePath), filePath, caption: lastCaption(kept) });
+  }
+  const cleaned = kept
+    .join("\n")
+    .replace(/^(Карточка для клиента:|Обучение:)\n?/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return { text: cleaned, files };
 }
 
 export function formatAssetReply(question: string, corpus: ManagerCorpus): string | null {
