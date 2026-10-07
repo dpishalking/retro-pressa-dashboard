@@ -1,4 +1,5 @@
 import { answerManagerQuestion, renderTelegramMessage } from "@/lib/manager-qa/answer";
+import { formatProductSheet, loadManagerCorpus, managerProductButtons, type ManagerCorpus } from "@/lib/manager-qa/catalog";
 
 type TelegramUser = { id?: number; is_bot?: boolean; username?: string };
 type TelegramChat = { id: number; type?: string };
@@ -10,9 +11,17 @@ type TelegramMessage = {
   reply_to_message?: { from?: TelegramUser };
 };
 
+type TelegramCallback = {
+  id: string;
+  data?: string;
+  from?: TelegramUser;
+  message?: { chat: TelegramChat; message_id: number };
+};
+
 export type TelegramUpdate = {
   update_id: number;
   message?: TelegramMessage;
+  callback_query?: TelegramCallback;
 };
 
 const seenUpdates = new Set<number>();
@@ -84,6 +93,7 @@ function commandName(text: string): string {
 function addressedToBot(message: TelegramMessage, bot: { id: number; username: string }): boolean {
   if (message.chat.type === "private") return true;
   const text = message.text ?? "";
+  if (text.trim().toLowerCase() === "наши продукты") return true;
   if (text.toLowerCase().includes(`@${bot.username.toLowerCase()}`)) return true;
   if (message.reply_to_message?.from?.id === bot.id) return true;
   const command = commandName(text);
@@ -103,17 +113,35 @@ const START_TEXT = [
   "",
   "Напишите вопрос своими словами. Отвечу по базе знаний, карточкам продуктов и урокам CRM: доставка, сроки, оплата, цены, возражения и куда писать, если заказ встал.",
   "",
+  "Кнопка «Наши продукты» открывает карточки: информация, видео, фото и отзывы.",
   "Можно сразу попросить материалы: «Скинь отзывы по поздравительной газете» или «Фото по книге жизни».",
   "Например: «Сколько занимает доставка в Италию и сколько стоит?»",
   "Если факта в базе нет, я так и скажу и ничего не придумаю."
 ].join("\n");
 
-async function sendText(chatId: number, text: string, replyTo?: number) {
+const PRODUCT_KEYBOARD = {
+  keyboard: [[{ text: "Наши продукты" }]],
+  resize_keyboard: true,
+  is_persistent: true
+};
+
+let corpusTask: Promise<ManagerCorpus> | null = null;
+
+function managerCorpus(): Promise<ManagerCorpus> {
+  corpusTask ??= loadManagerCorpus().catch((error) => {
+    corpusTask = null;
+    throw error;
+  });
+  return corpusTask;
+}
+
+async function sendText(chatId: number, text: string, replyTo?: number, replyMarkup: Record<string, unknown> = PRODUCT_KEYBOARD) {
   const html = renderTelegramMessage(text);
   const payload = {
     chat_id: chatId,
     reply_to_message_id: replyTo,
-    disable_web_page_preview: true
+    disable_web_page_preview: true,
+    reply_markup: replyMarkup
   };
   try {
     await telegramCall("sendMessage", { ...payload, text: html, parse_mode: "HTML" });
@@ -124,8 +152,36 @@ async function sendText(chatId: number, text: string, replyTo?: number) {
   }
 }
 
+async function sendProductMenu(chatId: number) {
+  const buttons = managerProductButtons(await managerCorpus());
+  await sendText(chatId, "Наши продукты\n\nНажмите продукт: пришлю информацию, видео, фото и отзывы.", undefined, {
+    inline_keyboard: buttons.map((item) => [{ text: item.label, callback_data: `p:${item.id}` }])
+  });
+}
+
+async function handleProductPick(callback: TelegramCallback) {
+  const chatId = callback.message?.chat.id;
+  await telegramCall("answerCallbackQuery", { callback_query_id: callback.id }).catch(() => undefined);
+  if (!chatId) return;
+  if (!isAllowedManager(callback.from?.id)) {
+    await sendText(chatId, "Этот бот отвечает только менеджерам Retro Pressa.");
+    return;
+  }
+  const productId = callback.data?.startsWith("p:") ? callback.data.slice(2) : "";
+  const sheet = formatProductSheet(productId, await managerCorpus());
+  await sendText(chatId, sheet || "Этот продукт не найден.");
+}
+
 export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<void> {
   if (!rememberUpdate(update.update_id)) return;
+  if (update.callback_query) {
+    try {
+      await handleProductPick(update.callback_query);
+    } catch (error) {
+      console.error("Manager QA product pick failed:", error instanceof Error ? error.message : error);
+    }
+    return;
+  }
   const message = update.message;
   const text = message?.text?.trim() ?? "";
   if (!message || !text || message.from?.is_bot) return;
@@ -135,6 +191,11 @@ export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<voi
     if (!addressedToBot(message, bot)) return;
     if (!isAllowedManager(message.from?.id)) {
       await sendText(message.chat.id, "Этот бот отвечает только менеджерам Retro Pressa.", message.message_id);
+      return;
+    }
+
+    if (text.toLowerCase() === "наши продукты") {
+      await sendProductMenu(message.chat.id);
       return;
     }
 

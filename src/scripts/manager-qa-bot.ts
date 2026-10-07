@@ -37,7 +37,7 @@ async function main() {
       const data = await telegram("getUpdates", {
         timeout: 50,
         offset,
-        allowed_updates: ["message"]
+        allowed_updates: ["message", "callback_query"]
       });
       for (const update of data.result || []) {
         offset = update.update_id + 1;

@@ -419,6 +419,54 @@ export function formatCardFooter(question: string): string | null {
   return lines.length ? lines.join("\n") : null;
 }
 
+const PRODUCT_BUTTONS: Array<{ id: string; label: string }> = [
+  { id: "personal-newspaper", label: "Газета из даты" },
+  { id: "original-magazine-page-posters", label: "Постер" },
+  { id: "personal-magazine", label: "Книга в заголовках" },
+  { id: "life-story", label: "Книга жизни" },
+  { id: "retro-newspaper", label: "Поздравительная газета" },
+  { id: "gift-edition", label: "Party Page" },
+  { id: "glossy-magazine", label: "Глянцевый журнал" },
+  { id: "family-edition", label: "Семейное издание" },
+  { id: "family-card-deck", label: "Колода карт" },
+  { id: "congratulatory-song", label: "Поздравительная песня" },
+  { id: "stickers", label: "Наклейки" },
+  { id: "ozivi", label: "Оживи" },
+  { id: "pervoe-pismo", label: "Первое письмо" }
+];
+
+export function managerProductButtons(corpus: ManagerCorpus): Array<{ id: string; label: string }> {
+  const products = corpus.products.filter((product) => product.id !== "final-exam");
+  const ordered = PRODUCT_BUTTONS.filter((item) => products.some((product) => product.id === item.id));
+  for (const product of products) {
+    if (ordered.some((item) => item.id === product.id)) continue;
+    ordered.push({ id: product.id, label: product.title.slice(0, 40) });
+  }
+  return ordered;
+}
+
+export function formatProductSheet(productId: string, corpus: ManagerCorpus): string | null {
+  const product = corpus.products.find((item) => item.id === productId && item.id !== "final-exam");
+  if (!product) return null;
+  const lines = [product.title];
+  const info = clip([product.shortDescription, product.targetAudience].filter(Boolean).join(" "), 700);
+  if (info) lines.push("", "Информация:", info);
+  const rule = PRODUCT_RULES.find((item) => item.id === product.id);
+  if (rule) {
+    const buckets = bucketsFor(`${product.title} газет журнал`, rule, corpus);
+    for (const group of [
+      renderList("Карточка для клиента:", buckets.cards, 4),
+      renderList("Видео:", buckets.videos, 8),
+      renderList("Фото:", buckets.photos, 12),
+      renderList("Отзывы:", buckets.reviews, 15)
+    ]) {
+      if (group.length) lines.push("", ...group);
+    }
+  }
+  lines.push("", "Обучение:", absoluteUrl(`/training/products/${product.id}`));
+  return lines.join("\n");
+}
+
 export function formatAssetReply(question: string, corpus: ManagerCorpus): string | null {
   if (!wantsAssetLinks(question)) return null;
   const rules = matchProductRules(question);

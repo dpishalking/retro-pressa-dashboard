@@ -96,6 +96,7 @@ const SECTION_HEADS: Record<string, string> = {
   "Видео:": "🎬 <b>Видео</b>",
   "Файлы:": "📎 <b>Файлы</b>",
   "Карточка для клиента:": "🔗 <b>Карточка для клиента</b>",
+  "Информация:": "ℹ️ <b>Информация</b>",
   "Обучение:": "🎓 <b>Обучение</b>",
   "Общие видеоотзывы:": "💬 <b>Общие видеоотзывы</b>"
 };
@@ -146,7 +147,7 @@ function parseOption(line: string): { emoji: string; title: string; price: strin
 function stepEmoji(title: string): string {
   const value = title.toLowerCase();
   if (/фото|whatsapp/.test(value)) return "📸";
-  if (/поиск|сайт|дат/.test(value)) return "🔍";
+  if (/поиск|сайт/.test(value)) return "🔍";
   if (/формат|оригинал|розов/.test(value)) return "🎨";
   if (/регион|репродукц/.test(value)) return "🌍";
   if (/архив/.test(value)) return "📸";
@@ -174,6 +175,7 @@ function formatStepBlocks(text: string): string {
     }
     if (!line) {
       out.push("");
+      inStep = false;
       continue;
     }
     out.push(inStep ? `• ${line.replace(/^[-•]\s+/, "")}` : line);
