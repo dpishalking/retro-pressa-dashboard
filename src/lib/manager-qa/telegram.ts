@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { answerManagerQuestion, renderTelegramMessage } from "@/lib/manager-qa/answer";
 import {
-  formatProductSheet,
+  formatProductMessages,
   loadManagerCorpus,
   managerProductButtons,
   prepareOutgoingLinks,
@@ -246,8 +246,12 @@ async function handleProductPick(callback: TelegramCallback) {
     return;
   }
   const productId = callback.data?.startsWith("p:") ? callback.data.slice(2) : "";
-  const sheet = formatProductSheet(productId, await managerCorpus());
-  await sendText(chatId, sheet || "Этот продукт не найден.");
+  const messages = formatProductMessages(productId, await managerCorpus());
+  if (!messages?.length) {
+    await sendText(chatId, "Этот продукт не найден.");
+    return;
+  }
+  for (const message of messages) await sendText(chatId, message);
 }
 
 export async function handleManagerQaUpdate(update: TelegramUpdate): Promise<void> {

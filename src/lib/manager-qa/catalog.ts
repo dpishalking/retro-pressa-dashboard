@@ -37,6 +37,8 @@ export type CorpusProduct = {
   shortDescription?: string;
   description?: string;
   targetAudience?: string;
+  clientProblems?: string;
+  emotions?: string;
   objections?: string;
   presentationGuide?: string;
   purchaseReasons?: string;
@@ -223,6 +225,12 @@ function clip(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   return `${clean.slice(0, max).trimEnd()}…`;
+}
+
+function clipBlock(text: string, max: number): string {
+  const clean = text.replace(/\r/g, "").trim();
+  const clipped = clean.length <= max ? clean : `${clean.slice(0, max).trimEnd()}…`;
+  return clipped.replace(/^(\d+)[.)]\s+/gm, "• ");
 }
 
 function priceLines(product: CorpusProduct): string[] {
@@ -433,24 +441,58 @@ export function managerProductButtons(corpus: ManagerCorpus): Array<{ id: string
   return ordered;
 }
 
-export function formatProductSheet(productId: string, corpus: ManagerCorpus): string | null {
+function sectionBlock(title: string, body?: string, max = 2200): string | null {
+  const value = body?.trim();
+  if (!value) return null;
+  return `${title}\n${clipBlock(value, max)}`;
+}
+
+export function formatProductMessages(productId: string, corpus: ManagerCorpus): string[] | null {
   const product = corpus.products.find((item) => item.id === productId && item.id !== "final-exam");
   if (!product) return null;
-  const lines = [product.title];
-  const info = clip([product.shortDescription, product.targetAudience].filter(Boolean).join(" "), 700);
-  if (info) lines.push("", "Информация:", info);
+  const sections = [product.title];
+  if (product.shortDescription?.trim()) sections[0] = `${product.title}\n${product.shortDescription.trim()}`;
+  for (const block of [
+    sectionBlock("Для кого:", product.targetAudience, 1200),
+    sectionBlock("О продукте:", product.description, 2500),
+    sectionBlock("Как продавать:", product.presentationGuide, 2500),
+    ...(product.materials || [])
+      .filter((material) => material.type === "text" && material.content?.trim())
+      .map((material) => sectionBlock(`${material.title?.trim() || "Материал"}:`, material.content, 1500)),
+    sectionBlock("Возражения:", product.objections, 1500),
+    sectionBlock("Зачем покупают:", product.purchaseReasons, 1200),
+    sectionBlock("Что болит у клиента:", product.clientProblems, 1200),
+    sectionBlock("Эмоции:", product.emotions, 1200)
+  ]) {
+    if (block) sections.push(block);
+  }
   const rule = PRODUCT_RULES.find((item) => item.id === product.id);
   if (rule) {
     const buckets = bucketsFor(`${product.title} газет журнал`, rule, corpus);
-    for (const group of [
+    const links = [
       renderList("Видео:", buckets.videos, 8),
       renderList("Фото:", buckets.photos, 12),
       renderList("Отзывы:", buckets.reviews, 15)
-    ]) {
-      if (group.length) lines.push("", ...group);
+    ].filter((group) => group.length > 0);
+    if (links.length) sections.push(links.map((group) => group.join("\n")).join("\n\n"));
+  }
+  const messages: string[] = [];
+  let current = "";
+  for (const section of sections) {
+    const next = current ? `${current}\n\n${section}` : section;
+    if (current && next.length > 3400) {
+      messages.push(current);
+      current = section;
+    } else {
+      current = next;
     }
   }
-  return lines.join("\n");
+  if (current) messages.push(current);
+  return messages;
+}
+
+export function formatProductSheet(productId: string, corpus: ManagerCorpus): string | null {
+  return formatProductMessages(productId, corpus)?.join("\n\n") ?? null;
 }
 
 export type OutgoingFile = {
