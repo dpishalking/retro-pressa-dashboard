@@ -195,11 +195,11 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     moments: ["большой юбилей", "подарок папе или маме", "торжественное поздравление"],
     gets: ["книга, которую листает вся семья", "сильный вау на юбилее", "история жизни через газеты"],
     price: "от 240 €",
-    image: "/training/life-book/diana-kanberg-cover.png",
+    image: "/training/life-book/papa-pravda-cover.jpg",
     gallery: [
-      "/training/newspaper-from-date/pravda-izvestiya-stack.png",
-      "/training/newspaper-from-date/moscow-news-1986-07-06.png",
-      "/training/newspaper-from-date/lietuvos-rytas-1990-01-05.png"
+      "/training/life-book/papa-pravda-title-page.jpg",
+      "/training/life-book/papa-pravda-newspaper-page.jpg",
+      "/training/life-book/diana-kanberg-cover.png"
     ]
   },
   {

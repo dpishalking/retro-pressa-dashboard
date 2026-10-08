@@ -973,6 +973,33 @@
           "sortOrder": 4
         },
         {
+          "id": "img-personal-magazine-papa-pravda-cover",
+          "type": "image",
+          "title": "«Папина правда, или 80 лет через прессу» — обложка",
+          "url": "/training/life-book/papa-pravda-cover.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 4.1
+        },
+        {
+          "id": "img-personal-magazine-papa-pravda-title",
+          "type": "image",
+          "title": "«Папина правда» — титульный лист",
+          "url": "/training/life-book/papa-pravda-title-page.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 4.2
+        },
+        {
+          "id": "img-personal-magazine-papa-pravda-page",
+          "type": "image",
+          "title": "«Папина правда» — газетный разворот",
+          "url": "/training/life-book/papa-pravda-newspaper-page.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 4.3
+        },
+        {
           "id": "video-personal-magazine-review-1",
           "type": "video",
           "title": "Отзыв клиента",
@@ -1335,7 +1362,7 @@
         }
       ],
       "createdAt": "2026-07-05T10:23:39.092Z",
-      "updatedAt": "2026-08-02T20:12:17.022Z"
+      "updatedAt": "2026-10-08T13:07:46.125Z"
     },
     {
       "id": "life-story",

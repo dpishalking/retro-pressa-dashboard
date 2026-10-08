@@ -176,7 +176,7 @@
       "id": "life-book-site-photo",
       "title": "Книга жизни — фото с сайта",
       "description": "Визуал для объяснения книги жизни в заголовках газет.",
-      "category": "Книга жизни",
+      "category": "Книга жизни в заголовках газет",
       "type": "image",
       "url": "https://static.tildacdn.net/tild3637-6264-4336-a534-613633376664/3_.webp",
       "sortOrder": 3
@@ -185,16 +185,43 @@
       "id": "life-book-diana-kanberg-cover",
       "title": "Книга жизни — обложка Дианы Канберг",
       "description": "Пример обложки книги жизни в заголовках газет: «Дианы Канберг, или 30 лет через прессу».",
-      "category": "Книга жизни",
+      "category": "Книга жизни в заголовках газет",
       "type": "image",
       "url": "/training/life-book/diana-kanberg-cover.png",
       "sortOrder": 5
     },
     {
+      "id": "life-book-papa-pravda-cover",
+      "title": "«Папина правда, или 80 лет через прессу» — обложка",
+      "description": "Пример книги жизни в заголовках газет: золотая обложка с персональным названием и подписью «Архив Retro Pressa».",
+      "category": "Книга жизни в заголовках газет",
+      "type": "image",
+      "url": "/training/life-book/papa-pravda-cover.jpg",
+      "sortOrder": 1
+    },
+    {
+      "id": "life-book-papa-pravda-title-page",
+      "title": "«Папина правда» — титульный лист",
+      "description": "Внутри книги: персональное название, инициалы и год рождения, подзаголовок «подлинные заголовки газет со дня рождения».",
+      "category": "Книга жизни в заголовках газет",
+      "type": "image",
+      "url": "/training/life-book/papa-pravda-title-page.jpg",
+      "sortOrder": 2
+    },
+    {
+      "id": "life-book-papa-pravda-newspaper-page",
+      "title": "«Папина правда» — газетный разворот",
+      "description": "Пример страницы книги: подлинный газетный блок «Советская молодёжь» внутри переплёта.",
+      "category": "Книга жизни в заголовках газет",
+      "type": "image",
+      "url": "/training/life-book/papa-pravda-newspaper-page.jpg",
+      "sortOrder": 3
+    },
+    {
       "id": "life-book-video-review",
       "title": "Видеоотзыв клиента — книга жизни",
       "description": "Клиентский видеоотзыв по книге жизни в заголовках газет.",
-      "category": "Книга жизни",
+      "category": "Книга жизни в заголовках газет",
       "type": "video",
       "url": "https://www.youtube.com/shorts/VyXhRMkL-zw",
       "sortOrder": 6
