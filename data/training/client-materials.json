@@ -434,6 +434,60 @@
       "sortOrder": 15
     },
     {
+      "id": "pervoe-pismo-amira-pair",
+      "title": "Первое письмо — две открытки, 5 месяцев",
+      "description": "Живой пример: открытки родственникам на русском и французском, малышка Амира, 5 месяцев.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/amira-5-months-pair.jpg",
+      "sortOrder": 1
+    },
+    {
+      "id": "pervoe-pismo-amira-open",
+      "title": "Первое письмо — разворот с фото и текстом",
+      "description": "Открытая открытка: фото малыша, обращение «Cher Papa!» и письмо родным. Можно отправить клиенту как пример.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/amira-5-months-open.jpg",
+      "sortOrder": 2
+    },
+    {
+      "id": "pervoe-pismo-inside-ru",
+      "title": "Первое письмо — разворот на русском",
+      "description": "Пример разворота: фото малыша и письмо от первого лица.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/inside-ru.jpg",
+      "sortOrder": 3
+    },
+    {
+      "id": "pervoe-pismo-front-ru",
+      "title": "Первое письмо — лицевая сторона на русском",
+      "description": "Лицевая сторона открытки с иллюстрацией и обращением.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/front-ru.jpg",
+      "sortOrder": 4
+    },
+    {
+      "id": "pervoe-pismo-front-fr",
+      "title": "Первое письмо — лицевая сторона на французском",
+      "description": "Лицевая сторона открытки на французском.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/front-fr.jpg",
+      "sortOrder": 5
+    },
+    {
+      "id": "pervoe-pismo-inside-fr",
+      "title": "Первое письмо — разворот на французском",
+      "description": "Разворот открытки на французском: фото и персональный текст.",
+      "category": "Первое письмо",
+      "type": "image",
+      "url": "/training/pervoe-pismo/inside-fr.jpg",
+      "sortOrder": 6
+    },
+    {
       "id": "packaging-options",
       "title": "Варианты упаковки",
       "description": "Визуал с вариантами упаковки для газет, латвийской прессы и оригинальных журналов.",
