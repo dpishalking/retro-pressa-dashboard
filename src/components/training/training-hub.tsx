@@ -115,7 +115,7 @@ function ProductCard({
   );
 }
 
-function TrainingHubContent() {
+export function TrainingHubContent({ showProgress = true }: { showProgress?: boolean }) {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
   const fallbackData = useMemo<HubData>(() => {
     const fallbackProducts = createTrainingCatalogSeed().products;
@@ -234,6 +234,8 @@ function TrainingHubContent() {
         </section>
       ) : null}
 
+      {showProgress ? (
+      <>
       <section className="card mb-6 grid gap-6 p-6 lg:grid-cols-[auto_1fr] lg:items-center">
         <ProgressRing percent={data.overview.overallPercent} />
         <div>
@@ -298,6 +300,16 @@ function TrainingHubContent() {
       )}
 
       <ClientReviewVideos />
+      </>
+      ) : (
+        <section className="card mb-6 p-6">
+          <h2 className="text-2xl font-black text-slate-950">База знаний по продуктам</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Смысл подарка, фото для клиента, оригинал и репродукция, упаковка. Откройте карточку продукта — внутри
+            примеры, которые можно отправить клиенту.
+          </p>
+        </section>
+      )}
 
       <section className="mb-6">
         <h3 className="text-lg font-black text-slate-950">Наши подарки</h3>

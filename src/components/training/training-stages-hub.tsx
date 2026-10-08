@@ -11,6 +11,7 @@ import { FinalExamStageCard } from "@/components/training/final-exam-card";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { TrainingSupervisorsPanel } from "@/components/training/training-supervisors-panel";
 import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-base";
+import { TrainingHubContent } from "@/components/training/training-hub";
 import { useTrainingUser } from "@/components/training/training-context";
 import { remainingStagesForFinalExam, splitFinalExam, FINAL_EXAM_PRODUCT_ID } from "@/lib/training/final-exam";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
@@ -263,7 +264,15 @@ function StagesContent() {
       </div>
 
       {tab === "my" ? <MyTrainingContent /> : null}
-      {tab === "knowledge" ? <KnowledgeBase /> : null}
+      {tab === "knowledge" ? (
+        <div className="space-y-8">
+          <TrainingHubContent showProgress={false} />
+          <section>
+            <h2 className="mb-4 text-lg font-black text-slate-950">Рабочие инструкции</h2>
+            <KnowledgeBase />
+          </section>
+        </div>
+      ) : null}
       {tab === "materials" ? <ClientMaterials /> : null}
       {tab === "faq" ? <KnowledgeFaq /> : null}
       {tab === "trainees" && isSupervisor ? <TrainingSupervisorsPanel /> : null}

@@ -47,6 +47,13 @@
           "sortOrder": 1
         },
         {
+          "id": "mat-newspaper-packaging",
+          "type": "text",
+          "title": "Упаковка",
+          "content": "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Эти фото есть в блоке «Как выглядит подарок» — их можно открыть и отправить клиенту.",
+          "sortOrder": 1
+        },
+        {
           "id": "img-personal-newspaper-description",
           "type": "image",
           "title": "Фото с сайта Retro Pressa",
@@ -105,6 +112,33 @@
           "content": "wide",
           "sectionKey": "gallery",
           "sortOrder": 5.3
+        },
+        {
+          "id": "img-personal-newspaper-packaging-mailbox",
+          "type": "image",
+          "title": "Упаковка — папка «почтовый ящик»",
+          "url": "/training/packaging/mailbox-folder.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 5.4
+        },
+        {
+          "id": "img-personal-newspaper-packaging-airmail",
+          "type": "image",
+          "title": "Упаковка — почтовый конверт",
+          "url": "/training/packaging/airmail-envelope.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 5.5
+        },
+        {
+          "id": "img-personal-newspaper-packaging-davinam",
+          "type": "image",
+          "title": "Упаковка — «Dāvinām jaunības atmiņas»",
+          "url": "/training/packaging/davinam-jaunibas-atminas.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 5.6
         },
         {
           "id": "video-personal-newspaper-review-1",

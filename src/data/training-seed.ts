@@ -35,6 +35,24 @@ function textMaterial(id: string, title: string, content: string, sortOrder = 1)
   };
 }
 
+function galleryImage(
+  id: string,
+  title: string,
+  url: string,
+  sortOrder: number,
+  content?: string
+): ProductMaterial {
+  return {
+    id,
+    type: "image",
+    title,
+    url,
+    content,
+    sectionKey: "gallery",
+    sortOrder
+  };
+}
+
 function videoMaterial(
   id: string,
   title: string,
@@ -97,6 +115,53 @@ export const birthDateNewspaperProduct = createProductSeed({
       "mat-original-vs-reproduction",
       "Оригинал и репродукция",
       "• Издание из даты бывает в двух физических вариантах: оригинал и репродукция.\n• Оригинал — настоящий архивный экземпляр, который вышел в тот день и лежит на складе.\n• Репродукция — дигитальная версия выпуска из прошлого, распечатанная на специальной бумаге в натуральную величину.\n• Репродукцию предлагают, когда оригинала на складе нет или клиенту достаточно печатной копии.\n• Варианты репродукции: газета или журнал; региональные издания — через чат «Репродукция».\n• Это не поздравительная газета: внутри нет фото и текста клиента.\n• Это не «Дигитальная версия»: файл без печати — отдельный продукт.\n• Не обещать архивный подлинник, если продаёте репродукцию."
+    ),
+    textMaterial(
+      "mat-newspaper-packaging",
+      "Упаковка",
+      "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Эти фото есть в блоке «Как выглядит подарок» — их можно открыть и отправить клиенту."
+    ),
+    galleryImage(
+      "img-personal-newspaper-reproduction-izvestiya",
+      "Репродукция — «Известия», 21 июня 1962",
+      "/training/reproduction/izvestiya-1962.jpg",
+      5.1,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-newspaper-reproduction-molodezh",
+      "Репродукция — «Советская молодёжь», 10 февраля 1953",
+      "/training/reproduction/sovetskaya-molodezh-1953.jpg",
+      5.2,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-newspaper-reproduction-ichkeria",
+      "Репродукция — «Ичкерия», 2 сентября 1993",
+      "/training/reproduction/ichkeria-1993.jpg",
+      5.3,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-newspaper-packaging-mailbox",
+      "Упаковка — папка «почтовый ящик»",
+      "/training/packaging/mailbox-folder.jpg",
+      5.4,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-newspaper-packaging-airmail",
+      "Упаковка — почтовый конверт",
+      "/training/packaging/airmail-envelope.jpg",
+      5.5,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-newspaper-packaging-davinam",
+      "Упаковка — «Dāvinām jaunības atmiņas»",
+      "/training/packaging/davinam-jaunibas-atminas.jpg",
+      5.6,
+      "wide"
     )
   ],
   questions: [
@@ -321,6 +386,27 @@ export const lifeBookProduct = createProductSeed({
       "mat-life-book-sales",
       "Что подчёркивать",
       "• Это подарок для больших дат, когда одного поздравления уже мало.\n• Подходит, если клиент хочет показать уважение к жизненному пути человека.\n• Лучше всего работает с семейной историей и тёплыми воспоминаниями.\n• Люди часто реагируют не на факты, а на ощущение прожитого времени."
+    ),
+    galleryImage(
+      "img-personal-magazine-papa-pravda-cover",
+      "«Папина правда, или 80 лет через прессу» — обложка",
+      "/training/life-book/papa-pravda-cover.jpg",
+      4.1,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-magazine-papa-pravda-title",
+      "«Папина правда» — титульный лист",
+      "/training/life-book/papa-pravda-title-page.jpg",
+      4.2,
+      "wide"
+    ),
+    galleryImage(
+      "img-personal-magazine-papa-pravda-page",
+      "«Папина правда» — газетный разворот",
+      "/training/life-book/papa-pravda-newspaper-page.jpg",
+      4.3,
+      "wide"
     )
   ],
   questions: [
