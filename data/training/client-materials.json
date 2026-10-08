@@ -2,6 +2,33 @@
   "version": 1,
   "materials": [
     {
+      "id": "reproduction-izvestiya-1962",
+      "title": "Репродукция — «Известия», 21 июня 1962",
+      "description": "Пример репродукции: дигитальная версия выпуска из прошлого, распечатанная на специальной бумаге.",
+      "category": "Репродукция",
+      "type": "image",
+      "url": "/training/reproduction/izvestiya-1962.jpg",
+      "sortOrder": 1
+    },
+    {
+      "id": "reproduction-sovetskaya-molodezh-1953",
+      "title": "Репродукция — «Советская молодёжь», 10 февраля 1953",
+      "description": "Пример репродукции газеты из даты: печатная копия реального выпуска на специальной бумаге.",
+      "category": "Репродукция",
+      "type": "image",
+      "url": "/training/reproduction/sovetskaya-molodezh-1953.jpg",
+      "sortOrder": 2
+    },
+    {
+      "id": "reproduction-ichkeria-1993",
+      "title": "Репродукция — «Ичкерия», 2 сентября 1993",
+      "description": "Пример репродукции газеты из даты: дигитальная версия из прошлого, распечатанная на специальной бумаге.",
+      "category": "Репродукция",
+      "type": "image",
+      "url": "/training/reproduction/ichkeria-1993.jpg",
+      "sortOrder": 3
+    },
+    {
       "id": "personal-newspaper-site-photo",
       "title": "Газета из важной даты — фото с сайта",
       "description": "Визуал для объяснения продукта: настоящее издание из дня рождения или другой важной даты.",

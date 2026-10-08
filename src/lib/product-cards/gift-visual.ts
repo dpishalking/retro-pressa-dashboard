@@ -73,10 +73,8 @@ export function matchGiftVisual(productName: string): GiftVisual | null {
     return card ? visualFromCard(card) : null;
   }
   if (/репродук/.test(n)) {
-    const card = findProductCard("original");
-    return card
-      ? { image: card.image, href: null, subtitle: "Печатная копия архивной газеты" }
-      : null;
+    const card = findProductCard("reproduction");
+    return card ? visualFromCard(card) : null;
   }
   if (/оригинал|original/.test(n)) {
     const card = findProductCard("original");

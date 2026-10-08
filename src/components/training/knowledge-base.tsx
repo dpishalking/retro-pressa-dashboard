@@ -623,6 +623,21 @@ function WhatsappArchiveSection() {
 
       {open ? (
         <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
+          <div className="rounded-xl border border-[var(--line)] bg-slate-50 p-4">
+            <h3 className="text-lg font-black text-slate-900">Чем оригинал отличается от репродукции</h3>
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
+              Издание из даты бывает в двух физических вариантах. Оригинал — настоящий архивный экземпляр со
+              склада. Репродукция — дигитальная версия выпуска из прошлого, распечатанная на специальной бумаге
+              в натуральную величину. Её предлагают, когда оригинала на складе нет или клиенту достаточно
+              печатной копии.
+            </p>
+            <p className="mt-2 text-lg leading-relaxed text-slate-700">
+              Репродукция бывает газетной и журнальной; региональные издания уточняют через чат «Репродукция».
+              Это не поздравительная газета (внутри нет фото и текста клиента) и не «Дигитальная версия» (файл
+              без печати).
+            </p>
+          </div>
+
           <figure className="mx-auto w-full max-w-xs overflow-hidden rounded-xl border border-[var(--line)] bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

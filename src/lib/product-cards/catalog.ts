@@ -21,6 +21,13 @@ export const PRODUCT_CARDS: ProductCard[] = [
     sortOrder: 1
   },
   {
+    slug: "reproduction",
+    title: "Репродукция",
+    subtitle: "Издание из даты — дигитальная версия из прошлого на специальной бумаге",
+    image: "/product-cards/reproduction.jpg",
+    sortOrder: 1.5
+  },
+  {
     slug: "original-magazines",
     title: "Оригинальные журналы",
     subtitle: "Издание из даты — настоящие журналы со склада",
