@@ -836,6 +836,7 @@ function ProductionTimingSection() {
               <li>Страны Балтии — 1–3 дня.</li>
               <li>Европа — 3–10 дней.</li>
               <li>Страны СНГ — 7–14 дней.</li>
+              <li>Третьи страны (Америка, Австралия, Азия и др., кроме РФ), национальная почта — 10–20 дней.</li>
             </ul>
           </div>
 
@@ -947,6 +948,19 @@ function DeliverySection() {
             <ul className={listClass}>
               <li>PUMITY — 19 EUR;</li>
               <li>срок — 7–14 дней.</li>
+            </ul>
+          </div>
+
+          <div className={cardClass}>
+            <h3 className={headingClass}>Третьи страны, кроме РФ</h3>
+            <p className={`mt-2 ${textClass}`}>
+              Америка, Австралия, Азия и другие третьи страны. Для России этот тариф не действует: туда
+              СДЭК через Минск.
+            </p>
+            <ul className={listClass}>
+              <li>Доставка национальной почтой.</li>
+              <li>Срок — 10–20 дней.</li>
+              <li>Стоимость — от 15 EUR.</li>
             </ul>
           </div>
 
