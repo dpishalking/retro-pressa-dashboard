@@ -488,22 +488,13 @@
       "sortOrder": 6
     },
     {
-      "id": "packaging-options",
-      "title": "Варианты упаковки",
-      "description": "Визуал с вариантами упаковки для газет, латвийской прессы и оригинальных журналов.",
-      "category": "Упаковка",
-      "type": "image",
-      "url": "/training/packaging/packaging-options.png",
-      "sortOrder": 16
-    },
-    {
       "id": "packaging-mailbox-folder",
       "title": "Папка «почтовый ящик» Retro Pressa",
       "description": "Красная подарочная папка в виде почтового ящика с логотипом Retro Pressa.",
       "category": "Упаковка",
       "type": "image",
       "url": "/training/packaging/mailbox-folder.jpg",
-      "sortOrder": 17
+      "sortOrder": 1
     },
     {
       "id": "packaging-airmail-envelope",
@@ -512,7 +503,7 @@
       "category": "Упаковка",
       "type": "image",
       "url": "/training/packaging/airmail-envelope.jpg",
-      "sortOrder": 18
+      "sortOrder": 2
     },
     {
       "id": "packaging-davinam-jaunibas-atminas",
@@ -521,7 +512,16 @@
       "category": "Упаковка",
       "type": "image",
       "url": "/training/packaging/davinam-jaunibas-atminas.jpg",
-      "sortOrder": 19
+      "sortOrder": 3
+    },
+    {
+      "id": "packaging-options",
+      "title": "Варианты упаковки",
+      "description": "Визуал с вариантами упаковки для газет, латвийской прессы и оригинальных журналов.",
+      "category": "Упаковка",
+      "type": "image",
+      "url": "/training/packaging/packaging-options.png",
+      "sortOrder": 4
     },
     {
       "id": "review-personal-newspaper-mf7",

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, Download, ExternalLink, FileText, ImageIcon, Play, Share2 } from "lucide-react";
 import clientMaterialsCatalog from "../../../data/training/client-materials.json";
+import { listProductKnowledgeClientMaterials } from "@/components/training/product-knowledge-articles";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import type { ClientMaterial, ClientMaterialsCatalog } from "@/types/training";
 
@@ -188,9 +189,22 @@ export function ClientMaterials() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedReaderId, setCopiedReaderId] = useState<string | null>(null);
 
-  const materials = useMemo(
-    () => [...catalog.materials].sort((a, b) => a.sortOrder - b.sortOrder),
-    []
+  const knowledgeMaterials = useMemo(() => listProductKnowledgeClientMaterials(), []);
+  const materials = useMemo(() => {
+    const byId = new Map<string, ClientMaterial>();
+    for (const material of catalog.materials) {
+      byId.set(material.id, material);
+    }
+    for (const material of knowledgeMaterials) {
+      if (!byId.has(material.id)) {
+        byId.set(material.id, material);
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [knowledgeMaterials]);
+  const featuredMaterials = useMemo(
+    () => knowledgeMaterials.map((item) => materials.find((material) => material.id === item.id) ?? item),
+    [knowledgeMaterials, materials]
   );
   const categories = useMemo(() => {
     const materialCategories = new Set(materials.map((material) => material.category));
@@ -199,13 +213,21 @@ export function ClientMaterials() {
     );
     return ["Все", ...CLIENT_MATERIAL_CATEGORY_ORDER, ...extraCategories];
   }, [materials]);
-  const filteredMaterials = useMemo(
+  const featuredIds = useMemo(() => new Set(featuredMaterials.map((item) => item.id)), [featuredMaterials]);
+  const visibleFeatured = useMemo(
     () =>
       activeCategory === "Все"
-        ? materials
-        : materials.filter((material) => material.category === activeCategory),
-    [activeCategory, materials]
+        ? featuredMaterials
+        : featuredMaterials.filter((material) => material.category === activeCategory),
+    [activeCategory, featuredMaterials]
   );
+  const filteredMaterials = useMemo(() => {
+    const base =
+      activeCategory === "Все"
+        ? materials.filter((material) => !featuredIds.has(material.id))
+        : materials.filter((material) => material.category === activeCategory);
+    return base;
+  }, [activeCategory, featuredIds, materials]);
 
   const copyMaterialLink = async (material: ClientMaterial) => {
     const link = publicUrl(material.downloadUrl ?? material.url);
@@ -321,11 +343,34 @@ export function ClientMaterials() {
         </div>
       </section>
 
-      {filteredMaterials.length === 0 ? (
+      {visibleFeatured.length ? (
+        <section className="space-y-3">
+          <div className="px-1">
+            <h3 className="text-lg font-black text-slate-950">Фото из базы знаний</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Репродукция, книга в заголовках газет, упаковка и «Первое письмо». Скачайте или скопируйте ссылку
+              клиенту.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {visibleFeatured.map((material) => (
+              <MaterialCard
+                key={material.id}
+                material={material}
+                copiedId={copiedId}
+                onCopy={(item) => void copyMaterialLink(item)}
+                onShare={(item) => void shareMaterial(item)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {filteredMaterials.length === 0 && visibleFeatured.length === 0 ? (
         <section className="card p-8 text-center text-sm text-slate-600">
           Пока нет материалов в этой категории.
         </section>
-      ) : (
+      ) : filteredMaterials.length ? (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredMaterials.map((material) => (
             <MaterialCard
@@ -337,7 +382,7 @@ export function ClientMaterials() {
             />
           ))}
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -3,11 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, ChevronDown, Copy } from "lucide-react";
+import type { ClientMaterial } from "@/types/training";
 
 type KnowledgePhoto = {
   id: string;
   title: string;
   url: string;
+  category: string;
+  description: string;
 };
 
 type KnowledgeArticle = {
@@ -44,17 +47,23 @@ const ARTICLES: KnowledgeArticle[] = [
       {
         id: "reproduction-izvestiya-1962",
         title: "Репродукция — «Известия», 21 июня 1962",
-        url: "/training/reproduction/izvestiya-1962.jpg"
+        url: "/training/reproduction/izvestiya-1962.jpg",
+        category: "Репродукция",
+        description: "Пример репродукции: дигитальная версия выпуска из прошлого, распечатанная на специальной бумаге."
       },
       {
         id: "reproduction-sovetskaya-molodezh-1953",
         title: "Репродукция — «Советская молодёжь», 10 февраля 1953",
-        url: "/training/reproduction/sovetskaya-molodezh-1953.jpg"
+        url: "/training/reproduction/sovetskaya-molodezh-1953.jpg",
+        category: "Репродукция",
+        description: "Пример репродукции газеты из даты: печатная копия реального выпуска на специальной бумаге."
       },
       {
         id: "reproduction-ichkeria-1993",
         title: "Репродукция — «Ичкерия», 2 сентября 1993",
-        url: "/training/reproduction/ichkeria-1993.jpg"
+        url: "/training/reproduction/ichkeria-1993.jpg",
+        category: "Репродукция",
+        description: "Пример репродукции газеты из даты: дигитальная версия из прошлого, распечатанная на специальной бумаге."
       }
     ]
   },
@@ -72,17 +81,23 @@ const ARTICLES: KnowledgeArticle[] = [
       {
         id: "life-book-papa-pravda-cover",
         title: "«Папина правда, или 80 лет через прессу» — обложка",
-        url: "/training/life-book/papa-pravda-cover.jpg"
+        url: "/training/life-book/papa-pravda-cover.jpg",
+        category: "Книга жизни в заголовках газет",
+        description: "Пример книги жизни в заголовках газет: золотая обложка с персональным названием и подписью «Архив Retro Pressa»."
       },
       {
-        id: "life-book-papa-pravda-title",
+        id: "life-book-papa-pravda-title-page",
         title: "«Папина правда» — титульный лист",
-        url: "/training/life-book/papa-pravda-title-page.jpg"
+        url: "/training/life-book/papa-pravda-title-page.jpg",
+        category: "Книга жизни в заголовках газет",
+        description: "Внутри книги: персональное название, инициалы и год рождения, подзаголовок «подлинные заголовки газет со дня рождения»."
       },
       {
-        id: "life-book-papa-pravda-page",
+        id: "life-book-papa-pravda-newspaper-page",
         title: "«Папина правда» — газетный разворот",
-        url: "/training/life-book/papa-pravda-newspaper-page.jpg"
+        url: "/training/life-book/papa-pravda-newspaper-page.jpg",
+        category: "Книга жизни в заголовках газет",
+        description: "Пример страницы книги: подлинный газетный блок «Советская молодёжь» внутри переплёта."
       }
     ]
   },
@@ -99,17 +114,23 @@ const ARTICLES: KnowledgeArticle[] = [
       {
         id: "packaging-mailbox-folder",
         title: "Папка «почтовый ящик» Retro Pressa",
-        url: "/training/packaging/mailbox-folder.jpg"
+        url: "/training/packaging/mailbox-folder.jpg",
+        category: "Упаковка",
+        description: "Красная подарочная папка в виде почтового ящика с логотипом Retro Pressa."
       },
       {
         id: "packaging-airmail-envelope",
         title: "Почтовый конверт Retro Pressa",
-        url: "/training/packaging/airmail-envelope.jpg"
+        url: "/training/packaging/airmail-envelope.jpg",
+        category: "Упаковка",
+        description: "Подарочный конверт в стиле авиапочты: поля «Куда» и «Кому», марка Retro Pressa."
       },
       {
         id: "packaging-davinam-jaunibas-atminas",
         title: "Упаковка «Dāvinām jaunības atmiņas»",
-        url: "/training/packaging/davinam-jaunibas-atminas.jpg"
+        url: "/training/packaging/davinam-jaunibas-atminas.jpg",
+        category: "Упаковка",
+        description: "Подарочная упаковка Retro Pressa на латышском: «Дарим воспоминания молодости»."
       }
     ]
   },
@@ -125,13 +146,17 @@ const ARTICLES: KnowledgeArticle[] = [
     photos: [
       {
         id: "pervoe-pismo-amira-pair",
-        title: "Живой пример — две открытки на 5 месяцев",
-        url: "/training/pervoe-pismo/amira-5-months-pair.jpg"
+        title: "Первое письмо — две открытки, 5 месяцев",
+        url: "/training/pervoe-pismo/amira-5-months-pair.jpg",
+        category: "Первое письмо",
+        description: "Живой пример: открытки родственникам на русском и французском, малышка Амира, 5 месяцев."
       },
       {
         id: "pervoe-pismo-amira-open",
-        title: "Живой пример — разворот с фото и письмом папе",
-        url: "/training/pervoe-pismo/amira-5-months-open.jpg"
+        title: "Первое письмо — разворот с фото и текстом",
+        url: "/training/pervoe-pismo/amira-5-months-open.jpg",
+        category: "Первое письмо",
+        description: "Открытая открытка: фото малыша, обращение «Cher Papa!» и письмо родным. Можно отправить клиенту как пример."
       }
     ]
   }
@@ -235,5 +260,19 @@ export function ProductKnowledgeArticles() {
         <KnowledgeArticleCard key={article.id} article={article} />
       ))}
     </div>
+  );
+}
+
+export function listProductKnowledgeClientMaterials(): ClientMaterial[] {
+  return ARTICLES.flatMap((article, articleIndex) =>
+    article.photos.map((photo, photoIndex) => ({
+      id: photo.id,
+      title: photo.title,
+      description: photo.description,
+      category: photo.category,
+      type: "image" as const,
+      url: photo.url,
+      sortOrder: articleIndex * 10 + photoIndex + 1
+    }))
   );
 }
