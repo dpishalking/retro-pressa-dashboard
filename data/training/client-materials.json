@@ -443,6 +443,33 @@
       "sortOrder": 16
     },
     {
+      "id": "packaging-mailbox-folder",
+      "title": "Папка «почтовый ящик» Retro Pressa",
+      "description": "Красная подарочная папка в виде почтового ящика с логотипом Retro Pressa.",
+      "category": "Упаковка",
+      "type": "image",
+      "url": "/training/packaging/mailbox-folder.jpg",
+      "sortOrder": 17
+    },
+    {
+      "id": "packaging-airmail-envelope",
+      "title": "Почтовый конверт Retro Pressa",
+      "description": "Подарочный конверт в стиле авиапочты: поля «Куда» и «Кому», марка Retro Pressa.",
+      "category": "Упаковка",
+      "type": "image",
+      "url": "/training/packaging/airmail-envelope.jpg",
+      "sortOrder": 18
+    },
+    {
+      "id": "packaging-davinam-jaunibas-atminas",
+      "title": "Упаковка «Dāvinām jaunības atmiņas»",
+      "description": "Подарочная упаковка Retro Pressa на латышском: «Дарим воспоминания молодости».",
+      "category": "Упаковка",
+      "type": "image",
+      "url": "/training/packaging/davinam-jaunibas-atminas.jpg",
+      "sortOrder": 19
+    },
+    {
       "id": "review-personal-newspaper-mf7",
       "title": "Видеоотзыв клиента — газета из даты",
       "description": "Короткий отзыв, который можно отправить клиенту как социальное доказательство.",
