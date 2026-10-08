@@ -6,6 +6,7 @@ import Link from "next/link";
 import { generateId } from "@/lib/training/id";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import { useTrainingUser } from "@/components/training/training-context";
+import { ProductKnowledgeArticles } from "@/components/training/product-knowledge-articles";
 import type {
   KnowledgeBaseCatalog,
   KnowledgeBaseEntry,
@@ -1333,11 +1334,12 @@ function EntryEditor({
 export function KnowledgeBase() {
   return (
     <div className="space-y-4">
+      <ProductKnowledgeArticles />
+
       <section className="card p-6">
-        <h2 className="text-2xl font-black text-slate-950">База знаний</h2>
+        <h2 className="text-2xl font-black text-slate-950">Рабочие инструкции</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Рабочие сервисы, инструкции, сроки, доставка и оплата. Ответы на частые вопросы — во вкладке
-          «Ответы на вопросы».
+          Сервисы, чаты, сроки, доставка и оплата. Ответы на частые вопросы — во вкладке «Ответы на вопросы».
         </p>
       </section>
 

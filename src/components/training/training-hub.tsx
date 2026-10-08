@@ -9,6 +9,7 @@ import { ProductCover } from "@/components/product-cover";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { ClientReviewVideos } from "@/components/training/client-review-videos";
+import { ProductKnowledgeArticles } from "@/components/training/product-knowledge-articles";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { splitFinalExam } from "@/lib/training/final-exam";
@@ -115,7 +116,7 @@ function ProductCard({
   );
 }
 
-export function TrainingHubContent({ showProgress = true }: { showProgress?: boolean }) {
+export function TrainingHubContent() {
   const { user, isAdmin, loading: userLoading } = useTrainingUser();
   const fallbackData = useMemo<HubData>(() => {
     const fallbackProducts = createTrainingCatalogSeed().products;
@@ -228,14 +229,16 @@ export function TrainingHubContent({ showProgress = true }: { showProgress?: boo
 
   return (
     <>
+      <div className="mb-6">
+        <ProductKnowledgeArticles />
+      </div>
+
       {loadError ? (
         <section className="card mb-6 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           {loadError}. Обновите страницу или пройдите тест ещё раз.
         </section>
       ) : null}
 
-      {showProgress ? (
-      <>
       <section className="card mb-6 grid gap-6 p-6 lg:grid-cols-[auto_1fr] lg:items-center">
         <ProgressRing percent={data.overview.overallPercent} />
         <div>
@@ -300,16 +303,6 @@ export function TrainingHubContent({ showProgress = true }: { showProgress?: boo
       )}
 
       <ClientReviewVideos />
-      </>
-      ) : (
-        <section className="card mb-6 p-6">
-          <h2 className="text-2xl font-black text-slate-950">База знаний по продуктам</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Смысл подарка, фото для клиента, оригинал и репродукция, упаковка. Откройте карточку продукта — внутри
-            примеры, которые можно отправить клиенту.
-          </p>
-        </section>
-      )}
 
       <section className="mb-6">
         <h3 className="text-lg font-black text-slate-950">Наши подарки</h3>
