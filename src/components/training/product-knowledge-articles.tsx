@@ -186,6 +186,13 @@ const ARTICLES: KnowledgeArticle[] = [
         description: "Пример индивидуального макета: история человека на одной странице."
       },
       {
+        id: "retro-poster-sovetskaya-molodezh",
+        title: "Ретро-постер — «Советская молодёжь» на стене",
+        url: "/training/retro-poster/sovetskaya-molodezh.jpg",
+        category: "Ретро-постер",
+        description: "Пример передовицы исторической газеты в рамке на стене. Рамка на фото — пример размещения, в заказ автоматически не входит."
+      },
+      {
         id: "retro-poster-offer-sheet",
         title: "Ретро-постер — описание форматов",
         url: "/training/retro-poster/offer-sheet.png",

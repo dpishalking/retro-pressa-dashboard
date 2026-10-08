@@ -812,13 +812,22 @@
       "sortOrder": 2
     },
     {
+      "id": "retro-poster-sovetskaya-molodezh",
+      "title": "Ретро-постер — «Советская молодёжь» на стене",
+      "description": "Пример передовицы исторической газеты в рамке на стене. Рамка на фото — пример размещения, в заказ автоматически не входит.",
+      "category": "Ретро-постер",
+      "type": "image",
+      "url": "/training/retro-poster/sovetskaya-molodezh.jpg",
+      "sortOrder": 3
+    },
+    {
       "id": "retro-poster-offer-sheet",
       "title": "Ретро-постер — описание форматов",
       "description": "Два размера: 30 × 40 см и A3. Печатный постер и электронный файл.",
       "category": "Ретро-постер",
       "type": "image",
       "url": "/training/retro-poster/offer-sheet.png",
-      "sortOrder": 3
+      "sortOrder": 4
     },
     {
       "id": "retro-poster-pdf",
@@ -827,7 +836,7 @@
       "category": "Ретро-постер",
       "type": "document",
       "url": "/training/retro-poster/retro-poster.pdf",
-      "sortOrder": 4
+      "sortOrder": 5
     }
   ]
 }

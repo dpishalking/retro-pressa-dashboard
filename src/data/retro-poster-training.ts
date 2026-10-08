@@ -68,13 +68,22 @@ export const retroPosterProduct: ProductTrainingModule = {
       sortOrder: 5
     },
     {
+      id: "img-retro-poster-sovetskaya-molodezh",
+      type: "image",
+      title: "Ретро-постер — «Советская молодёжь» на стене",
+      url: "/training/retro-poster/sovetskaya-molodezh.jpg",
+      content: "wide",
+      sectionKey: "gallery",
+      sortOrder: 6
+    },
+    {
       id: "img-retro-poster-offer-sheet",
       type: "image",
       title: "Ретро-постер — описание форматов",
       url: "/training/retro-poster/offer-sheet.png",
       content: "wide",
       sectionKey: "gallery",
-      sortOrder: 6
+      sortOrder: 7
     }
   ],
   questions: [

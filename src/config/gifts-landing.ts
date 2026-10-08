@@ -89,6 +89,7 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     image: "/training/retro-poster/gazeta-zhizni.jpg",
     gallery: [
       "/training/retro-poster/semeynaya-pravda.jpg",
+      "/training/retro-poster/sovetskaya-molodezh.jpg",
       "/training/retro-poster/offer-sheet.png"
     ]
   },
