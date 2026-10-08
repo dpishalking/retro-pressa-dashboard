@@ -182,6 +182,9 @@ export function inferProductFromDealTitle(title: string | null | undefined): str
   if (t.includes("репродук") || t.includes("reproduk") || /(^|[^а-яa-z0-9])реп([^а-яa-z0-9]|$)/i.test(t)) {
     return "Репродукция";
   }
+  if (t.includes("ретро-постер") || t.includes("ретро постер") || t.includes("retro-poster") || t.includes("retro poster")) {
+    return "Ретро-постер";
+  }
   if (
     t.includes("постер") ||
     t.includes("паспарту") ||

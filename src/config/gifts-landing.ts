@@ -73,6 +73,26 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     gallery: []
   },
   {
+    id: "retro-poster",
+    kind: "core",
+    passportId: "PRODUCT_RETRO_POSTER",
+    number: "17",
+    kicker: "На стену",
+    title: "Ретро-постер",
+    lead: "Ваша история — на одной странице. Альтернатива традиционной газете: персональный постер для именинника.",
+    description:
+      "Идея как у поздравительной газеты — фото, статья, поздравление, факты жизни — но это одна страница на стену, а не выпуск, который листают. Макет: передовица исторической газеты или полностью индивидуальный лист. Размеры 30 × 40 см и A3. Печатный постер или электронный файл. Рамку в состав не обещаем. Цена — по запросу.",
+    forWhom: "Тем, кому нравится поздравительная газета, но нужен подарок на стену.",
+    moments: ["юбилей", "день рождения", "подарок, который вешают, а не листают"],
+    gets: ["одна персональная страница", "30 × 40 см или A3", "печатный постер или файл"],
+    price: "по запросу",
+    image: "/training/retro-poster/gazeta-zhizni.jpg",
+    gallery: [
+      "/training/retro-poster/semeynaya-pravda.jpg",
+      "/training/retro-poster/offer-sheet.png"
+    ]
+  },
+  {
     id: "reproduction",
     kind: "core",
     passportId: "PRODUCT_REPRODUCTION",

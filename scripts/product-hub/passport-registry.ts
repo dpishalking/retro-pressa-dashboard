@@ -220,6 +220,19 @@ export const PASSPORT_REGISTRY: PassportRegistryEntry[] = [
     economySource: {},
   },
   {
+    productId: "PRODUCT_RETRO_POSTER",
+    bitrixName: "Ретро-постер",
+    spreadsheetId: process.env.RETRO_POSTER_PASSPORT_SHEET_ID?.trim() || "1NsVbsv2YZbehiYTtSP1Waf0gYf1nCnocszonQyppKAE",
+    visualTabName: "17_Визуал",
+    economyTabName: "17_Экономика",
+    meaningsTabName: "17_Смыслы",
+    visualSource: {
+      trainingProductId: "retro-poster",
+      clientMaterialCategories: ["Ретро-постер"],
+    },
+    economySource: {},
+  },
+  {
     productId: "PRODUCT_STICKER",
     bitrixName: "Наклейка",
     spreadsheetId: "1FE7oNSwAbOU7kf1Am5h7J3jQZrJ2THMFpWF5oO6ZcoY",

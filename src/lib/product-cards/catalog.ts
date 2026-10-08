@@ -42,6 +42,13 @@ export const PRODUCT_CARDS: ProductCard[] = [
     sortOrder: 2.5
   },
   {
+    slug: "retro-poster",
+    title: "Ретро-постер",
+    subtitle: "Ваша история — на одной странице для стены",
+    image: "/product-cards/retro-poster.jpg",
+    sortOrder: 2.7
+  },
+  {
     slug: "congratulatory-newspaper",
     title: "Поздравительная газета",
     subtitle: "Ретро + личное — архив с фото и текстом",

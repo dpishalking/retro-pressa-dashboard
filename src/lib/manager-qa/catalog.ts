@@ -75,6 +75,12 @@ export const PRODUCT_RULES: ProductRule[] = [
     categories: [{ name: "Книга жизни", label: "Книга жизни" }]
   },
   {
+    id: "retro-poster",
+    phrases: ["ретро-постер", "ретро постер", "постер на стену"],
+    cards: [{ name: "retro-poster", label: "Ретро-постер" }],
+    categories: [{ name: "Ретро-постер", label: "Ретро-постер" }]
+  },
+  {
     id: "original-magazine-page-posters",
     phrases: ["постер", "журнальной страницы", "журнальная страница"],
     cards: [{ name: "original-magazine-page-posters", label: "Постер из оригинальной журнальной страницы" }],
@@ -418,6 +424,7 @@ export function formatCardFooter(_question: string): string | null {
 const PRODUCT_BUTTONS: Array<{ id: string; label: string }> = [
   { id: "personal-newspaper", label: "Газета из даты" },
   { id: "original-magazine-page-posters", label: "Постер" },
+  { id: "retro-poster", label: "Ретро-постер" },
   { id: "personal-magazine", label: "Книга в заголовках" },
   { id: "life-story", label: "Книга жизни" },
   { id: "retro-newspaper", label: "Поздравительная газета" },

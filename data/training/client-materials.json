@@ -792,6 +792,42 @@
       "type": "document",
       "url": "/training/ozivi/manager-memo-photo-revival.pdf",
       "sortOrder": 3
+    },
+    {
+      "id": "retro-poster-semeynaya-pravda",
+      "title": "Ретро-постер — «Семейная правда» в рамке",
+      "description": "Пример передовицы исторической газеты: персональный постер про именинника, который можно повесить на стену.",
+      "category": "Ретро-постер",
+      "type": "image",
+      "url": "/training/retro-poster/semeynaya-pravda.jpg",
+      "sortOrder": 1
+    },
+    {
+      "id": "retro-poster-gazeta-zhizni",
+      "title": "Ретро-постер — «Газета жизни» на стене",
+      "description": "Пример индивидуального макета: история человека на одной странице.",
+      "category": "Ретро-постер",
+      "type": "image",
+      "url": "/training/retro-poster/gazeta-zhizni.jpg",
+      "sortOrder": 2
+    },
+    {
+      "id": "retro-poster-offer-sheet",
+      "title": "Ретро-постер — описание форматов",
+      "description": "Два размера: 30 × 40 см и A3. Печатный постер и электронный файл.",
+      "category": "Ретро-постер",
+      "type": "image",
+      "url": "/training/retro-poster/offer-sheet.png",
+      "sortOrder": 3
+    },
+    {
+      "id": "retro-poster-pdf",
+      "title": "Ретро-постер — PDF с форматами",
+      "description": "Одностраничное описание продукта: размеры, печатный и электронный формат.",
+      "category": "Ретро-постер",
+      "type": "document",
+      "url": "/training/retro-poster/retro-poster.pdf",
+      "sortOrder": 4
     }
   ]
 }

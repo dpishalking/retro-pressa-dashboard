@@ -237,6 +237,9 @@ function inferProductIdFromName(name: string): string | null {
     return "PRODUCT_CONGRATS_NEWSPAPER";
   }
   if (n.includes("репродук") || n.includes("reproduk") || n.includes("reproduction")) return "PRODUCT_REPRODUCTION";
+  if (n.includes("ретро-постер") || n.includes("ретро постер") || n.includes("retro-poster") || n.includes("retro poster")) {
+    return "PRODUCT_RETRO_POSTER";
+  }
   if (
     n.includes("постер") ||
     n.includes("паспарту") ||

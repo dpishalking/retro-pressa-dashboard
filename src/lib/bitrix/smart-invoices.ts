@@ -95,6 +95,9 @@ function giftTypeFromProductName(name: string): string {
   if (t.includes("поздрав") && t.includes("журнал")) return "Поздравительный журнал";
   if (t.includes("поздрав") || t.includes("apsveikuma")) return "Поздравительная газета";
   if (t.includes("репродук")) return "Репродукция";
+  if (t.includes("ретро-постер") || t.includes("ретро постер") || t.includes("retro-poster") || t.includes("retro poster")) {
+    return "Ретро-постер";
+  }
   if (
     t.includes("постер") ||
     t.includes("паспарту") ||

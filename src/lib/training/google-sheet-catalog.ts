@@ -88,6 +88,14 @@ function resolveProductId(marker: string, name: string) {
     return "personal-newspaper";
   }
   if (
+    text.includes("ретро-постер") ||
+    text.includes("ретро постер") ||
+    text.includes("retro-poster") ||
+    text.includes("retro poster")
+  ) {
+    return "retro-poster";
+  }
+  if (
     text.includes("постер") ||
     text.includes("паспарту") ||
     (text.includes("журнальн") && (text.includes("страниц") || text.includes("обложк")))
