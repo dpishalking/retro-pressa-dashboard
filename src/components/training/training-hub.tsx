@@ -9,7 +9,6 @@ import { ProductCover } from "@/components/product-cover";
 import { createTrainingCatalogSeed } from "@/data/training-seed";
 import { createTrackModulesSeed } from "@/data/training-tracks-seed";
 import { ClientReviewVideos } from "@/components/training/client-review-videos";
-import { ProductKnowledgeArticles } from "@/components/training/product-knowledge-articles";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { splitFinalExam } from "@/lib/training/final-exam";
@@ -229,10 +228,6 @@ export function TrainingHubContent() {
 
   return (
     <>
-      <div className="mb-6">
-        <ProductKnowledgeArticles />
-      </div>
-
       {loadError ? (
         <section className="card mb-6 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           {loadError}. Обновите страницу или пройдите тест ещё раз.
