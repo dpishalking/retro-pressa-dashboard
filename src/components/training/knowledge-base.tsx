@@ -142,7 +142,7 @@ function PlaybooksSection() {
             <Target size={22} />
           </span>
           <div>
-            <h2 className="text-xl font-black text-slate-950">Как продавали Забковы</h2>
+            <h2 className="text-xl font-black text-slate-950">Как продавали Анастасия и Елена</h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Простая памятка: назвать цену, помочь выбрать и сразу предложить оформить заказ. Для новых менеджеров и для разбора с руководителем.
             </p>
@@ -151,7 +151,7 @@ function PlaybooksSection() {
         <div className="flex shrink-0 flex-wrap gap-2">
           <a
             href="/training/zabkova-kak-prodavali.pdf"
-            download="Как продавали Забковы.pdf"
+            download="Как продавали Анастасия и Елена.pdf"
             className="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50"
           >
             Скачать PDF

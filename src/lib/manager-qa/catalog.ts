@@ -305,8 +305,8 @@ export function zabkovaSection(): KnowledgeSection {
   ].join("\n")).join("\n\n");
   return {
     id: "zabkova",
-    title: "Как продавали Забковы",
-    keywords: ["забков", "оформить", "скрипт", "закрыть", "бронировать"],
+    title: "Как продавали Анастасия и Елена",
+    keywords: ["анастасия", "елена", "оформить", "скрипт", "закрыть", "бронировать"],
     text
   };
 }

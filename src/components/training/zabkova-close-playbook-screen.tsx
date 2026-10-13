@@ -58,14 +58,14 @@ export function ZabkovaClosePlaybookScreen() {
 
   return (
     <TrainingLayout
-      title="Как продавали Забковы"
-      description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах Анастасии и Елены Забковых."
+      title="Как продавали Анастасия и Елена"
+      description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах Анастасии и Елены."
       backHref="/training/knowledge-base"
       backLabel="К базе знаний"
       actions={
         <a
           href="/training/zabkova-kak-prodavali.pdf"
-          download="Как продавали Забковы.pdf"
+          download="Как продавали Анастасия и Елена.pdf"
           className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
         >
           <Download size={16} />
