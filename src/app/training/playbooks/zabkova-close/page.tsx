@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ZabkovaClosePlaybookScreen } from "@/components/training/zabkova-close-playbook-screen";
 
 export const metadata: Metadata = {
-  title: "Как продавали Анастасия и Елена — Retro Pressa"
+  title: "Как продавали успешные менеджеры — Retro Pressa"
 };
 
 export default function ZabkovaClosePlaybookPage() {

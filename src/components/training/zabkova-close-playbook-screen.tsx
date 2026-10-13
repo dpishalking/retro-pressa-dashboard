@@ -58,14 +58,14 @@ export function ZabkovaClosePlaybookScreen() {
 
   return (
     <TrainingLayout
-      title="Как продавали Анастасия и Елена"
-      description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах Анастасии и Елены."
+      title="Как продавали успешные менеджеры"
+      description="Простая памятка для новых менеджеров и для разбора с руководителем. На реальных диалогах успешных менеджеров."
       backHref="/training/knowledge-base"
       backLabel="К базе знаний"
       actions={
         <a
           href="/training/zabkova-kak-prodavali.pdf"
-          download="Как продавали Анастасия и Елена.pdf"
+          download="Как продавали успешные менеджеры.pdf"
           className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
         >
           <Download size={16} />
@@ -131,7 +131,7 @@ export function ZabkovaClosePlaybookScreen() {
           <div>
             <h2 className="text-xl font-black text-slate-950">Что показали цифры</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Смотрели диалоги Анастасии и Елены с мая по август 2026 года. Сравнивали оплаченные и неоплаченные заявки.
+              Смотрели диалоги успешных менеджеров с мая по август 2026 года. Сравнивали оплаченные и неоплаченные заявки.
             </p>
           </div>
           <Target className="shrink-0 text-rose-600" size={22} />
@@ -174,7 +174,7 @@ export function ZabkovaClosePlaybookScreen() {
 
       <section className="card mb-6 p-6">
         <h2 className="text-xl font-black text-slate-950">Живые ситуации. Выберите и потренируйтесь</h2>
-        <p className="mt-1 text-sm text-slate-600">Тексты собраны из реальных оплаченных диалогов Анастасии и Елены.</p>
+        <p className="mt-1 text-sm text-slate-600">Тексты собраны из реальных оплаченных диалогов успешных менеджеров.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {SITUATIONS.map((item, index) => (
             <button
