@@ -17,6 +17,8 @@ export type ProductSectionKey =
   | "objections"
   | "presentationGuide"
   | "gallery"
+  | "reproduction"
+  | "packaging"
   | "reviews";
 
 export type QuestionType = "single" | "multiple" | "text";

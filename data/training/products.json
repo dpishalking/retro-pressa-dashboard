@@ -50,7 +50,7 @@
           "id": "mat-newspaper-packaging",
           "type": "text",
           "title": "Упаковка",
-          "content": "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Эти фото есть в блоке «Как выглядит подарок» — их можно открыть и отправить клиенту.",
+          "content": "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Фото упаковки — во вкладке «Упаковка» этой карточки. Фото репродукций — во вкладке «Репродукция».",
           "sortOrder": 1
         },
         {
@@ -92,7 +92,7 @@
           "title": "Репродукция — «Известия», 21 июня 1962",
           "url": "/training/reproduction/izvestiya-1962.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "reproduction",
           "sortOrder": 5.1
         },
         {
@@ -101,7 +101,7 @@
           "title": "Репродукция — «Советская молодёжь», 10 февраля 1953",
           "url": "/training/reproduction/sovetskaya-molodezh-1953.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "reproduction",
           "sortOrder": 5.2
         },
         {
@@ -110,7 +110,7 @@
           "title": "Репродукция — «Ичкерия», 2 сентября 1993",
           "url": "/training/reproduction/ichkeria-1993.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "reproduction",
           "sortOrder": 5.3
         },
         {
@@ -119,7 +119,7 @@
           "title": "Упаковка — папка «почтовый ящик»",
           "url": "/training/packaging/mailbox-folder.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "packaging",
           "sortOrder": 5.4
         },
         {
@@ -128,7 +128,7 @@
           "title": "Упаковка — почтовый конверт",
           "url": "/training/packaging/airmail-envelope.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "packaging",
           "sortOrder": 5.5
         },
         {
@@ -137,7 +137,7 @@
           "title": "Упаковка — «Dāvinām jaunības atmiņas»",
           "url": "/training/packaging/davinam-jaunibas-atminas.jpg",
           "content": "wide",
-          "sectionKey": "gallery",
+          "sectionKey": "packaging",
           "sortOrder": 5.6
         },
         {

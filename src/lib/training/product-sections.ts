@@ -57,10 +57,24 @@ export function buildProductSections(product: ProductTrainingModule): ProductCon
   return sections;
 }
 
+function imageFolder(material: ProductMaterial): "gallery" | "reproduction" | "packaging" | null {
+  if (material.sectionKey === "reproduction") return "reproduction";
+  if (material.sectionKey === "packaging") return "packaging";
+  if (!material.sectionKey || material.sectionKey === "gallery") {
+    const hay = `${material.id} ${material.title}`.toLowerCase();
+    if (/репродук|reproduction/.test(hay)) return "reproduction";
+    if (/упаков|packaging/.test(hay)) return "packaging";
+    return "gallery";
+  }
+  return null;
+}
+
 export function splitProductMaterials(materials: ProductMaterial[]) {
   const videos: ProductMaterial[] = [];
   const reviews: ProductMaterial[] = [];
   const gallery: ProductMaterial[] = [];
+  const reproduction: ProductMaterial[] = [];
+  const packaging: ProductMaterial[] = [];
   const extras: ProductMaterial[] = [];
 
   for (const material of materials) {
@@ -74,9 +88,10 @@ export function splitProductMaterials(materials: ProductMaterial[]) {
     }
 
     if (material.type === "image") {
-      if (!material.sectionKey || material.sectionKey === "gallery") {
-        gallery.push(material);
-      }
+      const folder = imageFolder(material);
+      if (folder === "reproduction") reproduction.push(material);
+      else if (folder === "packaging") packaging.push(material);
+      else if (folder === "gallery") gallery.push(material);
       continue;
     }
 
@@ -86,9 +101,11 @@ export function splitProductMaterials(materials: ProductMaterial[]) {
   videos.sort((a, b) => a.sortOrder - b.sortOrder);
   reviews.sort((a, b) => a.sortOrder - b.sortOrder);
   gallery.sort((a, b) => a.sortOrder - b.sortOrder);
+  reproduction.sort((a, b) => a.sortOrder - b.sortOrder);
+  packaging.sort((a, b) => a.sortOrder - b.sortOrder);
   extras.sort((a, b) => a.sortOrder - b.sortOrder);
 
-  return { videos, reviews, gallery, extras };
+  return { videos, reviews, gallery, reproduction, packaging, extras };
 }
 
 export function presentationEmbedUrl(presentationUrl?: string) {

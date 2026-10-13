@@ -60,30 +60,69 @@ function ContentSection({ title, content, emoji }: ProductContentSection) {
   );
 }
 
-function GiftGallerySection({ materials }: { materials: ProductMaterial[] }) {
-  const photos = materials.filter((material) => material.url);
-  if (!photos.length) return null;
+const GALLERY_FOLDERS = [
+  { id: "gallery", title: "Как выглядит подарок", lead: "Примеры готовых изданий — чтобы менеджер видел, что получает клиент." },
+  { id: "reproduction", title: "Репродукция", lead: "Дигитальная версия из прошлого на специальной бумаге. Не оригинал со склада." },
+  { id: "packaging", title: "Упаковка", lead: "Папка, конверт и упаковка, которые можно подобрать к изданию из даты." }
+] as const;
+
+function GiftGallerySection({
+  gallery,
+  reproduction,
+  packaging
+}: {
+  gallery: ProductMaterial[];
+  reproduction: ProductMaterial[];
+  packaging: ProductMaterial[];
+}) {
+  const folders = GALLERY_FOLDERS.map((folder) => ({
+    ...folder,
+    photos: (folder.id === "reproduction" ? reproduction : folder.id === "packaging" ? packaging : gallery).filter(
+      (material) => material.url
+    )
+  })).filter((folder) => folder.photos.length);
+
+  const [activeId, setActiveId] = useState(folders[0]?.id ?? "gallery");
+  const active = folders.find((folder) => folder.id === activeId) ?? folders[0];
+
+  if (!active) return null;
 
   return (
     <section className="card p-6 sm:p-8">
-      <h2 className={sectionHeadingClass}>Как выглядит подарок</h2>
-      <p className={sectionLeadClass}>Примеры готовых изданий — чтобы менеджер видел, что получает клиент.</p>
+      {folders.length > 1 ? (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {folders.map((folder) => (
+            <button
+              key={folder.id}
+              type="button"
+              onClick={() => setActiveId(folder.id)}
+              className={`rounded-xl px-4 py-2 text-sm font-bold ${
+                folder.id === active.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              {folder.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <h2 className={sectionHeadingClass}>{active.title}</h2>
+      <p className={sectionLeadClass}>{active.lead}</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {photos.map((material) => {
+        {active.photos.map((material) => {
           const isWide = material.content === "wide";
           const isLandscape = material.content === "landscape";
           return (
-          <figure
-            key={material.id}
-            className={`overflow-hidden rounded-xl border border-[var(--line)] bg-white ${isWide ? "sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}`}
-          >
-            <div className={`relative w-full bg-white ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
-              <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
-            </div>
-            <figcaption className={`border-t border-[var(--line)] px-4 py-3 ${captionClass}`}>
-              {material.title}
-            </figcaption>
-          </figure>
+            <figure
+              key={material.id}
+              className={`overflow-hidden rounded-xl border border-[var(--line)] bg-white ${isWide ? "sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}`}
+            >
+              <div className={`relative w-full bg-white ${isWide ? "aspect-[3/2]" : isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"}`}>
+                <Image src={material.url!} alt={material.title} fill className="object-contain p-2" unoptimized />
+              </div>
+              <figcaption className={`border-t border-[var(--line)] px-4 py-3 ${captionClass}`}>
+                {material.title}
+              </figcaption>
+            </figure>
           );
         })}
       </div>
@@ -341,7 +380,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
   }
 
   const sections = buildProductSections(product);
-  const { videos, reviews, gallery, extras } = splitProductMaterials(product.materials);
+  const { videos, reviews, gallery, reproduction, packaging, extras } = splitProductMaterials(product.materials);
   const hasQuiz = product.questions.length > 0;
 
   return (
@@ -364,7 +403,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
       <ReviewsSection materials={reviews} />
 
-      <GiftGallerySection materials={gallery} />
+      <GiftGallerySection gallery={gallery} reproduction={reproduction} packaging={packaging} />
 
       {sections.map((section) => (
         <ContentSection key={section.sectionKey} {...section} />

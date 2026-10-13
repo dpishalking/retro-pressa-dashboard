@@ -1,8 +1,3 @@
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { Check, ChevronDown, Copy } from "lucide-react";
 import type { ClientMaterial } from "@/types/training";
 
 type KnowledgePhoto = {
@@ -16,11 +11,6 @@ type KnowledgePhoto = {
 type KnowledgeArticle = {
   id: string;
   title: string;
-  subtitle: string;
-  href: string;
-  hrefLabel: string;
-  paragraphs: string[];
-  bullets?: string[];
   photos: KnowledgePhoto[];
 };
 
@@ -28,281 +18,139 @@ const ARTICLES: KnowledgeArticle[] = [
   {
     id: "reproduction",
     title: "Оригинал и репродукция",
-    subtitle: "Газета из дня рождения / издание из важной даты",
-    href: "/training/products/personal-newspaper",
-    hrefLabel: "Открыть карточку издания из даты",
-    paragraphs: [
-      "Газета бывает как оригинал, так и репродукция.",
-      "Репродукция — это дигитальная версия из прошлого, распечатанная на специальной бумаге."
-    ],
-    bullets: [
-      "Оригинал — настоящий архивный экземпляр, который вышел в тот день и лежит на складе.",
-      "Репродукцию предлагают, когда оригинала на складе нет или клиенту достаточно печатной копии.",
-      "Варианты репродукции: газета или журнал; региональные издания — через чат «Репродукция».",
-      "Это не поздравительная газета: внутри нет фото и текста клиента.",
-      "Это не «Дигитальная версия»: файл без печати — отдельный продукт.",
-      "Не обещать архивный подлинник, если продаёте репродукцию."
-    ],
     photos: [
       {
         id: "reproduction-izvestiya-1962",
         title: "Репродукция — «Известия», 21 июня 1962",
         url: "/training/reproduction/izvestiya-1962.jpg",
         category: "Репродукция",
-        description: "Пример репродукции: дигитальная версия выпуска из прошлого, распечатанная на специальной бумаге."
+        description: "Пример газетной репродукции: «Известия», 21 июня 1962."
       },
       {
-        id: "reproduction-sovetskaya-molodezh-1953",
+        id: "reproduction-molodezh-1953",
         title: "Репродукция — «Советская молодёжь», 10 февраля 1953",
         url: "/training/reproduction/sovetskaya-molodezh-1953.jpg",
         category: "Репродукция",
-        description: "Пример репродукции газеты из даты: печатная копия реального выпуска на специальной бумаге."
+        description: "Пример газетной репродукции: «Советская молодёжь», 10 февраля 1953."
       },
       {
         id: "reproduction-ichkeria-1993",
         title: "Репродукция — «Ичкерия», 2 сентября 1993",
         url: "/training/reproduction/ichkeria-1993.jpg",
         category: "Репродукция",
-        description: "Пример репродукции газеты из даты: дигитальная версия из прошлого, распечатанная на специальной бумаге."
+        description: "Пример газетной репродукции: «Ичкерия», 2 сентября 1993."
       }
     ]
   },
   {
-    id: "life-book-headlines",
+    id: "life-book",
     title: "Книга жизни в заголовках газет",
-    subtitle: "Газеты за каждый год жизни, не интервью-книга",
-    href: "/training/products/personal-magazine",
-    hrefLabel: "Открыть карточку книги в заголовках",
-    paragraphs: [
-      "Это книга из газет за каждый год жизни человека. Первая страница начинается с даты рождения, дальше — год за годом.",
-      "Не путать с «Книгой жизни»: там интервьюер берёт интервью, и из рассказа делается книга о человеке."
-    ],
     photos: [
       {
         id: "life-book-papa-pravda-cover",
         title: "«Папина правда, или 80 лет через прессу» — обложка",
         url: "/training/life-book/papa-pravda-cover.jpg",
         category: "Книга жизни в заголовках газет",
-        description: "Пример книги жизни в заголовках газет: золотая обложка с персональным названием и подписью «Архив Retro Pressa»."
+        description: "Обложка книги «Папина правда»."
       },
       {
-        id: "life-book-papa-pravda-title-page",
+        id: "life-book-papa-pravda-title",
         title: "«Папина правда» — титульный лист",
         url: "/training/life-book/papa-pravda-title-page.jpg",
         category: "Книга жизни в заголовках газет",
-        description: "Внутри книги: персональное название, инициалы и год рождения, подзаголовок «подлинные заголовки газет со дня рождения»."
+        description: "Титульный лист книги «Папина правда»."
       },
       {
-        id: "life-book-papa-pravda-newspaper-page",
+        id: "life-book-papa-pravda-page",
         title: "«Папина правда» — газетный разворот",
         url: "/training/life-book/papa-pravda-newspaper-page.jpg",
         category: "Книга жизни в заголовках газет",
-        description: "Пример страницы книги: подлинный газетный блок «Советская молодёжь» внутри переплёта."
+        description: "Газетный разворот из книги «Папина правда»."
       }
     ]
   },
   {
     id: "packaging",
     title: "Упаковка",
-    subtitle: "Фото упаковки, которые можно отправить клиенту",
-    href: "/training/products/personal-newspaper",
-    hrefLabel: "Открыть карточку издания из даты",
-    paragraphs: [
-      "К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas»."
-    ],
     photos: [
       {
         id: "packaging-mailbox-folder",
         title: "Папка «почтовый ящик» Retro Pressa",
         url: "/training/packaging/mailbox-folder.jpg",
         category: "Упаковка",
-        description: "Красная подарочная папка в виде почтового ящика с логотипом Retro Pressa."
+        description: "Красная подарочная папка в виде почтового ящика."
       },
       {
         id: "packaging-airmail-envelope",
         title: "Почтовый конверт Retro Pressa",
         url: "/training/packaging/airmail-envelope.jpg",
         category: "Упаковка",
-        description: "Подарочный конверт в стиле авиапочты: поля «Куда» и «Кому», марка Retro Pressa."
+        description: "Подарочный конверт в стиле авиапочты."
       },
       {
         id: "packaging-davinam-jaunibas-atminas",
         title: "Упаковка «Dāvinām jaunības atmiņas»",
         url: "/training/packaging/davinam-jaunibas-atminas.jpg",
         category: "Упаковка",
-        description: "Подарочная упаковка Retro Pressa на латышском: «Дарим воспоминания молодости»."
+        description: "Подарочная упаковка Retro Pressa на латышском."
       }
     ]
   },
   {
     id: "first-letter",
     title: "Первое письмо",
-    subtitle: "Открытка родственникам и друзьям ребёнка",
-    href: "/training/products/pervoe-pismo",
-    hrefLabel: "Открыть карточку «Первое письмо»",
-    paragraphs: [
-      "«Первое письмо» — это открытка, которую мы высылаем всем родственникам и друзьям ребёнка, когда он рождается или ему исполняются первые месяцы."
-    ],
     photos: [
       {
         id: "pervoe-pismo-amira-pair",
         title: "Первое письмо — две открытки, 5 месяцев",
         url: "/training/pervoe-pismo/amira-5-months-pair.jpg",
         category: "Первое письмо",
-        description: "Живой пример: открытки родственникам на русском и французском, малышка Амира, 5 месяцев."
+        description: "Открытки родственникам на русском и французском."
       },
       {
         id: "pervoe-pismo-amira-open",
         title: "Первое письмо — разворот с фото и текстом",
         url: "/training/pervoe-pismo/amira-5-months-open.jpg",
         category: "Первое письмо",
-        description: "Открытая открытка: фото малыша, обращение «Cher Papa!» и письмо родным. Можно отправить клиенту как пример."
+        description: "Открытая открытка с фото малыша и письмом родным."
       }
     ]
   },
   {
     id: "retro-poster",
     title: "Ретро-постер",
-    subtitle: "Ваша история — на одной странице",
-    href: "/training/products/retro-poster",
-    hrefLabel: "Открыть карточку ретро-постера",
-    paragraphs: [
-      "Ретро-постер — необычная альтернатива традиционной газете: персональный постер для именинника. Идея та же, что у поздравительной газеты, только это одна страница, которую можно повесить на стену.",
-      "Макет: передовица исторической газеты или полностью индивидуальный лист. Размеры: 30 × 40 см и A3 (29,7 × 42 см). Печатный постер или электронный файл. Рамку в заказ автоматически не обещаем. Цена — по запросу."
-    ],
     photos: [
       {
         id: "retro-poster-semeynaya-pravda",
         title: "Ретро-постер — «Семейная правда» в рамке",
         url: "/training/retro-poster/semeynaya-pravda.jpg",
         category: "Ретро-постер",
-        description: "Пример передовицы исторической газеты: персональный постер про именинника, который можно повесить на стену."
+        description: "Пример передовицы исторической газеты на стене."
       },
       {
         id: "retro-poster-gazeta-zhizni",
         title: "Ретро-постер — «Газета жизни» на стене",
         url: "/training/retro-poster/gazeta-zhizni.jpg",
         category: "Ретро-постер",
-        description: "Пример индивидуального макета: история человека на одной странице."
+        description: "Пример индивидуального макета на одной странице."
       },
       {
         id: "retro-poster-sovetskaya-molodezh",
         title: "Ретро-постер — «Советская молодёжь» на стене",
         url: "/training/retro-poster/sovetskaya-molodezh.jpg",
         category: "Ретро-постер",
-        description: "Пример передовицы исторической газеты в рамке на стене. Рамка на фото — пример размещения, в заказ автоматически не входит."
+        description: "Пример передовицы исторической газеты в рамке на стене."
       },
       {
         id: "retro-poster-offer-sheet",
         title: "Ретро-постер — описание форматов",
         url: "/training/retro-poster/offer-sheet.png",
         category: "Ретро-постер",
-        description: "Два размера: 30 × 40 см и A3. Печатный постер и электронный файл."
+        description: "Два размера: 30 × 40 см и A3."
       }
     ]
   }
 ];
-
-function publicUrl(url: string) {
-  if (/^https?:\/\//.test(url)) return url;
-  if (typeof window === "undefined") return url;
-  return new URL(url, window.location.origin).toString();
-}
-
-function KnowledgePhotoCard({ photo }: { photo: KnowledgePhoto }) {
-  const [copied, setCopied] = useState(false);
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(publicUrl(photo.url));
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <figure className="overflow-hidden rounded-xl border border-[var(--line)] bg-white">
-      <a href={photo.url} target="_blank" rel="noreferrer" className="block bg-slate-50">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo.url} alt={photo.title} className="w-full object-contain" />
-      </a>
-      <figcaption className="flex items-start justify-between gap-3 p-3">
-        <p className="text-sm font-semibold leading-5 text-slate-800">{photo.title}</p>
-        <button
-          type="button"
-          onClick={() => void copyLink()}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--line)] px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-        >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Скопировано" : "Ссылка"}
-        </button>
-      </figcaption>
-    </figure>
-  );
-}
-
-function KnowledgeArticleCard({ article }: { article: KnowledgeArticle }) {
-  const [open, setOpen] = useState(true);
-
-  return (
-    <section className="card overflow-hidden p-0">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-3 px-6 py-5 text-left"
-      >
-        <span>
-          <span className="block text-xl font-black text-slate-950">{article.title}</span>
-          <span className="mt-1 block text-sm text-slate-600">{article.subtitle}</span>
-        </span>
-        <ChevronDown
-          size={22}
-          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {open ? (
-        <div className="space-y-4 border-t border-[var(--line)] px-6 py-5">
-          {article.paragraphs.map((paragraph) => (
-            <p key={paragraph} className="text-lg leading-relaxed text-slate-700">
-              {paragraph}
-            </p>
-          ))}
-          {article.bullets?.length ? (
-            <ul className="list-disc space-y-1 pl-5 text-lg leading-relaxed text-slate-700">
-              {article.bullets.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : null}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {article.photos.map((photo) => (
-              <KnowledgePhotoCard key={photo.id} photo={photo} />
-            ))}
-          </div>
-          <Link href={article.href} className="inline-flex text-sm font-bold text-blue-700 hover:text-blue-800">
-            {article.hrefLabel} →
-          </Link>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-export function ProductKnowledgeArticles() {
-  return (
-    <div className="space-y-4">
-      <section className="card p-6">
-        <h2 className="text-2xl font-black text-slate-950">База знаний по продуктам</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Репродукция, книга в заголовках газет, упаковка и «Первое письмо». Фото можно открыть и скопировать ссылку
-          клиенту.
-        </p>
-      </section>
-      {ARTICLES.map((article) => (
-        <KnowledgeArticleCard key={article.id} article={article} />
-      ))}
-    </div>
-  );
-}
 
 export function listProductKnowledgeClientMaterials(): ClientMaterial[] {
   return ARTICLES.flatMap((article, articleIndex) =>

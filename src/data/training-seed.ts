@@ -41,7 +41,8 @@ function galleryImage(
   title: string,
   url: string,
   sortOrder: number,
-  content?: string
+  content?: string,
+  sectionKey: ProductMaterial["sectionKey"] = "gallery"
 ): ProductMaterial {
   return {
     id,
@@ -49,7 +50,7 @@ function galleryImage(
     title,
     url,
     content,
-    sectionKey: "gallery",
+    sectionKey,
     sortOrder
   };
 }
@@ -120,49 +121,55 @@ export const birthDateNewspaperProduct = createProductSeed({
     textMaterial(
       "mat-newspaper-packaging",
       "Упаковка",
-      "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Эти фото есть в блоке «Как выглядит подарок» — их можно открыть и отправить клиенту."
+      "• К изданию из даты можно подобрать упаковку: папка «почтовый ящик», почтовый конверт, упаковка «Dāvinām jaunības atmiņas».\n• Фото упаковки — во вкладке «Упаковка» этой карточки. Фото репродукций — во вкладке «Репродукция»."
     ),
     galleryImage(
       "img-personal-newspaper-reproduction-izvestiya",
       "Репродукция — «Известия», 21 июня 1962",
       "/training/reproduction/izvestiya-1962.jpg",
       5.1,
-      "wide"
+      "wide",
+      "reproduction"
     ),
     galleryImage(
       "img-personal-newspaper-reproduction-molodezh",
       "Репродукция — «Советская молодёжь», 10 февраля 1953",
       "/training/reproduction/sovetskaya-molodezh-1953.jpg",
       5.2,
-      "wide"
+      "wide",
+      "reproduction"
     ),
     galleryImage(
       "img-personal-newspaper-reproduction-ichkeria",
       "Репродукция — «Ичкерия», 2 сентября 1993",
       "/training/reproduction/ichkeria-1993.jpg",
       5.3,
-      "wide"
+      "wide",
+      "reproduction"
     ),
     galleryImage(
       "img-personal-newspaper-packaging-mailbox",
       "Упаковка — папка «почтовый ящик»",
       "/training/packaging/mailbox-folder.jpg",
       5.4,
-      "wide"
+      "wide",
+      "packaging"
     ),
     galleryImage(
       "img-personal-newspaper-packaging-airmail",
       "Упаковка — почтовый конверт",
       "/training/packaging/airmail-envelope.jpg",
       5.5,
-      "wide"
+      "wide",
+      "packaging"
     ),
     galleryImage(
       "img-personal-newspaper-packaging-davinam",
       "Упаковка — «Dāvinām jaunības atmiņas»",
       "/training/packaging/davinam-jaunibas-atminas.jpg",
       5.6,
-      "wide"
+      "wide",
+      "packaging"
     )
   ],
   questions: [

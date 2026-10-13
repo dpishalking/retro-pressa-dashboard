@@ -115,12 +115,11 @@ function ProductEditorContent({ productId }: { productId: string }) {
     update("materials", [...product.materials, material]);
   };
 
-  const galleryMaterials = product.materials.filter(
-    (material) => material.type === "image" && (!material.sectionKey || material.sectionKey === "gallery")
-  );
-  const otherMaterials = product.materials.filter(
-    (material) => !(material.type === "image" && (!material.sectionKey || material.sectionKey === "gallery"))
-  );
+  const isGalleryImage = (material: ProductMaterial) =>
+    material.type === "image" &&
+    (!material.sectionKey || material.sectionKey === "gallery" || material.sectionKey === "reproduction" || material.sectionKey === "packaging");
+  const galleryMaterials = product.materials.filter(isGalleryImage);
+  const otherMaterials = product.materials.filter((material) => !isGalleryImage(material));
 
   const addQuestion = () => {
     const question: QuizQuestion = {
@@ -337,6 +336,8 @@ function ProductEditorContent({ productId }: { productId: string }) {
                       }}
                     >
                       <option value="gallery">Как выглядит подарок</option>
+                      <option value="reproduction">Репродукция</option>
+                      <option value="packaging">Упаковка</option>
                       <option value="description">Что это за продукт</option>
                       <option value="targetAudience">Для кого подходит</option>
                       <option value="clientProblems">Задачи клиента</option>
