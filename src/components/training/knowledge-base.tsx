@@ -294,7 +294,7 @@ const CITY_ROUTING_ROWS = [
   {
     orderType: "Репродукции и поздравительные газеты",
     city: "Минск",
-    watchers: "Екатерина, Ольга",
+    watchers: "Тигран, Ольга",
     designer: "Татьяна"
   },
   {
@@ -306,7 +306,7 @@ const CITY_ROUTING_ROWS = [
   {
     orderType: "Оригиналы",
     city: "Минск",
-    watchers: "Екатерина",
+    watchers: "Тигран",
     designer: "—"
   }
 ] as const;
