@@ -2,27 +2,23 @@
 
 import { PlayCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
+import { COMPANY_INTRO_TITLE, COMPANY_INTRO_VIDEO_URL, COMPANY_INTRO_LEAD } from "@/lib/training/company-intro";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 
-const INTRO_VIDEO_URL = "https://www.youtube.com/watch?v=o9KPK9g8CeQ";
-
 export function TrainingIntroScreen() {
-  const embedUrl = normalizeVideoEmbedUrl(INTRO_VIDEO_URL);
+  const embedUrl = normalizeVideoEmbedUrl(COMPANY_INTRO_VIDEO_URL);
 
   return (
-    <TrainingLayout title="Что такое Retro Pressa" backHref="/training" backLabel="К обучению">
+    <TrainingLayout title={COMPANY_INTRO_TITLE} backHref="/training" backLabel="К обучению">
       <section className="card p-6">
-        <p className="text-base leading-relaxed text-slate-700">
-          Посмотрите это видео, чтобы лучше понять масштаб компании, географию работы и продукты, с которыми мы
-          работаем.
-        </p>
+        <p className="text-base leading-relaxed text-slate-700">{COMPANY_INTRO_LEAD}</p>
 
         <div className="mt-6 overflow-hidden rounded-xl border border-[var(--line)] bg-black">
           {embedUrl ? (
             <div className="aspect-video">
               <iframe
                 src={embedUrl}
-                title="Что такое Retro Pressa"
+                title={COMPANY_INTRO_TITLE}
                 className="h-full w-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

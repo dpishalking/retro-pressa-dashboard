@@ -27,6 +27,9 @@ export const PARTNERS_REGISTER_API = "/api/partners/register";
 /** Public manager self-registration (login/password, ROP approval). */
 export const MANAGER_REGISTER_PATH = "/registration";
 
+/** Public manager onboarding landing: company video, reviews, then registration. */
+export const MANAGER_ONBOARDING_PATH = "/onboarding";
+
 /** Public manager registration API. */
 export const MANAGER_REGISTER_API = "/api/auth/register";
 

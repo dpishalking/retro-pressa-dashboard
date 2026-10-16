@@ -12,6 +12,7 @@ alwaysApply: false
 - `/api/auth/login` и `/api/auth/register` — публичные.
 - Остальные `/api/*` — нужна сессия (401 без cookie).
 - Страницы без сессии → redirect на `/` с `?next=`.
+- `/onboarding` — публичный лендинг онбординга менеджеров.
 - `/registration` — публичная регистрация менеджеров (вход после одобрения РОПа).
 - `/api/admin/*` — admin; `/api/admin/users` — admin или rop.
 
