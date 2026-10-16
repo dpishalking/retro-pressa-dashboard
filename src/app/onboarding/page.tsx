@@ -5,8 +5,9 @@ import { readClientReviewCatalog } from "@/lib/training/client-review-videos";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Онбординг менеджера | Retro Pressa",
-  description: "Видео о компании Retro Pressa, отзывы клиентов и регистрация на обучение менеджеров."
+  title: "Продавайте кусочек истории | Retro Pressa",
+  description:
+    "Для будущих менеджеров: видео о компании, реакция людей на подарок и переход к изучению продукта."
 };
 
 export default async function OnboardingPage() {
