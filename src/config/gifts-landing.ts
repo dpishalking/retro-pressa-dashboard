@@ -155,6 +155,9 @@ export const GIFT_LANDING_ITEMS: GiftLandingItem[] = [
     price: "135 €",
     image: "/training/congratulatory-magazine/karavan-istoriy-georgiy-cover.jpg",
     gallery: [
+      "/training/congratulatory-magazine/krokodil-osenny-cover.jpg",
+      "/training/congratulatory-magazine/krokodil-golomb-spread.jpg",
+      "/training/congratulatory-magazine/krokodil-original-spread.jpg",
       "/training/congratulatory-magazine/nauka-i-zhizn-alexander-cover.jpg",
       "/training/magazine-from-date/krestyanka-1993-03.png",
       "/training/magazine-from-date/rabotnitsa-1993-03.png"

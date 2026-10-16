@@ -308,6 +308,33 @@
       "sortOrder": 12
     },
     {
+      "id": "congratulatory-magazine-krokodil-osenny-cover",
+      "title": "Крокодил — обложка поздравительного журнала",
+      "description": "Персональная обложка «Крокодил» осенний: герой нарисован на обложке архивного журнала.",
+      "category": "Поздравительный журнал",
+      "type": "image",
+      "url": "/training/congratulatory-magazine/krokodil-osenny-cover.jpg",
+      "sortOrder": 13
+    },
+    {
+      "id": "congratulatory-magazine-krokodil-golomb-spread",
+      "title": "Крокодил — разворот с личным поздравлением",
+      "description": "Внутренний разворот поздравительного журнала: архивные полосы и личные фото с текстом про героя.",
+      "category": "Поздравительный журнал",
+      "type": "image",
+      "url": "/training/congratulatory-magazine/krokodil-golomb-spread.jpg",
+      "sortOrder": 14
+    },
+    {
+      "id": "congratulatory-magazine-krokodil-original-spread",
+      "title": "Крокодил — оригинальный разворот",
+      "description": "Архивный разворот «Крокодила», на котором строится поздравительный журнал.",
+      "category": "Поздравительный журнал",
+      "type": "image",
+      "url": "/training/congratulatory-magazine/krokodil-original-spread.jpg",
+      "sortOrder": 15
+    },
+    {
       "id": "gift-edition-site-photo",
       "title": "Персонализированное издание — фото с сайта",
       "description": "Визуал персонализированной газеты Party Page.",

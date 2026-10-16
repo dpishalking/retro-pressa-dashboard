@@ -1880,6 +1880,33 @@
           "content": "wide",
           "sectionKey": "gallery",
           "sortOrder": 8
+        },
+        {
+          "id": "img-retro-newspaper-gallery-krokodil-cover",
+          "type": "image",
+          "title": "Крокодил — обложка поздравительного журнала",
+          "url": "/training/congratulatory-magazine/krokodil-osenny-cover.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 9
+        },
+        {
+          "id": "img-retro-newspaper-gallery-krokodil-spread",
+          "type": "image",
+          "title": "Крокодил — разворот с личным поздравлением",
+          "url": "/training/congratulatory-magazine/krokodil-golomb-spread.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 10
+        },
+        {
+          "id": "img-retro-newspaper-gallery-krokodil-original",
+          "type": "image",
+          "title": "Крокодил — оригинальный разворот",
+          "url": "/training/congratulatory-magazine/krokodil-original-spread.jpg",
+          "content": "wide",
+          "sectionKey": "gallery",
+          "sortOrder": 11
         }
       ],
       "questions": [

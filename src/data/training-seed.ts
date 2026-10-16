@@ -492,6 +492,27 @@ export const partyPageProduct = createProductSeed({
       "mat-party-page-sales",
       "Что делать в разговоре",
       "• Сначала объясняем, что человек становится героем своей истории.\n• Дальше показываем, что собрать выпуск можно без лишнего стресса.\n• Подчёркиваем вау-эффект на празднике: газету захотят читать все.\n• Хорошо работает, когда клиент хочет удивить, но не перегрузить подготовкой."
+    ),
+    galleryImage(
+      "img-retro-newspaper-gallery-krokodil-cover",
+      "Крокодил — обложка поздравительного журнала",
+      "/training/congratulatory-magazine/krokodil-osenny-cover.jpg",
+      9,
+      "wide"
+    ),
+    galleryImage(
+      "img-retro-newspaper-gallery-krokodil-spread",
+      "Крокодил — разворот с личным поздравлением",
+      "/training/congratulatory-magazine/krokodil-golomb-spread.jpg",
+      10,
+      "wide"
+    ),
+    galleryImage(
+      "img-retro-newspaper-gallery-krokodil-original",
+      "Крокодил — оригинальный разворот",
+      "/training/congratulatory-magazine/krokodil-original-spread.jpg",
+      11,
+      "wide"
     )
   ],
   questions: [
