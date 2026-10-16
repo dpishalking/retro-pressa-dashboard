@@ -15,14 +15,28 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
     <main className="mx-auto w-[min(960px,calc(100%-32px))] py-8 sm:py-14">
       <img src="/brand/retro-pressa-logo.png" alt="Retro Pressa" className="h-7 w-auto sm:h-8" />
 
-      <p className={`mt-8 text-sm font-extrabold uppercase tracking-normal ${brand}`}>Для менеджеров</p>
+      <p className={`mt-8 text-sm font-extrabold uppercase tracking-normal ${brand}`}>
+        Международный сервис персональных подарков
+      </p>
       <h1 className="mt-3 max-w-3xl text-[2rem] font-black leading-[1.08] tracking-normal text-slate-950 sm:text-5xl">
-        Продавайте кусочек истории
-        <span className={`mt-2 block ${brand}`}>Издание из дня и года рождения</span>
+        Ищем менеджеров по продажам
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-        Сначала видео о компании. Потом — как люди реагируют, когда подарок уже в руках. Дальше можно приступить
-        к изучению продукта.
+        Retro Pressa работает с клиентами в разных странах. Основная работа — переписка, звонки занимают меньшую часть.
+      </p>
+      <dl className="mt-6 flex gap-10 border-y border-[var(--line)] py-5">
+        <div>
+          <dt className="text-sm font-semibold text-slate-600">Переписка</dt>
+          <dd className={`mt-1 text-4xl font-black ${brand}`}>80%</dd>
+        </div>
+        <div>
+          <dt className="text-sm font-semibold text-slate-600">Звонки</dt>
+          <dd className="mt-1 text-4xl font-black text-slate-950">20%</dd>
+        </div>
+      </dl>
+      <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600">
+        Чтобы начать, посмотрите видео о компании и реакцию людей на подарок. После этого можно перейти к изучению
+        продукта.
       </p>
 
       <section className="mt-8">
