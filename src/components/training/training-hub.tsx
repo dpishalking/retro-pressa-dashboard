@@ -68,14 +68,14 @@ function ProductCard({
   const actionLabel = status === "not_started" ? "Начать обучение" : status === "in_progress" ? "Продолжить" : "Повторить";
 
   return (
-    <article className="card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="card flex h-full flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
       <ProductCover
         src={product.coverImage}
         alt={product.title}
-        className="aspect-square w-full"
+        className="aspect-square w-full shrink-0"
         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
       />
-      <div className="flex h-full flex-col p-6">
+      <div className="flex flex-1 flex-col p-6">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
             <BookOpen size={22} />
@@ -98,9 +98,11 @@ function ProductCard({
             </Link>
           </div>
         </div>
-        <h2 className="text-xl font-black text-slate-950 sm:text-2xl">{product.title}</h2>
-        <p className="mt-3 flex-1 text-base leading-7 text-slate-600 sm:text-[17px] sm:leading-8">{product.shortDescription}</p>
-        <div className="mt-5 flex flex-wrap gap-3">
+        <h2 className="line-clamp-2 min-h-[3.5rem] text-xl font-black text-slate-950 sm:min-h-16 sm:text-2xl">{product.title}</h2>
+        <p className="mt-3 line-clamp-4 min-h-[7rem] flex-1 text-base leading-7 text-slate-600 sm:min-h-32 sm:text-[17px] sm:leading-8">
+          {product.shortDescription}
+        </p>
+        <div className="mt-5 flex min-h-[42px] flex-wrap gap-3">
           {hasQuiz && status !== "not_started" ? (
             <Link
               href={`/training/products/${product.id}/quiz`}
