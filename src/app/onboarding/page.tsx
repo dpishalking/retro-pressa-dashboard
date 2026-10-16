@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Ищем менеджеров по продажам | Retro Pressa",
   description:
-    "Retro Pressa — международный сервис персональных подарков. Ищем менеджеров: переписка 80%, звонки 20%."
+    "Международная компания Retro Pressa ищет менеджеров по продажам. Удалённая работа, обучение продукту и подготовка к стажировке."
 };
 
 export default async function OnboardingPage() {
