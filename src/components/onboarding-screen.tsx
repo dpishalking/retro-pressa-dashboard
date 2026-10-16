@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { OnboardingPlayer } from "@/components/onboarding-player";
+import hero from "./onboarding-hero.module.css";
 import { MANAGER_REGISTER_PATH } from "@/lib/auth/routes";
 import { COMPANY_INTRO_TITLE, COMPANY_INTRO_VIDEO_URL } from "@/lib/training/company-intro";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
@@ -28,19 +29,6 @@ const START_STEPS = [
 const display = "[font-family:var(--font-onb-display),Georgia,serif]";
 const frame = "mx-auto w-full max-w-[1440px] px-5 sm:px-10 lg:px-16";
 const kicker = "text-[11px] font-semibold uppercase tracking-[0.2em] text-[#911D22] sm:text-[12px]";
-
-function HeroPhoto({ className }: { className?: string }) {
-  return (
-    <Image
-      src="/training/personal-newspaper/love-times-semya-gazeta.png"
-      alt="Персональные газеты Retro Pressa с фотографиями людей, которым они подарены"
-      fill
-      priority
-      sizes="(max-width: 1024px) 100vw, 58vw"
-      className={className}
-    />
-  );
-}
 
 export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCatalog }) {
   const companyVideo = normalizeVideoEmbedUrl(COMPANY_INTRO_VIDEO_URL);
@@ -71,54 +59,56 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
       </header>
 
       <main id="top">
-        <section className="relative overflow-hidden lg:min-h-[720px]">
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block lg:w-[48%] xl:w-[55%]">
-            <HeroPhoto className="origin-[64%_42%] scale-[1.65] object-cover object-[64%_42%]" />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,#F6F1E8_0%,#F6F1E8_16%,rgba(246,241,232,0.88)_30%,rgba(246,241,232,0.25)_48%,transparent_64%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F6F1E8] to-transparent" />
-          </div>
-
-          <div className={`${frame} relative flex flex-col justify-center py-8 sm:py-10 lg:min-h-[720px] lg:py-8`}>
-            <div className="lg:max-w-[520px] xl:max-w-[600px]">
-              <p className={kicker}>Retro Pressa · Международная компания</p>
-              <h1 className={`${display} mt-3 max-w-[9em] text-[2.85rem] font-semibold leading-[0.96] tracking-[-0.02em] min-[390px]:text-[3.25rem] sm:text-6xl lg:max-w-none lg:text-[4.6rem] xl:text-[5.15rem]`}>
-                Работа,
-                <br />
-                в которой
-                <br />
-                вы <span className="text-[#911D22]">дарите</span>
-                <br />
-                <span className="text-[#911D22]">эмоции.</span>
-              </h1>
-
-              <div className="relative mt-6 h-[68vw] min-h-[240px] max-h-[460px] overflow-hidden sm:h-[52vw] lg:hidden">
-                <HeroPhoto className="origin-center scale-[1.35] object-cover object-[center_48%]" />
+        <section className={hero.shell} aria-labelledby="rp-hero-heading">
+          <div className={hero.stage}>
+            <div className={hero.photo} aria-hidden="true">
+              <img
+                src="/onboarding/hero-photo.webp"
+                alt=""
+                width={962}
+                height={856}
+                fetchPriority="high"
+              />
+            </div>
+            <div className={hero.content}>
+              <div className={hero.text}>
+                <p className={hero.eyebrow}>Retro Pressa · Международная компания</p>
+                <h1 className={hero.title} id="rp-hero-heading">
+                  <span className={hero.line}>Работа,</span>
+                  <span className={hero.line}>в которой</span>
+                  <span className={hero.line}>
+                    вы <span className={hero.accent}>дарите</span>
+                  </span>
+                  <span className={`${hero.line} ${hero.accent}`}>эмоции.</span>
+                </h1>
+                <h2 className={hero.position}>
+                  Ищем менеджеров по продажам
+                  <br />
+                  из любой точки мира
+                </h2>
+                <div className={hero.description}>
+                  <p>Retro Pressa — международный сервис персонализированных подарков. Мы создаём подарки вокруг жизни человека, его воспоминаний и самых важных событий.</p>
+                  <p>Присоединяйтесь к нам и помогайте людям находить особенные подарки для своих близких.</p>
+                </div>
+                <div className={hero.metrics} aria-label="Формат работы">
+                  <div className={hero.metric}>
+                    <span className={hero.value}>80%</span>
+                    <span className={hero.label}>
+                      Переписка с
+                      <br />
+                      клиентами
+                    </span>
+                  </div>
+                  <div className={hero.metric}>
+                    <span className={hero.value}>20%</span>
+                    <span className={hero.label}>
+                      Телефонные
+                      <br />
+                      звонки
+                    </span>
+                  </div>
+                </div>
               </div>
-
-              <p className={`${display} mt-5 max-w-md text-[1.45rem] font-medium leading-tight sm:text-[1.65rem]`}>
-                Ищем менеджеров по продажам из любой точки мира
-              </p>
-              <p className="mt-4 max-w-md text-[15px] leading-7 text-[#69635C] sm:text-[17px] sm:leading-8">
-                Retro Pressa — международный сервис персонализированных подарков. Мы создаём подарки вокруг жизни человека, его воспоминаний и самых важных событий.
-              </p>
-              <p className="mt-3 max-w-md text-[15px] leading-7 text-[#69635C] sm:text-[17px] sm:leading-8">
-                Присоединяйтесь к нам и помогайте людям находить особенные подарки для своих близких.
-              </p>
-
-              <dl className="mt-6 flex max-w-md gap-8 border-t border-[#191816]/12 pt-4 sm:gap-14">
-                <div>
-                  <dt className={`${display} text-5xl font-semibold leading-none text-[#911D22] lg:text-6xl`}>80%</dt>
-                  <dd className="mt-2 max-w-[8.5rem] text-[11px] font-semibold uppercase leading-4 tracking-[0.14em] text-[#69635C]">
-                    Переписка с клиентами
-                  </dd>
-                </div>
-                <div>
-                  <dt className={`${display} text-5xl font-semibold leading-none text-[#911D22] lg:text-6xl`}>20%</dt>
-                  <dd className="mt-2 max-w-[8.5rem] text-[11px] font-semibold uppercase leading-4 tracking-[0.14em] text-[#69635C]">
-                    Телефонные звонки
-                  </dd>
-                </div>
-              </dl>
             </div>
           </div>
         </section>
