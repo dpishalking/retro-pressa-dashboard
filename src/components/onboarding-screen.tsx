@@ -1,17 +1,15 @@
+import Image from "next/image";
 import Link from "next/link";
+import { OnboardingPlayer } from "@/components/onboarding-player";
 import { MANAGER_REGISTER_PATH } from "@/lib/auth/routes";
 import { COMPANY_INTRO_TITLE, COMPANY_INTRO_VIDEO_URL } from "@/lib/training/company-intro";
 import { normalizeVideoEmbedUrl } from "@/lib/training/video-embed";
 import type { TrainingClientReviewCatalog } from "@/types/training";
 
-/** Languages in the public catalog filter on retropressa.com, excluding the empty option. */
-const CATALOG_LANGUAGE_COUNT = "34";
-
 const SCALE_STATS = [
   { value: "16 500+", label: "Подарков продано" },
   { value: "48", label: "Стран, в которые отправляем подарки" },
-  { value: "400 000+", label: "Архивных изданий в онлайн и оффлайн каталоге" },
-  { value: CATALOG_LANGUAGE_COUNT, label: "Языков изданий в каталоге" }
+  { value: "400 000+", label: "Архивных изданий в онлайн- и офлайн-каталоге" }
 ] as const;
 
 const WORK_REASONS = [
@@ -22,205 +20,266 @@ const WORK_REASONS = [
 ] as const;
 
 const START_STEPS = [
-  {
-    index: "01",
-    title: "Зарегистрируйтесь",
-    text: "Создайте аккаунт на обучающей платформе."
-  },
-  {
-    index: "02",
-    title: "Пройдите обучение",
-    text: "Изучите наши продукты и познакомьтесь с процессом продаж."
-  },
-  {
-    index: "03",
-    title: "Подготовьтесь к стажировке",
-    text: "Закрепите полученные знания и сделайте первый шаг к работе в команде."
-  }
+  { index: "01", title: "Зарегистрируйтесь", text: "Создайте аккаунт на обучающей платформе." },
+  { index: "02", title: "Пройдите обучение", text: "Изучите наши продукты и познакомьтесь с процессом продаж." },
+  { index: "03", title: "Подготовьтесь к стажировке", text: "Закрепите знания и сделайте первый шаг к работе в команде." }
 ] as const;
 
-const brand = "text-[#c44747]";
+const display = "[font-family:var(--font-onb-display),Georgia,serif]";
+const frame = "mx-auto w-full max-w-[1440px] px-5 sm:px-10 lg:px-16";
+const kicker = "text-[11px] font-semibold uppercase tracking-[0.2em] text-[#911D22] sm:text-[12px]";
+
+function HeroPhoto({ className }: { className?: string }) {
+  return (
+    <Image
+      src="/training/personal-newspaper/love-times-semya-gazeta.png"
+      alt="Персональные газеты Retro Pressa с фотографиями людей, которым они подарены"
+      fill
+      priority
+      sizes="(max-width: 1024px) 100vw, 58vw"
+      className={className}
+    />
+  );
+}
 
 export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCatalog }) {
-  const embedUrl = normalizeVideoEmbedUrl(COMPANY_INTRO_VIDEO_URL);
+  const companyVideo = normalizeVideoEmbedUrl(COMPANY_INTRO_VIDEO_URL);
 
   return (
-    <main className="overflow-x-clip">
-      <div className="mx-auto w-[min(1040px,calc(100%-32px))] py-8 sm:py-14">
-        <section>
-          <img src="/brand/retro-pressa-logo.png" alt="Retro Pressa" className="h-7 w-auto sm:h-8" />
-          <p className={`mt-8 text-xs font-extrabold uppercase tracking-normal sm:text-sm ${brand}`}>
-            Retro Pressa · Международная компания
+    <div className="onb min-h-screen overflow-x-clip bg-[#F6F1E8] text-[#191816]">
+      <header className="sticky top-0 z-30 border-b border-[#191816]/10 bg-[#F6F1E8]/92 backdrop-blur-md">
+        <div className={`${frame} flex items-center gap-4 py-3.5 lg:gap-8`}>
+          <a href="#top" className="shrink-0">
+            <img src="/brand/retro-pressa-logo.png" alt="Retro Pressa" className="h-5 w-auto sm:h-7" />
+          </a>
+          <p className="hidden max-w-[9.5rem] text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] text-[#69635C] xl:block">
+            Международный сервис персональных подарков
           </p>
-          <h1 className="mt-3 max-w-4xl text-[1.7rem] font-black leading-[1.12] tracking-normal text-slate-950 min-[390px]:text-4xl sm:text-5xl lg:text-[3.25rem]">
-            Мы создаём персональные подарки, которые становятся частью истории семьи
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-            Не просто вещи, а подарки, созданные вокруг жизни человека: его даты рождения, воспоминаний, увлечений
-            и самых важных событий.
-          </p>
-          <p className={`mt-4 max-w-2xl text-lg font-semibold leading-7 ${brand}`}>
-            Подарки, которые удивляют, трогают до слёз и остаются на долгие годы.
-          </p>
-        </section>
+          <nav className="ml-auto hidden items-center gap-7 text-[12px] font-semibold uppercase tracking-[0.16em] lg:flex">
+            <a href="#company" className="hover:text-[#911D22]">О компании</a>
+            <a href="#stories" className="hover:text-[#911D22]">Отзывы</a>
+            <a href="#start" className="hover:text-[#911D22]">Как начать</a>
+          </nav>
+          <Link
+            href={MANAGER_REGISTER_PATH}
+            className="ml-auto inline-flex min-h-11 items-center whitespace-nowrap rounded-full bg-[#911D22] px-3.5 text-[13px] font-semibold text-[#FCF9F3] hover:bg-[#7c181c] lg:ml-0 lg:px-5 lg:text-sm"
+          >
+            <span className="sm:hidden">Начать →</span>
+            <span className="hidden sm:inline">Начать обучение →</span>
+          </Link>
+        </div>
+      </header>
 
-        <section className="mt-14">
-          <h2 className="max-w-3xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-            Ищем менеджеров по продажам из любой точки мира 🌍
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            Присоединяйтесь к Retro Pressa и помогайте людям находить особенные подарки для своих близких.
-          </p>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            Работа полностью удалённая. Общение с клиентами — преимущественно в переписке, иногда по телефону.
-          </p>
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <article className="rounded-2xl border border-[var(--line)] bg-white px-3 py-4 sm:px-5">
-              <p className={`whitespace-nowrap text-3xl font-black sm:text-4xl ${brand}`}>80%</p>
-              <p className="mt-2 text-sm font-semibold leading-5 text-slate-900">Переписка с клиентами</p>
-            </article>
-            <article className="rounded-2xl border border-[var(--line)] bg-white px-3 py-4 sm:px-5">
-              <p className="whitespace-nowrap text-3xl font-black text-slate-950 sm:text-4xl">20%</p>
-              <p className="mt-2 text-sm font-semibold leading-5 text-slate-900">Телефонные звонки</p>
-            </article>
+      <main id="top">
+        <section className="relative overflow-hidden lg:min-h-[720px]">
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden lg:block lg:w-[48%] xl:w-[55%]">
+            <HeroPhoto className="origin-[64%_42%] scale-[1.65] object-cover object-[64%_42%]" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,#F6F1E8_0%,#F6F1E8_16%,rgba(246,241,232,0.88)_30%,rgba(246,241,232,0.25)_48%,transparent_64%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F6F1E8] to-transparent" />
           </div>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
-            Вы будете не просто предлагать товары по каталогу, а помогать клиентам выбирать подарки с личным смыслом.
-          </p>
-        </section>
 
-        <section className="mt-14">
-          <h2 className="max-w-3xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-            Мы уже помогли тысячам людей подарить незабываемые эмоции
-          </h2>
-          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {SCALE_STATS.map((stat) => (
-              <article key={stat.label} className="rounded-2xl border border-[var(--line)] bg-white px-3 py-4 sm:px-4">
-                <p className="whitespace-nowrap text-[1.35rem] font-black leading-none text-slate-950 min-[390px]:text-2xl sm:text-3xl">
-                  {stat.value}
-                </p>
-                <p className="mt-2 text-sm leading-5 text-slate-600">{stat.label}</p>
-              </article>
-            ))}
-          </div>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
-            За этими цифрами — тысячи личных историй, благодарностей и счастливых получателей. И мы продолжаем расти.
-          </p>
-          <h3 className="mt-8 text-xl font-black text-slate-950">Почему с нами интересно работать?</h3>
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {WORK_REASONS.map((reason) => (
-              <li key={reason} className="flex gap-3 text-sm leading-6 text-slate-700">
-                <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c44747]" />
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </section>
+          <div className={`${frame} relative flex flex-col justify-center py-8 sm:py-10 lg:min-h-[720px] lg:py-8`}>
+            <div className="lg:max-w-[520px] xl:max-w-[600px]">
+              <p className={kicker}>Retro Pressa · Международная компания</p>
+              <h1 className={`${display} mt-3 max-w-[9em] text-[2.85rem] font-semibold leading-[0.96] tracking-[-0.02em] min-[390px]:text-[3.25rem] sm:text-6xl lg:max-w-none lg:text-[4.6rem] xl:text-[5.15rem]`}>
+                Работа,
+                <br />
+                в которой
+                <br />
+                вы <span className="text-[#911D22]">дарите</span>
+                <br />
+                <span className="text-[#911D22]">эмоции.</span>
+              </h1>
 
-        <section className="mt-14">
-          <h2 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-            Познакомьтесь с Retro Pressa поближе
-          </h2>
-          <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-800">
-            Лучше один раз увидеть, чем долго рассказывать.
-          </p>
-          <p className="mt-2 max-w-2xl text-base leading-7 text-slate-600">
-            Посмотрите видео и узнайте, какие подарки мы создаём, для кого они предназначены и почему люди выбирают
-            именно нас.
-          </p>
-          <div className="mt-6 overflow-hidden rounded-2xl border border-[var(--line)] bg-black">
-            {embedUrl ? (
-              <div className="aspect-video">
-                <iframe
-                  src={embedUrl}
-                  title={COMPANY_INTRO_TITLE}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+              <div className="relative mt-6 h-[68vw] min-h-[240px] max-h-[460px] overflow-hidden sm:h-[52vw] lg:hidden">
+                <HeroPhoto className="origin-center scale-[1.35] object-cover object-[center_48%]" />
               </div>
-            ) : (
-              <div className="flex aspect-video items-center justify-center bg-slate-50 px-6 text-center text-base font-bold text-slate-700">
-                Видео скоро появится
-              </div>
-            )}
+
+              <p className={`${display} mt-5 max-w-md text-[1.45rem] font-medium leading-tight sm:text-[1.65rem]`}>
+                Ищем менеджеров по продажам из любой точки мира
+              </p>
+              <p className="mt-4 max-w-md text-[15px] leading-7 text-[#69635C] sm:text-[17px] sm:leading-8">
+                Retro Pressa — международный сервис персонализированных подарков. Мы создаём подарки вокруг жизни человека, его воспоминаний и самых важных событий.
+              </p>
+              <p className="mt-3 max-w-md text-[15px] leading-7 text-[#69635C] sm:text-[17px] sm:leading-8">
+                Присоединяйтесь к нам и помогайте людям находить особенные подарки для своих близких.
+              </p>
+
+              <dl className="mt-6 flex max-w-md gap-8 border-t border-[#191816]/12 pt-4 sm:gap-14">
+                <div>
+                  <dt className={`${display} text-5xl font-semibold leading-none text-[#911D22] lg:text-6xl`}>80%</dt>
+                  <dd className="mt-2 max-w-[8.5rem] text-[11px] font-semibold uppercase leading-4 tracking-[0.14em] text-[#69635C]">
+                    Переписка с клиентами
+                  </dd>
+                </div>
+                <div>
+                  <dt className={`${display} text-5xl font-semibold leading-none text-[#911D22] lg:text-6xl`}>20%</dt>
+                  <dd className="mt-2 max-w-[8.5rem] text-[11px] font-semibold uppercase leading-4 tracking-[0.14em] text-[#69635C]">
+                    Телефонные звонки
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </section>
 
-        <section className="mt-14">
-          <h2 className="max-w-3xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-            А теперь посмотрите, ради чего мы всё это делаем ❤️
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            Самое интересное происходит в тот момент, когда человек открывает подарок.
-          </p>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-800">
-            Удивление. Улыбки. Воспоминания. Иногда даже слёзы счастья.
-          </p>
-          <p className={`mt-4 max-w-2xl text-lg font-semibold leading-7 ${brand}`}>
-            Посмотрите настоящие реакции и отзывы наших клиентов.
-          </p>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            Именно такие эмоции вы будете помогать создавать, работая с нами.
-          </p>
+        <section className="relative overflow-hidden border-t border-[#191816]/10 py-16 sm:py-24">
+          <Image
+            src="/training/newspaper-from-date/lithuanian-newspapers-stack.png"
+            alt=""
+            width={420}
+            height={320}
+            className="pointer-events-none absolute left-8 top-20 hidden w-36 -rotate-3 opacity-90 xl:block"
+          />
+          <Image
+            src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
+            alt=""
+            width={480}
+            height={360}
+            className="pointer-events-none absolute right-4 top-20 hidden w-44 rotate-3 opacity-80 xl:block"
+          />
+          <div className={`${frame} relative`}>
+            <p className={`${kicker} text-center`}>Retro Pressa в цифрах</p>
+            <h2 className={`${display} mx-auto mt-4 max-w-[16em] text-center text-[2.15rem] font-semibold leading-[1.05] min-[390px]:text-4xl sm:text-5xl lg:text-[3.5rem]`}>
+              Мы уже помогли тысячам людей подарить незабываемые эмоции
+            </h2>
+            <dl className="mx-auto mt-12 flex max-w-5xl flex-col gap-8 md:mt-16 md:grid md:grid-cols-3 md:gap-0">
+              {SCALE_STATS.map((stat, index) => (
+                <div
+                  key={stat.label}
+                  className={`md:px-8 ${index === 0 ? "md:pl-0" : "border-t border-[#B99A72]/70 pt-8 md:border-l md:border-t-0 md:pt-0"}`}
+                >
+                  <dt className={`${display} text-[3.25rem] font-semibold leading-none text-[#911D22] sm:text-6xl lg:text-[4.6rem]`}>
+                    {stat.value}
+                  </dt>
+                  <dd className="mt-3 max-w-[16rem] text-[15px] leading-6 text-[#69635C]">{stat.label}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mx-auto mt-12 max-w-2xl text-center text-[15px] leading-7 text-[#69635C] sm:text-[17px]">
+              За этими цифрами — тысячи личных историй, благодарностей и счастливых получателей. И мы продолжаем расти.
+            </p>
+          </div>
+        </section>
+
+        <section id="company" className="relative scroll-mt-20 overflow-hidden bg-[#1C211E] text-[#FCF9F3]">
+          <Image
+            src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-[#1C211E]/78" />
+          <div className={`${frame} relative grid items-center gap-8 py-16 sm:py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-16`}>
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#B99A72]">О компании</p>
+              <h2 className={`${display} mt-4 text-[2.4rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[3.6rem]`}>
+                Познакомьтесь с Retro Pressa поближе
+              </h2>
+              <p className="mt-6 text-lg font-medium leading-7 text-[#FCF9F3] sm:text-xl">
+                Лучше один раз увидеть, чем долго рассказывать.
+              </p>
+              <p className="mt-3 max-w-md text-[15px] leading-7 text-[#FCF9F3]/75 sm:text-[17px] sm:leading-8">
+                Посмотрите видео и узнайте, какие подарки мы создаём, для кого они предназначены и почему люди выбирают именно нас.
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/20">
+              {companyVideo ? <OnboardingPlayer embedUrl={companyVideo} title={COMPANY_INTRO_TITLE} /> : null}
+            </div>
+          </div>
+        </section>
+
+        <section id="stories" className="scroll-mt-20 py-16 sm:py-24">
+          <div className={frame}>
+            <p className={kicker}>Реальные истории</p>
+            <h2 className={`${display} mt-4 max-w-[14em] text-[2.4rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[3.6rem]`}>
+              Ради таких моментов мы работаем
+            </h2>
+            <div className="mt-6 max-w-2xl space-y-3 text-[15px] leading-7 sm:text-[17px] sm:leading-8">
+              <p className="text-[#69635C]">Самое интересное происходит в тот момент, когда человек открывает подарок.</p>
+              <p className="text-[#191816]">Удивление. Улыбки. Воспоминания. Иногда даже слёзы счастья.</p>
+              <p className="text-[#69635C]">Именно такие эмоции вы будете помогать создавать, работая с нами.</p>
+            </div>
+          </div>
           {reviews.videos.length ? (
-            <div className="mt-6 overflow-x-auto pb-1">
-              <div className="flex w-max snap-x snap-mandatory gap-3 sm:w-auto sm:grid sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 overflow-x-auto pb-2 lg:overflow-visible">
+              <div className="flex w-max snap-x snap-mandatory gap-4 px-5 sm:px-10 lg:mx-auto lg:grid lg:w-full lg:max-w-[1440px] lg:grid-cols-4 lg:gap-5 lg:px-16">
                 {reviews.videos.map((video) => (
-                  <div
-                    key={video.id}
-                    className="w-[68vw] max-w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl bg-black sm:w-auto sm:max-w-none"
-                  >
-                    <div className="aspect-[9/16]">
-                      <iframe
-                        src={video.embedUrl}
-                        title={video.title}
-                        className="h-full w-full"
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
+                  <div key={video.id} className="w-[78vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-md lg:w-auto lg:max-w-none">
+                    <OnboardingPlayer embedUrl={video.embedUrl} title={video.title} portrait />
                   </div>
                 ))}
               </div>
             </div>
           ) : null}
         </section>
-      </div>
 
-      <section className="bg-[#f6eeed] py-12 sm:py-16">
-        <div className="mx-auto w-[min(1040px,calc(100%-32px))]">
-          <h2 className="max-w-3xl text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
-            Хотите стать частью Retro Pressa?
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700">
-            Нам нужны люди, которым интересно общаться, помогать клиентам и развиваться в продажах.
-          </p>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">
-            <strong className="font-bold text-slate-950">Начните с обучения.</strong> Мы познакомим вас с нашими
-            продуктами, покажем, как устроена работа с клиентами и как проходит процесс продажи.
-          </p>
-          <ol className="mt-8 grid gap-5 sm:grid-cols-3">
-            {START_STEPS.map((step) => (
-              <li key={step.index}>
-                <p className={`text-sm font-bold ${brand}`}>{step.index}</p>
-                <p className="mt-1 text-lg font-black text-slate-950">{step.title}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-          <Link
-            href={MANAGER_REGISTER_PATH}
-            className="mt-8 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[#c44747] px-8 text-base font-bold text-white hover:bg-[#b33d3d] sm:w-auto"
-          >
-            Начать обучение →
-          </Link>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-            После регистрации доступ к обучению подтверждает руководитель отдела продаж.
-          </p>
-        </div>
-      </section>
-    </main>
+        <section className="border-t border-[#191816]/10 py-16 sm:py-20">
+          <div className={frame}>
+            <h2 className={`${display} max-w-[12em] text-[2.4rem] font-semibold leading-[1.05] min-[390px]:text-5xl lg:text-[3.4rem]`}>
+              Больше, чем просто продажи
+            </h2>
+            <ol className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
+              {WORK_REASONS.map((reason, index) => (
+                <li key={reason} className="border-t border-[#B99A72]/70 pt-4">
+                  <span className={`${display} text-3xl font-semibold leading-none text-[#B99A72]`}>
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <p className="mt-3 text-[16px] leading-7 text-[#191816]">{reason}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="start" className="relative scroll-mt-20 overflow-hidden bg-[#911D22] text-[#FCF9F3]">
+          <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[280px] lg:block">
+            <Image
+              src="/training/newspaper-from-date/lithuanian-newspapers-stack.png"
+              alt=""
+              fill
+              sizes="280px"
+              className="object-cover object-left opacity-50"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(145,29,34,0.35)_0%,#911D22_42%,#911D22_100%)]" />
+          </div>
+          <div className={`${frame} relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-20 lg:pl-24`}>
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#F6F1E8]/70">Как начать</p>
+              <h2 className={`${display} mt-4 text-[2.6rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[4rem]`}>
+                Станьте частью Retro Pressa
+              </h2>
+              <p className="mt-6 max-w-xl text-[15px] leading-7 text-[#FCF9F3]/90 sm:text-[17px] sm:leading-8">
+                Нам нужны люди, которым интересно общаться, помогать клиентам и развиваться в продажах.
+              </p>
+              <p className="mt-3 max-w-xl text-[15px] leading-7 text-[#FCF9F3]/90 sm:text-[17px] sm:leading-8">
+                <strong className="font-semibold text-white">Начните с обучения.</strong> Мы познакомим вас с нашими продуктами, покажем, как устроена работа с клиентами и как проходит процесс продажи.
+              </p>
+              <Link
+                href={MANAGER_REGISTER_PATH}
+                className="mt-8 inline-flex min-h-14 w-full items-center justify-center rounded-full bg-[#FCF9F3] px-8 text-base font-semibold text-[#191816] hover:bg-white sm:w-auto"
+              >
+                Начать обучение →
+              </Link>
+              <p className="mt-3 max-w-md text-sm leading-6 text-[#FCF9F3]/75">
+                После регистрации доступ к обучению подтверждает руководитель отдела продаж.
+              </p>
+            </div>
+            <ol>
+              {START_STEPS.map((step) => (
+                <li key={step.index} className="grid grid-cols-[auto_1fr] items-baseline gap-5 border-t border-white/25 py-5">
+                  <span className={`${display} text-5xl font-semibold leading-none text-white/40 sm:text-6xl lg:text-7xl`}>{step.index}</span>
+                  <div>
+                    <p className="text-lg font-semibold sm:text-xl">{step.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-[#FCF9F3]/80 sm:text-[15px]">{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
