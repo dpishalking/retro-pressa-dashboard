@@ -62,7 +62,7 @@ const reviews = formatAssetReply("Скинь отзывы по поздрави�
 assert.match(reviews || "", /Отзывы:/);
 assert.match(reviews || "", /https:\/\/(www\.)?youtube\.com|https:\/\/youtu\.be/);
 assert.doesNotMatch(reviews || "", /rp-bi\.site\/cards/);
-assert.doesNotMatch(reviews || "", /congratulatory-magazine/);
+assert.match(reviews || "", /congratulatory-magazine\/krokodil/);
 
 assert.equal(formatCardFooter("Что говорить, если дорого, про книгу жизни?"), null);
 assert.equal(formatCardFooter("Скинь отзывы по книге жизни"), null);
