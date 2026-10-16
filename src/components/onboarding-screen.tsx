@@ -113,6 +113,28 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
           </div>
         </section>
 
+        <section id="company" className="relative scroll-mt-20 overflow-hidden bg-[#1C211E] text-[#FCF9F3]">
+          <Image
+            src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-[#1C211E]/78" />
+          <div className={`${frame} relative grid items-center gap-8 py-16 sm:py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-16`}>
+            <div>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#B99A72]">О компании</p>
+              <h2 className={`${display} mt-4 text-[2rem] font-semibold leading-[1.08] min-[390px]:text-[2.4rem] lg:text-[2.75rem]`}>
+                Посмотрите короткую презентацию о компании, чтобы принять решение о дальнейших действиях
+              </h2>
+            </div>
+            <div className="overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/20">
+              {companyVideo ? <OnboardingPlayer embedUrl={companyVideo} title={COMPANY_INTRO_TITLE} /> : null}
+            </div>
+          </div>
+        </section>
+
         <section className="relative overflow-hidden border-t border-[#191816]/10 py-16 sm:py-24">
           <Image
             src="/training/newspaper-from-date/lithuanian-newspapers-stack.png"
@@ -149,34 +171,6 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             <p className="mx-auto mt-12 max-w-2xl text-center text-[15px] leading-7 text-[#69635C] sm:text-[17px]">
               За этими цифрами — тысячи личных историй, благодарностей и счастливых получателей. И мы продолжаем расти.
             </p>
-          </div>
-        </section>
-
-        <section id="company" className="relative scroll-mt-20 overflow-hidden bg-[#1C211E] text-[#FCF9F3]">
-          <Image
-            src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover opacity-25"
-          />
-          <div className="absolute inset-0 bg-[#1C211E]/78" />
-          <div className={`${frame} relative grid items-center gap-8 py-16 sm:py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-16`}>
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#B99A72]">О компании</p>
-              <h2 className={`${display} mt-4 text-[2.4rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[3.6rem]`}>
-                Познакомьтесь с Retro Pressa поближе
-              </h2>
-              <p className="mt-6 text-lg font-medium leading-7 text-[#FCF9F3] sm:text-xl">
-                Лучше один раз увидеть, чем долго рассказывать.
-              </p>
-              <p className="mt-3 max-w-md text-[15px] leading-7 text-[#FCF9F3]/75 sm:text-[17px] sm:leading-8">
-                Посмотрите видео и узнайте, какие подарки мы создаём, для кого они предназначены и почему люди выбирают именно нас.
-              </p>
-            </div>
-            <div className="overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/20">
-              {companyVideo ? <OnboardingPlayer embedUrl={companyVideo} title={COMPANY_INTRO_TITLE} /> : null}
-            </div>
           </div>
         </section>
 
