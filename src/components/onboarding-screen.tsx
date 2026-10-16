@@ -135,33 +135,19 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
           </div>
         </section>
 
-        <section className="relative overflow-hidden border-t border-[#191816]/10 py-16 sm:py-24">
-          <Image
-            src="/training/newspaper-from-date/lithuanian-newspapers-stack.png"
-            alt=""
-            width={420}
-            height={320}
-            className="pointer-events-none absolute left-8 top-20 hidden w-36 -rotate-3 opacity-90 xl:block"
-          />
-          <Image
-            src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
-            alt=""
-            width={480}
-            height={360}
-            className="pointer-events-none absolute right-4 top-20 hidden w-44 rotate-3 opacity-80 xl:block"
-          />
-          <div className={`${frame} relative`}>
+        <section className="border-t border-[#191816]/10 py-16 sm:py-24">
+          <div className={frame}>
             <p className={`${kicker} text-center`}>Retro Pressa в цифрах</p>
             <h2 className={`${display} mx-auto mt-4 max-w-[16em] text-center text-[2.15rem] font-semibold leading-[1.05] min-[390px]:text-4xl sm:text-5xl lg:text-[3.5rem]`}>
               Мы уже помогли тысячам людей подарить незабываемые эмоции
             </h2>
-            <dl className="mx-auto mt-12 flex max-w-5xl flex-col gap-8 md:mt-16 md:grid md:grid-cols-3 md:gap-0">
+            <dl className="mx-auto mt-12 flex flex-col gap-10 md:mt-16 md:grid md:grid-cols-3 md:gap-0">
               {SCALE_STATS.map((stat, index) => (
                 <div
                   key={stat.label}
-                  className={`md:px-8 ${index === 0 ? "md:pl-0" : "border-t border-[#B99A72]/70 pt-8 md:border-l md:border-t-0 md:pt-0"}`}
+                  className={`md:px-6 ${index === 0 ? "md:pl-0" : "border-t border-[#B99A72]/70 pt-8 md:border-l md:border-t-0 md:pt-0"}`}
                 >
-                  <dt className={`${display} text-[3.25rem] font-semibold leading-none text-[#911D22] sm:text-6xl lg:text-[4.6rem]`}>
+                  <dt className={`${display} whitespace-nowrap text-[4.75rem] font-semibold leading-none text-[#911D22] sm:text-[5.5rem] md:text-[3.35rem] lg:text-[4.75rem] xl:text-[6.25rem]`}>
                     {stat.value}
                   </dt>
                   <dd className="mt-3 max-w-[16rem] text-[15px] leading-6 text-[#69635C]">{stat.label}</dd>
