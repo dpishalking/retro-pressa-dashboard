@@ -156,6 +156,9 @@ export function ManagerRegisterScreen() {
             Войти
           </Link>
         </p>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          Придумайте абсолютно любой пароль — только не забудьте его потом. Ваша почта и личные данные нам не нужны.
+        </p>
       </div>
     </main>
   );
