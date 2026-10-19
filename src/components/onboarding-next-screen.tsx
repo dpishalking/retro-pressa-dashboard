@@ -123,15 +123,12 @@ export function OnboardingNextScreen({ reviews }: { reviews: TrainingClientRevie
             </ul>
             <Cta className="mt-8 w-full sm:w-auto" />
           </div>
-          <figure className="mx-auto w-full min-w-0 max-w-[420px]">
-            <div className="border border-[#191816]/10 bg-[#FCF9F3] p-4 sm:p-6">
-              <img
-                src="/training/gift-edition/glamour-tatyana.png"
-                alt="Персональный журнал Retro Pressa"
-                className="mx-auto h-auto max-h-[520px] w-full object-contain"
-              />
-            </div>
-            <figcaption className="mt-3 text-center text-sm text-[#69635C]">Персональный журнал</figcaption>
+          <figure className="mx-auto w-full min-w-0 max-w-[560px] lg:max-w-none">
+            <img
+              src="/onboarding/hero-photo.webp"
+              alt="Дочь и папа читают персональную газету"
+              className="aspect-[4/5] w-full object-cover object-[center_40%] sm:aspect-[5/4] lg:aspect-[4/5] lg:max-h-[640px]"
+            />
           </figure>
         </section>
 
