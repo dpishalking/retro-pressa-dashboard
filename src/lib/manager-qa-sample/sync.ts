@@ -9,28 +9,52 @@ import {
   BITRIX_SMART_INVOICE_ENTITY_TYPE_ID,
   BITRIX_SMART_INVOICE_PAID_STAGE_ID
 } from "@/lib/bitrix/metric-definitions";
-import { arrayResult, bitrixBatch, bitrixListAll, chunkIds, requireBitrixWebhook } from "@/lib/bitrix/rest-client";
+import { arrayResult, bitrixBatch, bitrixListAll, bitrixResult, chunkIds, requireBitrixWebhook } from "@/lib/bitrix/rest-client";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
-import { listSpreadsheetTabs, readSheetValues, renameSheetTab, writeSheetTab } from "@/lib/google/sheets-client";
+import { appendSheetRows, deleteSheetTabs, listSpreadsheetTabs, readSheetValues } from "@/lib/google/sheets-client";
 import {
+  QA_HISTORY_TAB,
+  QA_LOG_TAB,
+  QA_SETTINGS_TAB,
+  buildManagerSheet,
+  buildSummarySheet,
+  defaultSettingsRows,
+  formatQaSheets,
+  historyHeader,
+  historyRowsFromSheet,
+  managerSheetTitle,
+  parseSettings,
+  recentEpisodeKeys,
+  writeQaSheet
+} from "@/lib/manager-qa-sample/sheet";
+import {
+  INVOICE_SENT_STAGE_ID,
+  MIN_LIVE_MESSAGES,
   QA_CATEGORIES,
   QA_CATEGORY_LABEL,
   QA_SAMPLE_PER_CATEGORY,
+  SILENCE_HOURS,
+  SILENT_LOST_STAGE_IDS,
   SILENT_OPEN_STAGE_IDS,
   categoryForClosedDeal,
-  indexRopNotes,
+  endedWithGoodbye,
+  isEligibleDialogue,
+  isHardRefusalText,
+  isSystemLine,
+  liveMessages,
   pickQaSamples,
   qaSampleWeek,
+  refusalFromStage,
+  silenceQualifies,
+  type DialogueLine,
   type QaCategory
 } from "@/lib/manager-qa-sample/sample";
 
 export const QA_SAMPLE_SPREADSHEET_ID = "1ORzOOjXRXqP3VoAkbLbzA3O8ltpNGMbEShaFyIFy1sk";
-export const QA_SAMPLE_TAB = "Выборка";
 export const QA_SUMMARY_TAB = "Сводка";
 
-const INVOICE_SENT_STAGE_ID = "DT31_2:S";
 const SKIP_USER_IDS = new Set(["0", "1", "8", "70"]);
-const HISTORY_POOL = 8;
+const HISTORY_POOL = 15;
 const HOUR_MS = 3_600_000;
 
 type Invoice = {
@@ -79,17 +103,21 @@ type Candidate = {
   dealId: string;
   leadId: string;
   sessionId: string;
-  client: string;
-  amount: string;
-  currency: string;
+  stageId: string;
   stageName: string;
   subject: string;
   eventAt: string;
-  richness: number;
-  lastAt: string;
-  lastLine: string;
-  reviewable: boolean;
+  invoiceLabel: string;
+  basis: string;
+  eligible: boolean;
+  repeat: boolean;
+  liveMessages: number;
+  day: string;
+  channel: string;
+  key: string;
+  episode: string;
   dialogUrl: string;
+  crmUrl: string;
 };
 
 export type ManagerQaSampleResult = {
@@ -102,24 +130,17 @@ export type ManagerQaSampleResult = {
   dryRun: boolean;
   managers: number;
   dialogs: number;
+  candidates: number;
+  passed: number;
   byCategory: Record<QaCategory, number>;
+  managersDetail: Array<{ id: string; name: string; counts: Record<QaCategory, number>; problem: string }>;
+  skipped: { short: number; noHistory: number; needsReview: number };
   warnings: string[];
 };
 
 function portalBase() {
   const webhook = requireBitrixWebhook();
   return webhook.match(/^https?:\/\/[^/]+/)?.[0] || "https://bb-wood.bitrix24.eu";
-}
-
-function asNumber(value: unknown) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
-}
-
-function money(value: unknown) {
-  const number = asNumber(value);
-  if (!number) return "";
-  return number.toFixed(2).replace(".", ",");
 }
 
 function cleanText(value: string) {
@@ -131,21 +152,12 @@ function cleanText(value: string) {
     .trim();
 }
 
-function isSystemText(text: string) {
-  return /^(Enquiry |A new lead was created|Диалог закреплен|Conversation |Contact information saved|Data received:)/i.test(text)
-    || /начал работу с диалогом|завершил работу с диалогом|transferred to|session closed automatically|обращение перенаправлено|диалог заверш/i.test(text);
-}
-
-function clientFromSubject(subject: string) {
-  const match = subject.match(/Open Channel chat:\s*"([^"]+)"/i) || subject.match(/Open Channel chat:\s*(.+)$/i);
-  return match?.[1]?.replace(/\s*\([^)]*\)\s*$/, "").trim() || "";
-}
-
-function clientName(deal: Deal | undefined, subject: string) {
-  const fromChat = clientFromSubject(subject);
-  if (fromChat) return fromChat;
-  const title = String(deal?.TITLE || "").replace(/^\d+\s*[—-]\s*/, "").trim();
-  return title || "Без имени";
+function channelOf(subject: string) {
+  if (/whatsapp/i.test(subject)) return "WhatsApp";
+  if (/telegram/i.test(subject)) return "Telegram";
+  if (/instagram/i.test(subject)) return "Instagram";
+  if (/\bvk\b|вконтакте/i.test(subject)) return "VK";
+  return "";
 }
 
 function skipManager(id: string, name: string) {
@@ -237,32 +249,47 @@ async function histories(sessionIds: string[]) {
   return map;
 }
 
-function dialogueStats(history: History | null, now: number) {
-  const lines: Array<{ role: "client" | "manager"; text: string; date: string }> = [];
+function dialogueStats(history: History | null, cutoffMs: number, minimum: number) {
+  const lines: DialogueLine[] = [];
+  const dated: Array<DialogueLine & { date: string; senderId: string; extranet: boolean }> = [];
   for (const message of Object.values(history?.message || {})) {
     if (message.system === "Y") continue;
-    const user = history?.users?.[String(message.senderid || "")];
+    const date = String(message.date || "");
+    if (date && new Date(date).getTime() > cutoffMs) continue;
+    const senderId = String(message.senderid || "");
+    const user = history?.users?.[senderId];
+    const extranet = user?.extranet === true || user?.extranet === "Y" || user?.extranet === "1";
     const speaker = resolveOpenLineSpeaker({
       extranet: user?.extranet,
       userName: user?.name,
       text: String(message.text || message.textlegacy || "")
     });
     const text = cleanText(speaker.text);
-    if (!text || text.length < 2 || isSystemText(text)) continue;
-    lines.push({ role: speaker.role, text, date: String(message.date || "") });
+    if (!text) continue;
+    const line = { role: speaker.role, text, system: isSystemLine(text) };
+    lines.push(line);
+    dated.push({ ...line, date, senderId, extranet });
   }
-  lines.sort((left, right) => left.date.localeCompare(right.date));
-  const managerLines = lines.filter((line) => line.role === "manager").length;
-  const clientLines = lines.filter((line) => line.role === "client").length;
-  const last = lines.at(-1) || null;
-  const silentHours = last ? (now - new Date(last.date).getTime()) / HOUR_MS : 0;
+  dated.sort((left, right) => left.date.localeCompare(right.date));
+  const episode = liveMessages(lines);
+  const last = dated.filter((line) => !line.system).at(-1) || null;
+  const silentHours = last?.date ? (cutoffMs - new Date(last.date).getTime()) / HOUR_MS : 0;
+  const counts = new Map<string, number>();
+  for (const line of dated) {
+    if (line.role !== "manager" || line.system || line.extranet || !line.senderId || line.senderId === "0") continue;
+    counts.set(line.senderId, (counts.get(line.senderId) || 0) + 1);
+  }
   return {
-    richness: managerLines + clientLines,
-    reviewable: managerLines >= 2 && clientLines >= 1,
+    eligible: isEligibleDialogue(lines, minimum),
+    liveMessages: episode.length,
+    lastRole: last?.role || null,
     lastAt: last?.date || "",
-    lastLine: last ? `${last.role === "manager" ? "Менеджер" : "Клиент"}: ${last.text.slice(0, 140)}` : "",
-    clientSilent: Boolean(last && last.role === "manager" && silentHours >= 24),
-    chatId: history?.chatId
+    silentHours,
+    goodbye: endedWithGoodbye(lines),
+    clientText: episode.filter((line) => line.role === "client").map((line) => line.text).join("\n"),
+    managerCounts: [...counts.entries()].map(([managerId, messages]) => ({ managerId, messages })),
+    chatId: history?.chatId,
+    historyMissing: history == null
   };
 }
 
@@ -272,12 +299,19 @@ function rememberSession(map: Map<string, SessionRef>, key: string, next: Sessio
   if (!current || next.at > current.at) map.set(key, next);
 }
 
-async function ensureSampleTab(spreadsheetId: string) {
-  const tabs = await listSpreadsheetTabs(spreadsheetId);
-  const first = tabs.find((tab) => tab.sheetId === 0) || tabs[0];
-  if (first && /^(лист\s*1|sheet1)$/i.test(first.title)) {
-    await renameSheetTab(spreadsheetId, first.sheetId, QA_SAMPLE_TAB);
+async function readOptional(spreadsheetId: string, title: string) {
+  try {
+    return await readSheetValues({
+      spreadsheetId,
+      range: `'${title.replace(/'/g, "''")}'!A:P`
+    });
+  } catch {
+    return [] as string[][];
   }
+}
+
+function qaSpreadsheetId(explicit?: string) {
+  return explicit?.trim() || process.env.REPORT_SPREADSHEET_ID?.trim() || QA_SAMPLE_SPREADSHEET_ID;
 }
 
 export async function syncManagerQaSample(options: {
@@ -286,14 +320,14 @@ export async function syncManagerQaSample(options: {
   dryRun?: boolean;
   now?: Date;
 } = {}): Promise<ManagerQaSampleResult> {
-  const spreadsheetId = options.spreadsheetId?.trim() || QA_SAMPLE_SPREADSHEET_ID;
+  const spreadsheetId = qaSpreadsheetId(options.spreadsheetId);
   const dryRun = options.dryRun === true;
   const now = options.now ?? new Date();
   const week = qaSampleWeek(now, options.weekOf);
   const warnings: string[] = [];
   const portal = portalBase();
 
-  const [paidInvoices, sentInvoices, lostDeals, weekActivities, stages] = await Promise.all([
+  const [paidInvoices, sentInvoices, lostDeals, weekActivities, stages, settingsRows, historySheet] = await Promise.all([
     listInvoices(BITRIX_SMART_INVOICE_PAID_STAGE_ID, week.startIso, week.endIso),
     bitrixListAll<Invoice>("crm.item.list", {
       entityTypeId: BITRIX_SMART_INVOICE_ENTITY_TYPE_ID,
@@ -318,8 +352,14 @@ export async function syncManagerQaSample(options: {
       select: ["OWNER_ID", "OWNER_TYPE_ID", "ASSOCIATED_ENTITY_ID", "SUBJECT", "START_TIME", "CREATED"],
       order: { START_TIME: "DESC" }
     }),
-    bitrixListAll<{ STATUS_ID?: string; NAME?: string }>("crm.status.list", { filter: { ENTITY_ID: "DEAL_STAGE" } })
+    bitrixListAll<{ STATUS_ID?: string; NAME?: string }>("crm.status.list", { filter: { ENTITY_ID: "DEAL_STAGE" } }),
+    readOptional(spreadsheetId, QA_SETTINGS_TAB),
+    readOptional(spreadsheetId, QA_HISTORY_TAB)
   ]);
+  const settings = parseSettings(settingsRows);
+  const minMessages = settings.minMessages || MIN_LIVE_MESSAGES;
+  const silenceHours = settings.silenceHours || SILENCE_HOURS;
+  const recentEpisodes = recentEpisodeKeys(historySheet, week.label);
 
   const stageNames = new Map(stages.map((stage) => [String(stage.STATUS_ID || ""), String(stage.NAME || "")]));
   const sessionByDeal = new Map<string, SessionRef>();
@@ -372,7 +412,12 @@ export async function syncManagerQaSample(options: {
     consider(dealId, "paid", String(invoice?.movedTime || ""));
   }
   for (const deal of lostDeals) {
-    const category = categoryForClosedDeal(String(deal.STAGE_ID || ""));
+    const stageId = String(deal.STAGE_ID || "");
+    if (stageId === "UC_IN8ZIK") {
+      consider(String(deal.ID), "refusal", String(deal.CLOSEDATE || ""));
+      continue;
+    }
+    const category = categoryForClosedDeal(stageId);
     if (category) consider(String(deal.ID), category, String(deal.CLOSEDATE || ""));
   }
   for (const invoice of sentInvoices) {
@@ -429,73 +474,142 @@ export async function syncManagerQaSample(options: {
     perManager.set(bucket, taken + 1);
     const leadId = String(deal?.LEAD_ID || "");
     const session = sessionByDeal.get(dealId) || (leadId ? sessionByLead.get(leadId) : undefined);
-    const moneySource = outcome.category === "paid" || outcome.category === "invoice_unpaid" ? invoice?.opportunity : deal?.OPPORTUNITY;
-    const currency = outcome.category === "paid" || outcome.category === "invoice_unpaid"
-      ? invoice?.currencyId || deal?.CURRENCY_ID || "EUR"
-      : deal?.CURRENCY_ID || "EUR";
+    const stageId = String(deal?.STAGE_ID || "");
+    const invoiceId = invoice?.id ? String(invoice.id) : "";
     pooled.push({
       managerId,
       category: outcome.category,
       dealId,
       leadId,
       sessionId: session?.sessionId || "",
-      client: clientName(deal, session?.subject || ""),
-      amount: money(moneySource),
-      currency: String(currency || "EUR"),
-      stageName: stageNames.get(String(deal?.STAGE_ID || "")) || String(deal?.STAGE_ID || ""),
+      stageId,
+      stageName: stageNames.get(stageId) || stageId,
       subject: session?.subject || "",
       eventAt: outcome.eventAt,
-      richness: 0,
-      lastAt: outcome.eventAt,
-      lastLine: "",
-      reviewable: false,
-      dialogUrl: ""
+      invoiceLabel: invoiceId
+        ? `Счёт ${invoiceId}, ${outcome.category === "paid" ? "оплачен" : "отправлен, не оплачен"}`
+        : "",
+      basis: outcome.category === "paid"
+        ? "оплачено"
+        : outcome.category === "refusal"
+          ? `отказ: ${stageNames.get(stageId) || stageId}`
+          : outcome.category === "invoice_unpaid"
+            ? "выставлен счёт"
+            : `нет ответа ${SILENCE_HOURS} ч`,
+      eligible: false,
+      repeat: false,
+      liveMessages: 0,
+      day: "",
+      channel: channelOf(session?.subject || ""),
+      key: "",
+      episode: "",
+      dialogUrl: "",
+      crmUrl: ""
     });
+  }
+
+  const probeId = paidInvoices.find((invoice) => invoice.id)?.id;
+  if (probeId) {
+    try {
+      const payments = await bitrixResult<unknown[] | { items?: unknown[] }>("crm.item.payment.list", {
+        entityTypeId: BITRIX_SMART_INVOICE_ENTITY_TYPE_ID,
+        entityId: probeId
+      });
+      const items = Array.isArray(payments) ? payments : payments.items || [];
+      if (!items.length) {
+        warnings.push("crm.item.payment.list пустой: оплата подтверждается стадией счёта DT31_2:P, не стадией сделки WON.");
+      }
+    } catch {
+      warnings.push("crm.item.payment.list недоступен: оплата подтверждается стадией счёта DT31_2:P.");
+    }
   }
 
   const history = await histories(pooled.map((row) => row.sessionId));
-  const nowMs = now.getTime();
-  const ready: Candidate[] = [];
+  const withSession = pooled.filter((row) => row.sessionId);
+  const missingHistory = withSession.filter((row) => history.get(row.sessionId) == null);
+  if (withSession.length > 0 && missingHistory.length === withSession.length) {
+    throw new Error("Bitrix не вернул историю сообщений. Отчёт не записан, чтобы не получилась ложная пустая выборка.");
+  }
+
+  const cutoffMs = new Date(week.endIso).getTime();
+  const weekStartMs = new Date(week.startIso).getTime();
+  const speakerIds: string[] = [];
+  const statsBySession = new Map<string, ReturnType<typeof dialogueStats>>();
   for (const row of pooled) {
-    const stats = dialogueStats(row.sessionId ? history.get(row.sessionId) || null : null, nowMs);
-    const openSilence = row.category === "client_silent" && SILENT_OPEN_STAGE_IDS.has(
-      String(deals.get(row.dealId)?.STAGE_ID || "")
-    );
-    if (openSilence && !stats.clientSilent) continue;
+    if (!row.sessionId || statsBySession.has(row.sessionId)) continue;
+    const stats = dialogueStats(history.get(row.sessionId) || null, cutoffMs, minMessages);
+    statsBySession.set(row.sessionId, stats);
+    speakerIds.push(...stats.managerCounts.map((item) => item.managerId));
+  }
+  const speakerNames = await loadUserNames(speakerIds);
+  for (const [id, name] of speakerNames) userNames.set(id, name);
+
+  const skipped = { short: 0, noHistory: 0, needsReview: 0 };
+  const ready: Candidate[] = [];
+  const seenDeals = new Set<string>();
+  for (const row of pooled) {
+    if (seenDeals.has(row.dealId)) continue;
+    if (!row.sessionId || history.get(row.sessionId) == null) {
+      skipped.noHistory += 1;
+      continue;
+    }
+    const stats = statsBySession.get(row.sessionId) || dialogueStats(null, cutoffMs, minMessages);
+    if (!stats.eligible) {
+      skipped.short += 1;
+      continue;
+    }
+    if (row.category === "refusal") {
+      const verdict = refusalFromStage(row.stageId, stats.clientText);
+      if (verdict !== "refusal") {
+        if (verdict === "needs_review") skipped.needsReview += 1;
+        continue;
+      }
+    } else if (row.category !== "paid" && isHardRefusalText(stats.clientText)) {
+      skipped.needsReview += 1;
+      continue;
+    }
+    if (row.category === "client_silent") {
+      const closed = SILENT_LOST_STAGE_IDS.has(row.stageId);
+      const quiet = silenceQualifies({
+        lastRole: stats.lastRole,
+        hours: stats.silentHours,
+        goodbye: stats.goodbye,
+        threshold: silenceHours
+      });
+      const thresholdAt = stats.lastAt ? new Date(stats.lastAt).getTime() + silenceHours * HOUR_MS : 0;
+      const silenceInWeek = thresholdAt >= weekStartMs && thresholdAt <= cutoffMs;
+      if (stats.goodbye || stats.lastRole !== "manager") {
+        if (closed) skipped.needsReview += 1;
+        continue;
+      }
+      if (!closed && (!quiet || !silenceInWeek)) continue;
+    }
+    const managerId = speakingManager(stats.managerCounts, row.managerId, userNames);
+    if (!managerId || skipManager(managerId, userNames.get(managerId) || "")) continue;
+    if (settings.enabled.size > 0 && settings.enabled.get(managerId) === false) continue;
+    seenDeals.add(row.dealId);
+    const episode = `${managerId}|${row.dealId}|${row.sessionId}`;
     ready.push({
       ...row,
-      richness: stats.richness,
-      lastAt: stats.lastAt || row.lastAt,
-      lastLine: stats.lastLine,
-      reviewable: stats.reviewable,
-      dialogUrl: dialogUrl(portal, stats.chatId, row.sessionId)
+      managerId,
+      eligible: true,
+      repeat: recentEpisodes.has(episode),
+      liveMessages: stats.liveMessages,
+      day: (stats.lastAt || row.eventAt).slice(0, 10),
+      channel: row.channel || channelOf(row.subject),
+      episode,
+      key: [week.label, managerId, "deal", row.dealId, row.sessionId].join("|"),
+      dialogUrl: dialogUrl(portal, stats.chatId, row.sessionId),
+      crmUrl: dealUrl(portal, row.dealId),
+      basis: row.category === "client_silent" ? `нет ответа ${silenceHours} ч` : row.basis
     });
   }
 
-  const picked = pickQaSamples(ready);
-  picked.sort((left, right) => {
-    const manager = (userNames.get(left.managerId) || "").localeCompare(userNames.get(right.managerId) || "", "ru");
-    if (manager) return manager;
-    const category = QA_CATEGORIES.indexOf(left.category) - QA_CATEGORIES.indexOf(right.category);
-    return category || right.lastAt.localeCompare(left.lastAt);
-  });
-
+  const picked = pickQaSamples(ready, QA_SAMPLE_PER_CATEGORY, week.label);
   const byCategory = Object.fromEntries(QA_CATEGORIES.map((category) => [category, 0])) as Record<QaCategory, number>;
   for (const row of picked) byCategory[row.category] += 1;
-
-  const quote = (title: string) => `'${title.replace(/'/g, "''")}'`;
-  let notes = new Map<string, { score: string; note: string }>();
-  if (!dryRun) {
-    try {
-      const existing = await readSheetValues({
-        spreadsheetId,
-        range: `${quote(QA_SAMPLE_TAB)}!A1:M`
-      });
-      notes = indexRopNotes(existing, week.label);
-    } catch {
-      notes = new Map();
-    }
-  }
+  if (skipped.noHistory) warnings.push(`Нет истории сообщений: ${skipped.noHistory}. Эти диалоги не включены.`);
+  if (!picked.length) warnings.push("За неделю не нашлось содержательных диалогов для выборки.");
 
   const syncedAt = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Moscow",
@@ -506,95 +620,185 @@ export async function syncManagerQaSample(options: {
     minute: "2-digit",
     hour12: false
   }).format(now).replace(",", "");
+  const period = `${week.startDay} 00:00 — ${week.endDay} 20:00 МСК`;
 
-  const header = [
-    "Неделя",
-    "Категория",
-    "Менеджер",
-    "Клиент",
-    "Сумма",
-    "Валюта",
-    "Стадия сделки",
-    "Сообщений",
-    "Последняя реплика",
-    "Диалог",
-    "Сделка",
-    "Оценка",
-    "Комментарий"
-  ];
-  const dataRows = picked.map((row) => {
-    const dealLink = dealUrl(portal, row.dealId);
-    const kept = notes.get(row.dialogUrl) || notes.get(dealLink);
-    return [
-      week.label,
-      QA_CATEGORY_LABEL[row.category],
-      userNames.get(row.managerId) || row.managerId,
-      row.client,
-      row.amount,
-      row.currency,
-      row.stageName,
-      row.richness ? String(row.richness) : "",
-      row.lastLine,
-      row.dialogUrl,
-      dealLink,
-      kept?.score || "",
-      kept?.note || ""
-    ];
-  });
-  const sampleRows = [
-    ["Еженедельная выборка диалогов для контроля качества"],
-    [
-      "Период",
-      week.label,
-      "Сформировано",
-      `${syncedAt} МСК`,
-      "По 3 диалога в каждой категории. Если меньше — за неделю больше не нашлось. Оценку по чек-листу ставит руководитель."
-    ],
-    [],
-    header,
-    ...dataRows
-  ];
-
-  const summaryHeader = ["Менеджер", ...QA_CATEGORIES.map((category) => QA_CATEGORY_LABEL[category]), "Всего"];
-  const byManager = new Map<string, Record<QaCategory, number>>();
-  for (const row of picked) {
-    const name = userNames.get(row.managerId) || row.managerId;
-    const counts = byManager.get(name) || { paid: 0, refusal: 0, invoice_unpaid: 0, client_silent: 0 };
-    counts[row.category] += 1;
-    byManager.set(name, counts);
+  const countsByManager = new Map<string, Record<QaCategory, number>>();
+  const scopeIds = new Set<string>();
+  for (const row of pooled) {
+    if (skipManager(row.managerId, userNames.get(row.managerId) || "")) continue;
+    if (settings.enabled.size > 0 && settings.enabled.get(row.managerId) === false) continue;
+    scopeIds.add(row.managerId);
   }
-  const summaryRows = [
-    ["Сводка выборки", week.label],
-    ["Норма", `${QA_SAMPLE_PER_CATEGORY} диалога в категории`],
-    [],
-    summaryHeader,
-    ...[...byManager.entries()]
-      .sort((left, right) => left[0].localeCompare(right[0], "ru"))
-      .map(([name, counts]) => [
-        name,
-        ...QA_CATEGORIES.map((category) => String(counts[category])),
-        String(QA_CATEGORIES.reduce((sum, category) => sum + counts[category], 0))
-      ])
-  ];
+  for (const row of ready) scopeIds.add(row.managerId);
+  for (const id of scopeIds) {
+    countsByManager.set(id, { paid: 0, refusal: 0, invoice_unpaid: 0, client_silent: 0 });
+  }
+  for (const row of picked) {
+    const counts = countsByManager.get(row.managerId) || { paid: 0, refusal: 0, invoice_unpaid: 0, client_silent: 0 };
+    counts[row.category] += 1;
+    countsByManager.set(row.managerId, counts);
+  }
+  const managersDetail = [...countsByManager.entries()]
+    .map(([id, counts]) => ({
+      id,
+      name: userNames.get(id) || settings.names.get(id) || id,
+      counts,
+      problem: QA_CATEGORIES
+        .filter((category) => counts[category] < QA_SAMPLE_PER_CATEGORY)
+        .map((category) => `${QA_CATEGORY_LABEL[category].slice(0, 1)} ${counts[category]}/${QA_SAMPLE_PER_CATEGORY}`)
+        .join(", ")
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name, "ru"));
 
   if (!dryRun) {
-    await ensureSampleTab(spreadsheetId);
-    await writeSheetTab({
-      spreadsheetId,
-      tabTitle: QA_SAMPLE_TAB,
-      rows: sampleRows,
-      clearRange: `${quote(QA_SAMPLE_TAB)}!A:M`
-    });
-    await writeSheetTab({
+    const tabsBefore = await listSpreadsheetTabs(spreadsheetId);
+    const manualByManager = new Map<string, Map<string, { checked: string; score: string; comment: string; checkedAt: string }>>();
+    const archiveRows: string[][] = [];
+    const carriedManual: string[][] = [];
+    for (const tab of tabsBefore) {
+      if (!tab.title.startsWith("M_")) continue;
+      const sheetRows = await readOptional(spreadsheetId, tab.title);
+      const parsed = historyRowsFromSheet(sheetRows, week.label);
+      const managerId = String(sheetRows.find((line) => line[0] === "Менеджер" && line[2] === "ID")?.[3] || tab.title.split("_")[1] || "");
+      if (managerId && parsed.checks.size) manualByManager.set(managerId, parsed.checks);
+      archiveRows.push(...parsed.previous);
+      carriedManual.push(...parsed.current.filter((line) => [line[5], line[6], line[7], line[8]].some(Boolean)));
+    }
+    const pickedKeys = new Set(picked.map((row) => row.key));
+    archiveRows.push(...carriedManual.filter((line) => !pickedKeys.has(String(line[10] || ""))));
+
+    const writtenTitles: string[] = [];
+    for (const manager of managersDetail) {
+      const rows = picked.filter((row) => row.managerId === manager.id);
+      if (!rows.length) continue;
+      const title = managerSheetTitle(manager.id, manager.name);
+      writtenTitles.push(title);
+      await writeQaSheet({
+        spreadsheetId,
+        tabTitle: title,
+        columns: "P",
+        rows: buildManagerSheet({
+          managerName: manager.name,
+          managerId: manager.id,
+          weekLabel: week.label,
+          period,
+          syncedAt,
+          rows: rows.map((row) => ({
+            managerId: row.managerId,
+            category: row.category,
+            dealId: row.dealId,
+            sessionId: row.sessionId,
+            channel: row.channel,
+            eventAt: row.eventAt,
+            liveMessages: row.liveMessages,
+            invoiceLabel: row.invoiceLabel,
+            basis: row.basis,
+            crmUrl: row.crmUrl,
+            dialogUrl: row.dialogUrl,
+            key: row.key,
+            repeat: row.repeat
+          })),
+          manual: manualByManager.get(manager.id) || new Map()
+        })
+      });
+    }
+    await formatQaSheets(spreadsheetId, writtenTitles, 5);
+
+    const tabsAfter = await listSpreadsheetTabs(spreadsheetId);
+    const gidByTitle = new Map(tabsAfter.map((tab) => [tab.title, tab.sheetId]));
+    await writeQaSheet({
       spreadsheetId,
       tabTitle: QA_SUMMARY_TAB,
-      rows: summaryRows,
-      clearRange: `${quote(QA_SUMMARY_TAB)}!A:F`
+      columns: "L",
+      rows: buildSummarySheet({
+        weekLabel: week.label,
+        period,
+        syncedAt,
+        managers: managersDetail.map((manager) => {
+          const title = managerSheetTitle(manager.id, manager.name);
+          const manual = manualByManager.get(manager.id);
+          const managerRows = picked.filter((row) => row.managerId === manager.id);
+          const checked = managerRows.filter((row) => /^да$/i.test(manual?.get(row.key)?.checked || "")).length;
+          return {
+            id: manager.id,
+            name: manager.name,
+            counts: manager.counts,
+            checked,
+            sheetTitle: title,
+            gid: gidByTitle.get(title) ?? null,
+            spreadsheetId,
+            problem: manager.problem
+          };
+        })
+      })
     });
-  }
 
-  const managers = new Set(picked.map((row) => row.managerId));
-  if (!picked.length) warnings.push("За неделю не нашлось диалогов для выборки");
+    const knownHistory = new Set(
+      historySheet
+        .filter((line) => line.includes("key") || line.length > 10)
+        .map((line) => String(line[10] || line.at(-1) || ""))
+        .filter((key) => key.includes("|"))
+    );
+    const freshArchive = archiveRows.filter((line) => !knownHistory.has(String(line[10] || "")));
+    if (!historySheet.length) {
+      await writeQaSheet({
+        spreadsheetId,
+        tabTitle: QA_HISTORY_TAB,
+        columns: "K",
+        rows: [historyHeader(), ...freshArchive]
+      });
+    } else if (freshArchive.length) {
+      await appendSheetRows({ spreadsheetId, tabTitle: QA_HISTORY_TAB, rows: freshArchive });
+    }
+
+    if (!settingsRows.length) {
+      await writeQaSheet({
+        spreadsheetId,
+        tabTitle: QA_SETTINGS_TAB,
+        columns: "C",
+        rows: defaultSettingsRows(managersDetail.map((manager) => ({ id: manager.id, name: manager.name })))
+      });
+    } else {
+      const known = new Set(settings.enabled.keys());
+      const additions = managersDetail
+        .filter((manager) => !known.has(manager.id))
+        .map((manager) => [manager.id, manager.name, "Да"]);
+      if (additions.length) await appendSheetRows({ spreadsheetId, tabTitle: QA_SETTINGS_TAB, rows: additions });
+    }
+
+    const journalRow = [[
+      syncedAt,
+      week.label,
+      warnings.length ? "записано с замечаниями" : "записано",
+      String(classified.size),
+      String(ready.length),
+      String(picked.length),
+      String(skipped.short),
+      String(skipped.noHistory),
+      String(skipped.needsReview),
+      warnings.join(" | ")
+    ]];
+    const journalHeader = [[
+      "Время",
+      "Неделя",
+      "Статус",
+      "Кандидаты CRM",
+      "Прошли фильтр",
+      "Выбрано",
+      "Короткие",
+      "Нет истории",
+      "На проверку",
+      "Замечания"
+    ]];
+    if (!((await readOptional(spreadsheetId, QA_LOG_TAB))[0] || []).includes("Время")) {
+      await writeQaSheet({ spreadsheetId, tabTitle: QA_LOG_TAB, columns: "J", rows: [...journalHeader, ...journalRow] });
+    } else {
+      await appendSheetRows({ spreadsheetId, tabTitle: QA_LOG_TAB, rows: journalRow });
+    }
+
+    const leftover = (await listSpreadsheetTabs(spreadsheetId)).some((tab) => tab.title === "Выборка");
+    if (leftover) await deleteSheetTabs(spreadsheetId, ["Выборка"]);
+  }
 
   return {
     ok: true,
@@ -604,9 +808,26 @@ export async function syncManagerQaSample(options: {
     startDay: week.startDay,
     endDay: week.endDay,
     dryRun,
-    managers: managers.size,
+    managers: managersDetail.length,
     dialogs: picked.length,
+    candidates: classified.size,
+    passed: ready.length,
     byCategory,
+    managersDetail,
+    skipped,
     warnings
   };
+}
+
+function speakingManager(
+  counts: Array<{ managerId: string; messages: number }>,
+  assigneeId: string,
+  names: Map<string, string>
+) {
+  const ranked = counts
+    .filter((row) => row.messages > 0 && !skipManager(row.managerId, names.get(row.managerId) || ""))
+    .sort((left, right) => right.messages - left.messages || left.managerId.localeCompare(right.managerId));
+  if (ranked[0]) return ranked[0].managerId;
+  if (!skipManager(assigneeId, names.get(assigneeId) || "")) return assigneeId;
+  return "";
 }

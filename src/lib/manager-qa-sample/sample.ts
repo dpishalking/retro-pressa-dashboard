@@ -7,11 +7,24 @@ export const QA_CATEGORIES = ["paid", "refusal", "invoice_unpaid", "client_silen
 export type QaCategory = (typeof QA_CATEGORIES)[number];
 
 export const QA_CATEGORY_LABEL: Record<QaCategory, string> = {
-  paid: "Успешная продажа",
-  refusal: "Полный отказ",
-  invoice_unpaid: "Счёт без оплаты",
-  client_silent: "Клиент перестал отвечать"
+  paid: "A. Успешная оплата",
+  refusal: "B. Полный отказ",
+  invoice_unpaid: "C. Счёт без оплаты",
+  client_silent: "D. Клиент пропал"
 };
+
+export const QA_FOCUS: Record<QaCategory, string> = {
+  paid: "кросс-продукты",
+  refusal: "отказ",
+  invoice_unpaid: "доведение до оплаты",
+  client_silent: "возврат клиента"
+};
+
+export const MIN_LIVE_MESSAGES = 5;
+export const SILENCE_HOURS = 48;
+export const INVOICE_SENT_STAGE_ID = "DT31_2:S";
+export const INVOICE_PAID_STAGE_ID = "DT31_2:P";
+export const INVOICE_CANCELLED_STAGE_ID = "DT31_2:D";
 
 /** Lost stages where the client explicitly declined. */
 export const REFUSAL_STAGE_IDS = new Set([
@@ -19,8 +32,7 @@ export const REFUSAL_STAGE_IDS = new Set([
   "UC_Y8VBZZ", // Не подошел формат
   "UC_JRV0IE", // Выбрал другой подарок
   "5", // Дорого
-  "7", // Не актуально
-  "UC_IN8ZIK" // Другое
+  "7" // Не актуально
 ]);
 
 /** Lost stages where the client went quiet. */
@@ -54,9 +66,23 @@ export type QaWeek = {
 export type QaSampleCandidate = {
   managerId: string;
   category: QaCategory;
-  richness: number;
-  lastAt: string;
-  reviewable: boolean;
+  key: string;
+  day: string;
+  eligible: boolean;
+  repeat: boolean;
+};
+
+export type ManualCheck = {
+  checked: string;
+  score: string;
+  comment: string;
+  checkedAt: string;
+};
+
+export type DialogueLine = {
+  role: "client" | "manager";
+  text: string;
+  system?: boolean;
 };
 
 export function moscowYmd(date: Date) {
@@ -104,9 +130,122 @@ export function qaSampleWeek(now = new Date(), weekOf?: string): QaWeek {
     startDay: monday,
     endDay: sunday,
     startIso: `${monday}T00:00:00+03:00`,
-    endIso: `${sunday}T23:59:59+03:00`,
+    endIso: `${sunday}T20:00:00+03:00`,
     label: weekLabel(monday, sunday)
   };
+}
+
+export function isSystemLine(text: string) {
+  return /^(Enquiry |A new lead was created|Диалог закреплен|Conversation |Contact information saved|Data received:)/i.test(text)
+    || /начал работу с диалогом|завершил работу с диалогом|transferred to|session closed automatically|обращение перенаправлено|диалог заверш/i.test(text);
+}
+
+export function isHardRefusalText(text: string) {
+  return /не буду покупать|не буду брать|отказываюсь|не надо|не актуально|передумал/i.test(text);
+}
+
+export function isHesitationText(text: string) {
+  return /подумаю|позже|дорого/i.test(text);
+}
+
+/** CRM close-reason confirms a refusal. Hesitation alone does not. «Другое» is too vague. */
+export function refusalFromStage(stageId: string, clientText = ""): "refusal" | "needs_review" | null {
+  if (stageId === DEFER_STAGE_ID) return null;
+  if (stageId === "UC_IN8ZIK") return isHardRefusalText(clientText) ? "refusal" : "needs_review";
+  if (REFUSAL_STAGE_IDS.has(stageId)) return "refusal";
+  if (isHardRefusalText(clientText) && !REFUSAL_STAGE_IDS.has(stageId) && !SILENT_LOST_STAGE_IDS.has(stageId)) {
+    return "needs_review";
+  }
+  return null;
+}
+
+export function isPaidInvoiceStage(stageId: string) {
+  return stageId === INVOICE_PAID_STAGE_ID;
+}
+
+export function isUnpaidIssuedInvoice(stageId: string) {
+  return stageId === INVOICE_SENT_STAGE_ID;
+}
+
+export function liveMessages(lines: DialogueLine[]) {
+  const real = lines.filter((line) => !line.system && !isSystemLine(line.text) && line.text.trim().length > 0);
+  const firstClient = real.findIndex((line) => line.role === "client");
+  if (firstClient < 0) return [];
+  return real.slice(firstClient);
+}
+
+export function isEligibleDialogue(lines: DialogueLine[], minimum = MIN_LIVE_MESSAGES) {
+  const episode = liveMessages(lines);
+  const hasClient = episode.some((line) => line.role === "client");
+  const hasManager = episode.some((line) => line.role === "manager");
+  return hasClient && hasManager && episode.length >= minimum;
+}
+
+export function endedWithGoodbye(lines: DialogueLine[]) {
+  const episode = liveMessages(lines);
+  const tail = episode.slice(-3).map((line) => line.text).join("\n");
+  return /спасибо[^\n]{0,40}до свидания|до свидания/i.test(tail);
+}
+
+export function silenceQualifies(input: {
+  lastRole: "client" | "manager" | null;
+  hours: number;
+  goodbye: boolean;
+  threshold?: number;
+}) {
+  if (input.goodbye || input.lastRole !== "manager") return false;
+  return input.hours >= (input.threshold ?? SILENCE_HOURS);
+}
+
+export function episodeKey(input: { weekLabel: string; managerId: string; dealId: string; sessionId: string }) {
+  return [input.weekLabel, input.managerId, "deal", input.dealId || "-", input.sessionId || "-"].join("|");
+}
+
+function hashSeed(input: string) {
+  let hash = 2166136261;
+  for (const char of input) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function seededShuffle<T>(items: T[], seed: string) {
+  const copy = [...items];
+  let state = hashSeed(seed) || 1;
+  const random = () => {
+    state = Math.imul(state ^ (state >>> 15), state | 1);
+    state ^= state + Math.imul(state ^ (state >>> 7), state | 61);
+    return ((state ^ (state >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(random() * (index + 1));
+    const current = copy[index];
+    copy[index] = copy[swap] as T;
+    copy[swap] = current as T;
+  }
+  return copy;
+}
+
+function spreadByDay<T extends { day: string }>(rows: T[]) {
+  const buckets = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = buckets.get(row.day) || [];
+    list.push(row);
+    buckets.set(row.day, list);
+  }
+  const out: T[] = [];
+  let moved = true;
+  while (moved) {
+    moved = false;
+    for (const bucket of buckets.values()) {
+      const next = bucket.shift();
+      if (!next) continue;
+      out.push(next);
+      moved = true;
+    }
+  }
+  return out;
 }
 
 export function categoryForClosedDeal(stageId: string): QaCategory | null {
@@ -130,45 +269,54 @@ export function resolveQaCategory(input: {
   return null;
 }
 
-export function pickQaSamples<T extends QaSampleCandidate>(rows: T[], limit = QA_SAMPLE_PER_CATEGORY): T[] {
+export function pickQaSamples<T extends QaSampleCandidate>(
+  rows: T[],
+  limit = QA_SAMPLE_PER_CATEGORY,
+  seed = "week"
+): T[] {
   const groups = new Map<string, T[]>();
   for (const row of rows) {
+    if (!row.eligible) continue;
     const key = `${row.managerId}|${row.category}`;
     const list = groups.get(key) || [];
     list.push(row);
     groups.set(key, list);
   }
   const picked: T[] = [];
-  for (const list of groups.values()) {
-    list.sort((left, right) => {
-      if (left.reviewable !== right.reviewable) return left.reviewable ? -1 : 1;
-      return right.richness - left.richness || right.lastAt.localeCompare(left.lastAt);
-    });
-    picked.push(...list.slice(0, limit));
+  for (const [key, list] of groups) {
+    const fresh = spreadByDay(seededShuffle(list.filter((row) => !row.repeat), `${seed}|${key}|fresh`));
+    const repeats = spreadByDay(seededShuffle(list.filter((row) => row.repeat), `${seed}|${key}|repeat`));
+    picked.push(...[...fresh, ...repeats].slice(0, limit));
   }
   return picked;
 }
 
-export function indexRopNotes(rows: string[][], weekLabel: string) {
-  const notes = new Map<string, { score: string; note: string }>();
-  const headerIndex = rows.findIndex((row) => row.includes("Диалог") && row.includes("Сделка"));
-  if (headerIndex < 0) return notes;
+export function readManualChecks(rows: string[][]) {
+  const checks = new Map<string, ManualCheck>();
+  const headerIndex = rows.findIndex((row) => row.includes("Ключ") && row.includes("Проверено"));
+  if (headerIndex < 0) return checks;
   const header = rows[headerIndex] || [];
-  const weekCol = header.indexOf("Неделя");
-  const dialogCol = header.indexOf("Диалог");
-  const dealCol = header.indexOf("Сделка");
-  const scoreCol = header.indexOf("Оценка");
-  const noteCol = header.indexOf("Комментарий");
-  if (scoreCol < 0 && noteCol < 0) return notes;
+  const keyCol = header.indexOf("Ключ");
+  const checkedCol = header.indexOf("Проверено");
+  const scoreCol = header.indexOf("Оценка по чек-листу");
+  const commentCol = header.indexOf("Комментарий руководителя");
+  const dateCol = header.indexOf("Дата проверки");
   for (const row of rows.slice(headerIndex + 1)) {
-    if (weekCol >= 0 && row[weekCol] && row[weekCol] !== weekLabel) continue;
+    const key = String(row[keyCol] || "").trim();
+    if (!key) continue;
+    const checked = checkedCol >= 0 ? String(row[checkedCol] || "") : "";
     const score = scoreCol >= 0 ? String(row[scoreCol] || "") : "";
-    const note = noteCol >= 0 ? String(row[noteCol] || "") : "";
-    if (!score && !note) continue;
-    for (const key of [dialogCol >= 0 ? row[dialogCol] : "", dealCol >= 0 ? row[dealCol] : ""]) {
-      const id = String(key || "").trim();
-      if (id) notes.set(id, { score, note });
-    }
+    const comment = commentCol >= 0 ? String(row[commentCol] || "") : "";
+    const checkedAt = dateCol >= 0 ? String(row[dateCol] || "") : "";
+    if (!checked && !score && !comment && !checkedAt) continue;
+    checks.set(key, { checked, score, comment, checkedAt });
   }
-  return notes;
+  return checks;
+}
+
+export function primaryManagerId(counts: Array<{ managerId: string; messages: number }>, assigneeId: string) {
+  const ranked = counts
+    .filter((row) => row.managerId && row.messages > 0)
+    .sort((left, right) => right.messages - left.messages || left.managerId.localeCompare(right.managerId));
+  return ranked[0]?.managerId || assigneeId;
 }
