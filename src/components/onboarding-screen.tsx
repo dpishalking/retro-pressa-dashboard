@@ -85,10 +85,6 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
                   <br />
                   из любой точки мира
                 </h2>
-                <div className={hero.description}>
-                  <p>Retro Pressa — международный сервис персонализированных подарков. Мы создаём подарки вокруг жизни человека, его воспоминаний и самых важных событий.</p>
-                  <p>Присоединяйтесь к нам и помогайте людям находить особенные подарки для своих близких.</p>
-                </div>
                 <div className={hero.metrics} aria-label="Формат работы">
                   <div className={hero.metric}>
                     <span className={hero.value}>80%</span>
@@ -112,6 +108,20 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
           </div>
         </section>
 
+        <section className={`${frame} border-t border-[#191816]/10 py-10 sm:py-14`}>
+          <div className="max-w-[40rem] text-[16px] leading-7 text-[#69635C] sm:text-[18px] sm:leading-8">
+            <p>
+              Retro Pressa — международный сервис персонализированных подарков. Мы создаём подарки вокруг жизни человека, его воспоминаний и самых важных событий.
+            </p>
+            <p className="mt-5">
+              Присоединяйтесь к нам и помогайте людям находить особенные подарки для своих близких.
+            </p>
+            <a href="#company" className="mt-8 inline-flex text-[15px] font-semibold text-[#911D22] underline decoration-[#911D22]/40 underline-offset-4 hover:decoration-[#911D22]">
+              Посмотрите видео о компании
+            </a>
+          </div>
+        </section>
+
         <section id="company" className="relative scroll-mt-20 overflow-hidden bg-[#1C211E] text-[#FCF9F3]">
           <Image
             src="/training/newspaper-from-date/pravda-izvestiya-stack.png"
@@ -121,14 +131,11 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             className="object-cover opacity-25"
           />
           <div className="absolute inset-0 bg-[#1C211E]/78" />
-          <div className={`${frame} relative grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-12`}>
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#B99A72]">О компании</p>
-              <h2 className={`${display} mt-4 text-[2rem] font-semibold leading-[1.08] min-[390px]:text-[2.4rem] lg:text-[2.75rem]`}>
-                Посмотрите короткую презентацию о компании, чтобы принять решение о дальнейших действиях
-              </h2>
-            </div>
-            <div className="overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/20">
+          <div className={`${frame} relative py-10 sm:py-14`}>
+            <h2 className={`${display} mx-auto max-w-[16em] text-center text-[2rem] font-semibold leading-[1.08] min-[390px]:text-[2.4rem] lg:text-[3.15rem]`}>
+              Компания Retro Pressa | Кто мы?
+            </h2>
+            <div className="mx-auto mt-8 w-full max-w-[1080px] overflow-hidden rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.35)] ring-1 ring-white/20">
               {companyVideo ? <OnboardingPlayer embedUrl={companyVideo} title={COMPANY_INTRO_TITLE} /> : null}
             </div>
           </div>
