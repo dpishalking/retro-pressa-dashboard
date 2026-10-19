@@ -20,7 +20,7 @@
 
 .stage {
   position: relative;
-  min-height: 790px;
+  min-height: 680px;
 }
 
 .photo {
@@ -144,7 +144,7 @@
 
 @media (max-width: 1200px) {
   .stage {
-    min-height: 690px;
+    min-height: 620px;
   }
 
   .title {

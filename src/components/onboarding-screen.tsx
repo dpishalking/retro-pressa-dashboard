@@ -121,7 +121,7 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             className="object-cover opacity-25"
           />
           <div className="absolute inset-0 bg-[#1C211E]/78" />
-          <div className={`${frame} relative grid items-center gap-8 py-16 sm:py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-16`}>
+          <div className={`${frame} relative grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)] lg:gap-12`}>
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#B99A72]">О компании</p>
               <h2 className={`${display} mt-4 text-[2rem] font-semibold leading-[1.08] min-[390px]:text-[2.4rem] lg:text-[2.75rem]`}>
@@ -134,13 +134,13 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
           </div>
         </section>
 
-        <section className="border-t border-[#191816]/10 py-16 sm:py-24">
+        <section className="border-t border-[#191816]/10 py-10 sm:py-14">
           <div className={frame}>
             <p className={`${kicker} text-center`}>Retro Pressa в цифрах</p>
-            <h2 className={`${display} mx-auto mt-4 max-w-[16em] text-center text-[2.15rem] font-semibold leading-[1.05] min-[390px]:text-4xl sm:text-5xl lg:text-[3.5rem]`}>
+            <h2 className={`${display} mx-auto mt-3 max-w-[16em] text-center text-[2.15rem] font-semibold leading-[1.05] min-[390px]:text-4xl sm:text-5xl lg:text-[3.5rem]`}>
               Мы уже помогли тысячам людей подарить незабываемые эмоции
             </h2>
-            <dl className="mx-auto mt-12 flex flex-col gap-10 md:mt-16 md:grid md:grid-cols-3 md:gap-0">
+            <dl className="mx-auto mt-8 flex flex-col gap-8 md:mt-10 md:grid md:grid-cols-3 md:gap-0">
               {SCALE_STATS.map((stat, index) => (
                 <div
                   key={stat.label}
@@ -153,13 +153,10 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
                 </div>
               ))}
             </dl>
-            <p className="mx-auto mt-12 max-w-2xl text-center text-[15px] leading-7 text-[#69635C] sm:text-[17px]">
-              За этими цифрами — тысячи личных историй, благодарностей и счастливых получателей. И мы продолжаем расти.
-            </p>
           </div>
         </section>
 
-        <section id="stories" className="scroll-mt-20 py-16 sm:py-24">
+        <section id="stories" className="scroll-mt-20 pb-10 pt-2 sm:pb-14 sm:pt-4">
           <div className={frame}>
             <p className={kicker}>Реальные истории</p>
             <h2 className={`${display} mt-4 max-w-[14em] text-[2.4rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[3.6rem]`}>
@@ -172,7 +169,7 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             </div>
           </div>
           {reviews.videos.length ? (
-            <div className="mt-10 overflow-x-auto pb-2 lg:overflow-visible">
+            <div className="mt-8 overflow-x-auto pb-2 lg:overflow-visible">
               <div className="flex w-max snap-x snap-mandatory gap-4 px-5 sm:px-10 lg:mx-auto lg:grid lg:w-full lg:max-w-[1440px] lg:grid-cols-4 lg:gap-5 lg:px-16">
                 {reviews.videos.map((video) => (
                   <div key={video.id} className="w-[78vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-md lg:w-auto lg:max-w-none">
@@ -184,12 +181,12 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
           ) : null}
         </section>
 
-        <section className="border-t border-[#191816]/10 py-16 sm:py-20">
+        <section className="border-t border-[#191816]/10 py-10 sm:py-14">
           <div className={frame}>
             <h2 className={`${display} max-w-[12em] text-[2.4rem] font-semibold leading-[1.05] min-[390px]:text-5xl lg:text-[3.4rem]`}>
               Больше, чем просто продажи
             </h2>
-            <ol className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
+            <ol className="mt-8 grid gap-x-10 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
               {WORK_REASONS.map((reason, index) => (
                 <li key={reason} className="border-t border-[#B99A72]/70 pt-4">
                   <span className={`${display} text-3xl font-semibold leading-none text-[#B99A72]`}>
@@ -213,7 +210,7 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(145,29,34,0.35)_0%,#911D22_42%,#911D22_100%)]" />
           </div>
-          <div className={`${frame} relative grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-20 lg:pl-24`}>
+          <div className={`${frame} relative grid items-center gap-8 py-12 sm:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14 lg:pl-24`}>
             <div>
               <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#F6F1E8]/70">Как начать</p>
               <h2 className={`${display} mt-4 text-[2.6rem] font-semibold leading-[1.02] min-[390px]:text-5xl lg:text-[4rem]`}>
