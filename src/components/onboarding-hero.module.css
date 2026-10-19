@@ -62,15 +62,6 @@
   pointer-events: auto;
 }
 
-.eyebrow {
-  font-size: 12px;
-  color: var(--rp-wine);
-  letter-spacing: 0.2em;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin: 0 0 15px;
-}
-
 .title {
   font-family: var(--font-onb-display), "Cormorant Garamond", Georgia, serif;
   font-weight: 500;
@@ -232,12 +223,6 @@
     padding: 23px 22px 25px;
   }
 
-  .eyebrow {
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    margin-bottom: 15px;
-  }
-
   .title {
     font-size: clamp(56px, 13.1vw, 74px);
     line-height: 0.9;
@@ -293,9 +278,5 @@
 @media (max-width: 350px) {
   .title {
     font-size: 53px;
-  }
-
-  .eyebrow {
-    letter-spacing: 0.07em;
   }
 }

@@ -72,7 +72,6 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
             </div>
             <div className={hero.content}>
               <div className={hero.text}>
-                <p className={hero.eyebrow}>Retro Pressa · Международная компания</p>
                 <h1 className={hero.title} id="rp-hero-heading">
                   <span className={hero.line}>Работа,</span>
                   <span className={hero.line}>в которой</span>
