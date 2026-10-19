@@ -20,6 +20,14 @@ import {
 import { loadBitrixCurrencyRatesToBase, toBaseCurrencyAmount } from "@/lib/bitrix/smart-invoices";
 import { loadUserNames } from "@/lib/bitrix/sales-foundation/customer-key";
 import { writeSheetTab } from "@/lib/google/sheets-client";
+import {
+  birthdayColumnsForDeals,
+  celebrantBirthdaysFromDeal,
+  DEAL_CELEBRANT_BIRTH_TEXT,
+  DEAL_NEWSPAPER_FIELD,
+  LEAD_CELEBRANT_BIRTH_TEXT,
+  type CelebrantBirthday
+} from "@/lib/rop-alerts/celebrant-birthday";
 import { PREDICTIVE_SPREADSHEET_ID_DEFAULT } from "@/lib/sales-os/predictive-model";
 
 export const ROP_ALERTS_SPREADSHEET_ID_DEFAULT = PREDICTIVE_SPREADSHEET_ID_DEFAULT;
@@ -210,6 +218,48 @@ function hoursSince(iso: string | undefined, now = Date.now()) {
   const ts = new Date(iso).getTime();
   if (!Number.isFinite(ts)) return 0;
   return Math.max(0, Math.floor((now - ts) / HOUR_MS));
+}
+
+async function loadCelebrantBirthdays(dealIds: string[]) {
+  const unique = [...new Set(dealIds.filter((id) => id && id !== "0"))];
+  const byDeal = new Map<string, CelebrantBirthday[]>();
+  if (!unique.length) return byDeal;
+
+  type Row = Record<string, unknown> & { ID?: string | number; TITLE?: string; LEAD_ID?: string | number };
+  const deals: Row[] = [];
+  for (const part of chunkIds(unique, 40)) {
+    deals.push(
+      ...(await bitrixListAll<Row>("crm.deal.list", {
+        filter: { "@ID": part },
+        select: ["ID", "TITLE", "LEAD_ID", DEAL_CELEBRANT_BIRTH_TEXT, DEAL_NEWSPAPER_FIELD]
+      }))
+    );
+  }
+
+  const leadIds = [...new Set(deals.map((deal) => String(deal.LEAD_ID || "")).filter((id) => id && id !== "0"))];
+  const leadBirth = new Map<string, unknown>();
+  for (const part of chunkIds(leadIds, 40)) {
+    const leads = await bitrixListAll<Row>("crm.lead.list", {
+      filter: { "@ID": part },
+      select: ["ID", LEAD_CELEBRANT_BIRTH_TEXT]
+    });
+    for (const lead of leads) leadBirth.set(String(lead.ID || ""), lead[LEAD_CELEBRANT_BIRTH_TEXT]);
+  }
+
+  for (const deal of deals) {
+    const birthText = [deal[DEAL_CELEBRANT_BIRTH_TEXT], leadBirth.get(String(deal.LEAD_ID || ""))]
+      .filter((value) => value != null && value !== false && String(value).trim())
+      .join("\n");
+    byDeal.set(
+      String(deal.ID || ""),
+      celebrantBirthdaysFromDeal({
+        birthText,
+        title: deal.TITLE,
+        newspaper: deal[DEAL_NEWSPAPER_FIELD]
+      })
+    );
+  }
+  return byDeal;
 }
 
 function daysSince(iso: string | undefined, now = Date.now()) {
@@ -1018,7 +1068,12 @@ export async function syncRopAlertsDaySummary(
     })
   ];
 
-  const unpaidRows: string[][] = [
+  const birthdayByDeal = await loadCelebrantBirthdays(sentInvoices.map((invoice) => String(invoice.parentId2 || "")));
+  const birthdayColumns = birthdayColumnsForDeals(
+    sentInvoices.map((invoice) => birthdayByDeal.get(String(invoice.parentId2 || "")) ?? []),
+    new Date(`${today}T12:00:00+03:00`)
+  );
+  const unpaidRows: Array<Array<string | number>> = [
     [
       "Счёт",
       "Сделка",
@@ -1029,12 +1084,17 @@ export async function syncRopAlertsDaySummary(
       "Дней без ответа",
       "Менеджер",
       "Телефон",
-      "Ссылка Bitrix"
+      "Ссылка Bitrix",
+      "День рождения именинника",
+      "Дней до ДР",
+      "Срочность",
+      "Очередь"
     ],
-    ...sentInvoices.map((invoice) => {
+    ...sentInvoices.map((invoice, index) => {
       const id = String(invoice.id || "");
       const contactId = String(invoice.contactId || "");
       const sentAt = invoice.movedTime || invoice.begindate || invoice.createdTime;
+      const birthday = birthdayColumns[index];
       return [
         id,
         String(invoice.parentId2 || ""),
@@ -1045,7 +1105,11 @@ export async function syncRopAlertsDaySummary(
         String(Math.max(0, daysSince(sentAt, now))),
         userNames.get(String(invoice.assignedById || "")) || "",
         contactPhones.get(contactId) || "",
-        id ? invoiceUrl(id) : ""
+        id ? invoiceUrl(id) : "",
+        birthday?.dates || "",
+        birthday?.days ?? "",
+        birthday?.when || "нет даты",
+        birthday?.queue ?? ""
       ];
     })
   ];
@@ -1145,7 +1209,12 @@ export async function syncRopAlertsDaySummary(
       clearRange: `'${ROP_ALERTS_TABS.summary}'!A:B`
     });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.unprocessedLeads, rows: unprocessedRows });
-    await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.unpaidInvoices, rows: unpaidRows });
+    await writeSheetTab({
+      spreadsheetId,
+      tabTitle: ROP_ALERTS_TABS.unpaidInvoices,
+      rows: unpaidRows,
+      clearRange: `'${ROP_ALERTS_TABS.unpaidInvoices}'!A:N`
+    });
     await writeSheetTab({ spreadsheetId, tabTitle: ROP_ALERTS_TABS.leadInWork, rows: leadInWorkRows });
     await writeSheetTab({
       spreadsheetId,
