@@ -30,6 +30,9 @@ export const MANAGER_REGISTER_PATH = "/registration";
 /** Public manager onboarding landing: company video, reviews, then registration. */
 export const MANAGER_ONBOARDING_PATH = "/onboarding";
 
+/** Preview of the rebuilt onboarding landing. */
+export const MANAGER_ONBOARDING_PREVIEW_PATH = "/onboarding1";
+
 /** Public manager registration API. */
 export const MANAGER_REGISTER_API = "/api/auth/register";
 
