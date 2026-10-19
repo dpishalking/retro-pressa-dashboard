@@ -418,6 +418,26 @@ export async function getFirstSheetTitle(spreadsheetId: string): Promise<string>
   return title;
 }
 
+export async function renameSheetTab(spreadsheetId: string, sheetId: number, title: string): Promise<void> {
+  const accessToken = await getGoogleAccessToken("https://www.googleapis.com/auth/spreadsheets");
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [{ updateSheetProperties: { properties: { sheetId, title }, fields: "title" } }],
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      `Google Sheets rename failed: ${(data as { error?: { message?: string } }).error?.message || response.status}`
+    );
+  }
+}
+
 function quoteSheetTab(title: string) {
   return `'${title.replace(/'/g, "''")}'`;
 }
