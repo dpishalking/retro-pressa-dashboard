@@ -877,6 +877,7 @@ function ProductionTimingSection() {
             <ul className={listClass}>
               <li>Страны Балтии — 1–3 дня.</li>
               <li>Европа — 3–10 дней.</li>
+              <li>Кипр — около 14 дней, только PUMITY на дом.</li>
               <li>Страны СНГ — 7–14 дней.</li>
               <li>Третьи страны (Америка, Австралия, Азия и др., кроме РФ), национальная почта — 10–20 дней.</li>
             </ul>
@@ -953,6 +954,15 @@ function DeliverySection() {
               <li>либо PUMITY — 13 EUR, срок 7–14 дней.</li>
             </ul>
 
+            <p className="mt-4 text-base font-bold text-slate-900">Кипр</p>
+            <p className={`mt-1 ${textClass}`}>
+              Только PUMITY, только на дом. Других вариантов нет — DPD и пункт выдачи не предлагать.
+            </p>
+            <ul className={listClass}>
+              <li>PUMITY на дом — 13 EUR;</li>
+              <li>срок — около 14 дней (около 2 недель).</li>
+            </ul>
+
             <p className="mt-4 text-base font-bold text-slate-900">Эстония и Литва</p>
             <ul className={listClass}>
               <li>DPD — 6 EUR, срок 1–3 дня.</li>
@@ -984,7 +994,7 @@ function DeliverySection() {
               <li>Срок доставки — 7–14 дней.</li>
             </ul>
             <p className={`mt-2 ${textClass}`}>
-              Страны: Казахстан, Азербайджан, Грузия, Турция, Италия, Болгария и другие дальние страны.
+              Страны: Казахстан, Азербайджан, Грузия, Турция, Италия, Болгария, Кипр и другие дальние страны.
             </p>
             <p className="mt-4 text-base font-bold text-slate-900">Для Израиля, Англии и Норвегии</p>
             <ul className={listClass}>

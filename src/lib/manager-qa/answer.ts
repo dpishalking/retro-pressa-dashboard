@@ -53,6 +53,7 @@ export function stripTelegramMarkup(text: string): string {
 const COUNTRIES: Array<{ test: RegExp; flag: string; name: string }> = [
   { test: /вашингтон/i, flag: "🇺🇸", name: "США" },
   { test: /сша|америк/i, flag: "🇺🇸", name: "США" },
+  { test: /кипр/i, flag: "🇨🇾", name: "Кипр" },
   { test: /словен/i, flag: "🇸🇮", name: "Словения" },
   { test: /итали/i, flag: "🇮🇹", name: "Италия" },
   { test: /болгар/i, flag: "🇧🇬", name: "Болгария" },
