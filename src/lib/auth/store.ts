@@ -272,6 +272,8 @@ type CreateUserInput = {
   internshipStartedOn?: string | null;
   approvedAt?: string | null;
   registrationPending?: boolean;
+  /** Self-registration may reuse a rejected manager login and open it immediately. */
+  admitRejected?: boolean;
 };
 
 export async function createUser(input: CreateUserInput): Promise<AppUserPublic> {
@@ -281,22 +283,28 @@ export async function createUser(input: CreateUserInput): Promise<AppUserPublic>
     if (!normalizedLogin) throw new Error("Логин обязателен");
     const existing = catalog.users.find((user) => user.login.toLowerCase() === normalizedLogin);
     if (existing) {
-      if (input.registrationPending && existing.registrationRejected && existing.accessLevel === "mop") {
+      if (
+        existing.registrationRejected &&
+        existing.accessLevel === "mop" &&
+        (input.registrationPending || input.admitRejected)
+      ) {
         const index = catalog.users.findIndex((user) => user.id === existing.id);
         if (index === -1) throw new Error("Пользователь не найден");
         const now = new Date().toISOString();
+        const pending = Boolean(input.registrationPending);
         const mopTrack = normalizePayTrack(input.mopPayTrack ?? "auto", "mop");
         existing.passwordHash = hashPassword(input.password);
         existing.name = input.name.trim() || normalizedLogin;
         existing.mopPayTrack = mopTrack;
-        existing.internshipStartedOn = null;
+        existing.internshipStartedOn = pending || !mopTrack || mopTrack === "regular" ? null : rigaDateIso();
         existing.approvedAt = null;
-        existing.registrationPending = true;
+        existing.registrationPending = pending;
         existing.registrationRejected = false;
-        existing.active = false;
+        existing.active = !pending;
         existing.updatedAt = now;
         catalog.users[index] = existing;
         await writeUsersCatalogAtomic(catalog);
+        if (!pending) void registerTrainerManager({ id: existing.id, name: existing.name });
         return toPublicUser(existing);
       }
       throw new Error("Пользователь с таким логином уже существует");

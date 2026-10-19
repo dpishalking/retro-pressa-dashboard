@@ -233,7 +233,7 @@ export function OnboardingScreen({ reviews }: { reviews: TrainingClientReviewCat
                 Начать обучение →
               </Link>
               <p className="mt-3 max-w-md text-sm leading-6 text-[#FCF9F3]/75">
-                После регистрации доступ к обучению подтверждает руководитель отдела продаж.
+                После регистрации вы сразу попадаете в обучение.
               </p>
             </div>
             <ol>

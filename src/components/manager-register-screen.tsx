@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { GraduationCap } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 import { readJsonResponse } from "@/lib/api-response";
+import { homePathForAccessLevel } from "@/lib/auth/access";
 
 export function ManagerRegisterScreen() {
+  const router = useRouter();
+  const { refresh } = useAuth();
   const [form, setForm] = useState({
     name: "",
     login: "",
     password: "",
     passwordConfirm: ""
   });
-  const [status, setStatus] = useState<{ state: "idle" | "loading" | "ok" | "error"; message: string }>({
+  const [status, setStatus] = useState<{ state: "idle" | "loading" | "error"; message: string }>({
     state: "idle",
     message: ""
   });
@@ -24,7 +29,7 @@ export function ManagerRegisterScreen() {
       return;
     }
 
-    setStatus({ state: "loading", message: "Отправляю заявку..." });
+    setStatus({ state: "loading", message: "Открываю доступ..." });
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -35,12 +40,11 @@ export function ManagerRegisterScreen() {
           password: form.password
         })
       });
-      const payload = await readJsonResponse<{ message?: string; error?: string }>(response);
+      const payload = await readJsonResponse<{ error?: string }>(response);
       if (!response.ok) throw new Error(payload.error ?? "Не удалось зарегистрироваться");
-      setStatus({
-        state: "ok",
-        message: payload.message ?? "Заявка отправлена. Когда РОП одобрит регистрацию, вы сможете войти."
-      });
+      await refresh();
+      router.replace(homePathForAccessLevel("mop"));
+      router.refresh();
     } catch (error) {
       setStatus({
         state: "error",
@@ -66,23 +70,10 @@ export function ManagerRegisterScreen() {
           Привет! Чтобы получить доступ к обучению и базе знаний — пройдите простую регистрацию :)
         </p>
         <p className="mb-6 text-sm leading-6 text-slate-500">
-          Почта не нужна: достаточно имени, логина и пароля. Доступ откроется после одобрения РОПа.
+          Почта не нужна: достаточно имени, логина и пароля. После регистрации вы сразу попадёте в обучение.
         </p>
 
-        {status.state === "ok" ? (
-          <div className="space-y-4">
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {status.message}
-            </p>
-            <p className="text-sm leading-6 text-slate-500">
-              Запомните логин и пароль: почты нет, восстановить их можно только через РОПа.
-            </p>
-            <Link href="/" className="inline-flex font-bold text-violet-700 hover:underline">
-              Перейти ко входу →
-            </Link>
-          </div>
-        ) : (
-          <form className="space-y-4" onSubmit={onSubmit}>
+        <form className="space-y-4" onSubmit={onSubmit}>
             <label className="block text-sm font-semibold text-slate-700">
               Имя
               <input
@@ -145,10 +136,9 @@ export function ManagerRegisterScreen() {
               disabled={status.state === "loading"}
               className="w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-60"
             >
-              {status.state === "loading" ? "Отправляю..." : "Зарегистрироваться"}
+              {status.state === "loading" ? "Открываю доступ..." : "Зарегистрироваться"}
             </button>
           </form>
-        )}
 
         <p className="mt-6 text-sm text-slate-500">
           Уже есть доступ?{" "}

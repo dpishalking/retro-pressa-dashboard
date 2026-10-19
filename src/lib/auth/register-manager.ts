@@ -39,6 +39,6 @@ export async function registerManager(body: ManagerRegisterBody): Promise<AppUse
     name,
     accessLevel: "mop",
     mopPayTrack: "auto",
-    registrationPending: true
+    admitRejected: true
   });
 }

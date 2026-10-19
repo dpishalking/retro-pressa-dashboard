@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByLoginAny } from "@/lib/auth/store";
+import { approveUserRegistration, findUserByLoginAny } from "@/lib/auth/store";
 import { verifyPassword } from "@/lib/auth/password";
 import { buildSessionCookie, createSessionToken } from "@/lib/auth/session";
 import { findPartnerByUserId } from "@/lib/partners/store";
@@ -36,20 +36,17 @@ export async function POST(request: Request) {
       if (partner.status === "suspended" || !user.active) {
         return NextResponse.json({ error: "Аккаунт партнёра временно отключён." }, { status: 403 });
       }
+    } else if (user.registrationRejected) {
+      return NextResponse.json(
+        { error: "Заявка отклонена. Зарегистрируйтесь снова или напишите РОПу." },
+        { status: 403 }
+      );
     } else if (!user.active) {
       if (user.registrationPending) {
-        return NextResponse.json(
-          { error: "Заявка на рассмотрении. РОП откроет доступ после одобрения." },
-          { status: 403 }
-        );
+        await approveUserRegistration(user.id);
+      } else {
+        return NextResponse.json({ error: "Аккаунт отключён" }, { status: 403 });
       }
-      if (user.registrationRejected) {
-        return NextResponse.json(
-          { error: "Заявка отклонена. Зарегистрируйтесь снова или напишите РОПу." },
-          { status: 403 }
-        );
-      }
-      return NextResponse.json({ error: "Аккаунт отключён" }, { status: 403 });
     }
 
     const token = createSessionToken({
