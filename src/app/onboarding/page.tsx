@@ -20,9 +20,9 @@ const sans = Manrope({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Работа, в которой вы дарите эмоции | Retro Pressa",
+  title: "Работайте из любой точки мира | Retro Pressa",
   description:
-    "Retro Pressa — международный сервис персонализированных подарков. Ищем менеджеров по продажам: переписка и звонки, обучение и подготовка к стажировке."
+    "Ищем менеджеров по продажам в Retro Pressa: переписка с клиентами, обучение продуктам и регистрация на обучающей платформе."
 };
 
 export default async function OnboardingPage() {
