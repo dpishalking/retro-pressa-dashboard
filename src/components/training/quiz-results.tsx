@@ -6,7 +6,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { TrainingLayout } from "@/components/training/training-layout";
 import { useTrainingUser } from "@/components/training/training-context";
 import { isFinalExamProduct, isOpenEndedQuiz } from "@/lib/training/final-exam";
-import { TRAINING_TELEGRAM_BOT, trainingTelegramBotUrl } from "@/lib/training/practice-bot";
+import { TRAINING_NEXT_STEP_TELEGRAM } from "@/lib/training/practice-bot";
 import type { ProductTrainingModule, QuizAttemptAnswer, QuizQuestion, UserQuizAttempt } from "@/types/training";
 
 type ResultData = {
@@ -140,17 +140,15 @@ function QuizResultsContent({ productId, attemptId }: { productId: string; attem
         </span>
         {isFinalExamProduct(productId) && data.attempt.passed ? (
           <div className="mt-5 border-t border-emerald-200 pt-5">
-            <p className="text-sm font-semibold text-slate-950">Следующий шаг — напишите нашему роботу.</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Он подскажет, что делать дальше. Откройте {TRAINING_TELEGRAM_BOT.displayName} и отправьте любое сообщение.
-            </p>
+            <p className="text-sm font-semibold text-slate-950">Следующий шаг — напишите {TRAINING_NEXT_STEP_TELEGRAM.displayName}.</p>
+            <p className="mt-1 text-sm text-slate-600">Откройте чат и отправьте сообщение, чтобы перейти дальше.</p>
             <a
-              href={trainingTelegramBotUrl()}
+              href={TRAINING_NEXT_STEP_TELEGRAM.url}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-[#229ED9] px-5 py-3 text-sm font-bold text-white hover:bg-[#1a8bc4]"
             >
-              Написать роботу
+              Написать {TRAINING_NEXT_STEP_TELEGRAM.displayName}
             </a>
           </div>
         ) : null}

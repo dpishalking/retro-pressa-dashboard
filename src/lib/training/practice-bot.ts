@@ -14,6 +14,13 @@ export const TRAINING_TELEGRAM_BOT = {
   displayName: "@dushnila12_bot"
 } as const;
 
+/** Personal account the manager writes to after the final exam. */
+export const TRAINING_NEXT_STEP_TELEGRAM = {
+  username: "scirocco960",
+  url: "https://t.me/scirocco960",
+  displayName: "@scirocco960"
+} as const;
+
 export function trainingTelegramBotUrl(startParam?: string): string {
   if (!startParam) return TRAINING_TELEGRAM_BOT.url;
   return `${TRAINING_TELEGRAM_BOT.url}?start=${encodeURIComponent(startParam)}`;

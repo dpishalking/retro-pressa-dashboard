@@ -14,7 +14,7 @@ import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-bas
 import { AbcdeTab } from "@/components/training/abcde-tab";
 import { useTrainingUser } from "@/components/training/training-context";
 import { remainingStagesForFinalExam, splitFinalExam, FINAL_EXAM_PRODUCT_ID } from "@/lib/training/final-exam";
-import { TRAINING_TELEGRAM_BOT, trainingTelegramBotUrl } from "@/lib/training/practice-bot";
+import { TRAINING_NEXT_STEP_TELEGRAM } from "@/lib/training/practice-bot";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type {
   ProductTrainingModule,
@@ -179,15 +179,15 @@ function MyTrainingContent() {
             <p className="text-sm font-bold">Обучение и тест пройдены</p>
           </div>
           <p className="mt-3 text-sm text-slate-600">
-            Следующий шаг — напишите нашему роботу {TRAINING_TELEGRAM_BOT.displayName}. Он подскажет, что делать дальше.
+            Следующий шаг — напишите {TRAINING_NEXT_STEP_TELEGRAM.displayName}. Откройте чат и отправьте сообщение, чтобы перейти дальше.
           </p>
           <a
-            href={trainingTelegramBotUrl()}
+            href={TRAINING_NEXT_STEP_TELEGRAM.url}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-[#229ED9] px-5 py-3 text-sm font-bold text-white hover:bg-[#1a8bc4]"
           >
-            Написать роботу
+            Написать {TRAINING_NEXT_STEP_TELEGRAM.displayName}
           </a>
         </section>
       ) : null}
