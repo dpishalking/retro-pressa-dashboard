@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { notifyManagerRegistered } from "@/lib/auth/registration-alert";
 import { registerManager, type ManagerRegisterBody } from "@/lib/auth/register-manager";
 import { assertRegisterRateLimit } from "@/lib/auth/register-rate-limit";
 import { buildSessionCookie, createSessionToken } from "@/lib/auth/session";
@@ -10,6 +11,13 @@ export async function POST(request: Request) {
     assertRegisterRateLimit(request);
     const body = (await request.json().catch(() => ({}))) as ManagerRegisterBody;
     const user = await registerManager(body);
+    await notifyManagerRegistered({
+      name: user.name,
+      login: user.login,
+      createdAt: user.createdAt
+    }).catch((alertError) => {
+      console.warn("Registration alert failed", alertError);
+    });
     const token = createSessionToken({
       id: user.id,
       login: user.login,

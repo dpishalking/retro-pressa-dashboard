@@ -14,6 +14,7 @@ import { KnowledgeBase, KnowledgeFaq } from "@/components/training/knowledge-bas
 import { AbcdeTab } from "@/components/training/abcde-tab";
 import { useTrainingUser } from "@/components/training/training-context";
 import { remainingStagesForFinalExam, splitFinalExam, FINAL_EXAM_PRODUCT_ID } from "@/lib/training/final-exam";
+import { TRAINING_TELEGRAM_BOT, trainingTelegramBotUrl } from "@/lib/training/practice-bot";
 import { getStatusClass, getStatusLabel } from "@/lib/training/quiz-scoring";
 import type {
   ProductTrainingModule,
@@ -175,8 +176,19 @@ function MyTrainingContent() {
         <section className="card mb-6 p-6">
           <div className="flex items-center gap-2 text-emerald-700">
             <CheckCircle2 size={18} />
-            <p className="text-sm font-bold">Все этапы пройдены</p>
+            <p className="text-sm font-bold">Обучение и тест пройдены</p>
           </div>
+          <p className="mt-3 text-sm text-slate-600">
+            Следующий шаг — напишите нашему роботу {TRAINING_TELEGRAM_BOT.displayName}. Он подскажет, что делать дальше.
+          </p>
+          <a
+            href={trainingTelegramBotUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex min-h-12 items-center rounded-xl bg-[#229ED9] px-5 py-3 text-sm font-bold text-white hover:bg-[#1a8bc4]"
+          >
+            Написать роботу
+          </a>
         </section>
       ) : null}
 

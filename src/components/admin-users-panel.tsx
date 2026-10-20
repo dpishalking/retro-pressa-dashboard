@@ -56,6 +56,19 @@ function mopPayStageLabel(user: AppUserPublic): string {
   return "Старт 3+5";
 }
 
+function formatRegisteredAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Riga",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
 function accountStatusLabel(user: AppUserPublic): string {
   if (user.registrationPending) return "Ожидает одобрения";
   if (user.registrationRejected) return "Отклонена";
@@ -636,6 +649,7 @@ export function AdminUsersPanel() {
                 <tr>
                   <th>Логин</th>
                   <th>Имя</th>
+                  <th>Регистрация</th>
                   <th>Bitrix</th>
                   <th>Доступ</th>
                   <th>Оплата</th>
@@ -646,17 +660,18 @@ export function AdminUsersPanel() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7}>Загрузка...</td>
+                    <td colSpan={8}>Загрузка...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
+                    <td colSpan={8}>{canManageManagersOnly ? "Менеджеров пока нет" : "Пользователей пока нет"}</td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id}>
                       <td>{user.login}</td>
                       <td>{user.name}</td>
+                      <td className="whitespace-nowrap">{formatRegisteredAt(user.createdAt)}</td>
                       <td>
                         {bitrixManagers.find((row) => row.bitrixId === user.bitrixUserId)?.name ||
                           user.bitrixUserId ||
