@@ -165,16 +165,19 @@ const SEED: ProductCogs[] = [
     productId: "PRODUCT_LIFE_BOOK",
     bitrixName: "Книга жизни",
     sourceTitle: "Книга в заголовках газет",
-    retailPrice: 150,
+    retailPrice: 240,
     cogsTotal: 73,
-    marginPct: 51.33,
+    marginPct: 69.58,
     lines: [
       { article: "Макетировщик/стр", amountEur: 40, note: "В модели в COGS входит 40 €" },
       { article: "Печать", amountEur: 30 },
       { article: "Уп. конверт", amountEur: 2 },
       { article: "Транс. конверт", amountEur: 1 },
     ],
-    notes: ["Mint «до 200 €» — верхняя витрина; модель retail 150 €."],
+    notes: [
+      "С 2026-08-20 retail 240 € (Рига: новая технология печати и переплёта — качество выше, цена выше).",
+      "Себестоимость печати/переплёта могла вырасти — уточнить (не выдумывать); маржа посчитана по прежнему COGS 73 €.",
+    ],
   },
   {
     productId: "PRODUCT_CONGRATS_SONG",
