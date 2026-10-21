@@ -109,6 +109,9 @@ const sliceLeads = leads.map((item) => ({
 assert.equal(parseSliceDimension("missing"), "country");
 assert.equal(isUnknownSliceKey("—"), true);
 assert.equal(isUnknownSliceKey("unknown"), true);
+assert.equal(isUnknownSliceKey("Не указана"), true);
+assert.equal(isUnknownSliceKey("Не указано"), true);
+assert.equal(isUnknownSliceKey("не определено"), true);
 {
   const href = new URL(sliceExplorerHref({ dim: "manager", metric: "cr", period: "2026-08", country: "Латвия" }), "https://rp-bi.site");
   assert.equal(href.pathname, "/os/slices");
@@ -139,6 +142,42 @@ assert.ok(germany);
 assert.equal(germany.leads, 2);
 assert.equal(germany.sales, 2);
 assert.equal(germany.revenue, 200);
+
+const unknownAliases = buildSliceReport({
+  facts,
+  leads: [
+    ...sliceLeads,
+    {
+      id: "L6",
+      dateCreate: "2026-08-06T10:00:00+03:00",
+      sourceId: "WEB",
+      utmSource: null,
+      utmMedium: null,
+      country: "Не указан",
+      assignedById: "1",
+      contactId: "L6"
+    },
+    {
+      id: "L7",
+      dateCreate: "2026-08-07T10:00:00+03:00",
+      sourceId: "WEB",
+      utmSource: null,
+      utmMedium: null,
+      country: "Не указана",
+      assignedById: "1",
+      contactId: "L7"
+    }
+  ],
+  filters: emptySliceFilters("2026-08"),
+  dimension: "country",
+  metric: "leads",
+  grain: "month"
+});
+const unknownRows = unknownAliases.rows.filter((row) => row.unknown);
+assert.equal(unknownRows.length, 1);
+assert.equal(unknownRows[0]?.label, "Не указана");
+assert.equal(unknownRows[0]?.leads, 3);
+assert.ok(!unknownAliases.rows.some((row) => row.label.includes("Не указан не указан")));
 
 const germanyProducts = buildSliceReport({
   facts,
