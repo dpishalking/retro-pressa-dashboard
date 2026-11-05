@@ -25,7 +25,7 @@ import {
   pipelineAgeAnalysis,
   sumDelivery,
 } from "@/lib/analytics-os/decision-extras";
-import { buildGa4TrafficMetrics, loadGa4WarehouseMonth } from "@/lib/analytics-os/ga4-warehouse";
+import { buildGa4TrafficMetrics } from "@/lib/analytics-os/ga4-warehouse";
 import { metricValue, noDataMetric } from "@/lib/analytics-os/metric-value";
 import {
   analyticsPeriodToLegacy,
@@ -224,7 +224,7 @@ export async function loadCeoSnapshot(options: LoadCeoSnapshotOptions = {}): Pro
   const daysRemaining = Math.max(0, calendarDays - daysElapsed);
   const currentMonthEarly = currentAnalyticsPeriod(now);
   const throughDateEarly = period >= currentMonthEarly ? rigaYesterdayIso(now) : null;
-  const ga4Warehouse = await loadGa4WarehouseMonth({ month: period, throughDate: throughDateEarly });
+  const ga4Warehouse = null;
 
   let monthlyPlanBundle: Awaited<ReturnType<typeof pullMonthlyPlanIndicators>> | null = null;
   try {

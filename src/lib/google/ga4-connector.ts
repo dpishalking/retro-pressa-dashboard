@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { PeriodKey } from "@/types/metrics";
 import { isCompliantUtmPair } from "@/lib/utm-standards";
 import { readGa4Snapshot, writeGa4Snapshot, type Ga4CampaignRow, type Ga4ChannelRow, type Ga4DailyRow, type Ga4LandingRow, type Ga4Snapshot } from "@/lib/google/ga4-snapshot-store";
+import { SITE_TRAFFIC_DISABLED_MESSAGE, SITE_TRAFFIC_TRACKING_ENABLED } from "@/lib/site-traffic";
 
 export type Ga4TrafficPayload = Ga4Snapshot & {
   dataSource: "snapshot" | "live";
@@ -323,6 +324,16 @@ export type Ga4SyncOptions = {
 
 export async function syncGa4Traffic(options: Ga4SyncOptions = {}): Promise<Ga4TrafficPayload> {
   const period = options.period ?? "july-2026";
+  if (!SITE_TRAFFIC_TRACKING_ENABLED) {
+    const cached = await readGa4Snapshot(period);
+    if (!cached) throw new Error(SITE_TRAFFIC_DISABLED_MESSAGE);
+    return {
+      ...cached,
+      dataSource: "snapshot",
+      snapshotUpdatedAt: cached.createdAt,
+      snapshotPath: `data/ga4-snapshots/${period}.json`
+    };
+  }
   const existing = await readGa4Snapshot(period);
   const snapshot = await loadGa4Snapshot(period, options.refresh === true);
   const fromCache = Boolean(existing && existing.createdAt === snapshot.createdAt);

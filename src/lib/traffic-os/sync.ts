@@ -20,6 +20,7 @@ import {
   TRAFFIC_RAW_COLUMNS,
   getTrafficOsSpreadsheetId
 } from "@/config/traffic-os";
+import { SITE_TRAFFIC_TRACKING_ENABLED } from "@/lib/site-traffic";
 import {
   CAMPAIGN_MANAGEMENT_COLUMNS,
   CHANNEL_MANAGEMENT_COLUMNS,
@@ -421,7 +422,8 @@ async function runSync(input?: {
       };
     }
 
-    const wantGa4 = moduleSet.has("all") || moduleSet.has("ga4_foundation");
+    const wantGa4 =
+      SITE_TRAFFIC_TRACKING_ENABLED && (moduleSet.has("all") || moduleSet.has("ga4_foundation"));
     let ga4:
       | Awaited<ReturnType<typeof buildTrafficOsGa4Foundation>>
       | null = null;

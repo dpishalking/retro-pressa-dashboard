@@ -1,4 +1,5 @@
 import { readClaritySnapshot, writeClaritySnapshot, type ClarityDimensionRow, type ClaritySnapshot } from "@/lib/clarity/clarity-snapshot-store";
+import { SITE_TRAFFIC_DISABLED_MESSAGE, SITE_TRAFFIC_TRACKING_ENABLED } from "@/lib/site-traffic";
 import { isCompliantUtmPair } from "@/lib/utm-standards";
 import { slugifyUtmValue } from "@/lib/utm-generator";
 
@@ -228,6 +229,16 @@ export type ClaritySyncOptions = {
 };
 
 export async function syncClarityInsights(options: ClaritySyncOptions = {}): Promise<ClaritySyncPayload> {
+  if (!SITE_TRAFFIC_TRACKING_ENABLED) {
+    const cached = await readClaritySnapshot();
+    if (!cached) throw new Error(SITE_TRAFFIC_DISABLED_MESSAGE);
+    return {
+      ...cached,
+      dataSource: "snapshot",
+      snapshotUpdatedAt: cached.createdAt,
+      dashboardUrl: clarityDashboardUrl()
+    };
+  }
   const existing = await readClaritySnapshot();
   const numOfDays = options.numOfDays ?? 3;
 

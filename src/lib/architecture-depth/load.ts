@@ -1,5 +1,6 @@
 import { getGoogleAccessToken } from "@/lib/google/sheets-client";
 import { syncClarityInsights } from "@/lib/clarity/clarity-connector";
+import { SITE_TRAFFIC_DISABLED_MESSAGE, SITE_TRAFFIC_TRACKING_ENABLED } from "@/lib/site-traffic";
 import {
   buildLandingFunnel,
   getLandingDepth,
@@ -283,6 +284,40 @@ async function loadClaritySlice(landing: LandingDepthDef): Promise<ArchitectureC
 export async function loadLandingDepth(landingId: string): Promise<ArchitectureDepthReport> {
   const landing = getLandingDepth(landingId);
   if (!landing) throw new Error("Неизвестный лендинг");
+
+  if (!SITE_TRAFFIC_TRACKING_ENABLED) {
+    const empty = (id: ArchitectureWindow["id"], label: string): ArchitectureWindow => ({
+      id,
+      label,
+      sections: buildLandingFunnel(landing.sections, {}),
+      ctaClicks: 0,
+      formStarts: 0,
+      formSubmits: 0,
+      productViews: 0
+    });
+    return {
+      landingId: landing.id,
+      kicker: landing.kicker,
+      updatedAt: new Date().toISOString(),
+      pageUrl: landing.pageUrl,
+      breakdownError: SITE_TRAFFIC_DISABLED_MESSAGE,
+      realtimeSectionViews: null,
+      yesterday: empty("yesterday", "Вчера"),
+      week: empty("week", "7 дней"),
+      clarity: {
+        available: false,
+        message: SITE_TRAFFIC_DISABLED_MESSAGE,
+        sessions: 0,
+        scrollDepth: null,
+        deadClicks: 0,
+        rageClicks: 0,
+        quickbackClicks: 0,
+        url: null
+      },
+      canHypothesize: false,
+      hypothesisNote: SITE_TRAFFIC_DISABLED_MESSAGE
+    };
+  }
 
   let breakdownError: string | null = null;
   let yesterday: ArchitectureWindow;
